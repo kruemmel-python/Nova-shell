@@ -14,7 +14,7 @@ import shlex
 import subprocess
 import tempfile
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
 from typing import Any, Callable, Iterable
@@ -43,6 +43,21 @@ class CommandResult:
     data: Any = None
     error: str | None = None
     data_type: PipelineType = PipelineType.TEXT
+
+
+@dataclass
+class PipelineNode:
+    name: str
+    stages: list[str] = field(default_factory=list)
+    parallel: bool = False
+
+
+@dataclass
+class PipelineGraph:
+    nodes: list[PipelineNode] = field(default_factory=list)
+
+    def add(self, node: PipelineNode) -> None:
+        self.nodes.append(node)
 
 
 class PythonEngine:
@@ -459,6 +474,22 @@ class NovaShell:
 
         return stages
 
+    def _build_pipeline_graph(self, stages: list[str]) -> PipelineGraph:
+        graph = PipelineGraph()
+
+        for stage in stages:
+            is_py_stage = stage.startswith("py ") or stage.startswith("python ")
+            is_parallel = stage.startswith("parallel ")
+
+            if is_py_stage and graph.nodes and graph.nodes[-1].name == "py_chain" and not graph.nodes[-1].parallel:
+                graph.nodes[-1].stages.append(stage)
+                continue
+
+            node_name = "py_chain" if is_py_stage else stage
+            graph.add(PipelineNode(name=node_name, stages=[stage], parallel=is_parallel))
+
+        return graph
+
     def _route_single(self, command: str, pipeline_input: str = "", pipeline_data: Any = None) -> CommandResult:
         parts = shlex.split(command)
         if not parts:
@@ -531,7 +562,16 @@ class NovaShell:
 
         return CommandResult(output="".join(outputs), data=collected_data, data_type=PipelineType.OBJECT_STREAM)
 
-    def _execute_stage(self, stage: str, current_output: str, current_data: Any, current_type: PipelineType) -> tuple[CommandResult, int, float]:
+    def _execute_stage(
+        self,
+        stage: str,
+        current_output: str,
+        current_data: Any,
+        current_type: PipelineType,
+        *,
+        emit_event: bool = True,
+        node_name: str | None = None,
+    ) -> tuple[CommandResult, int, float]:
         stage_started = time.perf_counter()
 
         if stage.startswith("parallel "):
@@ -553,16 +593,18 @@ class NovaShell:
         elif isinstance(current_output, str) and current_output:
             rows_processed = len(current_output.splitlines())
 
-        self.events.emit(
-            {
-                "stage": stage,
-                "error": result.error or "",
-                "output": result.output[:200],
-                "data_type": result.data_type.value,
-                "duration_ms": f"{duration_ms:.3f}",
-                "rows_processed": str(rows_processed),
-            }
-        )
+        if emit_event:
+            self.events.emit(
+                {
+                    "stage": stage,
+                    "node": node_name or stage,
+                    "error": result.error or "",
+                    "output": result.output[:200],
+                    "data_type": result.data_type.value,
+                    "duration_ms": f"{duration_ms:.3f}",
+                    "rows_processed": str(rows_processed),
+                }
+            )
 
         return result, rows_processed, duration_ms
 
@@ -581,17 +623,27 @@ class NovaShell:
 
     def _route_internal(self, command: str) -> CommandResult:
         stages = self._split_pipeline(command)
+        graph = self._build_pipeline_graph(stages)
         current_output = ""
         current_data: Any = None
         current_type = PipelineType.TEXT
 
-        for stage in stages:
-            result, _, _ = self._execute_stage(stage, current_output, current_data, current_type)
-            if result.error:
-                return result
-            current_output = result.output
-            current_data = result.data
-            current_type = result.data_type
+        for node in graph.nodes:
+            for index, stage in enumerate(node.stages):
+                last_stage_in_node = index == len(node.stages) - 1
+                result, _, _ = self._execute_stage(
+                    stage,
+                    current_output,
+                    current_data,
+                    current_type,
+                    emit_event=last_stage_in_node,
+                    node_name=node.name,
+                )
+                if result.error:
+                    return result
+                current_output = result.output
+                current_data = result.data
+                current_type = result.data_type
 
         return self._materialize_if_generator(
             CommandResult(output=current_output, data=current_data, data_type=current_type)

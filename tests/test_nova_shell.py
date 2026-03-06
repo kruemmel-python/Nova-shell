@@ -174,6 +174,18 @@ class NovaShellTests(unittest.TestCase):
         self.assertIn("duration_ms_avg", stats)
         self.assertIn("rows_processed_total", stats)
 
+    def test_pipeline_graph_fuses_consecutive_python_stages(self) -> None:
+        graph = self.shell._build_pipeline_graph(["py _.strip()", "py _.upper()", "sys echo ok"])
+        self.assertEqual(len(graph.nodes), 2)
+        self.assertEqual(graph.nodes[0].name, "py_chain")
+        self.assertEqual(graph.nodes[0].stages, ["py _.strip()", "py _.upper()"])
+
+    def test_event_contains_node_name(self) -> None:
+        self.shell.route("py 1 + 1 | py _ + 1")
+        event_result = self.shell.route("events last")
+        payload = json.loads(event_result.output)
+        self.assertIn("node", payload)
+
     def test_gpu_command_missing_file_or_dependency(self) -> None:
         result = self.shell.route("gpu does_not_exist.cl")
         self.assertIsNotNone(result.error)

@@ -13,6 +13,7 @@ Nova-shell ist ein **Compute-Runtime Shell-Prototyp mit Mini-DSL (NovaScript)**.
 - **Stream Pipeline** via `watch <file> --lines N` oder live `watch <file> --follow-seconds S`
 - **Parallel Pipeline** über `parallel <command>`
 - **Async Runtime** mit persistentem Event-Loop (`route()` ohne per-command loop spin-up)
+- **Pipeline Optimizer + Execution Graph**: aufeinanderfolgende Python-Stages werden als `py_chain` geplant
 - Event-Stream über `events` (`last`, `clear`, `stats`)
 - NovaScript-Ausführung (`ns.exec`, `ns.run`) mit Parser + AST + Interpreter
 - System-Command-Fallback (`sys` oder direkter Befehl)
@@ -73,6 +74,7 @@ Unterstützt:
 - `CommandResult(output, data, error, data_type)` als Pipeline-Container
 - `PythonEngine` mit persistentem `self.globals`
 - `NovaShell.route_async()` als Async-Orchestrierung
+- `PipelineGraph`/`PipelineNode` als interne Execution-Plan-Struktur
 - `watch` liefert Text-Streams (`PipelineType.TEXT_STREAM`) oder Lazy-Generatoren (`PipelineType.GENERATOR`)
 - `parallel` Stage nutzt `ThreadPoolExecutor` für fan-out
 - `novascript.py` liefert `NovaParser` + `NovaInterpreter`
