@@ -1,32 +1,41 @@
 # Nova-shell
 
-Nova-shell ist ein **Compute-Runtime Shell-Prototyp mit Mini-DSL (NovaScript)**.
+Nova-shell ist ein **Compute-Runtime-Prototyp**: eine Shell mit Pipeline-Engine, Typed Streams, Execution-Graph und NovaScript-DSL.
 
-## Kernfeatures
+## Überblick
 
-- Python-Ausführung (`py`, `python`) mit **persistentem Python-Kontext**
-- C++-Kompilierung/Ausführung (`cpp` via `g++`)
-- GPU-Kernel-Ausführung (`gpu`) via OpenCL (`pyopencl` + `numpy`)
-- Datenkommandos (`data load`, `data.load`) für CSV
-- **Typed Pipeline** über `PipelineType` (`text`, `object`, `*_stream`)
-- **Object Pipeline** (`CommandResult.data`) statt reinem String-Transport
-- **Stream Pipeline** via `watch <file> --lines N` oder live `watch <file> --follow-seconds S`
-- **Parallel Pipeline** über `parallel <command>`
-- **Async Runtime** mit persistentem Event-Loop (`route()` ohne per-command loop spin-up)
-- **Pipeline Optimizer + Execution Graph**: aufeinanderfolgende Python-Stages werden als `py_chain` geplant
-- Event-Stream über `events` (`last`, `clear`, `stats`)
-- NovaScript-Ausführung (`ns.exec`, `ns.run`) mit Parser + AST + Interpreter
-- System-Command-Fallback (`sys` oder direkter Befehl)
-- Built-ins (`cd`, `pwd`, `help`, `exit`)
-- Plugin-System über `plugins/*.py`
+Nova-shell kombiniert:
 
-## Starten
+- klassische Shell-Kommandos (`sys` / Fallback)
+- Python-Execution mit persistentem Kontext (`py`, `python`)
+- C++-Compile/Run (`cpp`)
+- GPU-Kernel-Execution (`gpu`, optional über OpenCL)
+- Data-Pipelines (`data load`, `data.load`)
+- Stream/Follower-Pipelines (`watch`)
+- Parallel-Fanout (`parallel ...`)
+- Pipeline-Telemetrie (`events last|stats|clear`)
+- Mini-DSL (`ns.exec`, `ns.run`)
+
+## Quickstart
 
 ```bash
 python nova_shell.py
 ```
 
-## Beispiele
+## Wichtige Commands
+
+- `py <code>` / `python <code>` – Python ausführen (mit persistentem `_` + Globals)
+- `cpp <code>` – C++ kompilieren und ausführen (`g++` erforderlich)
+- `gpu <kernel.cl>` – OpenCL-Kernel ausführen (`pyopencl` + `numpy` erforderlich)
+- `data load <file.csv>` – CSV laden
+- `watch <file> --lines N` – letzte N Zeilen als Stream
+- `watch <file> --follow-seconds S` – tail-artiger Follow-Stream
+- `parallel <stage>` – Stage parallel auf Stream-Items ausführen
+- `events last|stats|clear` – Telemetrie anzeigen/aggregieren/leeren
+- `ns.exec <script>` / `ns.run <file.ns>` – NovaScript ausführen
+- `cd`, `pwd`, `help`, `exit`
+
+## Pipeline-Beispiele
 
 ```text
 nova> py x = 10
@@ -36,7 +45,7 @@ nova> py x + 5
 nova> data load cities.csv | py len(_)
 42
 
-nova> watch logs.txt --follow-seconds 2 | py _.lower()
+nova> watch logs.txt --follow-seconds 2 | py _.upper()
 ...
 
 nova> printf 'a\nb\n' | parallel py _.upper()
@@ -44,40 +53,43 @@ A
 B
 ```
 
-## Typisierte Pipelines
+## Typed Pipeline Model
 
-`CommandResult` enthält:
+`CommandResult` transportiert:
 
 - `output: str`
 - `data: Any`
 - `error: str | None`
 - `data_type: PipelineType`
 
-So kann eine Stage nicht nur Text, sondern auch strukturierte Objekte/Streams weitergeben.
+Pipeline-Typen umfassen u. a. `TEXT`, `OBJECT`, `TEXT_STREAM`, `GENERATOR`.
+Generator-Pipelines bleiben zwischen Stages lazy und werden am Ende materialisiert.
 
-Generator-Streams werden stage-weise lazy weitergereicht und am Pipeline-Ende materialisiert,
-damit Zwischenstufen nicht unnötig alles sammeln müssen.
+## Execution Graph + Optimizer
 
-Events enthalten zusätzlich Laufzeitmetrik (`duration_ms`) und Verarbeitungsmenge (`rows_processed`).
+Nova-shell baut intern einen `PipelineGraph` aus `PipelineNode`s.
+Aufeinanderfolgende Python-Stages werden als `py_chain` geplant (Stage-Fusion auf Plan-Ebene), bevor die Ausführung läuft.
 
-## NovaScript DSL
+## Telemetrie
 
-Unterstützt:
+Events enthalten u. a.:
+
+- `stage`
+- `node`
+- `data_type`
+- `duration_ms`
+- `rows_processed`
+
+Mit `events stats` bekommst du aggregierte Kennzahlen wie durchschnittliche Stage-Dauer.
+
+## NovaScript DSL (kurz)
+
+Unterstützt aktuell:
 
 - Assignment: `x = py 5*5`
-- For-Loop: `for f in files:` (Body mit 4 Spaces)
-- If-Block: `if len(files_lines) > 0:` (Body mit 4 Spaces)
-- Variable-Injection: `$name`
-
-## Architektur
-
-- `CommandResult(output, data, error, data_type)` als Pipeline-Container
-- `PythonEngine` mit persistentem `self.globals`
-- `NovaShell.route_async()` als Async-Orchestrierung
-- `PipelineGraph`/`PipelineNode` als interne Execution-Plan-Struktur
-- `watch` liefert Text-Streams (`PipelineType.TEXT_STREAM`) oder Lazy-Generatoren (`PipelineType.GENERATOR`)
-- `parallel` Stage nutzt `ThreadPoolExecutor` für fan-out
-- `novascript.py` liefert `NovaParser` + `NovaInterpreter`
+- For-Loop (4 Spaces eingerückt)
+- If-Block (4 Spaces eingerückt)
+- Variablen-Injection via `$name`
 
 ## Tests
 
