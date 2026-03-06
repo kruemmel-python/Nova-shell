@@ -299,7 +299,18 @@ class NovaShell:
         if action == "clear":
             self.events.events.clear()
             return CommandResult(output="events cleared\n")
-        return CommandResult(output="Usage: events last|clear\n")
+        if action == "stats":
+            if not self.events.events:
+                return CommandResult(output="No events\n")
+            durations = [float(event.get("duration_ms", 0.0)) for event in self.events.events]
+            rows = [int(event.get("rows_processed", 0)) for event in self.events.events]
+            stats = {
+                "count": len(self.events.events),
+                "duration_ms_avg": sum(durations) / len(durations),
+                "rows_processed_total": sum(rows),
+            }
+            return CommandResult(output=json.dumps(stats, ensure_ascii=False) + "\n", data=stats, data_type=PipelineType.OBJECT)
+        return CommandResult(output="Usage: events last|clear|stats\n")
 
     def _tail_follow(self, file_path: Path, follow_seconds: float) -> Iterable[str]:
         with file_path.open("r", encoding="utf-8") as handle:
@@ -490,10 +501,11 @@ class NovaShell:
     def _is_stream_type(self, data_type: PipelineType) -> bool:
         return data_type in {PipelineType.TEXT_STREAM, PipelineType.GENERATOR}
 
-    def _stage_over_stream(self, stage: str, stream_data: Iterable[Any]) -> CommandResult:
+    def _stage_over_iterable(self, stage: str, values: Iterable[Any]) -> CommandResult:
         outputs: list[str] = []
         collected_data: list[Any] = []
-        for item in stream_data:
+
+        for item in values:
             item_text = item if isinstance(item, str) else json.dumps(item, ensure_ascii=False)
             result = self._route_single(stage, item_text, item)
             if result.error:
@@ -503,19 +515,40 @@ class NovaShell:
 
         return CommandResult(output="".join(outputs), data=collected_data, data_type=PipelineType.OBJECT_STREAM)
 
-    def _stage_over_generator(self, stage: str, generator: Iterable[Any]) -> CommandResult:
-        outputs: list[str] = []
-        collected_data: list[Any] = []
+    def _execute_stage(self, stage: str, current_output: str, current_data: Any, current_type: PipelineType) -> tuple[CommandResult, int, float]:
+        stage_started = time.perf_counter()
 
-        for item in generator:
-            item_text = item if isinstance(item, str) else json.dumps(item, ensure_ascii=False)
-            result = self._route_single(stage, item_text, item)
-            if result.error:
-                return result
-            outputs.append(result.output)
-            collected_data.append(result.data)
+        if stage.startswith("parallel "):
+            result = self._parallel_stage(stage, current_output, current_data)
+        elif current_type == PipelineType.GENERATOR and current_data is not None:
+            result = self._stage_over_iterable(stage, current_data)
+        elif self._is_stream_type(current_type) and isinstance(current_data, Iterable) and not isinstance(current_data, (str, bytes, dict)):
+            result = self._stage_over_iterable(stage, current_data)
+        else:
+            result = self._route_single(stage, current_output, current_data)
 
-        return CommandResult(output="".join(outputs), data=collected_data, data_type=PipelineType.OBJECT_STREAM)
+        duration_ms = (time.perf_counter() - stage_started) * 1000
+
+        rows_processed = 0
+        if isinstance(current_data, list):
+            rows_processed = len(current_data)
+        elif current_type == PipelineType.GENERATOR and current_data is not None:
+            rows_processed = len(result.data) if isinstance(result.data, list) else 0
+        elif isinstance(current_output, str) and current_output:
+            rows_processed = len(current_output.splitlines())
+
+        self.events.emit(
+            {
+                "stage": stage,
+                "error": result.error or "",
+                "output": result.output[:200],
+                "data_type": result.data_type.value,
+                "duration_ms": f"{duration_ms:.3f}",
+                "rows_processed": str(rows_processed),
+            }
+        )
+
+        return result, rows_processed, duration_ms
 
     def _route_internal(self, command: str) -> CommandResult:
         stages = self._split_pipeline(command)
@@ -524,23 +557,7 @@ class NovaShell:
         current_type = PipelineType.TEXT
 
         for stage in stages:
-            if stage.startswith("parallel "):
-                result = self._parallel_stage(stage, current_output, current_data)
-            elif current_type == PipelineType.GENERATOR and current_data is not None:
-                result = self._stage_over_generator(stage, current_data)
-            elif self._is_stream_type(current_type) and isinstance(current_data, Iterable) and not isinstance(current_data, (str, bytes, dict)):
-                result = self._stage_over_stream(stage, current_data)
-            else:
-                result = self._route_single(stage, current_output, current_data)
-
-            self.events.emit(
-                {
-                    "stage": stage,
-                    "error": result.error or "",
-                    "output": result.output[:200],
-                    "data_type": result.data_type.value,
-                }
-            )
+            result, _, _ = self._execute_stage(stage, current_output, current_data, current_type)
             if result.error:
                 return result
             current_output = result.output
@@ -550,36 +567,7 @@ class NovaShell:
         return CommandResult(output=current_output, data=current_data, data_type=current_type)
 
     async def route_async(self, command: str) -> CommandResult:
-        stages = self._split_pipeline(command)
-        current_output = ""
-        current_data: Any = None
-        current_type = PipelineType.TEXT
-
-        for stage in stages:
-            if stage.startswith("parallel "):
-                result = self._parallel_stage(stage, current_output, current_data)
-            elif current_type == PipelineType.GENERATOR and current_data is not None:
-                result = self._stage_over_generator(stage, current_data)
-            elif self._is_stream_type(current_type) and isinstance(current_data, Iterable) and not isinstance(current_data, (str, bytes, dict)):
-                result = self._stage_over_stream(stage, current_data)
-            else:
-                result = self._route_single(stage, current_output, current_data)
-
-            self.events.emit(
-                {
-                    "stage": stage,
-                    "error": result.error or "",
-                    "output": result.output[:200],
-                    "data_type": result.data_type.value,
-                }
-            )
-            if result.error:
-                return result
-            current_output = result.output
-            current_data = result.data
-            current_type = result.data_type
-
-        return CommandResult(output=current_output, data=current_data, data_type=current_type)
+        return self._route_internal(command)
 
     def route(self, command: str) -> CommandResult:
         if threading.get_ident() != self._loop_owner_thread:
@@ -589,7 +577,7 @@ class NovaShell:
         return self.loop.run_until_complete(self.route_async(command))
 
     def repl(self) -> None:
-        print("NovaShell 0.6 Compute Runtime")
+        print("NovaShell 0.7 Compute Runtime")
         print(
             "Commands: py | cpp | gpu | data | data.load | watch | parallel | events | ns.exec | ns.run | sys | cd | pwd | help | exit"
         )

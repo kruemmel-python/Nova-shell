@@ -124,6 +124,16 @@ class NovaShellTests(unittest.TestCase):
         payload = json.loads(event_result.output)
         self.assertIn("stage", payload)
 
+    def test_events_stats(self) -> None:
+        self.shell.route("py 1 + 1")
+        self.shell.route("py 2 + 2")
+        stats_result = self.shell.route("events stats")
+        self.assertIsNone(stats_result.error)
+        stats = json.loads(stats_result.output)
+        self.assertGreaterEqual(stats["count"], 2)
+        self.assertIn("duration_ms_avg", stats)
+        self.assertIn("rows_processed_total", stats)
+
     def test_gpu_command_missing_file_or_dependency(self) -> None:
         result = self.shell.route("gpu does_not_exist.cl")
         self.assertIsNotNone(result.error)

@@ -12,8 +12,8 @@ Nova-shell ist ein **Compute-Runtime Shell-Prototyp mit Mini-DSL (NovaScript)**.
 - **Object Pipeline** (`CommandResult.data`) statt reinem String-Transport
 - **Stream Pipeline** via `watch <file> --lines N` oder live `watch <file> --follow-seconds S`
 - **Parallel Pipeline** über `parallel <command>`
-- **Async Runtime**: `route_async()` orchestriert Stages mit `asyncio`
-- Event-Stream über `events` (`last`, `clear`)
+- **Async Runtime** mit persistentem Event-Loop (`route()` ohne per-command loop spin-up)
+- Event-Stream über `events` (`last`, `clear`, `stats`)
 - NovaScript-Ausführung (`ns.exec`, `ns.run`) mit Parser + AST + Interpreter
 - System-Command-Fallback (`sys` oder direkter Befehl)
 - Built-ins (`cd`, `pwd`, `help`, `exit`)
@@ -53,6 +53,8 @@ B
 - `data_type: PipelineType`
 
 So kann eine Stage nicht nur Text, sondern auch strukturierte Objekte/Streams weitergeben.
+
+Events enthalten zusätzlich Laufzeitmetrik (`duration_ms`) und Verarbeitungsmenge (`rows_processed`).
 
 ## NovaScript DSL
 
