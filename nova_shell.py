@@ -11,14 +11,18 @@ import threading
 import time
 import json
 import os
+import glob
 import shlex
 import subprocess
 import tempfile
+import zipfile
+import uuid
 import urllib.error
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from enum import Enum
+from multiprocessing import shared_memory
 from pathlib import Path
 from typing import Any, Callable, Iterable
 
@@ -39,6 +43,7 @@ class PipelineType(str, Enum):
     ARRAY_STREAM = "array_stream"
     GENERATOR = "generator"
     ARROW_TABLE = "arrow_table"
+    SHARED_MEMORY = "shared_memory"
 
 
 @dataclass
@@ -233,6 +238,69 @@ class EventBus:
         return self.events[-1] if self.events else None
 
 
+class NovaFabric:
+    """Local shared-memory bridge used as a zero-copy-like handoff primitive."""
+
+    def __init__(self) -> None:
+        self._segments: dict[str, shared_memory.SharedMemory] = {}
+
+    def put(self, value: str) -> CommandResult:
+        payload = value.encode("utf-8")
+        segment = shared_memory.SharedMemory(create=True, size=max(1, len(payload)))
+        if payload:
+            segment.buf[: len(payload)] = payload
+        handle = segment.name
+        self._segments[handle] = segment
+        return CommandResult(
+            output=f"{handle}\n",
+            data={"handle": handle, "size": len(payload)},
+            data_type=PipelineType.SHARED_MEMORY,
+        )
+
+    def get(self, handle: str) -> CommandResult:
+        segment = self._segments.get(handle)
+        if segment is None:
+            try:
+                segment = shared_memory.SharedMemory(name=handle)
+            except FileNotFoundError:
+                return CommandResult(output="", error=f"shared memory handle not found: {handle}")
+
+        data = bytes(segment.buf).rstrip(b"\x00").decode("utf-8", errors="replace")
+        return CommandResult(output=f"{data}\n", data=data, data_type=PipelineType.TEXT)
+
+    def cleanup(self) -> None:
+        for handle, segment in list(self._segments.items()):
+            with contextlib.suppress(Exception):
+                segment.close()
+            with contextlib.suppress(Exception):
+                segment.unlink()
+            self._segments.pop(handle, None)
+
+
+class PolicyEngine:
+    """Simple policy-as-code style guard for stage permissions."""
+
+    def __init__(self) -> None:
+        self.policies: dict[str, set[str]] = {
+            "open": set(),
+            "minimal": {"sys", "remote", "gpu", "wasm"},
+            "offline": {"remote"},
+        }
+
+    def is_allowed(self, policy: str, stage: str) -> tuple[bool, str | None]:
+        denied = self.policies.get(policy)
+        if denied is None:
+            return False, f"unknown policy: {policy}"
+
+        parts = shlex.split(stage)
+        if not parts:
+            return True, None
+        cmd = parts[0]
+        if cmd in denied:
+            return False, f"policy '{policy}' blocks command '{cmd}'"
+        return True, None
+
+
 class RemoteEngine:
     """Minimal remote execution client for NovaMesh-like workers."""
 
@@ -353,8 +421,12 @@ class NovaShell:
         self.wasm = WasmEngine()
         self.system = SystemEngine()
         self.events = EventBus()
+        self.fabric = NovaFabric()
+        self.policy = PolicyEngine()
         self.last_graph = PipelineGraph()
         self.vision = VisionServer(self)
+        self.current_policy = "open"
+        self.current_trace_id = ""
 
         self.commands: dict[str, Callable[[str, str, Any], CommandResult]] = {
             "py": self._run_python,
@@ -367,6 +439,12 @@ class NovaShell:
             "remote": self._run_remote,
             "ai": self._run_ai,
             "vision": self._run_vision,
+            "fabric": self._run_fabric,
+            "guard": self._run_guard,
+            "secure": self._run_secure,
+            "on": self._run_on,
+            "pack": self._run_pack,
+            "observe": self._run_observe,
             "watch": self._watch,
             "sys": self._run_system,
             "cd": self._cd,
@@ -399,6 +477,7 @@ class NovaShell:
 
     def _close_loop(self) -> None:
         self.vision.stop()
+        self.fabric.cleanup()
         if not self.loop.is_closed():
             self.loop.close()
 
@@ -612,6 +691,141 @@ class NovaShell:
             return CommandResult(output=("running\n" if running else "stopped\n"))
         return CommandResult(output="", error="usage: vision start|stop|status [port]")
 
+    def _run_fabric(self, args: str, _: str, __: Any) -> CommandResult:
+        parts = shlex.split(args)
+        if not parts:
+            return CommandResult(output="", error="usage: fabric put <text> | fabric get <handle>")
+        match parts[0]:
+            case "put":
+                value = args[len("put") :].strip()
+                return self.fabric.put(value)
+            case "get":
+                if len(parts) < 2:
+                    return CommandResult(output="", error="usage: fabric get <handle>")
+                return self.fabric.get(parts[1])
+            case _:
+                return CommandResult(output="", error="usage: fabric put <text> | fabric get <handle>")
+
+    def _run_guard(self, args: str, _: str, __: Any) -> CommandResult:
+        parts = shlex.split(args)
+        if not parts:
+            return CommandResult(output=f"current policy: {self.current_policy}\n")
+        match parts[0]:
+            case "set":
+                if len(parts) < 2:
+                    return CommandResult(output="", error="usage: guard set <policy>")
+                name = parts[1]
+                if name not in self.policy.policies:
+                    return CommandResult(output="", error=f"unknown policy: {name}")
+                self.current_policy = name
+                return CommandResult(output=f"policy set to {name}\n")
+            case "list":
+                return CommandResult(output="\n".join(sorted(self.policy.policies.keys())) + "\n")
+            case _:
+                return CommandResult(output="", error="usage: guard [list]|set <policy>")
+
+    def _run_secure(self, args: str, _: str, __: Any) -> CommandResult:
+        parts = shlex.split(args)
+        if len(parts) < 2:
+            return CommandResult(output="", error="usage: secure <policy> <command>")
+        policy_name = parts[0]
+        command = args[len(policy_name) :].strip()
+        allowed, reason = self.policy.is_allowed(policy_name, command)
+        if not allowed:
+            return CommandResult(output="", error=reason)
+        return self.route(command)
+
+    def _run_on(self, args: str, _: str, __: Any) -> CommandResult:
+        parts = shlex.split(args)
+        if len(parts) < 4 or parts[0] != "file":
+            return CommandResult(output="", error='usage: on file "<glob>" --timeout <seconds> "<pipeline with _>"')
+
+        pattern = parts[1]
+        timeout_s = 3.0
+        if "--timeout" in parts:
+            idx = parts.index("--timeout")
+            if idx + 1 < len(parts):
+                timeout_s = float(parts[idx + 1])
+
+        pipeline = parts[-1]
+        deadline = time.time() + timeout_s
+        seen: set[str] = set()
+        while time.time() < deadline:
+            matches = sorted(glob.glob(pattern))
+            new_matches = [m for m in matches if m not in seen]
+            if new_matches:
+                path = new_matches[0]
+                seen.add(path)
+                if "|" not in pipeline and (pipeline.startswith("py ") or pipeline.startswith("python ")):
+                    return self._route_single(pipeline, path, path)
+                command = pipeline.replace("_", shlex.quote(path))
+                return self.route(command)
+            time.sleep(0.05)
+
+        return CommandResult(output="", error="on file timeout reached")
+
+    def _run_pack(self, args: str, _: str, __: Any) -> CommandResult:
+        parts = shlex.split(args)
+        if len(parts) < 1:
+            return CommandResult(output="", error="usage: pack <script.ns> --output <bundle.npx> [--requirements req.txt]")
+
+        script_path = Path(parts[0])
+        output_path = Path("bundle.npx")
+        requirements_path: Path | None = None
+
+        i = 1
+        while i < len(parts):
+            if parts[i] == "--output" and i + 1 < len(parts):
+                output_path = Path(parts[i + 1])
+                i += 2
+                continue
+            if parts[i] == "--requirements" and i + 1 < len(parts):
+                requirements_path = Path(parts[i + 1])
+                i += 2
+                continue
+            return CommandResult(output="", error=f"unknown pack option: {parts[i]}")
+
+        if not script_path.exists():
+            return CommandResult(output="", error=f"script not found: {script_path}")
+
+        manifest = {
+            "script": script_path.name,
+            "created_at": time.time(),
+            "version": "0.7",
+        }
+        if requirements_path is not None:
+            manifest["requirements"] = requirements_path.name
+
+        with zipfile.ZipFile(output_path, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+            zf.write(script_path, arcname=script_path.name)
+            if requirements_path is not None and requirements_path.exists():
+                zf.write(requirements_path, arcname=requirements_path.name)
+            zf.writestr("manifest.json", json.dumps(manifest, ensure_ascii=False, indent=2))
+
+        return CommandResult(output=f"packed {output_path}\n", data={"bundle": str(output_path)}, data_type=PipelineType.OBJECT)
+
+    def _run_observe(self, args: str, _: str, __: Any) -> CommandResult:
+        parts = shlex.split(args)
+        if len(parts) < 2 or parts[0] != "run":
+            return CommandResult(output="", error="usage: observe run <pipeline>")
+
+        pipeline = args[len("run") :].strip()
+        trace_id = uuid.uuid4().hex[:12]
+        self.current_trace_id = trace_id
+        result = self.route(pipeline)
+        self.current_trace_id = ""
+
+        if result.error:
+            return result
+
+        stats = self._events("stats", "", None)
+        payload = {
+            "trace_id": trace_id,
+            "result_preview": result.output[:200],
+            "stats": stats.data if stats.data else {},
+        }
+        return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+
     def _run_data_load(self, args: str, _: str, __: Any) -> CommandResult:
         parts = shlex.split(args)
         if not parts:
@@ -759,6 +973,27 @@ class NovaShell:
         emit_event: bool = True,
         node_name: str | None = None,
     ) -> tuple[CommandResult, int, float]:
+        allowed, reason = self.policy.is_allowed(self.current_policy, stage)
+        if not allowed:
+            blocked = CommandResult(output="", error=reason)
+            if emit_event:
+                self.events.emit(
+                    {
+                        "stage": stage,
+                        "node": node_name or stage,
+                        "trace_id": self.current_trace_id,
+                        "error": reason,
+                        "output": "",
+                        "data_type": blocked.data_type.value,
+                        "duration_ms": "0.000",
+                        "rows_processed": "0",
+                        "cpu_percent": "0.0",
+                        "rss_mb": "0.0",
+                        "cost_estimate": "0.0",
+                    }
+                )
+            return blocked, 0, 0.0
+
         stage_started = time.perf_counter()
 
         if stage.startswith("parallel "):
@@ -771,6 +1006,7 @@ class NovaShell:
             result = self._route_single(stage, current_output, current_data)
 
         duration_ms = (time.perf_counter() - stage_started) * 1000
+        cpu_percent, rss_mb = self._sample_resources()
 
         rows_processed = 0
         if isinstance(current_data, list):
@@ -788,12 +1024,25 @@ class NovaShell:
                     "error": result.error or "",
                     "output": result.output[:200],
                     "data_type": result.data_type.value,
+                    "trace_id": self.current_trace_id,
                     "duration_ms": f"{duration_ms:.3f}",
                     "rows_processed": str(rows_processed),
+                    "cpu_percent": f"{cpu_percent:.2f}",
+                    "rss_mb": f"{rss_mb:.2f}",
+                    "cost_estimate": f"{duration_ms * 0.0001:.6f}",
                 }
             )
 
         return result, rows_processed, duration_ms
+
+    def _sample_resources(self) -> tuple[float, float]:
+        try:
+            import psutil
+
+            proc = psutil.Process(os.getpid())
+            return proc.cpu_percent(interval=0.0), proc.memory_info().rss / (1024 * 1024)
+        except Exception:
+            return 0.0, 0.0
 
     def _materialize_if_generator(self, result: CommandResult) -> CommandResult:
         if result.data_type != PipelineType.GENERATOR or result.data is None:
@@ -809,6 +1058,11 @@ class NovaShell:
             return CommandResult(output="", error=str(exc), data_type=PipelineType.GENERATOR)
 
     def _route_internal(self, command: str) -> CommandResult:
+        owns_trace = False
+        if not self.current_trace_id:
+            self.current_trace_id = uuid.uuid4().hex[:12]
+            owns_trace = True
+
         stages = self._split_pipeline(command)
         graph = self._build_pipeline_graph(stages)
         self.last_graph = graph
@@ -828,14 +1082,19 @@ class NovaShell:
                     node_name=node.name,
                 )
                 if result.error:
+                    if owns_trace:
+                        self.current_trace_id = ""
                     return result
                 current_output = result.output
                 current_data = result.data
                 current_type = result.data_type
 
-        return self._materialize_if_generator(
+        final_result = self._materialize_if_generator(
             CommandResult(output=current_output, data=current_data, data_type=current_type)
         )
+        if owns_trace:
+            self.current_trace_id = ""
+        return final_result
 
     async def route_async(self, command: str) -> CommandResult:
         return self._route_internal(command)
@@ -850,7 +1109,7 @@ class NovaShell:
     def repl(self) -> None:
         print("NovaShell 0.7 Compute Runtime")
         print(
-            "Commands: py | cpp | gpu | wasm | data | data.load | remote | ai | vision | watch | parallel | events | ns.exec | ns.run | sys | cd | pwd | help | exit"
+            "Commands: py | cpp | gpu | wasm | data | data.load | remote | ai | vision | fabric | guard | secure | on | pack | observe | watch | parallel | events | ns.exec | ns.run | sys | cd | pwd | help | exit"
         )
         print("Pipelines: cmd | watch file | parallel py ...\n")
 

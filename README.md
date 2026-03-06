@@ -1,39 +1,46 @@
 # Nova-shell
 
-Nova-shell ist ein **Compute-Runtime-Prototyp** mit Pipeline-Engine, NovaScript-DSL und polyglotten Engines.
+Nova-shell ist eine **Unified Compute & Data Orchestration Runtime** mit polyglotten Engines, Typed Pipelines, Streaming und NovaScript.
 
-## Neu: 5 strategische Erweiterungen
+## Implementierte 5 Enterprise-Erweiterungen
 
-1. **NovaMesh (Remote Workers)**
-   - Kommando: `remote <worker_url> <command>`
-   - Ermöglicht delegierte Stage-Ausführung über HTTP/JSON.
+### 1) NovaFabric — Distributed Zero-Copy Memory Bridge (MVP)
+- Neuer Typ: `PipelineType.SHARED_MEMORY`
+- Neuer Befehl: `fabric put <text>`, `fabric get <handle>`
+- Nutzt `multiprocessing.shared_memory` für handle-basierten Datentransport.
 
-2. **NovaFlow (Arrow / Zero-Copy-Vorbereitung)**
-   - Kommando: `data load <file.csv> --arrow`
-   - Nutzt (optional) `pyarrow` und übergibt ein Arrow-Table-Objekt im Pipeline-Transport.
+### 2) NovaGuard — Policy-as-Code Sandbox
+- Richtlinien: `open`, `minimal`, `offline`
+- Befehle: `guard list`, `guard set <policy>`, `secure <policy> <command>`
+- Enforcement erfolgt stage-weise in der Pipeline-Execution.
 
-3. **NovaShield (Wasm Isolation Layer)**
-   - Kommando: `wasm <module.wasm>`
-   - Führt Wasm-Module über `wasmtime` aus (wenn installiert).
+### 3) NovaStream — Reactive Event-Triggered Pipelines
+- Bestehend: `watch ...` (snapshot/follow)
+- Neu: `on file "<glob>" --timeout <sec> "<pipeline mit _>"`
+- Event-getriebener Trigger startet Pipeline bei Datei-Eingang.
 
-4. **NovaIntel (AI Pipeline Synthesis)**
-   - Kommando: `ai "<prompt>"`
-   - Erzeugt Pipeline-Vorschläge aus natürlicher Sprache als Einstiegspunkt.
+### 4) NovaPack — Hermetic Pipeline Bundling (OCI-ready foundation)
+- Befehl: `pack <script.ns> --output <bundle.npx> [--requirements req.txt]`
+- Erstellt ein Bundle mit Script + Manifest als transportierbares Artefakt.
 
-5. **NovaVision (Live Pipeline Inspection)**
-   - Kommandos: `vision start [port]`, `vision status`, `vision stop`
-   - Exponiert Runtime-Daten über HTTP (`/events`, `/graph`).
+### 5) NovaObserve — Distributed Tracing & Cost Profiling
+- Event-Payload enthält:
+  - `trace_id`, `stage`, `node`, `data_type`
+  - `duration_ms`, `rows_processed`
+  - `cpu_percent`, `rss_mb`, `cost_estimate`
+- Befehle: `events last|stats|clear`, `observe run <pipeline>`
 
-## Kernfeatures
+---
 
-- Python-Ausführung (`py`, `python`) mit persistentem Kontext
-- C++-Kompilierung/Ausführung (`cpp` via `g++`)
-- GPU-Kernel (`gpu`) via OpenCL (`pyopencl` + `numpy`)
-- Typed Pipelines über `CommandResult` + `PipelineType`
-- Streaming (`watch ...`) und Parallel-Fanout (`parallel ...`)
-- PipelineGraph/Node-Planung mit `py_chain`-Fusion
+## Weitere Plattform-Features
+
+- `py` / `python` mit persistentem Kontext
+- `cpp` (g++), `gpu` (pyopencl), `wasm` (wasmtime)
+- `remote <worker_url> <command>` (NovaMesh MVP)
+- `data load <csv> [--arrow]` (Arrow optional via `pyarrow`)
+- `vision start|status|stop` + HTTP-Endpunkte `/events`, `/graph`
+- PipelineGraph/PipelineNode mit Python-Stage-Fusion (`py_chain`)
 - NovaScript (`ns.exec`, `ns.run`)
-- Telemetrie über `events last|stats|clear`
 
 ## Quickstart
 
@@ -41,14 +48,23 @@ Nova-shell ist ein **Compute-Runtime-Prototyp** mit Pipeline-Engine, NovaScript-
 python nova_shell.py
 ```
 
-## Beispiele
+## Beispiel
 
 ```text
-nova> data load cities.csv --arrow
-nova> ai "average column A from csv"
-nova> vision start 8877
-nova> remote http://127.0.0.1:9000/execute py 1+1
-nova> wasm module.wasm
+nova> guard set minimal
+nova> secure minimal sys ls
+ERROR: policy 'minimal' blocks command 'sys'
+
+nova> fabric put hello
+psm_abc123
+nova> fabric get psm_abc123
+hello
+
+nova> on file "input/*.csv" --timeout 5 "data load _ | py len(_)"
+42
+
+nova> observe run "data load file.csv | py len(_)"
+{"trace_id":"...","stats":...}
 ```
 
 ## Tests

@@ -3,6 +3,7 @@ import tempfile
 import threading
 import time
 import unittest
+import zipfile
 from pathlib import Path
 
 from nova_shell import NovaShell, PipelineType
@@ -204,6 +205,64 @@ class NovaShellTests(unittest.TestCase):
     def test_remote_command_usage_error(self) -> None:
         result = self.shell.route("remote")
         self.assertIsNotNone(result.error)
+
+    def test_fabric_put_get_roundtrip(self) -> None:
+        put_result = self.shell.route("fabric put hello-fabric")
+        self.assertIsNone(put_result.error)
+        handle = put_result.output.strip()
+        get_result = self.shell.route(f"fabric get {handle}")
+        self.assertIsNone(get_result.error)
+        self.assertEqual(get_result.output.strip(), "hello-fabric")
+
+    def test_guard_policy_blocks_sys(self) -> None:
+        self.shell.route("guard set minimal")
+        result = self.shell.route("sys echo blocked")
+        self.assertIsNotNone(result.error)
+        self.assertIn("blocks", result.error)
+        self.shell.route("guard set open")
+
+    def test_secure_command_with_policy(self) -> None:
+        blocked = self.shell.route("secure minimal sys echo no")
+        self.assertIsNotNone(blocked.error)
+        allowed = self.shell.route("secure open py 1 + 1")
+        self.assertIsNone(allowed.error)
+        self.assertEqual(allowed.output.strip(), "2")
+
+    def test_on_file_trigger_pipeline(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            trigger = Path(tmp) / "in.csv"
+
+            def writer() -> None:
+                time.sleep(0.08)
+                trigger.write_text("a,b\n1,2\n", encoding="utf-8")
+
+            thread = threading.Thread(target=writer)
+            thread.start()
+            try:
+                cmd = f'on file "{tmp}/*.csv" --timeout 1.0 "py _.endswith(\'.csv\')"'
+                result = self.shell.route(cmd)
+            finally:
+                thread.join()
+
+            self.assertIsNone(result.error)
+            self.assertEqual(result.output.strip(), "True")
+
+    def test_pack_creates_bundle(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            script = Path(tmp) / "sample.ns"
+            out = Path(tmp) / "bundle.npx"
+            script.write_text("py 1+1\n", encoding="utf-8")
+            result = self.shell.route(f"pack {script} --output {out}")
+            self.assertIsNone(result.error)
+            self.assertTrue(out.exists())
+            with zipfile.ZipFile(out) as zf:
+                self.assertIn("manifest.json", zf.namelist())
+
+    def test_observe_run_returns_trace(self) -> None:
+        result = self.shell.route("observe run py 2 + 3")
+        self.assertIsNone(result.error)
+        payload = json.loads(result.output)
+        self.assertIn("trace_id", payload)
 
     def test_pipeline_graph_fuses_consecutive_python_stages(self) -> None:
         graph = self.shell._build_pipeline_graph(["py _.strip()", "py _.upper()", "sys echo ok"])
