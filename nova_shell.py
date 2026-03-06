@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import atexit
 import contextlib
+import csv
 import io
+import json
 import os
 import shlex
 import subprocess
@@ -74,6 +76,56 @@ class CppEngine:
             )
 
 
+class GPUEngine:
+    """Run OpenCL kernels when pyopencl is available."""
+
+    def run_kernel(self, kernel_file: str, pipeline_input: str = "") -> CommandResult:
+        try:
+            import pyopencl as cl
+            import numpy as np
+        except ImportError:
+            return CommandResult(output="", error="pyopencl and numpy are required for gpu commands")
+
+        try:
+            kernel_path = Path(kernel_file)
+            source = kernel_path.read_text(encoding="utf-8")
+            platform = cl.get_platforms()[0]
+            device = platform.get_devices()[0]
+            context = cl.Context([device])
+            queue = cl.CommandQueue(context)
+
+            program = cl.Program(context, source).build()
+            data = np.arange(10, dtype=np.float32)
+            if pipeline_input.strip():
+                parsed = [float(x) for x in pipeline_input.split()]
+                data = np.array(parsed, dtype=np.float32)
+
+            buffer = cl.Buffer(
+                context,
+                cl.mem_flags.READ_WRITE | cl.mem_flags.COPY_HOST_PTR,
+                hostbuf=data,
+            )
+            program.compute(queue, data.shape, None, buffer)
+            cl.enqueue_copy(queue, data, buffer)
+            return CommandResult(output=" ".join(map(str, data.tolist())) + "\n")
+        except Exception as exc:
+            return CommandResult(output="", error=str(exc))
+
+
+class DataEngine:
+    """Load and emit structured data for pipelines."""
+
+    def load_csv(self, file_path: str) -> CommandResult:
+        try:
+            rows: list[dict[str, str]] = []
+            with Path(file_path).open(newline="", encoding="utf-8") as handle:
+                reader = csv.DictReader(handle)
+                rows.extend(reader)
+            return CommandResult(output=json.dumps(rows, ensure_ascii=False) + "\n")
+        except Exception as exc:
+            return CommandResult(output="", error=str(exc))
+
+
 class SystemEngine:
     """Run host shell commands."""
 
@@ -91,21 +143,45 @@ class SystemEngine:
         )
 
 
+class EventBus:
+    def __init__(self) -> None:
+        self.subscribers: list[Callable[[dict[str, str]], None]] = []
+        self.events: list[dict[str, str]] = []
+
+    def subscribe(self, callback: Callable[[dict[str, str]], None]) -> None:
+        self.subscribers.append(callback)
+
+    def emit(self, data: dict[str, str]) -> None:
+        self.events.append(data)
+        for subscriber in self.subscribers:
+            subscriber(data)
+
+    def last(self) -> dict[str, str] | None:
+        return self.events[-1] if self.events else None
+
+
 class NovaShell:
     def __init__(self) -> None:
         self.cwd = Path.cwd()
         self.python = PythonEngine()
         self.cpp = CppEngine()
+        self.gpu = GPUEngine()
+        self.data = DataEngine()
         self.system = SystemEngine()
+        self.events = EventBus()
 
         self.commands: dict[str, Callable[[str, str], CommandResult]] = {
             "py": self._run_python,
             "python": self._run_python,
             "cpp": self._run_cpp,
+            "gpu": self._run_gpu,
+            "data": self._run_data,
+            "data.load": self._run_data_load,
             "sys": self._run_system,
             "cd": self._cd,
             "pwd": self._pwd,
             "help": self._help,
+            "events": self._events,
         }
 
         self._history_file = Path.home() / ".nova_shell_history"
@@ -166,11 +242,44 @@ class NovaShell:
         commands = "\n".join(sorted(self.commands.keys()))
         return CommandResult(output=f"Commands:\n{commands}\n")
 
+    def _events(self, args: str, _: str) -> CommandResult:
+        action = args.strip()
+        if action == "last":
+            last_event = self.events.last()
+            if last_event is None:
+                return CommandResult(output="No events\n")
+            return CommandResult(output=json.dumps(last_event, ensure_ascii=False) + "\n")
+        if action == "clear":
+            self.events.events.clear()
+            return CommandResult(output="events cleared\n")
+        return CommandResult(output="Usage: events last|clear\n")
+
     def _run_python(self, code: str, pipeline_input: str) -> CommandResult:
         return self.python.execute(code, pipeline_input)
 
     def _run_cpp(self, code: str, pipeline_input: str) -> CommandResult:
         return self.cpp.compile_and_run(code, pipeline_input)
+
+    def _run_gpu(self, args: str, pipeline_input: str) -> CommandResult:
+        kernel_file = args.strip()
+        if not kernel_file:
+            return CommandResult(output="", error="usage: gpu <kernel_file>")
+        return self.gpu.run_kernel(kernel_file, pipeline_input)
+
+    def _run_data_load(self, args: str, _: str) -> CommandResult:
+        file_path = args.strip()
+        if not file_path:
+            return CommandResult(output="", error="usage: data.load <csv_file>")
+        return self.data.load_csv(file_path)
+
+    def _run_data(self, args: str, _: str) -> CommandResult:
+        parts = shlex.split(args)
+        if not parts:
+            return CommandResult(output="", error="usage: data load <csv_file>")
+
+        if parts[0] == "load" and len(parts) >= 2:
+            return self.data.load_csv(parts[1])
+        return CommandResult(output="", error=f"unknown data command: {' '.join(parts)}")
 
     def _run_system(self, command: str, pipeline_input: str) -> CommandResult:
         return self.system.execute(command, pipeline_input)
@@ -224,6 +333,13 @@ class NovaShell:
 
         for stage in stages:
             result = self._route_single(stage, current_output)
+            self.events.emit(
+                {
+                    "stage": stage,
+                    "error": result.error or "",
+                    "output": result.output[:200],
+                }
+            )
             if result.error:
                 return result
             current_output = result.output
@@ -231,9 +347,9 @@ class NovaShell:
         return CommandResult(output=current_output)
 
     def repl(self) -> None:
-        print("NovaShell 0.3")
-        print("Commands: py | cpp | sys | cd | pwd | help | exit")
-        print("Pipelines: cmd | py ... | cmd\n")
+        print("NovaShell 0.4 Compute Runtime")
+        print("Commands: py | cpp | gpu | data | data.load | events | sys | cd | pwd | help | exit")
+        print("Pipelines: cmd | py ... | data load ...\n")
 
         while True:
             try:

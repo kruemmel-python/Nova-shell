@@ -1,12 +1,15 @@
 # Nova-shell
 
-Nova-shell ist ein **PowerShell-ähnlicher Hybrid-Prototyp** mit:
+Nova-shell ist jetzt ein **Compute-Runtime Shell-Prototyp**:
 
 - Python-Ausführung (`py`, `python`)
 - C++-Kompilierung und Ausführung (`cpp` via `g++`)
+- GPU-Kernel-Ausführung (`gpu`) via OpenCL (`pyopencl` + `numpy`)
+- Datenkommandos (`data load`, `data.load`) für CSV
+- Event-Stream über `events` (`last`, `clear`)
 - System-Command-Fallback (`sys` oder direkter Befehl)
 - Pipeline-Unterstützung (`cmd | py ...`) inkl. robuster Trennung bei zitierten Pipes
-- Built-in Commands (`cd`, `pwd`, `help`, `exit`)
+- Built-ins (`cd`, `pwd`, `help`, `exit`)
 - Plugin-System über `plugins/*.py`
 - Command-History (wenn `readline` verfügbar ist)
 
@@ -22,23 +25,35 @@ python nova_shell.py
 /home/user/project > py 5 * 5
 25
 
-/home/user/project > echo hallo | py _.strip().upper()
-HALLO
+/home/user/project > data load cities.csv | py _.count("name")
+42
 
-/home/user/project > py "a|b"
-a|b
+/home/user/project > gpu kernel.cl
+0.0 1.0 2.0 ...
 
-/home/user/project > cd ..
-/home/user > pwd
-/home/user
+/home/user/project > events last
+{"stage": "py 5 * 5", "error": "", "output": "25\n"}
 ```
 
 ## Architektur
 
-- `PythonEngine`: führt Snippets direkt aus (`eval`/`exec`), Pipeline-Input liegt in `_`.
-- `CppEngine`: schreibt temporäre `program.cpp`, kompiliert mit `g++ -std=c++20`, führt Binary aus.
-- `SystemEngine`: führt Host-Shell-Commands aus.
-- `NovaShell`: Routing per Pattern Matching, Pipelines, Built-ins, REPL und Plugin-Lader.
+- `PythonEngine`: `eval`/`exec`, Pipeline-Input in `_`
+- `CppEngine`: temp `program.cpp` + `g++ -std=c++20`
+- `GPUEngine`: OpenCL-Kernel-Ausführung über `pyopencl`
+- `DataEngine`: CSV-Loading mit JSON-Ausgabe
+- `SystemEngine`: Host-Shell-Commands
+- `EventBus`: Stage-Events für jede ausgeführte Pipeline-Stufe
+- `NovaShell`: Routing, Built-ins, Pipelines, REPL, Plugin-Loader
+
+## GPU Hinweis
+
+`gpu` benötigt:
+
+- `pyopencl`
+- `numpy`
+- einen verfügbaren OpenCL-Treiber / Device
+
+Wenn etwas fehlt, liefert der Command eine klare Fehlermeldung.
 
 ## Plugins
 
@@ -49,17 +64,10 @@ from nova_shell import CommandResult
 
 
 def register(shell):
-    def hello(args: str, _input: str) -> CommandResult:
-        return CommandResult(output=f"Hello {args or 'Plugin'}\n")
+    def train(args: str, _input: str) -> CommandResult:
+        return CommandResult(output=f"training model with {args}\n")
 
-    shell.register_command("hello", hello)
-```
-
-Dann in der Shell:
-
-```text
-nova> hello Welt
-Hello Welt
+    shell.register_command("ai.train", train)
 ```
 
 ## Tests
