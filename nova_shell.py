@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import atexit
+import asyncio
 import contextlib
 import csv
+import inspect
 import io
 import json
 import os
@@ -11,9 +13,9 @@ import subprocess
 import tempfile
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
+from enum import Enum
 from pathlib import Path
-from typing import Any, Callable
-import inspect
+from typing import Any, Callable, Iterable
 
 from novascript import NovaInterpreter, NovaParser
 
@@ -23,11 +25,21 @@ except ImportError:  # pragma: no cover - platform dependent
     readline = None
 
 
+class PipelineType(str, Enum):
+    TEXT = "text"
+    OBJECT = "object"
+    ARRAY = "array"
+    TEXT_STREAM = "text_stream"
+    OBJECT_STREAM = "object_stream"
+    ARRAY_STREAM = "array_stream"
+
+
 @dataclass
 class CommandResult:
     output: str
     data: Any = None
     error: str | None = None
+    data_type: PipelineType = PipelineType.TEXT
 
 
 class PythonEngine:
@@ -51,7 +63,13 @@ class PythonEngine:
 
             output = stdout_buffer.getvalue()
             data = self.globals.get("_")
-            return CommandResult(output=output, data=data)
+            if isinstance(data, list):
+                data_type = PipelineType.OBJECT_STREAM
+            elif isinstance(data, dict):
+                data_type = PipelineType.OBJECT
+            else:
+                data_type = PipelineType.TEXT
+            return CommandResult(output=output, data=data, data_type=data_type)
         except Exception as exc:
             return CommandResult(output="", error=str(exc))
 
@@ -117,7 +135,11 @@ class GPUEngine:
             )
             program.compute(queue, data.shape, None, buffer)
             cl.enqueue_copy(queue, data, buffer)
-            return CommandResult(output=" ".join(map(str, data.tolist())) + "\n", data=data.tolist())
+            return CommandResult(
+                output=" ".join(map(str, data.tolist())) + "\n",
+                data=data.tolist(),
+                data_type=PipelineType.ARRAY_STREAM,
+            )
         except Exception as exc:
             return CommandResult(output="", error=str(exc))
 
@@ -131,7 +153,7 @@ class DataEngine:
             with Path(file_path).open(newline="", encoding="utf-8") as handle:
                 reader = csv.DictReader(handle)
                 rows.extend(reader)
-            return CommandResult(output=json.dumps(rows, ensure_ascii=False) + "\n", data=rows)
+            return CommandResult(output=json.dumps(rows, ensure_ascii=False) + "\n", data=rows, data_type=PipelineType.OBJECT_STREAM)
         except Exception as exc:
             return CommandResult(output="", error=str(exc))
 
@@ -149,7 +171,9 @@ class SystemEngine:
         )
         return CommandResult(
             output=proc.stdout,
+            data=proc.stdout,
             error=proc.stderr if proc.stderr else None,
+            data_type=PipelineType.TEXT,
         )
 
 
@@ -187,6 +211,7 @@ class NovaShell:
             "gpu": self._run_gpu,
             "data": self._run_data,
             "data.load": self._run_data_load,
+            "watch": self._watch,
             "sys": self._run_system,
             "cd": self._cd,
             "pwd": self._pwd,
@@ -202,7 +227,6 @@ class NovaShell:
     def _init_history(self) -> None:
         if readline is None:
             return
-
         if self._history_file.exists():
             readline.read_history_file(self._history_file)
         readline.set_history_length(1_000)
@@ -235,15 +259,12 @@ class NovaShell:
 
     def _cd(self, path_arg: str, _: str, __: Any) -> CommandResult:
         target_text = path_arg.strip() or "~"
-
         try:
             target = Path(os.path.expanduser(target_text))
             if not target.is_absolute():
                 target = (self.cwd / target).resolve()
-
             if not target.exists() or not target.is_dir():
                 return CommandResult(output="", error=f"directory not found: {target_text}")
-
             os.chdir(target)
             self.cwd = target
             return CommandResult(output="")
@@ -251,7 +272,7 @@ class NovaShell:
             return CommandResult(output="", error=str(exc))
 
     def _pwd(self, _: str, __: str, ___: Any) -> CommandResult:
-        return CommandResult(output=f"{self.cwd}\n", data=str(self.cwd))
+        return CommandResult(output=f"{self.cwd}\n", data=str(self.cwd), data_type=PipelineType.TEXT)
 
     def _help(self, _: str, __: str, ___: Any) -> CommandResult:
         commands = "\n".join(sorted(self.commands.keys()))
@@ -263,11 +284,31 @@ class NovaShell:
             last_event = self.events.last()
             if last_event is None:
                 return CommandResult(output="No events\n")
-            return CommandResult(output=json.dumps(last_event, ensure_ascii=False) + "\n", data=last_event)
+            return CommandResult(output=json.dumps(last_event, ensure_ascii=False) + "\n", data=last_event, data_type=PipelineType.OBJECT)
         if action == "clear":
             self.events.events.clear()
             return CommandResult(output="events cleared\n")
         return CommandResult(output="Usage: events last|clear\n")
+
+    def _watch(self, args: str, _: str, __: Any) -> CommandResult:
+        parts = shlex.split(args)
+        if not parts:
+            return CommandResult(output="", error="usage: watch <file> [--lines N]")
+
+        file_path = Path(parts[0])
+        lines_count = 10
+        if len(parts) == 3 and parts[1] == "--lines":
+            lines_count = int(parts[2])
+
+        if not file_path.exists():
+            return CommandResult(output="", error=f"file not found: {file_path}")
+
+        lines = file_path.read_text(encoding="utf-8").splitlines()
+        selected = lines[-lines_count:]
+        output = "\n".join(selected)
+        if output:
+            output += "\n"
+        return CommandResult(output=output, data=selected, data_type=PipelineType.TEXT_STREAM)
 
     def _normalize_inline_script(self, source: str) -> str:
         flattened = source.replace(";", "\n")
@@ -278,12 +319,10 @@ class NovaShell:
             statement = raw.strip()
             if not statement:
                 continue
-
             if previous_was_block_header:
                 normalized_lines.append(f"    {statement}")
             else:
                 normalized_lines.append(statement)
-
             previous_was_block_header = statement.endswith(":")
 
         return "\n".join(normalized_lines)
@@ -292,7 +331,6 @@ class NovaShell:
         source = script.strip()
         if not source:
             return CommandResult(output="", error="usage: ns.exec <inline_script>")
-
         try:
             parser = NovaParser()
             interpreter = NovaInterpreter(self)
@@ -338,7 +376,6 @@ class NovaShell:
         parts = shlex.split(args)
         if not parts:
             return CommandResult(output="", error="usage: data load <csv_file>")
-
         if parts[0] == "load" and len(parts) >= 2:
             return self.data.load_csv(parts[1])
         return CommandResult(output="", error=f"unknown data command: {' '.join(parts)}")
@@ -399,10 +436,7 @@ class NovaShell:
             return CommandResult(output="")
 
         def run_item(item: Any) -> CommandResult:
-            if isinstance(item, str):
-                item_text = item
-            else:
-                item_text = json.dumps(item, ensure_ascii=False)
+            item_text = item if isinstance(item, str) else json.dumps(item, ensure_ascii=False)
             return self._route_single(target, item_text, item)
 
         with ThreadPoolExecutor() as executor:
@@ -414,39 +448,63 @@ class NovaShell:
 
         merged_output = "".join(result.output for result in results)
         merged_data = [result.data for result in results]
-        return CommandResult(output=merged_output, data=merged_data)
+        return CommandResult(output=merged_output, data=merged_data, data_type=PipelineType.OBJECT_STREAM)
 
-    def route(self, command: str) -> CommandResult:
+    def _is_stream_type(self, data_type: PipelineType) -> bool:
+        return data_type in {PipelineType.TEXT_STREAM}
+
+    def _stage_over_stream(self, stage: str, stream_data: Iterable[Any]) -> CommandResult:
+        outputs: list[str] = []
+        collected_data: list[Any] = []
+        for item in stream_data:
+            item_text = item if isinstance(item, str) else json.dumps(item, ensure_ascii=False)
+            result = self._route_single(stage, item_text, item)
+            if result.error:
+                return result
+            outputs.append(result.output)
+            collected_data.append(result.data)
+
+        return CommandResult(output="".join(outputs), data=collected_data, data_type=PipelineType.OBJECT_STREAM)
+
+    async def route_async(self, command: str) -> CommandResult:
         stages = self._split_pipeline(command)
         current_output = ""
         current_data: Any = None
+        current_type = PipelineType.TEXT
 
         for stage in stages:
             if stage.startswith("parallel "):
-                result = self._parallel_stage(stage, current_output, current_data)
+                result = await asyncio.to_thread(self._parallel_stage, stage, current_output, current_data)
+            elif self._is_stream_type(current_type) and isinstance(current_data, Iterable) and not isinstance(current_data, (str, bytes, dict)):
+                result = await asyncio.to_thread(self._stage_over_stream, stage, current_data)
             else:
-                result = self._route_single(stage, current_output, current_data)
+                result = await asyncio.to_thread(self._route_single, stage, current_output, current_data)
 
             self.events.emit(
                 {
                     "stage": stage,
                     "error": result.error or "",
                     "output": result.output[:200],
+                    "data_type": result.data_type.value,
                 }
             )
             if result.error:
                 return result
             current_output = result.output
             current_data = result.data
+            current_type = result.data_type
 
-        return CommandResult(output=current_output, data=current_data)
+        return CommandResult(output=current_output, data=current_data, data_type=current_type)
+
+    def route(self, command: str) -> CommandResult:
+        return asyncio.run(self.route_async(command))
 
     def repl(self) -> None:
-        print("NovaShell 0.5 Compute Runtime")
+        print("NovaShell 0.6 Compute Runtime")
         print(
-            "Commands: py | cpp | gpu | data | data.load | parallel | events | ns.exec | ns.run | sys | cd | pwd | help | exit"
+            "Commands: py | cpp | gpu | data | data.load | watch | parallel | events | ns.exec | ns.run | sys | cd | pwd | help | exit"
         )
-        print("Pipelines: cmd | py ... | parallel py ...\n")
+        print("Pipelines: cmd | watch file | parallel py ...\n")
 
         while True:
             try:

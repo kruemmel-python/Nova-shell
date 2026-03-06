@@ -3,7 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from nova_shell import NovaShell
+from nova_shell import NovaShell, PipelineType
 from novascript import Assignment, ForLoop, IfBlock, NovaInterpreter, NovaParser
 
 
@@ -59,6 +59,7 @@ class NovaShellTests(unittest.TestCase):
         self.assertIn("events", result.output)
         self.assertIn("ns.exec", result.output)
         self.assertIn("ns.run", result.output)
+        self.assertIn("watch", result.output)
 
     def test_data_load_csv_object_pipeline(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -70,14 +71,23 @@ class NovaShellTests(unittest.TestCase):
             parsed = json.loads(result.output)
             self.assertEqual(len(parsed), 2)
             self.assertEqual(result.data[0]["name"], "a")
+            self.assertEqual(result.data_type, PipelineType.OBJECT_STREAM)
 
             piped = self.shell.route(f"data load {csv_file} | py len(_)")
             self.assertEqual(piped.output.strip(), "2")
 
     def test_parallel_pipeline(self) -> None:
-        result = self.shell.route("printf 'a\\nb\\n' | parallel py _.upper()")
+        result = self.shell.route("printf 'a\nb\n' | parallel py _.upper()")
         self.assertIsNone(result.error)
         self.assertEqual(result.output.strip().splitlines(), ["A", "B"])
+
+    def test_watch_stream_pipeline(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            f = Path(tmp) / "logs.txt"
+            f.write_text("ok\nerror\nwarn\n", encoding="utf-8")
+            result = self.shell.route(f"watch {f} --lines 2 | py _.upper()")
+            self.assertIsNone(result.error)
+            self.assertEqual(result.output.strip().splitlines(), ["ERROR", "WARN"])
 
     def test_events_last(self) -> None:
         self.shell.route("py 40 + 2")
