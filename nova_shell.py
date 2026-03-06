@@ -1,14 +1,20 @@
 from __future__ import annotations
 
+import atexit
 import contextlib
 import io
+import os
 import shlex
 import subprocess
-import sys
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable
+
+try:
+    import readline
+except ImportError:  # pragma: no cover - platform dependent
+    readline = None
 
 
 @dataclass
@@ -26,7 +32,6 @@ class PythonEngine:
 
         try:
             with contextlib.redirect_stdout(stdout_buffer):
-                # Try eval first for concise expressions (e.g. py len(_))
                 try:
                     value = eval(code, {}, local_context)
                     if value is not None:
@@ -34,9 +39,8 @@ class PythonEngine:
                 except SyntaxError:
                     exec(code, {}, local_context)
 
-            output = stdout_buffer.getvalue()
-            return CommandResult(output=output)
-        except Exception as exc:  # runtime errors should not kill shell
+            return CommandResult(output=stdout_buffer.getvalue())
+        except Exception as exc:
             return CommandResult(output="", error=str(exc))
 
 
@@ -55,7 +59,6 @@ class CppEngine:
                 capture_output=True,
                 text=True,
             )
-
             if compile_proc.returncode != 0:
                 return CommandResult(output="", error=compile_proc.stderr)
 
@@ -90,6 +93,7 @@ class SystemEngine:
 
 class NovaShell:
     def __init__(self) -> None:
+        self.cwd = Path.cwd()
         self.python = PythonEngine()
         self.cpp = CppEngine()
         self.system = SystemEngine()
@@ -99,7 +103,28 @@ class NovaShell:
             "python": self._run_python,
             "cpp": self._run_cpp,
             "sys": self._run_system,
+            "cd": self._cd,
+            "pwd": self._pwd,
+            "help": self._help,
         }
+
+        self._history_file = Path.home() / ".nova_shell_history"
+        self._init_history()
+
+    def _init_history(self) -> None:
+        if readline is None:
+            return
+
+        if self._history_file.exists():
+            readline.read_history_file(self._history_file)
+        readline.set_history_length(1_000)
+        atexit.register(self._save_history)
+
+    def _save_history(self) -> None:
+        if readline is None:
+            return
+
+        readline.write_history_file(self._history_file)
 
     def register_command(self, name: str, handler: Callable[[str, str], CommandResult]) -> None:
         self.commands[name] = handler
@@ -117,6 +142,30 @@ class NovaShell:
             if callable(register):
                 register(self)
 
+    def _cd(self, path_arg: str, _: str) -> CommandResult:
+        target_text = path_arg.strip() or "~"
+
+        try:
+            target = Path(os.path.expanduser(target_text))
+            if not target.is_absolute():
+                target = (self.cwd / target).resolve()
+
+            if not target.exists() or not target.is_dir():
+                return CommandResult(output="", error=f"directory not found: {target_text}")
+
+            os.chdir(target)
+            self.cwd = target
+            return CommandResult(output="")
+        except Exception as exc:
+            return CommandResult(output="", error=str(exc))
+
+    def _pwd(self, _: str, __: str) -> CommandResult:
+        return CommandResult(output=f"{self.cwd}\n")
+
+    def _help(self, _: str, __: str) -> CommandResult:
+        commands = "\n".join(sorted(self.commands.keys()))
+        return CommandResult(output=f"Commands:\n{commands}\n")
+
     def _run_python(self, code: str, pipeline_input: str) -> CommandResult:
         return self.python.execute(code, pipeline_input)
 
@@ -125,6 +174,33 @@ class NovaShell:
 
     def _run_system(self, command: str, pipeline_input: str) -> CommandResult:
         return self.system.execute(command, pipeline_input)
+
+    def _split_pipeline(self, command: str) -> list[str]:
+        stages: list[str] = []
+        current: list[str] = []
+        in_single = False
+        in_double = False
+
+        for char in command:
+            if char == "'" and not in_double:
+                in_single = not in_single
+            elif char == '"' and not in_single:
+                in_double = not in_double
+
+            if char == "|" and not in_single and not in_double:
+                stage = "".join(current).strip()
+                if stage:
+                    stages.append(stage)
+                current = []
+                continue
+
+            current.append(char)
+
+        tail = "".join(current).strip()
+        if tail:
+            stages.append(tail)
+
+        return stages
 
     def _route_single(self, command: str, pipeline_input: str = "") -> CommandResult:
         parts = shlex.split(command)
@@ -143,30 +219,25 @@ class NovaShell:
                 return self._run_system(command, pipeline_input)
 
     def route(self, command: str) -> CommandResult:
-        """Execute pipelines like `ls | py len(_)`."""
-        stages = [stage.strip() for stage in command.split("|")]
+        stages = self._split_pipeline(command)
         current_output = ""
-        current_error: str | None = None
 
         for stage in stages:
-            if not stage:
-                continue
             result = self._route_single(stage, current_output)
-            current_output = result.output
             if result.error:
-                current_error = result.error
-                break
+                return result
+            current_output = result.output
 
-        return CommandResult(output=current_output, error=current_error)
+        return CommandResult(output=current_output)
 
     def repl(self) -> None:
-        print("NovaShell 0.2")
-        print("Commands: py | cpp | sys | exit")
-        print("Pipelines: cmd | py ... | cmd\\n")
+        print("NovaShell 0.3")
+        print("Commands: py | cpp | sys | cd | pwd | help | exit")
+        print("Pipelines: cmd | py ... | cmd\n")
 
         while True:
             try:
-                command = input("nova> ").strip()
+                command = input(f"{self.cwd} > ").strip()
                 if not command:
                     continue
 
