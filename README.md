@@ -1,20 +1,39 @@
 # Nova-shell
 
-Nova-shell ist ein **Compute-Runtime-Prototyp**: eine Shell mit Pipeline-Engine, Typed Streams, Execution-Graph und NovaScript-DSL.
+Nova-shell ist ein **Compute-Runtime-Prototyp** mit Pipeline-Engine, NovaScript-DSL und polyglotten Engines.
 
-## Überblick
+## Neu: 5 strategische Erweiterungen
 
-Nova-shell kombiniert:
+1. **NovaMesh (Remote Workers)**
+   - Kommando: `remote <worker_url> <command>`
+   - Ermöglicht delegierte Stage-Ausführung über HTTP/JSON.
 
-- klassische Shell-Kommandos (`sys` / Fallback)
-- Python-Execution mit persistentem Kontext (`py`, `python`)
-- C++-Compile/Run (`cpp`)
-- GPU-Kernel-Execution (`gpu`, optional über OpenCL)
-- Data-Pipelines (`data load`, `data.load`)
-- Stream/Follower-Pipelines (`watch`)
-- Parallel-Fanout (`parallel ...`)
-- Pipeline-Telemetrie (`events last|stats|clear`)
-- Mini-DSL (`ns.exec`, `ns.run`)
+2. **NovaFlow (Arrow / Zero-Copy-Vorbereitung)**
+   - Kommando: `data load <file.csv> --arrow`
+   - Nutzt (optional) `pyarrow` und übergibt ein Arrow-Table-Objekt im Pipeline-Transport.
+
+3. **NovaShield (Wasm Isolation Layer)**
+   - Kommando: `wasm <module.wasm>`
+   - Führt Wasm-Module über `wasmtime` aus (wenn installiert).
+
+4. **NovaIntel (AI Pipeline Synthesis)**
+   - Kommando: `ai "<prompt>"`
+   - Erzeugt Pipeline-Vorschläge aus natürlicher Sprache als Einstiegspunkt.
+
+5. **NovaVision (Live Pipeline Inspection)**
+   - Kommandos: `vision start [port]`, `vision status`, `vision stop`
+   - Exponiert Runtime-Daten über HTTP (`/events`, `/graph`).
+
+## Kernfeatures
+
+- Python-Ausführung (`py`, `python`) mit persistentem Kontext
+- C++-Kompilierung/Ausführung (`cpp` via `g++`)
+- GPU-Kernel (`gpu`) via OpenCL (`pyopencl` + `numpy`)
+- Typed Pipelines über `CommandResult` + `PipelineType`
+- Streaming (`watch ...`) und Parallel-Fanout (`parallel ...`)
+- PipelineGraph/Node-Planung mit `py_chain`-Fusion
+- NovaScript (`ns.exec`, `ns.run`)
+- Telemetrie über `events last|stats|clear`
 
 ## Quickstart
 
@@ -22,74 +41,15 @@ Nova-shell kombiniert:
 python nova_shell.py
 ```
 
-## Wichtige Commands
-
-- `py <code>` / `python <code>` – Python ausführen (mit persistentem `_` + Globals)
-- `cpp <code>` – C++ kompilieren und ausführen (`g++` erforderlich)
-- `gpu <kernel.cl>` – OpenCL-Kernel ausführen (`pyopencl` + `numpy` erforderlich)
-- `data load <file.csv>` – CSV laden
-- `watch <file> --lines N` – letzte N Zeilen als Stream
-- `watch <file> --follow-seconds S` – tail-artiger Follow-Stream
-- `parallel <stage>` – Stage parallel auf Stream-Items ausführen
-- `events last|stats|clear` – Telemetrie anzeigen/aggregieren/leeren
-- `ns.exec <script>` / `ns.run <file.ns>` – NovaScript ausführen
-- `cd`, `pwd`, `help`, `exit`
-
-## Pipeline-Beispiele
+## Beispiele
 
 ```text
-nova> py x = 10
-nova> py x + 5
-15
-
-nova> data load cities.csv | py len(_)
-42
-
-nova> watch logs.txt --follow-seconds 2 | py _.upper()
-...
-
-nova> printf 'a\nb\n' | parallel py _.upper()
-A
-B
+nova> data load cities.csv --arrow
+nova> ai "average column A from csv"
+nova> vision start 8877
+nova> remote http://127.0.0.1:9000/execute py 1+1
+nova> wasm module.wasm
 ```
-
-## Typed Pipeline Model
-
-`CommandResult` transportiert:
-
-- `output: str`
-- `data: Any`
-- `error: str | None`
-- `data_type: PipelineType`
-
-Pipeline-Typen umfassen u. a. `TEXT`, `OBJECT`, `TEXT_STREAM`, `GENERATOR`.
-Generator-Pipelines bleiben zwischen Stages lazy und werden am Ende materialisiert.
-
-## Execution Graph + Optimizer
-
-Nova-shell baut intern einen `PipelineGraph` aus `PipelineNode`s.
-Aufeinanderfolgende Python-Stages werden als `py_chain` geplant (Stage-Fusion auf Plan-Ebene), bevor die Ausführung läuft.
-
-## Telemetrie
-
-Events enthalten u. a.:
-
-- `stage`
-- `node`
-- `data_type`
-- `duration_ms`
-- `rows_processed`
-
-Mit `events stats` bekommst du aggregierte Kennzahlen wie durchschnittliche Stage-Dauer.
-
-## NovaScript DSL (kurz)
-
-Unterstützt aktuell:
-
-- Assignment: `x = py 5*5`
-- For-Loop (4 Spaces eingerückt)
-- If-Block (4 Spaces eingerückt)
-- Variablen-Injection via `$name`
 
 ## Tests
 

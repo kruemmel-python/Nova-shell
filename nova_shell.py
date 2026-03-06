@@ -6,6 +6,7 @@ import contextlib
 import csv
 import inspect
 import io
+import http.server
 import threading
 import time
 import json
@@ -13,6 +14,8 @@ import os
 import shlex
 import subprocess
 import tempfile
+import urllib.error
+import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from enum import Enum
@@ -35,6 +38,7 @@ class PipelineType(str, Enum):
     OBJECT_STREAM = "object_stream"
     ARRAY_STREAM = "array_stream"
     GENERATOR = "generator"
+    ARROW_TABLE = "arrow_table"
 
 
 @dataclass
@@ -176,6 +180,22 @@ class DataEngine:
         except Exception as exc:
             return CommandResult(output="", error=str(exc))
 
+    def load_csv_arrow(self, file_path: str) -> CommandResult:
+        try:
+            import pyarrow.csv as pacsv
+        except ImportError:
+            return CommandResult(output="", error="pyarrow is required for arrow mode")
+
+        try:
+            table = pacsv.read_csv(file_path)
+            return CommandResult(
+                output=f"ArrowTable rows={table.num_rows} cols={table.num_columns}\n",
+                data=table,
+                data_type=PipelineType.ARROW_TABLE,
+            )
+        except Exception as exc:
+            return CommandResult(output="", error=str(exc))
+
 
 class SystemEngine:
     """Run host shell commands."""
@@ -213,6 +233,115 @@ class EventBus:
         return self.events[-1] if self.events else None
 
 
+class RemoteEngine:
+    """Minimal remote execution client for NovaMesh-like workers."""
+
+    def execute(self, worker_url: str, command: str) -> CommandResult:
+        payload = json.dumps({"command": command}).encode("utf-8")
+        request = urllib.request.Request(
+            worker_url,
+            data=payload,
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=10) as response:
+                body = json.loads(response.read().decode("utf-8"))
+            return CommandResult(
+                output=body.get("output", ""),
+                data=body.get("data"),
+                error=body.get("error"),
+                data_type=PipelineType(body.get("data_type", PipelineType.TEXT.value)),
+            )
+        except urllib.error.URLError as exc:
+            return CommandResult(output="", error=f"remote worker error: {exc}")
+        except Exception as exc:
+            return CommandResult(output="", error=str(exc))
+
+
+class WasmEngine:
+    """Execute WebAssembly modules via wasmtime when available."""
+
+    def execute(self, wasm_file: str) -> CommandResult:
+        try:
+            import wasmtime
+        except ImportError:
+            return CommandResult(output="", error="wasmtime is required for wasm commands")
+
+        try:
+            store = wasmtime.Store()
+            module = wasmtime.Module.from_file(store.engine, wasm_file)
+            linker = wasmtime.Linker(store.engine)
+            instance = linker.instantiate(store, module)
+            run = instance.exports(store).get("run")
+            if run is None:
+                return CommandResult(output="", error="wasm module must export function 'run'")
+            value = run(store)
+            return CommandResult(output=f"{value}\n", data=value, data_type=PipelineType.OBJECT)
+        except Exception as exc:
+            return CommandResult(output="", error=str(exc))
+
+
+class VisionServer:
+    """Small HTTP server to inspect runtime events and graph state."""
+
+    def __init__(self, shell: "NovaShell") -> None:
+        self.shell = shell
+        self._server: http.server.ThreadingHTTPServer | None = None
+        self._thread: threading.Thread | None = None
+
+    def start(self, host: str = "127.0.0.1", port: int = 8765) -> CommandResult:
+        if self._server is not None:
+            return CommandResult(output=f"vision already running on http://{host}:{port}\n")
+
+        shell = self.shell
+
+        class Handler(http.server.BaseHTTPRequestHandler):
+            def do_GET(self) -> None:  # noqa: N802
+                if self.path == "/events":
+                    data = shell.events.events
+                elif self.path == "/graph":
+                    data = {
+                        "nodes": [
+                            {"name": node.name, "stages": node.stages, "parallel": node.parallel}
+                            for node in shell.last_graph.nodes
+                        ]
+                    }
+                else:
+                    self.send_response(404)
+                    self.end_headers()
+                    return
+
+                body = json.dumps(data, ensure_ascii=False).encode("utf-8")
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+
+            def log_message(self, format: str, *args: Any) -> None:  # noqa: A003
+                return
+
+        try:
+            self._server = http.server.ThreadingHTTPServer((host, port), Handler)
+            self._thread = threading.Thread(target=self._server.serve_forever, daemon=True)
+            self._thread.start()
+            return CommandResult(output=f"vision started on http://{host}:{port}\n")
+        except Exception as exc:
+            self._server = None
+            self._thread = None
+            return CommandResult(output="", error=str(exc))
+
+    def stop(self) -> CommandResult:
+        if self._server is None:
+            return CommandResult(output="vision not running\n")
+        self._server.shutdown()
+        self._server.server_close()
+        self._server = None
+        self._thread = None
+        return CommandResult(output="vision stopped\n")
+
+
 class NovaShell:
     def __init__(self) -> None:
         self.cwd = Path.cwd()
@@ -220,16 +349,24 @@ class NovaShell:
         self.cpp = CppEngine()
         self.gpu = GPUEngine()
         self.data = DataEngine()
+        self.remote = RemoteEngine()
+        self.wasm = WasmEngine()
         self.system = SystemEngine()
         self.events = EventBus()
+        self.last_graph = PipelineGraph()
+        self.vision = VisionServer(self)
 
         self.commands: dict[str, Callable[[str, str, Any], CommandResult]] = {
             "py": self._run_python,
             "python": self._run_python,
             "cpp": self._run_cpp,
             "gpu": self._run_gpu,
+            "wasm": self._run_wasm,
             "data": self._run_data,
             "data.load": self._run_data_load,
+            "remote": self._run_remote,
+            "ai": self._run_ai,
+            "vision": self._run_vision,
             "watch": self._watch,
             "sys": self._run_system,
             "cd": self._cd,
@@ -261,6 +398,7 @@ class NovaShell:
         readline.write_history_file(self._history_file)
 
     def _close_loop(self) -> None:
+        self.vision.stop()
         if not self.loop.is_closed():
             self.loop.close()
 
@@ -430,17 +568,66 @@ class NovaShell:
             return CommandResult(output="", error="usage: gpu <kernel_file>")
         return self.gpu.run_kernel(kernel_file, pipeline_input)
 
+    def _run_wasm(self, args: str, _: str, __: Any) -> CommandResult:
+        wasm_file = args.strip()
+        if not wasm_file:
+            return CommandResult(output="", error="usage: wasm <module.wasm>")
+        return self.wasm.execute(wasm_file)
+
+    def _run_remote(self, args: str, _: str, __: Any) -> CommandResult:
+        parts = shlex.split(args)
+        if len(parts) < 2:
+            return CommandResult(output="", error="usage: remote <worker_url> <command>")
+        worker_url = parts[0]
+        command = args[len(worker_url) :].strip()
+        return self.remote.execute(worker_url, command)
+
+    def _run_ai(self, args: str, _: str, __: Any) -> CommandResult:
+        prompt = args.strip().strip('"')
+        if not prompt:
+            return CommandResult(output="", error="usage: ai \"<prompt>\"")
+
+        lowered = prompt.lower()
+        if "csv" in lowered and "average" in lowered:
+            suggestion = "data load file.csv | py sum(float(r['A']) for r in _) / len(_)"
+        elif "anomal" in lowered or "error" in lowered:
+            suggestion = "watch logs.txt --follow-seconds 10 | py _.lower()"
+        else:
+            suggestion = "py # TODO: generated pipeline"
+
+        return CommandResult(output=f"{suggestion}\n", data={"pipeline": suggestion}, data_type=PipelineType.OBJECT)
+
+    def _run_vision(self, args: str, _: str, __: Any) -> CommandResult:
+        parts = shlex.split(args)
+        if not parts:
+            return CommandResult(output="", error="usage: vision start|stop|status [port]")
+        action = parts[0]
+        if action == "start":
+            port = int(parts[1]) if len(parts) > 1 else 8765
+            return self.vision.start(port=port)
+        if action == "stop":
+            return self.vision.stop()
+        if action == "status":
+            running = self.vision._server is not None
+            return CommandResult(output=("running\n" if running else "stopped\n"))
+        return CommandResult(output="", error="usage: vision start|stop|status [port]")
+
     def _run_data_load(self, args: str, _: str, __: Any) -> CommandResult:
-        file_path = args.strip()
-        if not file_path:
-            return CommandResult(output="", error="usage: data.load <csv_file>")
+        parts = shlex.split(args)
+        if not parts:
+            return CommandResult(output="", error="usage: data.load <csv_file> [--arrow]")
+        file_path = parts[0]
+        if len(parts) > 1 and parts[1] == "--arrow":
+            return self.data.load_csv_arrow(file_path)
         return self.data.load_csv(file_path)
 
     def _run_data(self, args: str, _: str, __: Any) -> CommandResult:
         parts = shlex.split(args)
         if not parts:
-            return CommandResult(output="", error="usage: data load <csv_file>")
+            return CommandResult(output="", error="usage: data load <csv_file> [--arrow]")
         if parts[0] == "load" and len(parts) >= 2:
+            if len(parts) > 2 and parts[2] == "--arrow":
+                return self.data.load_csv_arrow(parts[1])
             return self.data.load_csv(parts[1])
         return CommandResult(output="", error=f"unknown data command: {' '.join(parts)}")
 
@@ -624,6 +811,7 @@ class NovaShell:
     def _route_internal(self, command: str) -> CommandResult:
         stages = self._split_pipeline(command)
         graph = self._build_pipeline_graph(stages)
+        self.last_graph = graph
         current_output = ""
         current_data: Any = None
         current_type = PipelineType.TEXT
@@ -662,7 +850,7 @@ class NovaShell:
     def repl(self) -> None:
         print("NovaShell 0.7 Compute Runtime")
         print(
-            "Commands: py | cpp | gpu | data | data.load | watch | parallel | events | ns.exec | ns.run | sys | cd | pwd | help | exit"
+            "Commands: py | cpp | gpu | wasm | data | data.load | remote | ai | vision | watch | parallel | events | ns.exec | ns.run | sys | cd | pwd | help | exit"
         )
         print("Pipelines: cmd | watch file | parallel py ...\n")
 

@@ -174,6 +174,37 @@ class NovaShellTests(unittest.TestCase):
         self.assertIn("duration_ms_avg", stats)
         self.assertIn("rows_processed_total", stats)
 
+    def test_data_load_arrow_mode_missing_dependency_or_success(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            csv_file = Path(tmp) / "items.csv"
+            csv_file.write_text("name,value\na,1\n", encoding="utf-8")
+            result = self.shell.route(f"data load {csv_file} --arrow")
+            if result.error is None:
+                self.assertIn("ArrowTable", result.output)
+            else:
+                self.assertIn("pyarrow", result.error)
+
+    def test_wasm_command_missing_dependency_or_file_error(self) -> None:
+        result = self.shell.route("wasm does_not_exist.wasm")
+        self.assertIsNotNone(result.error)
+
+    def test_ai_synthesis_command(self) -> None:
+        result = self.shell.route('ai "calculate csv average"')
+        self.assertIsNone(result.error)
+        self.assertIn("data load", result.output)
+
+    def test_vision_server_lifecycle(self) -> None:
+        start = self.shell.route("vision start 8877")
+        self.assertIsNone(start.error)
+        status = self.shell.route("vision status")
+        self.assertIn("running", status.output)
+        stop = self.shell.route("vision stop")
+        self.assertIsNone(stop.error)
+
+    def test_remote_command_usage_error(self) -> None:
+        result = self.shell.route("remote")
+        self.assertIsNotNone(result.error)
+
     def test_pipeline_graph_fuses_consecutive_python_stages(self) -> None:
         graph = self.shell._build_pipeline_graph(["py _.strip()", "py _.upper()", "sys echo ok"])
         self.assertEqual(len(graph.nodes), 2)
