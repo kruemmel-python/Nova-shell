@@ -9,9 +9,11 @@ import os
 import shlex
 import subprocess
 import tempfile
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable
+import inspect
 
 from novascript import NovaInterpreter, NovaParser
 
@@ -24,26 +26,32 @@ except ImportError:  # pragma: no cover - platform dependent
 @dataclass
 class CommandResult:
     output: str
+    data: Any = None
     error: str | None = None
 
 
 class PythonEngine:
-    """Execute Python snippets with optional pipeline input."""
+    """Execute Python snippets with optional pipeline input and persistent globals."""
 
-    def execute(self, code: str, pipeline_input: str = "") -> CommandResult:
-        local_context: dict[str, Any] = {"_": pipeline_input}
+    def __init__(self) -> None:
+        self.globals: dict[str, Any] = {}
+
+    def execute(self, code: str, pipeline_input: str = "", pipeline_data: Any = None) -> CommandResult:
+        self.globals["_"] = pipeline_data if pipeline_data is not None else pipeline_input
         stdout_buffer = io.StringIO()
 
         try:
             with contextlib.redirect_stdout(stdout_buffer):
                 try:
-                    value = eval(code, {}, local_context)
+                    value = eval(code, self.globals, self.globals)
                     if value is not None:
                         print(value)
                 except SyntaxError:
-                    exec(code, {}, local_context)
+                    exec(code, self.globals, self.globals)
 
-            return CommandResult(output=stdout_buffer.getvalue())
+            output = stdout_buffer.getvalue()
+            data = self.globals.get("_")
+            return CommandResult(output=output, data=data)
         except Exception as exc:
             return CommandResult(output="", error=str(exc))
 
@@ -109,7 +117,7 @@ class GPUEngine:
             )
             program.compute(queue, data.shape, None, buffer)
             cl.enqueue_copy(queue, data, buffer)
-            return CommandResult(output=" ".join(map(str, data.tolist())) + "\n")
+            return CommandResult(output=" ".join(map(str, data.tolist())) + "\n", data=data.tolist())
         except Exception as exc:
             return CommandResult(output="", error=str(exc))
 
@@ -123,7 +131,7 @@ class DataEngine:
             with Path(file_path).open(newline="", encoding="utf-8") as handle:
                 reader = csv.DictReader(handle)
                 rows.extend(reader)
-            return CommandResult(output=json.dumps(rows, ensure_ascii=False) + "\n")
+            return CommandResult(output=json.dumps(rows, ensure_ascii=False) + "\n", data=rows)
         except Exception as exc:
             return CommandResult(output="", error=str(exc))
 
@@ -172,7 +180,7 @@ class NovaShell:
         self.system = SystemEngine()
         self.events = EventBus()
 
-        self.commands: dict[str, Callable[[str, str], CommandResult]] = {
+        self.commands: dict[str, Callable[[str, str, Any], CommandResult]] = {
             "py": self._run_python,
             "python": self._run_python,
             "cpp": self._run_cpp,
@@ -203,10 +211,13 @@ class NovaShell:
     def _save_history(self) -> None:
         if readline is None:
             return
-
         readline.write_history_file(self._history_file)
 
-    def register_command(self, name: str, handler: Callable[[str, str], CommandResult]) -> None:
+    def register_command(self, name: str, handler: Callable[..., CommandResult]) -> None:
+        params = len(inspect.signature(handler).parameters)
+        if params == 2:
+            self.commands[name] = lambda args, pipeline_input, _pipeline_data: handler(args, pipeline_input)
+            return
         self.commands[name] = handler
 
     def load_plugins(self, plugin_dir: str = "plugins") -> None:
@@ -222,7 +233,7 @@ class NovaShell:
             if callable(register):
                 register(self)
 
-    def _cd(self, path_arg: str, _: str) -> CommandResult:
+    def _cd(self, path_arg: str, _: str, __: Any) -> CommandResult:
         target_text = path_arg.strip() or "~"
 
         try:
@@ -239,26 +250,24 @@ class NovaShell:
         except Exception as exc:
             return CommandResult(output="", error=str(exc))
 
-    def _pwd(self, _: str, __: str) -> CommandResult:
-        return CommandResult(output=f"{self.cwd}\n")
+    def _pwd(self, _: str, __: str, ___: Any) -> CommandResult:
+        return CommandResult(output=f"{self.cwd}\n", data=str(self.cwd))
 
-    def _help(self, _: str, __: str) -> CommandResult:
+    def _help(self, _: str, __: str, ___: Any) -> CommandResult:
         commands = "\n".join(sorted(self.commands.keys()))
         return CommandResult(output=f"Commands:\n{commands}\n")
 
-    def _events(self, args: str, _: str) -> CommandResult:
+    def _events(self, args: str, _: str, __: Any) -> CommandResult:
         action = args.strip()
         if action == "last":
             last_event = self.events.last()
             if last_event is None:
                 return CommandResult(output="No events\n")
-            return CommandResult(output=json.dumps(last_event, ensure_ascii=False) + "\n")
+            return CommandResult(output=json.dumps(last_event, ensure_ascii=False) + "\n", data=last_event)
         if action == "clear":
             self.events.events.clear()
             return CommandResult(output="events cleared\n")
         return CommandResult(output="Usage: events last|clear\n")
-
-
 
     def _normalize_inline_script(self, source: str) -> str:
         flattened = source.replace(";", "\n")
@@ -279,7 +288,7 @@ class NovaShell:
 
         return "\n".join(normalized_lines)
 
-    def _ns_exec(self, script: str, _: str) -> CommandResult:
+    def _ns_exec(self, script: str, _: str, __: Any) -> CommandResult:
         source = script.strip()
         if not source:
             return CommandResult(output="", error="usage: ns.exec <inline_script>")
@@ -293,7 +302,7 @@ class NovaShell:
         except Exception as exc:
             return CommandResult(output="", error=str(exc))
 
-    def _ns_run(self, file_path: str, _: str) -> CommandResult:
+    def _ns_run(self, file_path: str, _: str, __: Any) -> CommandResult:
         script_path = file_path.strip()
         if not script_path:
             return CommandResult(output="", error="usage: ns.run <script.ns>")
@@ -307,25 +316,25 @@ class NovaShell:
         except Exception as exc:
             return CommandResult(output="", error=str(exc))
 
-    def _run_python(self, code: str, pipeline_input: str) -> CommandResult:
-        return self.python.execute(code, pipeline_input)
+    def _run_python(self, code: str, pipeline_input: str, pipeline_data: Any) -> CommandResult:
+        return self.python.execute(code, pipeline_input, pipeline_data)
 
-    def _run_cpp(self, code: str, pipeline_input: str) -> CommandResult:
+    def _run_cpp(self, code: str, pipeline_input: str, _: Any) -> CommandResult:
         return self.cpp.compile_and_run(code, pipeline_input)
 
-    def _run_gpu(self, args: str, pipeline_input: str) -> CommandResult:
+    def _run_gpu(self, args: str, pipeline_input: str, _: Any) -> CommandResult:
         kernel_file = args.strip()
         if not kernel_file:
             return CommandResult(output="", error="usage: gpu <kernel_file>")
         return self.gpu.run_kernel(kernel_file, pipeline_input)
 
-    def _run_data_load(self, args: str, _: str) -> CommandResult:
+    def _run_data_load(self, args: str, _: str, __: Any) -> CommandResult:
         file_path = args.strip()
         if not file_path:
             return CommandResult(output="", error="usage: data.load <csv_file>")
         return self.data.load_csv(file_path)
 
-    def _run_data(self, args: str, _: str) -> CommandResult:
+    def _run_data(self, args: str, _: str, __: Any) -> CommandResult:
         parts = shlex.split(args)
         if not parts:
             return CommandResult(output="", error="usage: data load <csv_file>")
@@ -334,7 +343,7 @@ class NovaShell:
             return self.data.load_csv(parts[1])
         return CommandResult(output="", error=f"unknown data command: {' '.join(parts)}")
 
-    def _run_system(self, command: str, pipeline_input: str) -> CommandResult:
+    def _run_system(self, command: str, pipeline_input: str, _: Any) -> CommandResult:
         return self.system.execute(command, pipeline_input)
 
     def _split_pipeline(self, command: str) -> list[str]:
@@ -364,7 +373,7 @@ class NovaShell:
 
         return stages
 
-    def _route_single(self, command: str, pipeline_input: str = "") -> CommandResult:
+    def _route_single(self, command: str, pipeline_input: str = "", pipeline_data: Any = None) -> CommandResult:
         parts = shlex.split(command)
         if not parts:
             return CommandResult(output="")
@@ -376,16 +385,48 @@ class NovaShell:
             case "exit":
                 raise SystemExit(0)
             case _ if cmd in self.commands:
-                return self.commands[cmd](rest, pipeline_input)
+                return self.commands[cmd](rest, pipeline_input, pipeline_data)
             case _:
-                return self._run_system(command, pipeline_input)
+                return self._run_system(command, pipeline_input, pipeline_data)
+
+    def _parallel_stage(self, command: str, pipeline_output: str, pipeline_data: Any) -> CommandResult:
+        target = command[len("parallel ") :].strip()
+        if not target:
+            return CommandResult(output="", error="usage: parallel <command>")
+
+        items = pipeline_data if isinstance(pipeline_data, list) else pipeline_output.splitlines()
+        if not items:
+            return CommandResult(output="")
+
+        def run_item(item: Any) -> CommandResult:
+            if isinstance(item, str):
+                item_text = item
+            else:
+                item_text = json.dumps(item, ensure_ascii=False)
+            return self._route_single(target, item_text, item)
+
+        with ThreadPoolExecutor() as executor:
+            results = list(executor.map(run_item, items))
+
+        for result in results:
+            if result.error:
+                return result
+
+        merged_output = "".join(result.output for result in results)
+        merged_data = [result.data for result in results]
+        return CommandResult(output=merged_output, data=merged_data)
 
     def route(self, command: str) -> CommandResult:
         stages = self._split_pipeline(command)
         current_output = ""
+        current_data: Any = None
 
         for stage in stages:
-            result = self._route_single(stage, current_output)
+            if stage.startswith("parallel "):
+                result = self._parallel_stage(stage, current_output, current_data)
+            else:
+                result = self._route_single(stage, current_output, current_data)
+
             self.events.emit(
                 {
                     "stage": stage,
@@ -396,13 +437,16 @@ class NovaShell:
             if result.error:
                 return result
             current_output = result.output
+            current_data = result.data
 
-        return CommandResult(output=current_output)
+        return CommandResult(output=current_output, data=current_data)
 
     def repl(self) -> None:
-        print("NovaShell 0.4 Compute Runtime")
-        print("Commands: py | cpp | gpu | data | data.load | events | ns.exec | ns.run | sys | cd | pwd | help | exit")
-        print("Pipelines: cmd | py ... | data load ...\n")
+        print("NovaShell 0.5 Compute Runtime")
+        print(
+            "Commands: py | cpp | gpu | data | data.load | parallel | events | ns.exec | ns.run | sys | cd | pwd | help | exit"
+        )
+        print("Pipelines: cmd | py ... | parallel py ...\n")
 
         while True:
             try:

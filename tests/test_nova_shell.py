@@ -4,7 +4,7 @@ import unittest
 from pathlib import Path
 
 from nova_shell import NovaShell
-from novascript import Assignment, Command, ForLoop, IfBlock, NovaInterpreter, NovaParser
+from novascript import Assignment, ForLoop, IfBlock, NovaInterpreter, NovaParser
 
 
 class NovaShellTests(unittest.TestCase):
@@ -19,6 +19,12 @@ class NovaShellTests(unittest.TestCase):
         result = self.shell.route("py 1 + 2")
         self.assertIsNone(result.error)
         self.assertEqual(result.output.strip(), "3")
+
+    def test_persistent_python_context(self) -> None:
+        self.shell.route("py x = 10")
+        result = self.shell.route("py x + 5")
+        self.assertIsNone(result.error)
+        self.assertEqual(result.output.strip(), "15")
 
     def test_pipeline_to_python(self) -> None:
         result = self.shell.route("echo hello | py _.strip().upper()")
@@ -43,6 +49,7 @@ class NovaShellTests(unittest.TestCase):
 
             pwd_result = self.shell.route("pwd")
             self.assertEqual(pwd_result.output.strip(), str(target))
+            self.assertEqual(pwd_result.data, str(target))
 
     def test_help_lists_compute_commands(self) -> None:
         result = self.shell.route("help")
@@ -53,7 +60,7 @@ class NovaShellTests(unittest.TestCase):
         self.assertIn("ns.exec", result.output)
         self.assertIn("ns.run", result.output)
 
-    def test_data_load_csv(self) -> None:
+    def test_data_load_csv_object_pipeline(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             csv_file = Path(tmp) / "items.csv"
             csv_file.write_text("name,value\na,1\nb,2\n", encoding="utf-8")
@@ -62,7 +69,15 @@ class NovaShellTests(unittest.TestCase):
             self.assertIsNone(result.error)
             parsed = json.loads(result.output)
             self.assertEqual(len(parsed), 2)
-            self.assertEqual(parsed[0]["name"], "a")
+            self.assertEqual(result.data[0]["name"], "a")
+
+            piped = self.shell.route(f"data load {csv_file} | py len(_)")
+            self.assertEqual(piped.output.strip(), "2")
+
+    def test_parallel_pipeline(self) -> None:
+        result = self.shell.route("printf 'a\\nb\\n' | parallel py _.upper()")
+        self.assertIsNone(result.error)
+        self.assertEqual(result.output.strip().splitlines(), ["A", "B"])
 
     def test_events_last(self) -> None:
         self.shell.route("py 40 + 2")
