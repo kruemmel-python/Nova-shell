@@ -13,6 +13,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable
 
+from novascript import NovaInterpreter, NovaParser
+
 try:
     import readline
 except ImportError:  # pragma: no cover - platform dependent
@@ -182,6 +184,8 @@ class NovaShell:
             "pwd": self._pwd,
             "help": self._help,
             "events": self._events,
+            "ns.exec": self._ns_exec,
+            "ns.run": self._ns_run,
         }
 
         self._history_file = Path.home() / ".nova_shell_history"
@@ -253,6 +257,55 @@ class NovaShell:
             self.events.events.clear()
             return CommandResult(output="events cleared\n")
         return CommandResult(output="Usage: events last|clear\n")
+
+
+
+    def _normalize_inline_script(self, source: str) -> str:
+        flattened = source.replace(";", "\n")
+        normalized_lines: list[str] = []
+        previous_was_block_header = False
+
+        for raw in flattened.splitlines():
+            statement = raw.strip()
+            if not statement:
+                continue
+
+            if previous_was_block_header:
+                normalized_lines.append(f"    {statement}")
+            else:
+                normalized_lines.append(statement)
+
+            previous_was_block_header = statement.endswith(":")
+
+        return "\n".join(normalized_lines)
+
+    def _ns_exec(self, script: str, _: str) -> CommandResult:
+        source = script.strip()
+        if not source:
+            return CommandResult(output="", error="usage: ns.exec <inline_script>")
+
+        try:
+            parser = NovaParser()
+            interpreter = NovaInterpreter(self)
+            nodes = parser.parse(self._normalize_inline_script(source))
+            output = interpreter.execute(nodes)
+            return CommandResult(output=output)
+        except Exception as exc:
+            return CommandResult(output="", error=str(exc))
+
+    def _ns_run(self, file_path: str, _: str) -> CommandResult:
+        script_path = file_path.strip()
+        if not script_path:
+            return CommandResult(output="", error="usage: ns.run <script.ns>")
+
+        try:
+            parser = NovaParser()
+            interpreter = NovaInterpreter(self)
+            nodes = parser.parse_file(script_path)
+            output = interpreter.execute(nodes)
+            return CommandResult(output=output)
+        except Exception as exc:
+            return CommandResult(output="", error=str(exc))
 
     def _run_python(self, code: str, pipeline_input: str) -> CommandResult:
         return self.python.execute(code, pipeline_input)
@@ -348,7 +401,7 @@ class NovaShell:
 
     def repl(self) -> None:
         print("NovaShell 0.4 Compute Runtime")
-        print("Commands: py | cpp | gpu | data | data.load | events | sys | cd | pwd | help | exit")
+        print("Commands: py | cpp | gpu | data | data.load | events | ns.exec | ns.run | sys | cd | pwd | help | exit")
         print("Pipelines: cmd | py ... | data load ...\n")
 
         while True:

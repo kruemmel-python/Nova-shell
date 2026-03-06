@@ -4,6 +4,7 @@ import unittest
 from pathlib import Path
 
 from nova_shell import NovaShell
+from novascript import Assignment, Command, ForLoop, IfBlock, NovaInterpreter, NovaParser
 
 
 class NovaShellTests(unittest.TestCase):
@@ -49,6 +50,8 @@ class NovaShellTests(unittest.TestCase):
         self.assertIn("gpu", result.output)
         self.assertIn("data", result.output)
         self.assertIn("events", result.output)
+        self.assertIn("ns.exec", result.output)
+        self.assertIn("ns.run", result.output)
 
     def test_data_load_csv(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -71,6 +74,49 @@ class NovaShellTests(unittest.TestCase):
     def test_gpu_command_missing_file_or_dependency(self) -> None:
         result = self.shell.route("gpu does_not_exist.cl")
         self.assertIsNotNone(result.error)
+
+    def test_novascript_parser_builds_ast(self) -> None:
+        parser = NovaParser()
+        nodes = parser.parse(
+            """
+files = sys printf 'a\\nb\\n'
+for f in files:
+    py $f
+if len(files_lines) > 0:
+    py 1 + 1
+""".strip()
+        )
+        self.assertIsInstance(nodes[0], Assignment)
+        self.assertIsInstance(nodes[1], ForLoop)
+        self.assertIsInstance(nodes[2], IfBlock)
+
+    def test_novascript_interpreter_executes_loop_and_if(self) -> None:
+        parser = NovaParser()
+        nodes = parser.parse(
+            """
+files = sys printf 'x\\ny\\n'
+for f in files:
+    py $f
+if len(files_lines) == 2:
+    py 99
+""".strip()
+        )
+        interpreter = NovaInterpreter(self.shell)
+        output = interpreter.execute(nodes)
+        self.assertEqual(output.strip(), "99")
+
+    def test_ns_exec_inline_script(self) -> None:
+        result = self.shell.route("ns.exec values = sys printf '1\\n2\\n'; for v in values:;     py $v")
+        self.assertIsNone(result.error)
+        self.assertEqual(result.output.strip().splitlines(), ["1", "2"])
+
+    def test_ns_run_script_file(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            script_file = Path(tmp) / "sample.ns"
+            script_file.write_text("x = py 5*5\npy $x\n", encoding="utf-8")
+            result = self.shell.route(f"ns.run {script_file}")
+            self.assertIsNone(result.error)
+            self.assertEqual(result.output.strip(), "25")
 
 
 if __name__ == "__main__":
