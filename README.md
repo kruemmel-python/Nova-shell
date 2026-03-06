@@ -54,6 +54,9 @@ B
 
 So kann eine Stage nicht nur Text, sondern auch strukturierte Objekte/Streams weitergeben.
 
+Generator-Streams werden stage-weise lazy weitergereicht und am Pipeline-Ende materialisiert,
+damit Zwischenstufen nicht unnötig alles sammeln müssen.
+
 Events enthalten zusätzlich Laufzeitmetrik (`duration_ms`) und Verarbeitungsmenge (`rows_processed`).
 
 ## NovaScript DSL

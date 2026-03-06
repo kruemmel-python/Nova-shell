@@ -83,6 +83,26 @@ class NovaShellTests(unittest.TestCase):
         self.assertIsNone(result.error)
         self.assertEqual(result.output.strip().splitlines(), ["A", "B"])
 
+    def test_parallel_pipeline_accepts_generator_input(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            f = Path(tmp) / "live-parallel.log"
+            f.write_text("", encoding="utf-8")
+
+            def writer() -> None:
+                time.sleep(0.05)
+                with f.open("a", encoding="utf-8") as handle:
+                    handle.write("x\ny\n")
+
+            thread = threading.Thread(target=writer)
+            thread.start()
+            try:
+                result = self.shell.route(f"watch {f} --follow-seconds 0.2 | parallel py _.upper()")
+            finally:
+                thread.join()
+
+            self.assertIsNone(result.error)
+            self.assertEqual(result.output.strip().splitlines(), ["X", "Y"])
+
     def test_single_event_loop_reused(self) -> None:
         loop_id = id(self.shell.loop)
         self.shell.route("py 1 + 1")
@@ -116,6 +136,26 @@ class NovaShellTests(unittest.TestCase):
 
             self.assertIsNone(result.error)
             self.assertIn("ERROR", result.output)
+
+    def test_generator_pipeline_materializes_final_output(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            f = Path(tmp) / "live-2.log"
+            f.write_text("", encoding="utf-8")
+
+            def writer() -> None:
+                time.sleep(0.05)
+                with f.open("a", encoding="utf-8") as handle:
+                    handle.write("foo\n")
+
+            thread = threading.Thread(target=writer)
+            thread.start()
+            try:
+                result = self.shell.route(f"watch {f} --follow-seconds 0.2 | py _.upper() | py _.strip()")
+            finally:
+                thread.join()
+
+            self.assertIsNone(result.error)
+            self.assertEqual(result.output.strip(), "FOO")
 
     def test_events_last(self) -> None:
         self.shell.route("py 40 + 2")

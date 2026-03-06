@@ -60,6 +60,7 @@ class PythonEngine:
                 try:
                     value = eval(code, self.globals, self.globals)
                     if value is not None:
+                        self.globals["_"] = value
                         print(value)
                 except SyntaxError:
                     exec(code, self.globals, self.globals)
@@ -479,7 +480,11 @@ class NovaShell:
         if not target:
             return CommandResult(output="", error="usage: parallel <command>")
 
-        items = pipeline_data if isinstance(pipeline_data, list) else pipeline_output.splitlines()
+        if isinstance(pipeline_data, Iterable) and not isinstance(pipeline_data, (str, bytes, dict)):
+            items = list(pipeline_data)
+        else:
+            items = pipeline_output.splitlines()
+
         if not items:
             return CommandResult(output="")
 
@@ -501,7 +506,18 @@ class NovaShell:
     def _is_stream_type(self, data_type: PipelineType) -> bool:
         return data_type in {PipelineType.TEXT_STREAM, PipelineType.GENERATOR}
 
-    def _stage_over_iterable(self, stage: str, values: Iterable[Any]) -> CommandResult:
+    def _stage_over_iterable(self, stage: str, values: Iterable[Any], *, lazy: bool = False) -> CommandResult:
+        if lazy:
+            def transformed() -> Iterable[Any]:
+                for item in values:
+                    item_text = item if isinstance(item, str) else json.dumps(item, ensure_ascii=False)
+                    result = self._route_single(stage, item_text, item)
+                    if result.error:
+                        raise RuntimeError(result.error)
+                    yield result.data if result.data is not None else result.output.rstrip("\n")
+
+            return CommandResult(output="", data=transformed(), data_type=PipelineType.GENERATOR)
+
         outputs: list[str] = []
         collected_data: list[Any] = []
 
@@ -521,7 +537,7 @@ class NovaShell:
         if stage.startswith("parallel "):
             result = self._parallel_stage(stage, current_output, current_data)
         elif current_type == PipelineType.GENERATOR and current_data is not None:
-            result = self._stage_over_iterable(stage, current_data)
+            result = self._stage_over_iterable(stage, current_data, lazy=True)
         elif self._is_stream_type(current_type) and isinstance(current_data, Iterable) and not isinstance(current_data, (str, bytes, dict)):
             result = self._stage_over_iterable(stage, current_data)
         else:
@@ -550,6 +566,19 @@ class NovaShell:
 
         return result, rows_processed, duration_ms
 
+    def _materialize_if_generator(self, result: CommandResult) -> CommandResult:
+        if result.data_type != PipelineType.GENERATOR or result.data is None:
+            return result
+
+        try:
+            values = list(result.data)
+            output = "\n".join(str(v) for v in values)
+            if output:
+                output += "\n"
+            return CommandResult(output=output, data=values, data_type=PipelineType.OBJECT_STREAM)
+        except RuntimeError as exc:
+            return CommandResult(output="", error=str(exc), data_type=PipelineType.GENERATOR)
+
     def _route_internal(self, command: str) -> CommandResult:
         stages = self._split_pipeline(command)
         current_output = ""
@@ -564,7 +593,9 @@ class NovaShell:
             current_data = result.data
             current_type = result.data_type
 
-        return CommandResult(output=current_output, data=current_data, data_type=current_type)
+        return self._materialize_if_generator(
+            CommandResult(output=current_output, data=current_data, data_type=current_type)
+        )
 
     async def route_async(self, command: str) -> CommandResult:
         return self._route_internal(command)
