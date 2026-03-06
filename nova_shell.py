@@ -6,6 +6,8 @@ import contextlib
 import csv
 import inspect
 import io
+import threading
+import time
 import json
 import os
 import shlex
@@ -32,6 +34,7 @@ class PipelineType(str, Enum):
     TEXT_STREAM = "text_stream"
     OBJECT_STREAM = "object_stream"
     ARRAY_STREAM = "array_stream"
+    GENERATOR = "generator"
 
 
 @dataclass
@@ -224,6 +227,10 @@ class NovaShell:
         self._history_file = Path.home() / ".nova_shell_history"
         self._init_history()
 
+        self._loop_owner_thread = threading.get_ident()
+        self.loop = asyncio.new_event_loop()
+        atexit.register(self._close_loop)
+
     def _init_history(self) -> None:
         if readline is None:
             return
@@ -236,6 +243,10 @@ class NovaShell:
         if readline is None:
             return
         readline.write_history_file(self._history_file)
+
+    def _close_loop(self) -> None:
+        if not self.loop.is_closed():
+            self.loop.close()
 
     def register_command(self, name: str, handler: Callable[..., CommandResult]) -> None:
         params = len(inspect.signature(handler).parameters)
@@ -290,18 +301,44 @@ class NovaShell:
             return CommandResult(output="events cleared\n")
         return CommandResult(output="Usage: events last|clear\n")
 
+    def _tail_follow(self, file_path: Path, follow_seconds: float) -> Iterable[str]:
+        with file_path.open("r", encoding="utf-8") as handle:
+            handle.seek(0, os.SEEK_END)
+            deadline = time.time() + follow_seconds
+            while time.time() < deadline:
+                line = handle.readline()
+                if line:
+                    yield line.rstrip("\n")
+                    continue
+                time.sleep(0.05)
+
     def _watch(self, args: str, _: str, __: Any) -> CommandResult:
         parts = shlex.split(args)
         if not parts:
-            return CommandResult(output="", error="usage: watch <file> [--lines N]")
+            return CommandResult(output="", error="usage: watch <file> [--lines N] [--follow-seconds S]")
 
         file_path = Path(parts[0])
         lines_count = 10
-        if len(parts) == 3 and parts[1] == "--lines":
-            lines_count = int(parts[2])
+        follow_seconds = 0.0
+
+        i = 1
+        while i < len(parts):
+            token = parts[i]
+            if token == "--lines" and i + 1 < len(parts):
+                lines_count = int(parts[i + 1])
+                i += 2
+                continue
+            if token == "--follow-seconds" and i + 1 < len(parts):
+                follow_seconds = float(parts[i + 1])
+                i += 2
+                continue
+            return CommandResult(output="", error=f"unknown watch option: {token}")
 
         if not file_path.exists():
             return CommandResult(output="", error=f"file not found: {file_path}")
+
+        if follow_seconds > 0:
+            return CommandResult(output="", data=self._tail_follow(file_path, follow_seconds), data_type=PipelineType.GENERATOR)
 
         lines = file_path.read_text(encoding="utf-8").splitlines()
         selected = lines[-lines_count:]
@@ -451,7 +488,7 @@ class NovaShell:
         return CommandResult(output=merged_output, data=merged_data, data_type=PipelineType.OBJECT_STREAM)
 
     def _is_stream_type(self, data_type: PipelineType) -> bool:
-        return data_type in {PipelineType.TEXT_STREAM}
+        return data_type in {PipelineType.TEXT_STREAM, PipelineType.GENERATOR}
 
     def _stage_over_stream(self, stage: str, stream_data: Iterable[Any]) -> CommandResult:
         outputs: list[str] = []
@@ -466,6 +503,52 @@ class NovaShell:
 
         return CommandResult(output="".join(outputs), data=collected_data, data_type=PipelineType.OBJECT_STREAM)
 
+    def _stage_over_generator(self, stage: str, generator: Iterable[Any]) -> CommandResult:
+        outputs: list[str] = []
+        collected_data: list[Any] = []
+
+        for item in generator:
+            item_text = item if isinstance(item, str) else json.dumps(item, ensure_ascii=False)
+            result = self._route_single(stage, item_text, item)
+            if result.error:
+                return result
+            outputs.append(result.output)
+            collected_data.append(result.data)
+
+        return CommandResult(output="".join(outputs), data=collected_data, data_type=PipelineType.OBJECT_STREAM)
+
+    def _route_internal(self, command: str) -> CommandResult:
+        stages = self._split_pipeline(command)
+        current_output = ""
+        current_data: Any = None
+        current_type = PipelineType.TEXT
+
+        for stage in stages:
+            if stage.startswith("parallel "):
+                result = self._parallel_stage(stage, current_output, current_data)
+            elif current_type == PipelineType.GENERATOR and current_data is not None:
+                result = self._stage_over_generator(stage, current_data)
+            elif self._is_stream_type(current_type) and isinstance(current_data, Iterable) and not isinstance(current_data, (str, bytes, dict)):
+                result = self._stage_over_stream(stage, current_data)
+            else:
+                result = self._route_single(stage, current_output, current_data)
+
+            self.events.emit(
+                {
+                    "stage": stage,
+                    "error": result.error or "",
+                    "output": result.output[:200],
+                    "data_type": result.data_type.value,
+                }
+            )
+            if result.error:
+                return result
+            current_output = result.output
+            current_data = result.data
+            current_type = result.data_type
+
+        return CommandResult(output=current_output, data=current_data, data_type=current_type)
+
     async def route_async(self, command: str) -> CommandResult:
         stages = self._split_pipeline(command)
         current_output = ""
@@ -474,11 +557,13 @@ class NovaShell:
 
         for stage in stages:
             if stage.startswith("parallel "):
-                result = await asyncio.to_thread(self._parallel_stage, stage, current_output, current_data)
+                result = self._parallel_stage(stage, current_output, current_data)
+            elif current_type == PipelineType.GENERATOR and current_data is not None:
+                result = self._stage_over_generator(stage, current_data)
             elif self._is_stream_type(current_type) and isinstance(current_data, Iterable) and not isinstance(current_data, (str, bytes, dict)):
-                result = await asyncio.to_thread(self._stage_over_stream, stage, current_data)
+                result = self._stage_over_stream(stage, current_data)
             else:
-                result = await asyncio.to_thread(self._route_single, stage, current_output, current_data)
+                result = self._route_single(stage, current_output, current_data)
 
             self.events.emit(
                 {
@@ -497,7 +582,11 @@ class NovaShell:
         return CommandResult(output=current_output, data=current_data, data_type=current_type)
 
     def route(self, command: str) -> CommandResult:
-        return asyncio.run(self.route_async(command))
+        if threading.get_ident() != self._loop_owner_thread:
+            return asyncio.run(self.route_async(command))
+        if self.loop.is_running():
+            return self._route_internal(command)
+        return self.loop.run_until_complete(self.route_async(command))
 
     def repl(self) -> None:
         print("NovaShell 0.6 Compute Runtime")

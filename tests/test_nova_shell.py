@@ -1,5 +1,7 @@
 import json
 import tempfile
+import threading
+import time
 import unittest
 from pathlib import Path
 
@@ -81,6 +83,12 @@ class NovaShellTests(unittest.TestCase):
         self.assertIsNone(result.error)
         self.assertEqual(result.output.strip().splitlines(), ["A", "B"])
 
+    def test_single_event_loop_reused(self) -> None:
+        loop_id = id(self.shell.loop)
+        self.shell.route("py 1 + 1")
+        self.shell.route("py 2 + 2")
+        self.assertEqual(id(self.shell.loop), loop_id)
+
     def test_watch_stream_pipeline(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             f = Path(tmp) / "logs.txt"
@@ -88,6 +96,26 @@ class NovaShellTests(unittest.TestCase):
             result = self.shell.route(f"watch {f} --lines 2 | py _.upper()")
             self.assertIsNone(result.error)
             self.assertEqual(result.output.strip().splitlines(), ["ERROR", "WARN"])
+
+    def test_watch_follow_generator_pipeline(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            f = Path(tmp) / "live.log"
+            f.write_text("", encoding="utf-8")
+
+            def writer() -> None:
+                time.sleep(0.08)
+                with f.open("a", encoding="utf-8") as handle:
+                    handle.write("error\n")
+
+            thread = threading.Thread(target=writer)
+            thread.start()
+            try:
+                result = self.shell.route(f"watch {f} --follow-seconds 0.25 | py _.upper()")
+            finally:
+                thread.join()
+
+            self.assertIsNone(result.error)
+            self.assertIn("ERROR", result.output)
 
     def test_events_last(self) -> None:
         self.shell.route("py 40 + 2")
