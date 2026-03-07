@@ -84,6 +84,10 @@ nova-shell doctor
 nova-shell doctor json
 ```
 
+Lernpfad mit vielen Programmierbeispielen:
+
+[Tutorial.md](Tutorial.md)
+
 ## Packaging & Release
 
 - Paket-Metadaten liegen in `pyproject.toml`.

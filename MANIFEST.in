@@ -1,4 +1,6 @@
 include README.md
+include Tutorial.md
+include Whitepaper.md
 include pyproject.toml
 include nova_shell.py
 include novascript.py
