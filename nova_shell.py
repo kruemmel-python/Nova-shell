@@ -256,20 +256,40 @@ class PythonEngine:
 
     def __init__(self) -> None:
         self.globals: dict[str, Any] = {}
+        self._execution_lock = threading.RLock()
 
-    def execute(self, code: str, pipeline_input: str = "", pipeline_data: Any = None) -> CommandResult:
-        self.globals["_"] = pipeline_data if pipeline_data is not None else pipeline_input
+    @contextlib.contextmanager
+    def _push_cwd(self, cwd: Path | None) -> Iterable[None]:
+        if cwd is None:
+            yield
+            return
+        previous_cwd = Path.cwd()
+        os.chdir(cwd)
+        try:
+            yield
+        finally:
+            os.chdir(previous_cwd)
+
+    def execute(
+        self,
+        code: str,
+        pipeline_input: str = "",
+        pipeline_data: Any = None,
+        cwd: Path | None = None,
+    ) -> CommandResult:
         stdout_buffer = io.StringIO()
 
         try:
-            with contextlib.redirect_stdout(stdout_buffer):
-                try:
-                    value = eval(code, self.globals, self.globals)
-                    if value is not None:
-                        self.globals["_"] = value
-                        print(value)
-                except SyntaxError:
-                    exec(code, self.globals, self.globals)
+            with self._execution_lock:
+                self.globals["_"] = pipeline_data if pipeline_data is not None else pipeline_input
+                with self._push_cwd(cwd), contextlib.redirect_stdout(stdout_buffer):
+                    try:
+                        value = eval(code, self.globals, self.globals)
+                        if value is not None:
+                            self.globals["_"] = value
+                            print(value)
+                    except SyntaxError:
+                        exec(code, self.globals, self.globals)
 
             output = stdout_buffer.getvalue()
             data = self.globals.get("_")
@@ -492,30 +512,96 @@ class NovaFabric:
 
     def __init__(self) -> None:
         self._segments: dict[str, shared_memory.SharedMemory] = {}
+        self._metadata: dict[str, dict[str, Any]] = {}
 
-    def put(self, value: str) -> CommandResult:
-        payload = value.encode("utf-8")
+    def put_bytes(self, payload: bytes, data_type: str) -> CommandResult:
         segment = shared_memory.SharedMemory(create=True, size=max(1, len(payload)))
         if payload:
             segment.buf[: len(payload)] = payload
         handle = segment.name
         self._segments[handle] = segment
+        self._metadata[handle] = {"size": len(payload), "type": data_type}
         return CommandResult(
             output=f"{handle}\n",
-            data={"handle": handle, "size": len(payload)},
+            data={"handle": handle, "size": len(payload), "type": data_type},
             data_type=PipelineType.SHARED_MEMORY,
         )
 
+    def put(self, value: str) -> CommandResult:
+        return self.put_bytes(value.encode("utf-8"), "text")
+
+    def put_arrow_table(self, table: Any) -> CommandResult:
+        try:
+            import pyarrow as pa
+
+            sink = pa.BufferOutputStream()
+            with pa.ipc.new_stream(sink, table.schema) as writer:
+                writer.write_table(table)
+            payload = sink.getvalue().to_pybytes()
+            result = self.put_bytes(payload, "arrow_table")
+            if result.data:
+                result.data["format"] = "arrow_ipc_stream"
+            return result
+        except Exception as exc:
+            return CommandResult(output="", error=f"arrow fabric store failed: {exc}")
+
+    def put_arrow_from_csv(self, csv_path: str) -> CommandResult:
+        try:
+            import pyarrow.csv as pacsv
+        except ImportError:
+            return CommandResult(output="", error="pyarrow is required for fabric put-arrow")
+        try:
+            table = pacsv.read_csv(csv_path)
+            return self.put_arrow_table(table)
+        except Exception as exc:
+            return CommandResult(output="", error=str(exc))
+
+    def _format_arrow_payload(self, data: bytes) -> CommandResult | None:
+        with contextlib.suppress(Exception):
+            import pyarrow as pa
+
+            reader = pa.ipc.open_stream(pa.BufferReader(data))
+            table = reader.read_all()
+            preview = table.slice(0, min(10, table.num_rows)).to_pylist()
+            payload = {
+                "type": "arrow_table",
+                "rows": table.num_rows,
+                "columns": table.column_names,
+                "preview": preview,
+            }
+            return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+        return None
+
     def get(self, handle: str) -> CommandResult:
         segment = self._segments.get(handle)
+        needs_close = False
         if segment is None:
             try:
                 segment = shared_memory.SharedMemory(name=handle)
             except FileNotFoundError:
                 return CommandResult(output="", error=f"shared memory handle not found: {handle}")
+            needs_close = True
 
-        data = bytes(segment.buf).rstrip(b"\x00").decode("utf-8", errors="replace")
-        return CommandResult(output=f"{data}\n", data=data, data_type=PipelineType.TEXT)
+        metadata = self._metadata.get(handle, {})
+        size = int(metadata.get("size") or segment.size)
+        data = bytes(segment.buf[:size])
+        try:
+            text = data.decode("utf-8", errors="strict")
+            return CommandResult(output=f"{text}\n", data=text, data_type=PipelineType.TEXT)
+        except UnicodeDecodeError:
+            arrow_result = self._format_arrow_payload(data)
+            if arrow_result is not None:
+                return arrow_result
+            payload = {
+                "type": str(metadata.get("type") or "binary"),
+                "size": len(data),
+                "base64": base64.b64encode(data).decode("ascii"),
+            }
+            return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+        finally:
+            if needs_close:
+                with contextlib.suppress(Exception):
+                    segment.close()
 
     def cleanup(self) -> None:
         for handle, segment in list(self._segments.items()):
@@ -524,6 +610,7 @@ class NovaFabric:
             with contextlib.suppress(Exception):
                 segment.unlink()
             self._segments.pop(handle, None)
+            self._metadata.pop(handle, None)
 
 
 class PolicyEngine:
@@ -671,7 +758,6 @@ class NovaZeroPool:
         obj = self.objects.get(handle)
         if obj is None:
             return CommandResult(output="", error=f"zero handle not found: {handle}")
-        obj["refs"] += 1
         data = bytes(obj["segment"].buf[: obj["size"]])
         if obj["type"] == "text":
             text = data.decode("utf-8", errors="replace")
@@ -1489,9 +1575,8 @@ class VisionServer:
                     value = str(payload.get("payload", ""))
                     executed = []
                     for pipeline in shell._dflow_subscribers.get(event_name, []):
-                        cmd = pipeline.replace("_", shlex.quote(value))
-                        res = shell.route(cmd)
-                        executed.append({"pipeline": pipeline, "error": res.error or ""})
+                        res = shell._route_with_input(pipeline, value)
+                        executed.append({"pipeline": pipeline, "error": res.error or "", "output": res.output.strip()})
                     self._write_json({"event": event_name, "executed": executed})
                     return
 
@@ -1603,6 +1688,8 @@ class NovaShell:
             "sys": self._run_system,
             "cd": self._cd,
             "pwd": self._pwd,
+            "clear": self._clear_console,
+            "cls": self._clear_console,
             "doctor": self._doctor,
             "help": self._help,
             "events": self._events,
@@ -1682,6 +1769,13 @@ class NovaShell:
 
     def _pwd(self, _: str, __: str, ___: Any) -> CommandResult:
         return CommandResult(output=f"{self.cwd}\n", data=str(self.cwd), data_type=PipelineType.TEXT)
+
+    def _clear_console(self, _: str, __: str, ___: Any) -> CommandResult:
+        if not sys.stdout.isatty():
+            return CommandResult(output="")
+        clear_command = "cls" if _is_windows_runtime() else "clear"
+        os.system(clear_command)
+        return CommandResult(output="")
 
     def _doctor(self, args: str, _: str, __: Any) -> CommandResult:
         parts = split_command(args)
@@ -1880,7 +1974,7 @@ class NovaShell:
             return CommandResult(output="", error="usage: ns.check <script_file.ns>")
         try:
             parser = NovaParser()
-            nodes = parser.parse_file(payload)
+            nodes = parser.parse_file(str(self._resolve_path(payload)))
             assignments = sum(1 for n in nodes if isinstance(n, NSAssignment))
             commands = sum(1 for n in nodes if isinstance(n, NSCommand))
             contracts = 0
@@ -1966,7 +2060,7 @@ class NovaShell:
         return CommandResult(output="", error="usage: graph aot <pipeline> | graph run <pipeline> | graph show <id>")
 
     def _run_python(self, code: str, pipeline_input: str, pipeline_data: Any) -> CommandResult:
-        return self.python.execute(code, pipeline_input, pipeline_data)
+        return self.python.execute(code, pipeline_input, pipeline_data, cwd=self.cwd)
 
     def _run_cpp(self, code: str, pipeline_input: str, _: Any) -> CommandResult:
         blocked = self._is_ebpf_blocked(code)
@@ -2044,12 +2138,7 @@ class NovaShell:
                 if len(parts) < 2:
                     return CommandResult(output="", error="usage: fabric put-arrow <csv_file>")
                 csv_path = self._resolve_path(parts[1])
-                arrow_result = self.data.load_csv_arrow(str(csv_path))
-                if arrow_result.error:
-                    return arrow_result
-                # Store a compact textual descriptor in shared memory for cross-engine handle exchange.
-                descriptor = f"arrow:{csv_path}:{arrow_result.output.strip()}"
-                return self.fabric.put(descriptor)
+                return self.fabric.put_arrow_from_csv(str(csv_path))
             case "get":
                 if len(parts) < 2:
                     return CommandResult(output="", error="usage: fabric get <handle>")
@@ -2386,13 +2475,19 @@ class NovaShell:
             if len(parts) < 3:
                 return CommandResult(output="", error="usage: dflow publish <event> <payload> [--broadcast]")
             event_name = parts[1]
-            payload = parts[2]
+            payload_parts = parts[2:]
+            broadcast = False
+            if payload_parts and payload_parts[-1] == "--broadcast":
+                broadcast = True
+                payload_parts = payload_parts[:-1]
+            if not payload_parts:
+                return CommandResult(output="", error="usage: dflow publish <event> <payload> [--broadcast]")
+            payload = " ".join(payload_parts)
             executed: list[dict[str, str]] = []
             for pipeline in self._dflow_subscribers.get(event_name, []):
-                command = pipeline.replace("_", shlex.quote(payload))
-                result = self.route(command)
-                executed.append({"pipeline": pipeline, "error": result.error or ""})
-            if "--broadcast" in parts and self.mesh.workers:
+                result = self._route_with_input(pipeline, payload)
+                executed.append({"pipeline": pipeline, "error": result.error or "", "output": result.output.strip()})
+            if broadcast and self.mesh.workers:
                 event_data = json.dumps({"event": event_name, "payload": payload}).encode("utf-8")
                 for worker in self.mesh.list_workers():
                     req = urllib.request.Request(worker["url"].rstrip("/") + "/flow/event", data=event_data, headers={"Content-Type": "application/json"}, method="POST")
@@ -2857,7 +2952,21 @@ class NovaShell:
         except RuntimeError as exc:
             return CommandResult(output="", error=str(exc), data_type=PipelineType.GENERATOR)
 
-    def _route_internal(self, command: str) -> CommandResult:
+    def _pipeline_type_from_value(self, value: Any) -> PipelineType:
+        if isinstance(value, list):
+            return PipelineType.OBJECT_STREAM
+        if isinstance(value, dict):
+            return PipelineType.OBJECT
+        return PipelineType.TEXT
+
+    def _route_internal_with_input(
+        self,
+        command: str,
+        *,
+        initial_output: str,
+        initial_data: Any,
+        initial_type: PipelineType,
+    ) -> CommandResult:
         owns_trace = False
         if not self.current_trace_id:
             self.current_trace_id = uuid.uuid4().hex[:12]
@@ -2865,11 +2974,9 @@ class NovaShell:
 
         stages = self._split_pipeline(command)
         graph = self._build_pipeline_graph(stages)
-        if not command.strip().startswith("studio graph"):
-            self.last_graph = graph
-        current_output = ""
-        current_data: Any = None
-        current_type = PipelineType.TEXT
+        current_output = initial_output
+        current_data = initial_data
+        current_type = initial_type
 
         for node in graph.nodes:
             for index, stage in enumerate(node.stages):
@@ -2896,6 +3003,26 @@ class NovaShell:
         if owns_trace:
             self.current_trace_id = ""
         return final_result
+
+    def _route_with_input(self, command: str, value: Any) -> CommandResult:
+        input_text = value if isinstance(value, str) else json.dumps(value, ensure_ascii=False)
+        return self._route_internal_with_input(
+            command,
+            initial_output=input_text,
+            initial_data=value,
+            initial_type=self._pipeline_type_from_value(value),
+        )
+
+    def _route_internal(self, command: str) -> CommandResult:
+        result = self._route_internal_with_input(
+            command,
+            initial_output="",
+            initial_data=None,
+            initial_type=PipelineType.TEXT,
+        )
+        if not command.strip().startswith("studio graph"):
+            self.last_graph = self._build_pipeline_graph(self._split_pipeline(command))
+        return result
 
     async def route_async(self, command: str) -> CommandResult:
         return self._route_internal(command)
@@ -2948,7 +3075,7 @@ class NovaShell:
     def repl(self) -> None:
         print(f"NovaShell {__version__} Compute Runtime")
         print(
-            "Commands: py | cpp | gpu | wasm | jit_wasm | data | data.load | remote | mesh | ai | vision | fabric | guard | secure | flow | sync | lens | studio | on | pack | observe | watch | parallel | events | ns.exec | ns.run | sys | cd | pwd | doctor | help | exit"
+            "Commands: py | cpp | gpu | wasm | jit_wasm | data | data.load | remote | mesh | ai | vision | fabric | guard | secure | flow | sync | lens | studio | on | pack | observe | watch | parallel | events | ns.exec | ns.run | sys | cd | pwd | clear | cls | doctor | help | exit"
         )
         print("Pipelines: cmd | watch file | parallel py ...\n")
 

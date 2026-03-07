@@ -118,6 +118,22 @@ class NovaShellTests(unittest.TestCase):
                 "id,name,price\n1,Brot,2.50\n2,Käse,4.20\n3,Apfel,1.10\n",
             )
 
+    def test_python_relative_file_write_uses_shell_cwd(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp).resolve()
+            self.shell.route(f"cd {target}")
+            original_process_cwd = Path.cwd()
+
+            command = (
+                'py with open("items.csv","w",encoding="utf-8") as f:\n'
+                '    f.write("id,name,price\\n1,Brot,2.50\\n2,Käse,4.20\\n3,Apfel,1.10\\n")'
+            )
+            result = self.shell.route(command)
+
+            self.assertIsNone(result.error)
+            self.assertTrue((target / "items.csv").exists())
+            self.assertEqual(Path.cwd(), original_process_cwd)
+
     def test_data_load_csv_object_pipeline(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             csv_file = Path(tmp) / "items.csv"
@@ -268,6 +284,22 @@ class NovaShellTests(unittest.TestCase):
         self.assertIsNone(get_result.error)
         self.assertEqual(get_result.output.strip(), "hello-fabric")
 
+    def test_fabric_get_reads_zero_arrow_handle_as_preview(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            csv_file = Path(tmp) / "items.csv"
+            csv_file.write_text("id,name,price\n1,Brot,2.50\n2,Käse,4.20\n", encoding="utf-8")
+            put_result = self.shell.route(f"zero put-arrow {csv_file}")
+            if put_result.error is not None:
+                self.assertIn("pyarrow", put_result.error)
+                return
+            handle = json.loads(put_result.output)["handle"]
+            get_result = self.shell.route(f"fabric get {handle}")
+            self.assertIsNone(get_result.error)
+            payload = json.loads(get_result.output)
+            self.assertEqual(payload["type"], "arrow_table")
+            self.assertEqual(payload["rows"], 2)
+            self.assertEqual(payload["columns"], ["id", "name", "price"])
+
     def test_guard_policy_blocks_sys(self) -> None:
         self.shell.route("guard set minimal")
         result = self.shell.route("sys echo blocked")
@@ -376,6 +408,17 @@ if len(files_lines) == 2:
             result = self.shell.route(f"ns.run {script_file}")
             self.assertIsNone(result.error)
             self.assertEqual(result.output.strip(), "25")
+
+    def test_ns_check_uses_shell_cwd_for_relative_path(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp).resolve()
+            script_file = target / "sample.ns"
+            script_file.write_text("rows: object_stream = data load items.csv\n", encoding="utf-8")
+            self.shell.route(f"cd {target}")
+            result = self.shell.route("ns.check sample.ns")
+            self.assertIsNone(result.error)
+            payload = json.loads(result.output)
+            self.assertGreaterEqual(payload["contracts"], 1)
 
 
     def test_mesh_add_and_list(self) -> None:
@@ -591,6 +634,22 @@ if len(files_lines) == 2:
 
         rel = self.shell.route(f"zero release {handle}")
         self.assertIsNone(rel.error)
+        self.assertEqual(rel.output.strip(), "released")
+        listed_after = self.shell.route("zero list")
+        self.assertFalse(any(row["handle"] == handle for row in json.loads(listed_after.output)))
+
+    def test_clear_and_cls_are_builtin_commands(self) -> None:
+        with (
+            patch("nova_shell.sys.stdout.isatty", return_value=True),
+            patch("nova_shell.os.system", return_value=0) as system_mock,
+        ):
+            clear_result = self.shell.route("clear")
+            cls_result = self.shell.route("cls")
+        self.assertIsNone(clear_result.error)
+        self.assertIsNone(cls_result.error)
+        self.assertEqual(clear_result.output, "")
+        self.assertEqual(cls_result.output, "")
+        self.assertEqual(system_mock.call_count, 2)
 
     def test_synth_suggest_and_autotune(self) -> None:
         suggest = self.shell.route("synth suggest py 1 + 1")
@@ -628,6 +687,16 @@ if len(files_lines) == 2:
         self.assertIsNone(pub.error)
         result = json.loads(pub.output)
         self.assertIn("executed", result)
+        self.assertEqual(result["executed"][0]["error"], "")
+        self.assertEqual(result["executed"][0]["output"], "ping!")
+
+    def test_dflow_publish_supports_payload_with_spaces(self) -> None:
+        self.shell.route("dflow subscribe test_event 'py _.upper()'")
+        pub = self.shell.route("dflow publish test_event hello nova shell")
+        self.assertIsNone(pub.error)
+        result = json.loads(pub.output)
+        self.assertEqual(result["executed"][0]["error"], "")
+        self.assertEqual(result["executed"][0]["output"], "HELLO NOVA SHELL")
 
     def test_guard_sandbox_status_toggle(self) -> None:
         on = self.shell.route("guard sandbox on")
