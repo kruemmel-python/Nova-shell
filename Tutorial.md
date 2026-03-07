@@ -564,6 +564,13 @@ nova> guard ebpf-enforce strict-ebpf
 nova> guard ebpf-release
 ```
 
+`strict-ebpf` ist als eingebautes Profil verfuegbar. Eigene Policy-Dateien koennen direkt verwendet werden:
+
+```text
+nova> guard ebpf-compile guard.json
+nova> guard ebpf-enforce guard.json
+```
+
 ## 18. Was braucht Zusatz-Tooling?
 
 Einige Beispiele funktionieren nur mit optionalen Modulen oder Toolchains:

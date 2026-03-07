@@ -44,8 +44,8 @@ Nova-shell ist eine **Unified Compute & Data Orchestration Runtime** mit polyglo
   - `cpp.sandbox <cpp_code>`
 - Erweiterte Guard/eBPF-Flows:
   - `guard ebpf-status`
-  - `guard ebpf-compile <policy>`
-  - `guard ebpf-enforce <policy>`
+  - `guard ebpf-compile <policy|file>`
+  - `guard ebpf-enforce <policy|file>`
   - `guard ebpf-release`
 
 ---

@@ -5,6 +5,7 @@ import atexit
 import asyncio
 import codeop
 import contextlib
+import copy
 import csv
 import inspect
 import io
@@ -206,6 +207,18 @@ def resolve_emcc_command(runtime_config: dict[str, Any], modules: dict[str, bool
     return ""
 
 
+def build_tool_subprocess_env(executable_path: str) -> dict[str, str]:
+    env = os.environ.copy()
+    tool_dir = str(Path(executable_path).resolve().parent)
+    current = env.get("PATH", "")
+    entries = [entry for entry in current.split(os.pathsep) if entry]
+    normalized_entries = {os.path.normcase(os.path.normpath(entry)) for entry in entries}
+    normalized_tool_dir = os.path.normcase(os.path.normpath(tool_dir))
+    if normalized_tool_dir not in normalized_entries:
+        env["PATH"] = tool_dir + (os.pathsep + current if current else "")
+    return env
+
+
 configure_sideload_paths()
 
 
@@ -310,18 +323,20 @@ class CppEngine:
     def compile_and_run(self, code: str, pipeline_input: str = "") -> CommandResult:
         with tempfile.TemporaryDirectory() as tmp:
             source = Path(tmp) / "program.cpp"
-            binary = Path(tmp) / "program"
+            binary = Path(tmp) / ("program.exe" if _is_windows_runtime() else "program")
 
             source.write_text(code, encoding="utf-8")
             compiler = resolve_gxx_command()
             if not compiler:
                 return CommandResult(output="", error="g++ is required for cpp commands")
+            compiler_env = build_tool_subprocess_env(compiler)
 
             try:
                 compile_proc = subprocess.run(
                     [compiler, "-std=c++20", "-O2", str(source), "-o", str(binary)],
                     capture_output=True,
                     text=True,
+                    env=compiler_env,
                 )
             except FileNotFoundError:
                 return CommandResult(output="", error="g++ is required for cpp commands")
@@ -334,6 +349,7 @@ class CppEngine:
                     capture_output=True,
                     text=True,
                     input=pipeline_input,
+                    env=compiler_env,
                 )
             except FileNotFoundError:
                 return CommandResult(output="", error="compiled cpp binary could not be executed")
@@ -356,12 +372,14 @@ class CppEngine:
                 return CommandResult(output="", error="emcc is required for cpp sandbox mode")
             if emcc_command == "bundled-wasm-runtime":
                 return CommandResult(output="", error="enterprise runtime includes wasmtime, but cpp sandbox mode still requires an emcc compiler")
+            compiler_env = build_tool_subprocess_env(emcc_command)
 
             try:
                 compile_proc = subprocess.run(
                     [emcc_command, str(source), "-O2", "-s", "STANDALONE_WASM=1", "-s", "EXPORTED_FUNCTIONS=['_main']", "-o", str(wasm)],
                     capture_output=True,
                     text=True,
+                    env=compiler_env,
                 )
             except FileNotFoundError:
                 return CommandResult(output="", error="emcc is required for cpp sandbox mode")
@@ -1244,6 +1262,14 @@ class GuardPolicyStore:
 
     def __init__(self) -> None:
         self.loaded_policies: dict[str, dict[str, Any]] = {}
+        self.builtin_policies: dict[str, dict[str, Any]] = {
+            "strict-ebpf": {
+                "name": "strict-ebpf",
+                "ebpf_enforce": True,
+                "blocked_terms": ["curl"],
+                "block_commands": [],
+            }
+        }
         self.ebpf_available = self._check_ebpf()
         self.enforced_policy: str | None = None
 
@@ -1267,8 +1293,22 @@ class GuardPolicyStore:
         self.loaded_policies[name] = data
         return data
 
-    def compile_ebpf_profile(self, policy_name: str) -> CommandResult:
+    def get_policy(self, policy_name: str) -> dict[str, Any] | None:
+        return self.loaded_policies.get(policy_name) or self.builtin_policies.get(policy_name)
+
+    def ensure_policy_loaded(self, policy_name: str) -> dict[str, Any] | None:
         policy = self.loaded_policies.get(policy_name)
+        if policy is not None:
+            return policy
+        builtin = self.builtin_policies.get(policy_name)
+        if builtin is None:
+            return None
+        policy = copy.deepcopy(builtin)
+        self.loaded_policies[policy_name] = policy
+        return policy
+
+    def compile_ebpf_profile(self, policy_name: str) -> CommandResult:
+        policy = self.ensure_policy_loaded(policy_name)
         if policy is None:
             return CommandResult(output="", error="policy not loaded")
 
@@ -1285,7 +1325,7 @@ class GuardPolicyStore:
         return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
 
     def enforce(self, policy_name: str) -> CommandResult:
-        if policy_name not in self.loaded_policies:
+        if self.ensure_policy_loaded(policy_name) is None:
             return CommandResult(output="", error="policy not loaded")
         self.enforced_policy = policy_name
         mode = "kernel-ebpf" if self.ebpf_available else "userspace-ebpf-emulation"
@@ -1419,7 +1459,7 @@ class NovaGraphCompiler:
         ]
         for expr in exprs:
             lines.append(f"    x = ({expr});")
-        lines.extend(["    std::cout << x << '\n';", "  }", "  return 0;", "}"])
+        lines.extend(['    std::cout << x << "\\n";', "  }", "  return 0;", "}"])
         return "\n".join(lines)
 
 
@@ -2257,6 +2297,7 @@ class NovaShell:
                 payload = {
                     "built_in": sorted(self.policy.policies.keys()),
                     "loaded": sorted(self.guard_store.loaded_policies.keys()),
+                    "ebpf_builtin": sorted(self.guard_store.builtin_policies.keys()),
                 }
                 return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
             case "load":
@@ -2291,17 +2332,35 @@ class NovaShell:
                 return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
             case "ebpf-compile":
                 if len(parts) < 2:
-                    return CommandResult(output="", error="usage: guard ebpf-compile <policy>")
-                return self.guard_store.compile_ebpf_profile(parts[1])
+                    return CommandResult(output="", error="usage: guard ebpf-compile <policy|file>")
+                policy_name, error = self._resolve_guard_policy_reference(parts[1])
+                if error is not None:
+                    return error
+                return self.guard_store.compile_ebpf_profile(policy_name)
             case "ebpf-enforce":
                 if len(parts) < 2:
-                    return CommandResult(output="", error="usage: guard ebpf-enforce <policy>")
-                return self.guard_store.enforce(parts[1])
+                    return CommandResult(output="", error="usage: guard ebpf-enforce <policy|file>")
+                policy_name, error = self._resolve_guard_policy_reference(parts[1])
+                if error is not None:
+                    return error
+                return self.guard_store.enforce(policy_name)
             case "ebpf-release":
                 self.guard_store.enforced_policy = None
                 return CommandResult(output="released\n")
             case _:
-                return CommandResult(output="", error="usage: guard [list]|set <policy>|load <file>|sandbox on|off|status|ebpf-status|ebpf-compile <policy>|ebpf-enforce <policy>|ebpf-release")
+                return CommandResult(output="", error="usage: guard [list]|set <policy>|load <file>|sandbox on|off|status|ebpf-status|ebpf-compile <policy|file>|ebpf-enforce <policy|file>|ebpf-release")
+
+    def _resolve_guard_policy_reference(self, reference: str) -> tuple[str, CommandResult | None]:
+        if reference in self.guard_store.loaded_policies or reference in self.guard_store.builtin_policies:
+            return reference, None
+        policy_path = self._resolve_path(reference)
+        if policy_path.exists() and policy_path.is_file():
+            try:
+                data = self.guard_store.load(str(policy_path))
+            except Exception as exc:
+                return "", CommandResult(output="", error=f"failed to load policy: {exc}")
+            return str(data.get("name") or policy_path.stem), None
+        return "", CommandResult(output="", error=f"policy not loaded: {reference}. use 'guard load <file>' or a built-in eBPF profile")
 
     def _run_secure(self, args: str, _: str, __: Any) -> CommandResult:
         parts = split_command(args)

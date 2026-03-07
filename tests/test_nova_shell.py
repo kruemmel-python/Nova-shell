@@ -1,5 +1,6 @@
 import io
 import json
+import os
 import tempfile
 import threading
 import time
@@ -7,9 +8,10 @@ import unittest
 import zipfile
 from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
-from nova_shell import NovaShell, PipelineType, __version__, main
+from nova_shell import CppEngine, NovaShell, PipelineType, __version__, main
 from novascript import Assignment, ForLoop, IfBlock, NovaInterpreter, NovaParser
 
 
@@ -542,6 +544,13 @@ if len(files_lines) == 2:
         payload = json.loads(result.output)
         self.assertIn("available", payload)
 
+    def test_guard_list_includes_builtin_ebpf_profiles(self) -> None:
+        result = self.shell.route("guard list")
+        self.assertIsNone(result.error)
+        payload = json.loads(result.output)
+        self.assertIn("ebpf_builtin", payload)
+        self.assertIn("strict-ebpf", payload["ebpf_builtin"])
+
     def test_novascript_contract_validation(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             script = Path(tmp) / "typed.ns"
@@ -564,6 +573,11 @@ if len(files_lines) == 2:
         self.assertGreaterEqual(payload["fused_cpp_count"], 1)
         self.assertTrue(any(stage.startswith("cpp.expr_chain") for stage in payload["optimized_stages"]))
 
+    def test_cpp_chain_template_escapes_newline_for_cpp(self) -> None:
+        code = self.shell.novagraph._build_cpp_chain("x+1 ; x*2")
+        self.assertIn('std::cout << x << "\\n";', code)
+        self.assertNotIn("std::cout << x << '\n';", code)
+
     def test_graph_run_executes_fused_pipeline(self) -> None:
         result = self.shell.route("graph run \"printf '1\\n2\\n' | cpp.expr x+1 | cpp.expr x*2\"")
         if result.error is None:
@@ -571,6 +585,29 @@ if len(files_lines) == 2:
             self.assertIn("output", payload)
         else:
             self.assertTrue("stod" in result.error or "g++" in result.error or result.error)
+
+    def test_cpp_engine_injects_toolchain_bin_into_subprocess_path(self) -> None:
+        engine = CppEngine()
+        calls: list[dict[str, object]] = []
+
+        def fake_run(_cmd: list[str], **kwargs: object) -> SimpleNamespace:
+            calls.append(kwargs)
+            if len(calls) == 1:
+                return SimpleNamespace(returncode=0, stdout="", stderr="")
+            return SimpleNamespace(returncode=0, stdout="6\n", stderr="")
+
+        compiler_path = r"C:\msys64\ucrt64\bin\g++.exe"
+        with patch("nova_shell.resolve_gxx_command", return_value=compiler_path), patch("nova_shell.subprocess.run", side_effect=fake_run):
+            result = engine.compile_and_run("int main(){return 0;}", "input")
+
+        self.assertIsNone(result.error)
+        self.assertEqual(result.output, "6\n")
+        self.assertEqual(len(calls), 2)
+        for kwargs in calls:
+            env = kwargs.get("env")
+            self.assertIsInstance(env, dict)
+            path_value = str(env.get("PATH", ""))
+            self.assertTrue(path_value.startswith(str(Path(compiler_path).parent) + os.pathsep) or path_value == str(Path(compiler_path).parent))
 
     def test_lens_replay_returns_snapshot_output(self) -> None:
         self.shell.route("py 10 + 1")
@@ -603,6 +640,49 @@ if len(files_lines) == 2:
             self.assertIsNone(compile_result.error)
             enforce = self.shell.route("guard ebpf-enforce strict-ebpf")
             self.assertIsNone(enforce.error)
+            blocked = self.shell.route("sys curl http://example.com")
+            self.assertIsNotNone(blocked.error)
+            self.assertIn("blocked term", blocked.error)
+            self.shell.route("guard ebpf-release")
+
+    def test_guard_ebpf_compile_and_enforce_builtin_profile(self) -> None:
+        compile_result = self.shell.route("guard ebpf-compile strict-ebpf")
+        self.assertIsNone(compile_result.error)
+        compile_payload = json.loads(compile_result.output)
+        self.assertEqual(compile_payload["policy"], "strict-ebpf")
+
+        enforce = self.shell.route("guard ebpf-enforce strict-ebpf")
+        self.assertIsNone(enforce.error)
+        enforce_payload = json.loads(enforce.output)
+        self.assertEqual(enforce_payload["policy"], "strict-ebpf")
+
+        blocked = self.shell.route("sys curl http://example.com")
+        self.assertIsNotNone(blocked.error)
+        self.assertIn("blocked term", blocked.error)
+        self.shell.route("guard ebpf-release")
+
+    def test_guard_ebpf_compile_and_enforce_from_relative_file(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            policy = tmp_path / "strict-local.json"
+            policy.write_text(json.dumps({
+                "name": "strict-local",
+                "ebpf_enforce": True,
+                "blocked_terms": ["curl"],
+                "block_commands": [],
+            }), encoding="utf-8")
+            self.shell.cwd = tmp_path
+
+            compile_result = self.shell.route("guard ebpf-compile strict-local.json")
+            self.assertIsNone(compile_result.error)
+            compile_payload = json.loads(compile_result.output)
+            self.assertEqual(compile_payload["policy"], "strict-local")
+
+            enforce = self.shell.route("guard ebpf-enforce strict-local.json")
+            self.assertIsNone(enforce.error)
+            enforce_payload = json.loads(enforce.output)
+            self.assertEqual(enforce_payload["policy"], "strict-local")
+
             blocked = self.shell.route("sys curl http://example.com")
             self.assertIsNotNone(blocked.error)
             self.assertIn("blocked term", blocked.error)
