@@ -374,5 +374,47 @@ if len(files_lines) == 2:
                 self.assertIn("pyarrow", result.error)
 
 
+    def test_jit_wasm_compiles_or_reports_missing_runtime(self) -> None:
+        result = self.shell.route("jit_wasm 1 + 2 * 3")
+        if result.error is None:
+            self.assertEqual(float(result.output.strip()), 7.0)
+            self.assertIn("wat", result.data)
+        else:
+            self.assertIn("wasmtime", result.error)
+
+    def test_sync_crdt_counter_and_map(self) -> None:
+        inc = self.shell.route("sync inc global_counter 2")
+        self.assertIsNone(inc.error)
+        got = self.shell.route("sync get global_counter")
+        self.assertEqual(got.output.strip(), "2")
+
+        set_result = self.shell.route("sync set feature_x enabled")
+        self.assertIsNone(set_result.error)
+        key_result = self.shell.route("sync get-key feature_x")
+        self.assertEqual(key_result.output.strip(), "enabled")
+
+        export_result = self.shell.route("sync export")
+        self.assertIsNone(export_result.error)
+        payload = json.loads(export_result.output)
+        self.assertIn("counters", payload)
+
+    def test_lens_snapshots_list_and_show(self) -> None:
+        self.shell.route("py 2 + 2")
+        last = self.shell.route("lens last")
+        self.assertIsNone(last.error)
+        snapshot = json.loads(last.output)
+        self.assertIn("id", snapshot)
+
+        show = self.shell.route(f"lens show {snapshot['id']}")
+        self.assertIsNone(show.error)
+        detail = json.loads(show.output)
+        self.assertEqual(detail["id"], snapshot["id"])
+
+    def test_fabric_remote_commands_validate_errors(self) -> None:
+        put = self.shell.route("fabric remote-put http://127.0.0.1:1 hello")
+        self.assertIsNotNone(put.error)
+        self.assertIn("remote-put", put.error)
+
+
 if __name__ == "__main__":
     unittest.main()

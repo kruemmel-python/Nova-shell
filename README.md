@@ -1,53 +1,58 @@
 # Nova-shell
 
-Nova-shell ist eine **Unified Compute & Data Orchestration Runtime** mit polyglotten Engines, Typed Pipelines, Streaming und NovaScript.
+Nova-shell ist eine **Unified Compute & Data Orchestration Runtime** mit polyglotten Engines, Typed Pipelines, NovaScript und Observability.
 
-## Implementierte 5 Enterprise-Erweiterungen (v2)
+## Neu umgesetzt (Enterprise-Track)
 
-### 1) NovaFabric-X — Unified Arrow-Native Memory Grid (MVP)
-- `PipelineType.SHARED_MEMORY` für Handle-basierte Übergabe.
-- `fabric put <text>` / `fabric get <handle>` für lokalen Shared-Memory-Transport.
-- `fabric put-arrow <csv>` kombiniert Arrow-Load (`pyarrow`, optional) mit Fabric-Handle-Export.
-- Ziel: weniger Serialisierung zwischen Stages; Grundlage für Zero-Copy-Workflows.
+### 1) NovaCompute JIT (`jit_wasm`)
+- NovaScript-ähnliche arithmetische Ausdrücke werden in WAT transpiliert und zur Laufzeit als Wasm ausgeführt.
+- Kommando: `jit_wasm "1 + 2 * 3"`
+- Fallback-Verhalten: klare Fehlermeldung, wenn `wasmtime` nicht installiert ist.
 
-### 2) NovaMesh — Topology-Aware Scheduler (MVP)
-- `mesh add <worker_url> <cap1,cap2,...>` registriert Worker und Capabilities.
-- `mesh list` zeigt Worker inkl. aktueller Last.
-- `mesh run <capability> <command>` wählt automatisch den am wenigsten belasteten Worker mit passender Capability.
-- `remote <worker_url> <command>` bleibt als Low-Level-Primitive verfügbar.
+### 2) NovaSync (CRDT-basiertes dezentrales State-Management)
+- G-Counter CRDT für globale Zähler.
+- LWW-Map CRDT für Key/Value-Konfigurationen.
+- Kommandos:
+  - `sync inc <counter> [amount]`
+  - `sync get <counter>`
+  - `sync set <key> <value>`
+  - `sync get-key <key>`
+  - `sync export`
+  - `sync merge <json_state>`
 
-### 3) NovaGuard-OS — Policy + Wasm-orientierte Isolation
-- Policies: `open`, `minimal`, `offline`.
-- `guard list`, `guard set <policy>`, `secure <policy> <command>`.
-- Stage-weises Enforcement in der Pipeline-Ausführung.
-- Zusätzlicher Wasm-Sicherheits-Guard in `secure wasm ...` für untrusted Compute-Pfade.
+### 3) NovaLens (Temporal Lineage & Time-Travel Debugging)
+- Snapshot-Erzeugung pro Stage-Ausführung (Trace-ID, Stage, Output-Preview, Data-Type, Zeitstempel).
+- Kommandos:
+  - `lens last`
+  - `lens list [n]`
+  - `lens show <snapshot_id>`
 
-### 4) NovaFlow — Stateful Contextual Event Streaming
-- SQLite-basiertes State-Backend (`FlowStateStore`) für zustandsbehaftete Auswertung.
-- `flow state set <key> <value>` / `flow state get <key>`.
-- `flow count-last <seconds> [pattern]` für Window-ähnliche Event-Zählung.
-- `on file "<glob>" --timeout <sec> "<pipeline mit _>"` als reaktiver Trigger.
+### 4) NovaFabric-Remote (Zero-Copy-Bridge über Mesh-Endpunkte, MVP)
+- Lokaler Shared-Memory-Fabric bleibt erhalten: `fabric put/get`.
+- Arrow-orientierter Handle-Export: `fabric put-arrow <csv>`.
+- Remote-Transport-API (HTTP-basiertes MVP):
+  - `fabric remote-put <url> <text>`
+  - `fabric remote-get <url> <handle>`
 
-### 5) NovaStudio — Live Graph + LSP-style Introspection
-- `studio completions <prefix>` liefert Command-Completion-Daten.
-- `studio graph` liefert den letzten `PipelineGraph` als JSON.
-- `studio events` exportiert den aktuellen Event-Buffer.
-- Vision HTTP API erweitert um:
-  - `GET /commands`
-  - `GET /lsp/completions?prefix=<x>`
-  - bestehend: `GET /events`, `GET /graph`
+### 5) Bereits vorhandene Plattform-Bausteine weiter integriert
+- Mesh Scheduler: `mesh add/list/run`
+- Guard/Policy: `guard`, `secure`
+- Flow State: `flow state ...`, `flow count-last ...`
+- Studio & Vision:
+  - CLI: `studio completions|graph|events`
+  - HTTP: `/events`, `/graph`, `/commands`, `/lsp/completions?prefix=...`
 
 ---
 
 ## Weitere Runtime-Features
 
-- `py` / `python` mit persistentem Kontext (`py x=10`, danach `py x+5`).
-- `cpp` (g++), `gpu` (pyopencl, optional), `wasm` (wasmtime, optional).
+- `py` / `python` mit persistentem Kontext.
+- `cpp`, `gpu`, `wasm`, `remote` Engines.
 - `data load <csv> [--arrow]` und `data.load <csv> [--arrow]`.
-- PipelineGraph/PipelineNode mit Fusion aufeinanderfolgender Python-Stages (`py_chain`).
-- `watch` + `parallel` + Generator/Stream-Pipelines.
-- Telemetrie pro Stage (`duration_ms`, `rows_processed`, `cpu_percent`, `rss_mb`, `cost_estimate`, `trace_id`).
-- NovaScript via `ns.exec` und `ns.run`.
+- PipelineGraph mit Python-Stage-Fusion (`py_chain`).
+- `watch`-Streaming, `parallel`-Fanout, Generator-Pipelines.
+- Telemetrie je Stage (`duration_ms`, `rows_processed`, `cpu_percent`, `rss_mb`, `cost_estimate`, `trace_id`).
+- NovaScript: `ns.exec`, `ns.run`.
 
 ## Quickstart
 
@@ -58,22 +63,22 @@ python nova_shell.py
 ## Beispiele
 
 ```text
-nova> fabric put hello
-psm_abc123
-nova> fabric get psm_abc123
-hello
+nova> jit_wasm "10 / 2 + 7"
+12.0
+
+nova> sync inc requests 5
+5
+nova> sync get requests
+5
+
+nova> py 2 + 2
+4
+nova> lens last
+{"id":"...","stage":"py 2 + 2", ...}
 
 nova> mesh add http://127.0.0.1:9000 gpu,cpu
 nova> mesh list
 [{"url":"http://127.0.0.1:9000","caps":["cpu","gpu"],"load":0}]
-
-nova> flow state set threshold 5
-ok
-nova> flow state get threshold
-5
-
-nova> observe run "data load file.csv | py len(_)"
-{"trace_id":"...","stats":...}
 ```
 
 ## Tests

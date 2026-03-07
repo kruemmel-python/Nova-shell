@@ -29,7 +29,7 @@ from multiprocessing import shared_memory
 from pathlib import Path
 from typing import Any, Callable, Iterable
 
-from novascript import NovaInterpreter, NovaParser
+from novascript import NovaInterpreter, NovaJITCompiler, NovaParser
 
 try:
     import readline
@@ -377,6 +377,115 @@ class FlowStateStore:
         self.conn.close()
 
 
+class GCounterCRDT:
+    """Grow-only counter CRDT for decentralized approximate synchronization."""
+
+    def __init__(self, node_id: str) -> None:
+        self.node_id = node_id
+        self.counts: dict[str, int] = {node_id: 0}
+
+    def increment(self, amount: int = 1) -> int:
+        self.counts[self.node_id] = self.counts.get(self.node_id, 0) + max(0, amount)
+        return self.value
+
+    @property
+    def value(self) -> int:
+        return sum(self.counts.values())
+
+    def merge(self, remote_counts: dict[str, int]) -> int:
+        for node, value in remote_counts.items():
+            self.counts[node] = max(self.counts.get(node, 0), int(value))
+        return self.value
+
+
+class LWWMapCRDT:
+    """Last-write-wins map CRDT for decentralized key synchronization."""
+
+    def __init__(self, node_id: str) -> None:
+        self.node_id = node_id
+        self.values: dict[str, tuple[float, str, str]] = {}
+
+    def set(self, key: str, value: str) -> None:
+        self.values[key] = (time.time(), self.node_id, value)
+
+    def get(self, key: str) -> str | None:
+        row = self.values.get(key)
+        return row[2] if row else None
+
+    def merge(self, remote_values: dict[str, list[Any] | tuple[Any, ...]]) -> None:
+        for key, payload in remote_values.items():
+            ts, node, value = payload
+            current = self.values.get(key)
+            candidate = (float(ts), str(node), str(value))
+            if current is None or candidate[:2] >= current[:2]:
+                self.values[key] = candidate
+
+
+class NovaLensStore:
+    """Temporal lineage snapshots for time-travel style debugging."""
+
+    def __init__(self) -> None:
+        self.snapshots: list[dict[str, Any]] = []
+
+    def record(self, stage: str, result: CommandResult, trace_id: str, data_preview: str) -> str:
+        snap_id = uuid.uuid4().hex[:12]
+        snapshot = {
+            'id': snap_id,
+            'ts': time.time(),
+            'trace_id': trace_id,
+            'stage': stage,
+            'output': result.output[:200],
+            'error': result.error or '',
+            'data_type': result.data_type.value,
+            'data_preview': data_preview[:200],
+        }
+        self.snapshots.append(snapshot)
+        return snap_id
+
+    def list(self, limit: int = 10) -> list[dict[str, Any]]:
+        return self.snapshots[-limit:]
+
+    def get(self, snap_id: str) -> dict[str, Any] | None:
+        for snapshot in reversed(self.snapshots):
+            if snapshot['id'] == snap_id:
+                return snapshot
+        return None
+
+
+class NovaComputeJIT:
+    """JIT-like execution path: transpile arithmetic NovaScript snippets to Wasm."""
+
+    def __init__(self) -> None:
+        self.compiler = NovaJITCompiler()
+
+    def execute_expression(self, expression: str) -> CommandResult:
+        if not expression.strip():
+            return CommandResult(output='', error='usage: jit_wasm <arithmetic_expression>')
+
+        try:
+            wat = self.compiler.compile_expr_to_wat(expression)
+        except Exception as exc:
+            return CommandResult(output='', error=f'jit compile error: {exc}')
+
+        try:
+            import wasmtime
+        except ImportError:
+            return CommandResult(output='', error='wasmtime is required for jit_wasm')
+
+        try:
+            engine = wasmtime.Engine()
+            module = wasmtime.Module(engine, wasmtime.wat2wasm(wat))
+            store = wasmtime.Store(engine)
+            linker = wasmtime.Linker(engine)
+            instance = linker.instantiate(store, module)
+            run = instance.exports(store)['run']
+            value = float(run(store))
+            payload = {'expression': expression, 'wat': wat, 'value': value}
+            return CommandResult(output=f'{value}\n', data=payload, data_type=PipelineType.OBJECT)
+        except Exception as exc:
+            return CommandResult(output='', error=f'jit runtime error: {exc}')
+
+
 class RemoteEngine:
     """Minimal remote execution client for NovaMesh-like workers."""
 
@@ -510,6 +619,11 @@ class NovaShell:
         self.policy = PolicyEngine()
         self.mesh = MeshScheduler()
         self.flow_state = FlowStateStore()
+        self.jit = NovaComputeJIT()
+        self.node_id = uuid.uuid4().hex[:8]
+        self.sync_counters: dict[str, GCounterCRDT] = {}
+        self.sync_map = LWWMapCRDT(self.node_id)
+        self.lens = NovaLensStore()
         self.last_graph = PipelineGraph()
         self.vision = VisionServer(self)
         self.current_policy = "open"
@@ -531,6 +645,9 @@ class NovaShell:
             "guard": self._run_guard,
             "secure": self._run_secure,
             "flow": self._run_flow,
+            "sync": self._run_sync,
+            "lens": self._run_lens,
+            "jit_wasm": self._run_jit_wasm,
             "on": self._run_on,
             "pack": self._run_pack,
             "observe": self._run_observe,
@@ -785,7 +902,7 @@ class NovaShell:
     def _run_fabric(self, args: str, _: str, __: Any) -> CommandResult:
         parts = shlex.split(args)
         if not parts:
-            return CommandResult(output="", error="usage: fabric put <text> | fabric get <handle> | fabric put-arrow <csv>")
+            return CommandResult(output="", error="usage: fabric put <text> | fabric get <handle> | fabric put-arrow <csv> | fabric remote-put <url> <text> | fabric remote-get <url> <handle>")
         match parts[0]:
             case "put":
                 value = args[len("put") :].strip()
@@ -803,8 +920,34 @@ class NovaShell:
                 if len(parts) < 2:
                     return CommandResult(output="", error="usage: fabric get <handle>")
                 return self.fabric.get(parts[1])
+            case "remote-put":
+                if len(parts) < 3:
+                    return CommandResult(output="", error="usage: fabric remote-put <url> <text>")
+                payload = json.dumps({"value": " ".join(parts[2:])}).encode("utf-8")
+                request = urllib.request.Request(
+                    parts[1].rstrip("/") + "/fabric/put",
+                    data=payload,
+                    headers={"Content-Type": "application/json"},
+                    method="POST",
+                )
+                try:
+                    with urllib.request.urlopen(request, timeout=10) as response:
+                        body = json.loads(response.read().decode("utf-8"))
+                    return CommandResult(output=f"{body.get('handle', '')}\n", data=body, data_type=PipelineType.OBJECT)
+                except Exception as exc:
+                    return CommandResult(output="", error=f"fabric remote-put error: {exc}")
+            case "remote-get":
+                if len(parts) < 3:
+                    return CommandResult(output="", error="usage: fabric remote-get <url> <handle>")
+                url = parts[1].rstrip("/") + "/fabric/get?handle=" + urllib.parse.quote(parts[2])
+                try:
+                    with urllib.request.urlopen(url, timeout=10) as response:
+                        body = json.loads(response.read().decode("utf-8"))
+                    return CommandResult(output=f"{body.get('value', '')}\n", data=body, data_type=PipelineType.OBJECT)
+                except Exception as exc:
+                    return CommandResult(output="", error=f"fabric remote-get error: {exc}")
             case _:
-                return CommandResult(output="", error="usage: fabric put <text> | fabric get <handle> | fabric put-arrow <csv>")
+                return CommandResult(output="", error="usage: fabric put <text> | fabric get <handle> | fabric put-arrow <csv> | fabric remote-put <url> <text> | fabric remote-get <url> <handle>")
 
     def _run_mesh(self, args: str, _: str, __: Any) -> CommandResult:
         parts = shlex.split(args)
@@ -896,6 +1039,82 @@ class NovaShell:
             return CommandResult(output=f"{count}\n", data=count, data_type=PipelineType.OBJECT)
 
         return CommandResult(output="", error="usage: flow state set|get ... | flow count-last <sec> [pattern]")
+
+    def _run_jit_wasm(self, args: str, _: str, __: Any) -> CommandResult:
+        return self.jit.execute_expression(args.strip())
+
+    def _run_sync(self, args: str, _: str, __: Any) -> CommandResult:
+        parts = shlex.split(args)
+        if not parts:
+            return CommandResult(output="", error="usage: sync inc|get|set|get-key|merge|export ...")
+
+        action = parts[0]
+        if action == "inc":
+            if len(parts) < 2:
+                return CommandResult(output="", error="usage: sync inc <counter> [amount]")
+            counter = self.sync_counters.setdefault(parts[1], GCounterCRDT(self.node_id))
+            amount = int(parts[2]) if len(parts) > 2 else 1
+            value = counter.increment(amount)
+            return CommandResult(output=f"{value}\n", data=value, data_type=PipelineType.OBJECT)
+        if action == "get":
+            if len(parts) < 2:
+                return CommandResult(output="", error="usage: sync get <counter>")
+            counter = self.sync_counters.setdefault(parts[1], GCounterCRDT(self.node_id))
+            return CommandResult(output=f"{counter.value}\n", data=counter.value, data_type=PipelineType.OBJECT)
+        if action == "set":
+            if len(parts) < 3:
+                return CommandResult(output="", error="usage: sync set <key> <value>")
+            self.sync_map.set(parts[1], " ".join(parts[2:]))
+            return CommandResult(output="ok\n")
+        if action == "get-key":
+            if len(parts) < 2:
+                return CommandResult(output="", error="usage: sync get-key <key>")
+            value = self.sync_map.get(parts[1])
+            return CommandResult(output=(f"{value}\n" if value is not None else "\n"))
+        if action == "export":
+            payload = {
+                "node_id": self.node_id,
+                "counters": {name: counter.counts for name, counter in self.sync_counters.items()},
+                "map": self.sync_map.values,
+            }
+            return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+        if action == "merge":
+            if len(parts) < 2:
+                return CommandResult(output="", error="usage: sync merge <json_state>")
+            try:
+                payload = json.loads(" ".join(parts[1:]))
+            except json.JSONDecodeError as exc:
+                return CommandResult(output="", error=f"invalid json: {exc}")
+            for name, counts in payload.get("counters", {}).items():
+                counter = self.sync_counters.setdefault(name, GCounterCRDT(self.node_id))
+                counter.merge({k: int(v) for k, v in counts.items()})
+            self.sync_map.merge(payload.get("map", {}))
+            return CommandResult(output="merged\n")
+
+        return CommandResult(output="", error="usage: sync inc|get|set|get-key|merge|export ...")
+
+    def _run_lens(self, args: str, _: str, __: Any) -> CommandResult:
+        parts = shlex.split(args)
+        if not parts:
+            return CommandResult(output="", error="usage: lens list [n] | lens last | lens show <id>")
+        action = parts[0]
+        if action == "list":
+            limit = int(parts[1]) if len(parts) > 1 else 10
+            payload = self.lens.list(limit)
+            return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+        if action == "last":
+            payload = self.lens.list(1)
+            if not payload:
+                return CommandResult(output="\n")
+            return CommandResult(output=json.dumps(payload[0], ensure_ascii=False) + "\n", data=payload[0], data_type=PipelineType.OBJECT)
+        if action == "show":
+            if len(parts) < 2:
+                return CommandResult(output="", error="usage: lens show <id>")
+            payload = self.lens.get(parts[1])
+            if payload is None:
+                return CommandResult(output="", error="snapshot not found")
+            return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+        return CommandResult(output="", error="usage: lens list [n] | lens last | lens show <id>")
 
     def _run_on(self, args: str, _: str, __: Any) -> CommandResult:
         parts = shlex.split(args)
@@ -1212,6 +1431,11 @@ class NovaShell:
             self.events.emit(event_payload)
             self.flow_state.add_event(stage)
 
+        data_preview = ""
+        if isinstance(current_data, (list, dict, str, int, float)):
+            data_preview = str(current_data)
+        self.lens.record(stage, result, self.current_trace_id, data_preview)
+
         return result, rows_processed, duration_ms
 
     def _sample_resources(self) -> tuple[float, float]:
@@ -1289,7 +1513,7 @@ class NovaShell:
     def repl(self) -> None:
         print("NovaShell 0.7 Compute Runtime")
         print(
-            "Commands: py | cpp | gpu | wasm | data | data.load | remote | ai | vision | fabric | guard | secure | on | pack | observe | watch | parallel | events | ns.exec | ns.run | sys | cd | pwd | help | exit"
+            "Commands: py | cpp | gpu | wasm | jit_wasm | data | data.load | remote | mesh | ai | vision | fabric | guard | secure | flow | sync | lens | studio | on | pack | observe | watch | parallel | events | ns.exec | ns.run | sys | cd | pwd | help | exit"
         )
         print("Pipelines: cmd | watch file | parallel py ...\n")
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import ast
 from pathlib import Path
 from typing import Any
 import textwrap
@@ -156,3 +157,40 @@ class NovaInterpreter:
 
         safe_builtins = {"len": len, "int": int, "float": float, "str": str}
         return bool(eval(condition, {"__builtins__": safe_builtins}, safe_locals))
+
+
+class NovaJITCompiler:
+    """Compile a tiny arithmetic subset into WebAssembly text (WAT)."""
+
+    _OPS = {
+        ast.Add: 'f64.add',
+        ast.Sub: 'f64.sub',
+        ast.Mult: 'f64.mul',
+        ast.Div: 'f64.div',
+    }
+
+    def compile_expr_to_wat(self, expression: str) -> str:
+        parsed = ast.parse(expression, mode='eval')
+        body = self._compile_node(parsed.body)
+        return (
+            '(module\n'
+            '  (func (export "run") (result f64)\n'
+            f'    {body}\n'
+            '  )\n'
+            ')'
+        )
+
+    def _compile_node(self, node: ast.AST) -> str:
+        if isinstance(node, ast.Constant) and isinstance(node.value, (int, float)):
+            return f'f64.const {float(node.value)}'
+        if isinstance(node, ast.UnaryOp) and isinstance(node.op, ast.USub):
+            inner = self._compile_node(node.operand)
+            return f'f64.const -1\n    {inner}\n    f64.mul'
+        if isinstance(node, ast.BinOp):
+            op = self._OPS.get(type(node.op))
+            if op is None:
+                raise ValueError('unsupported operator for jit_wasm')
+            left = self._compile_node(node.left)
+            right = self._compile_node(node.right)
+            return f'{left}\n    {right}\n    {op}'
+        raise ValueError('unsupported expression for jit_wasm')
