@@ -88,6 +88,10 @@ Lernpfad mit vielen Programmierbeispielen:
 
 [Tutorial.md](Tutorial.md)
 
+Ideen und Produktbilder dazu, was man konkret mit Nova-shell bauen kann:
+
+[Was_waere_wenn.md](Was_waere_wenn.md)
+
 ## Packaging & Release
 
 - Paket-Metadaten liegen in `pyproject.toml`.
