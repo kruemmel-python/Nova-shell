@@ -16,11 +16,13 @@ class Node:
 class Assignment(Node):
     name: str
     command: str
+    declared_type: str | None = None
 
 
 @dataclass
 class Command(Node):
     command: str
+    output_contract: str | None = None
 
 
 @dataclass
@@ -77,11 +79,23 @@ class NovaParser:
                 nodes.append(IfBlock(condition=condition, body=body))
                 continue
 
+            output_contract = None
+            if "->" in statement:
+                lhs, rhs = statement.rsplit("->", 1)
+                statement = lhs.strip()
+                output_contract = rhs.strip() or None
+
             if "=" in statement and not statement.startswith(("py ", "sys ", "cpp ", "gpu ", "data ", "data.load")):
                 name, command = statement.split("=", 1)
-                nodes.append(Assignment(name=name.strip(), command=command.strip()))
+                name_part = name.strip()
+                declared_type = None
+                if ":" in name_part:
+                    var_name, type_name = name_part.split(":", 1)
+                    name_part = var_name.strip()
+                    declared_type = type_name.strip() or None
+                nodes.append(Assignment(name=name_part, command=command.strip(), declared_type=declared_type))
             else:
-                nodes.append(Command(statement))
+                nodes.append(Command(statement, output_contract=output_contract))
 
             i += 1
 
@@ -101,21 +115,41 @@ class NovaInterpreter:
             last_output = self.run_node(node)
         return last_output
 
+    def _normalize_type_name(self, value: str) -> str:
+        return value.strip().lower().replace(" ", "_")
+
+    def _result_type_name(self, result: Any) -> str:
+        data_type = getattr(result, "data_type", None)
+        if data_type is None:
+            return "text"
+        raw = getattr(data_type, "value", str(data_type))
+        return self._normalize_type_name(str(raw))
+
+    def _validate_contract(self, expected: str | None, result: Any, context: str) -> None:
+        if not expected:
+            return
+        normalized_expected = self._normalize_type_name(expected)
+        actual = self._result_type_name(result)
+        if actual != normalized_expected:
+            raise RuntimeError(f"contract violation in {context}: expected {normalized_expected}, got {actual}")
+
     def run_node(self, node: Node) -> str:
         match node:
-            case Assignment(name=name, command=command):
+            case Assignment(name=name, command=command, declared_type=declared_type):
                 resolved = self._inject_variables(command)
                 result = self.shell.route(resolved)
                 if result.error:
                     raise RuntimeError(result.error)
+                self._validate_contract(declared_type, result, f"assignment {name}")
                 self.variables[name] = result.output
                 return result.output
 
-            case Command(command=command):
+            case Command(command=command, output_contract=output_contract):
                 resolved = self._inject_variables(command)
                 result = self.shell.route(resolved)
                 if result.error:
                     raise RuntimeError(result.error)
+                self._validate_contract(output_contract, result, f"command '{command}'")
                 return result.output
 
             case ForLoop(var=var, iterable=iterable, body=body):

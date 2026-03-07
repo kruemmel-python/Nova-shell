@@ -416,5 +416,49 @@ if len(files_lines) == 2:
         self.assertIn("remote-put", put.error)
 
 
+    def test_optimizer_suggest_and_run(self) -> None:
+        suggest = self.shell.route("opt suggest matrix_mul 1+2")
+        self.assertIsNone(suggest.error)
+        payload = json.loads(suggest.output)
+        self.assertIn("engine", payload)
+
+        run = self.shell.route("opt run matrix_mul 1+2")
+        self.assertIsNone(run.error)
+        run_payload = json.loads(run.output)
+        self.assertIn("delegated_command", run_payload)
+
+    def test_reactive_file_trigger_lifecycle(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            result = self.shell.route(f"reactive on-file '{tmp}/*.txt' 'py _.endswith(\".txt\")'")
+            self.assertIsNone(result.error)
+            trigger = json.loads(result.output)
+            listed = self.shell.route("reactive list")
+            self.assertIsNone(listed.error)
+            entries = json.loads(listed.output)
+            self.assertTrue(any(item["id"] == trigger["id"] for item in entries))
+            stop = self.shell.route(f"reactive stop {trigger['id']}")
+            self.assertIsNone(stop.error)
+
+    def test_guard_ebpf_status(self) -> None:
+        result = self.shell.route("guard ebpf-status")
+        self.assertIsNone(result.error)
+        payload = json.loads(result.output)
+        self.assertIn("available", payload)
+
+    def test_novascript_contract_validation(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            script = Path(tmp) / "typed.ns"
+            script.write_text("rows: object_stream = data load missing.csv\n", encoding="utf-8")
+            check = self.shell.route(f"ns.check {script}")
+            self.assertIsNone(check.error)
+            payload = json.loads(check.output)
+            self.assertGreaterEqual(payload["contracts"], 1)
+
+    def test_fabric_rdma_put_missing_file(self) -> None:
+        result = self.shell.route("fabric rdma-put http://127.0.0.1:8765 /no/file")
+        self.assertIsNotNone(result.error)
+        self.assertIn("file not found", result.error)
+
+
 if __name__ == "__main__":
     unittest.main()

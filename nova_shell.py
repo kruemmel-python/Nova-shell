@@ -29,7 +29,7 @@ from multiprocessing import shared_memory
 from pathlib import Path
 from typing import Any, Callable, Iterable
 
-from novascript import NovaInterpreter, NovaJITCompiler, NovaParser
+from novascript import Assignment as NSAssignment, Command as NSCommand, NovaInterpreter, NovaJITCompiler, NovaParser
 
 try:
     import readline
@@ -535,6 +535,247 @@ class WasmEngine:
             return CommandResult(output="", error=str(exc))
 
 
+class NovaOptimizer:
+    """Predictive steering across engines using telemetry + lightweight heuristics."""
+
+    def __init__(self, shell: "NovaShell") -> None:
+        self.shell = shell
+
+    def _recent_duration(self, engine: str, limit: int = 50) -> float | None:
+        durations: list[float] = []
+        for event in reversed(self.shell.events.events[-limit:]):
+            stage = str(event.get("stage", ""))
+            if stage.startswith(engine + " ") or stage == engine:
+                with contextlib.suppress(Exception):
+                    durations.append(float(event.get("duration_ms", 0.0)))
+        if not durations:
+            return None
+        return sum(durations) / len(durations)
+
+    def suggest_engine(self, task: str, payload: str = "") -> dict[str, Any]:
+        task_name = task.lower().strip()
+        size = len(payload)
+        cpu_percent, _ = self.shell._sample_resources()
+
+        scores: dict[str, float] = {"py": 1.0, "cpp": 1.0, "gpu": 1.0, "mesh": 1.0}
+        reasons: list[str] = []
+
+        if size > 50000:
+            scores["cpp"] += 2.5
+            scores["gpu"] += 2.0
+            reasons.append("large payload favors compiled engines")
+        elif size < 5000:
+            scores["py"] += 1.5
+            reasons.append("small payload favors low-overhead python")
+
+        if any(keyword in task_name for keyword in ["matrix", "vector", "tensor", "fft"]):
+            scores["gpu"] += 2.5
+            scores["cpp"] += 1.5
+            reasons.append("numeric keyword match boosts gpu/cpp")
+
+        if cpu_percent > 75 and self.shell.mesh.workers:
+            scores["mesh"] += 3.0
+            reasons.append("high local CPU and mesh workers available")
+
+        for engine in ["py", "cpp", "gpu"]:
+            recent = self._recent_duration(engine)
+            if recent is not None:
+                scores[engine] += max(0.0, 8.0 - min(recent / 25.0, 8.0))
+
+        chosen = max(scores, key=scores.get)
+        return {
+            "task": task,
+            "payload_size": size,
+            "cpu_percent": round(cpu_percent, 2),
+            "scores": scores,
+            "engine": chosen,
+            "reasons": reasons,
+        }
+
+
+@dataclass
+class ReactiveTrigger:
+    trigger_id: str
+    kind: str
+    target: str
+    pipeline: str
+    threshold: int = 0
+    once: bool = True
+    created_at: float = field(default_factory=time.time)
+    active: bool = True
+
+
+class ReactiveFlowEngine:
+    """Event-driven trigger manager for file and sync-based pipelines."""
+
+    def __init__(self, shell: "NovaShell") -> None:
+        self.shell = shell
+        self.triggers: dict[str, ReactiveTrigger] = {}
+        self._threads: dict[str, threading.Thread] = {}
+        self._stop_flags: dict[str, threading.Event] = {}
+
+    def register_file_trigger(self, pattern: str, pipeline: str, once: bool = True) -> ReactiveTrigger:
+        trigger = ReactiveTrigger(trigger_id=uuid.uuid4().hex[:10], kind="file", target=pattern, pipeline=pipeline, once=once)
+        self._start_trigger(trigger)
+        return trigger
+
+    def register_sync_trigger(self, counter: str, threshold: int, pipeline: str, once: bool = True) -> ReactiveTrigger:
+        trigger = ReactiveTrigger(trigger_id=uuid.uuid4().hex[:10], kind="sync", target=counter, threshold=threshold, pipeline=pipeline, once=once)
+        self._start_trigger(trigger)
+        return trigger
+
+    def _start_trigger(self, trigger: ReactiveTrigger) -> None:
+        stop_flag = threading.Event()
+        self.triggers[trigger.trigger_id] = trigger
+        self._stop_flags[trigger.trigger_id] = stop_flag
+        thread = threading.Thread(target=self._run_trigger, args=(trigger, stop_flag), daemon=True)
+        self._threads[trigger.trigger_id] = thread
+        thread.start()
+
+    def _run_trigger(self, trigger: ReactiveTrigger, stop_flag: threading.Event) -> None:
+        seen: set[str] = set()
+        while not stop_flag.is_set() and trigger.active:
+            try:
+                if trigger.kind == "file":
+                    matches = sorted(glob.glob(trigger.target))
+                    for path in matches:
+                        if path in seen:
+                            continue
+                        seen.add(path)
+                        command = trigger.pipeline.replace("_", shlex.quote(path))
+                        self.shell.route(command)
+                        if trigger.once:
+                            trigger.active = False
+                            return
+                elif trigger.kind == "sync":
+                    counter = self.shell.sync_counters.get(trigger.target)
+                    value = counter.value if counter else 0
+                    if value >= trigger.threshold:
+                        self.shell.route(trigger.pipeline)
+                        if trigger.once:
+                            trigger.active = False
+                            return
+                time.sleep(0.2)
+            except Exception:
+                time.sleep(0.2)
+
+    def stop(self, trigger_id: str) -> bool:
+        flag = self._stop_flags.get(trigger_id)
+        trigger = self.triggers.get(trigger_id)
+        if flag is None or trigger is None:
+            return False
+        trigger.active = False
+        flag.set()
+        return True
+
+    def clear(self) -> None:
+        for trigger_id in list(self.triggers.keys()):
+            self.stop(trigger_id)
+
+    def list(self) -> list[dict[str, Any]]:
+        return [
+            {
+                "id": t.trigger_id,
+                "kind": t.kind,
+                "target": t.target,
+                "pipeline": t.pipeline,
+                "threshold": t.threshold,
+                "once": t.once,
+                "active": t.active,
+            }
+            for t in self.triggers.values()
+        ]
+
+
+class GuardPolicyStore:
+    """Policy loader with optional eBPF metadata for hardened deployments."""
+
+    def __init__(self) -> None:
+        self.loaded_policies: dict[str, dict[str, Any]] = {}
+        self.ebpf_available = self._check_ebpf()
+
+    def _check_ebpf(self) -> bool:
+        with contextlib.suppress(Exception):
+            import bcc  # noqa: F401
+            return True
+        return False
+
+    def load(self, path: str) -> dict[str, Any]:
+        raw = Path(path).read_text(encoding="utf-8")
+        data: dict[str, Any]
+        try:
+            import yaml  # type: ignore
+
+            parsed = yaml.safe_load(raw)
+            data = parsed if isinstance(parsed, dict) else {}
+        except Exception:
+            data = json.loads(raw)
+        name = str(data.get("name") or Path(path).stem)
+        self.loaded_policies[name] = data
+        return data
+
+    def evaluate(self, policy_name: str, stage: str) -> tuple[bool, str | None]:
+        policy = self.loaded_policies.get(policy_name)
+        if policy is None:
+            return True, None
+
+        blocked_cmds = set(policy.get("block_commands", []))
+        blocked_prefixes = [str(v) for v in policy.get("block_prefixes", [])]
+        parts = shlex.split(stage)
+        if not parts:
+            return True, None
+        cmd = parts[0]
+        if cmd in blocked_cmds:
+            return False, f"policy '{policy_name}' blocks command '{cmd}'"
+        if any(stage.startswith(prefix) for prefix in blocked_prefixes):
+            return False, f"policy '{policy_name}' blocks stage prefix"
+        return True, None
+
+
+class FabricRemoteBridge:
+    """Remote transfer abstraction with 'rdma' command semantics and graceful fallback."""
+
+    def __init__(self) -> None:
+        self.arrow_flight_available = self._check_arrow_flight()
+
+    def _check_arrow_flight(self) -> bool:
+        with contextlib.suppress(Exception):
+            import pyarrow.flight  # noqa: F401
+            return True
+        return False
+
+    def put_file(self, url: str, file_path: str) -> CommandResult:
+        path = Path(file_path)
+        if not path.exists():
+            return CommandResult(output="", error=f"file not found: {file_path}")
+        payload = path.read_bytes()
+        request = urllib.request.Request(
+            url.rstrip("/") + "/fabric/put-bytes",
+            data=payload,
+            headers={"Content-Type": "application/octet-stream", "X-Nova-Fabric-Mode": "rdma-compatible"},
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=15) as response:
+                body = json.loads(response.read().decode("utf-8"))
+            body["transport"] = "arrow-flight" if self.arrow_flight_available else "http-binary"
+            return CommandResult(output=json.dumps(body, ensure_ascii=False) + "\n", data=body, data_type=PipelineType.OBJECT)
+        except Exception as exc:
+            return CommandResult(output="", error=f"fabric rdma-put error: {exc}")
+
+    def get_file(self, url: str, handle: str, out_file: str) -> CommandResult:
+        target = Path(out_file)
+        endpoint = url.rstrip("/") + "/fabric/get-bytes?handle=" + urllib.parse.quote(handle)
+        try:
+            with urllib.request.urlopen(endpoint, timeout=15) as response:
+                data = response.read()
+            target.write_bytes(data)
+            payload = {"handle": handle, "output": str(target), "bytes": len(data)}
+            return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+        except Exception as exc:
+            return CommandResult(output="", error=f"fabric rdma-get error: {exc}")
+
+
 class VisionServer:
     """Small HTTP server to inspect runtime events and graph state."""
 
@@ -550,36 +791,92 @@ class VisionServer:
         shell = self.shell
 
         class Handler(http.server.BaseHTTPRequestHandler):
-            def do_GET(self) -> None:  # noqa: N802
-                if self.path == "/events":
-                    data = shell.events.events
-                elif self.path == "/graph":
-                    data = {
-                        "nodes": [
-                            {"name": node.name, "stages": node.stages, "parallel": node.parallel}
-                            for node in shell.last_graph.nodes
-                        ]
-                    }
-                elif self.path.startswith("/lsp/completions"):
-                    parsed = urllib.parse.urlparse(self.path)
-                    prefix = urllib.parse.parse_qs(parsed.query).get("prefix", [""])[0]
-                    data = {
-                        "prefix": prefix,
-                        "items": sorted([name for name in shell.commands.keys() if name.startswith(prefix)]),
-                    }
-                elif self.path == "/commands":
-                    data = sorted(shell.commands.keys())
-                else:
-                    self.send_response(404)
-                    self.end_headers()
-                    return
-
-                body = json.dumps(data, ensure_ascii=False).encode("utf-8")
-                self.send_response(200)
+            def _write_json(self, payload: Any, status: int = 200) -> None:
+                body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+                self.send_response(status)
                 self.send_header("Content-Type", "application/json")
                 self.send_header("Content-Length", str(len(body)))
                 self.end_headers()
                 self.wfile.write(body)
+
+            def do_GET(self) -> None:  # noqa: N802
+                parsed = urllib.parse.urlparse(self.path)
+                if parsed.path == "/events":
+                    self._write_json(shell.events.events)
+                    return
+                if parsed.path == "/graph":
+                    self._write_json({
+                        "nodes": [
+                            {"name": node.name, "stages": node.stages, "parallel": node.parallel}
+                            for node in shell.last_graph.nodes
+                        ]
+                    })
+                    return
+                if parsed.path == "/lsp/completions":
+                    prefix = urllib.parse.parse_qs(parsed.query).get("prefix", [""])[0]
+                    self._write_json({
+                        "prefix": prefix,
+                        "items": sorted([name for name in shell.commands.keys() if name.startswith(prefix)]),
+                    })
+                    return
+                if parsed.path == "/commands":
+                    self._write_json(sorted(shell.commands.keys()))
+                    return
+                if parsed.path == "/fabric/get":
+                    handle = urllib.parse.parse_qs(parsed.query).get("handle", [""])[0]
+                    result = shell.fabric.get(handle)
+                    if result.error:
+                        self._write_json({"error": result.error}, status=404)
+                    else:
+                        self._write_json({"handle": handle, "value": result.data})
+                    return
+                if parsed.path == "/fabric/get-bytes":
+                    handle = urllib.parse.parse_qs(parsed.query).get("handle", [""])[0]
+                    segment = shell.fabric._segments.get(handle)
+                    if segment is None:
+                        self.send_response(404)
+                        self.end_headers()
+                        return
+                    data = bytes(segment.buf)
+                    self.send_response(200)
+                    self.send_header("Content-Type", "application/octet-stream")
+                    self.send_header("Content-Length", str(len(data)))
+                    self.end_headers()
+                    self.wfile.write(data)
+                    return
+
+                self.send_response(404)
+                self.end_headers()
+
+            def do_POST(self) -> None:  # noqa: N802
+                parsed = urllib.parse.urlparse(self.path)
+                length = int(self.headers.get("Content-Length", "0"))
+                body = self.rfile.read(length) if length > 0 else b""
+
+                if parsed.path == "/fabric/put":
+                    try:
+                        payload = json.loads(body.decode("utf-8")) if body else {}
+                    except Exception:
+                        payload = {}
+                    value = str(payload.get("value", ""))
+                    result = shell.fabric.put(value)
+                    if result.error:
+                        self._write_json({"error": result.error}, status=400)
+                    else:
+                        self._write_json(result.data)
+                    return
+
+                if parsed.path == "/fabric/put-bytes":
+                    segment = shared_memory.SharedMemory(create=True, size=max(1, len(body)))
+                    if body:
+                        segment.buf[: len(body)] = body
+                    handle = segment.name
+                    shell.fabric._segments[handle] = segment
+                    self._write_json({"handle": handle, "bytes": len(body)})
+                    return
+
+                self.send_response(404)
+                self.end_headers()
 
             def log_message(self, format: str, *args: Any) -> None:  # noqa: A003
                 return
@@ -620,6 +917,10 @@ class NovaShell:
         self.mesh = MeshScheduler()
         self.flow_state = FlowStateStore()
         self.jit = NovaComputeJIT()
+        self.optimizer = NovaOptimizer(self)
+        self.guard_store = GuardPolicyStore()
+        self.fabric_remote = FabricRemoteBridge()
+        self.reactive = ReactiveFlowEngine(self)
         self.node_id = uuid.uuid4().hex[:8]
         self.sync_counters: dict[str, GCounterCRDT] = {}
         self.sync_map = LWWMapCRDT(self.node_id)
@@ -645,6 +946,8 @@ class NovaShell:
             "guard": self._run_guard,
             "secure": self._run_secure,
             "flow": self._run_flow,
+            "reactive": self._run_reactive,
+            "opt": self._run_optimizer,
             "sync": self._run_sync,
             "lens": self._run_lens,
             "jit_wasm": self._run_jit_wasm,
@@ -660,6 +963,7 @@ class NovaShell:
             "events": self._events,
             "ns.exec": self._ns_exec,
             "ns.run": self._ns_run,
+            "ns.check": self._ns_check,
         }
 
         self._history_file = Path.home() / ".nova_shell_history"
@@ -684,6 +988,7 @@ class NovaShell:
 
     def _close_loop(self) -> None:
         self.vision.stop()
+        self.reactive.clear()
         self.fabric.cleanup()
         self.flow_state.close()
         if not self.loop.is_closed():
@@ -843,6 +1148,26 @@ class NovaShell:
         except Exception as exc:
             return CommandResult(output="", error=str(exc))
 
+    def _ns_check(self, source: str, _: str, __: Any) -> CommandResult:
+        payload = source.strip()
+        if not payload:
+            return CommandResult(output="", error="usage: ns.check <script_file.ns>")
+        try:
+            parser = NovaParser()
+            nodes = parser.parse_file(payload)
+            assignments = sum(1 for n in nodes if isinstance(n, NSAssignment))
+            commands = sum(1 for n in nodes if isinstance(n, NSCommand))
+            contracts = 0
+            for n in nodes:
+                if getattr(n, "declared_type", None):
+                    contracts += 1
+                if getattr(n, "output_contract", None):
+                    contracts += 1
+            result = {"nodes": len(nodes), "assignments": assignments, "commands": commands, "contracts": contracts}
+            return CommandResult(output=json.dumps(result, ensure_ascii=False) + "\n", data=result, data_type=PipelineType.OBJECT)
+        except Exception as exc:
+            return CommandResult(output="", error=str(exc))
+
     def _run_python(self, code: str, pipeline_input: str, pipeline_data: Any) -> CommandResult:
         return self.python.execute(code, pipeline_input, pipeline_data)
 
@@ -902,7 +1227,7 @@ class NovaShell:
     def _run_fabric(self, args: str, _: str, __: Any) -> CommandResult:
         parts = shlex.split(args)
         if not parts:
-            return CommandResult(output="", error="usage: fabric put <text> | fabric get <handle> | fabric put-arrow <csv> | fabric remote-put <url> <text> | fabric remote-get <url> <handle>")
+            return CommandResult(output="", error="usage: fabric put <text> | fabric get <handle> | fabric put-arrow <csv> | fabric remote-put <url> <text> | fabric remote-get <url> <handle> | fabric rdma-put <url> <file> | fabric rdma-get <url> <handle> <out_file>")
         match parts[0]:
             case "put":
                 value = args[len("put") :].strip()
@@ -946,8 +1271,16 @@ class NovaShell:
                     return CommandResult(output=f"{body.get('value', '')}\n", data=body, data_type=PipelineType.OBJECT)
                 except Exception as exc:
                     return CommandResult(output="", error=f"fabric remote-get error: {exc}")
+            case "rdma-put":
+                if len(parts) < 3:
+                    return CommandResult(output="", error="usage: fabric rdma-put <url> <file>")
+                return self.fabric_remote.put_file(parts[1], parts[2])
+            case "rdma-get":
+                if len(parts) < 4:
+                    return CommandResult(output="", error="usage: fabric rdma-get <url> <handle> <out_file>")
+                return self.fabric_remote.get_file(parts[1], parts[2], parts[3])
             case _:
-                return CommandResult(output="", error="usage: fabric put <text> | fabric get <handle> | fabric put-arrow <csv> | fabric remote-put <url> <text> | fabric remote-get <url> <handle>")
+                return CommandResult(output="", error="usage: fabric put <text> | fabric get <handle> | fabric put-arrow <csv> | fabric remote-put <url> <text> | fabric remote-get <url> <handle> | fabric rdma-put <url> <file> | fabric rdma-get <url> <handle> <out_file>")
 
     def _run_mesh(self, args: str, _: str, __: Any) -> CommandResult:
         parts = shlex.split(args)
@@ -990,14 +1323,33 @@ class NovaShell:
                 if len(parts) < 2:
                     return CommandResult(output="", error="usage: guard set <policy>")
                 name = parts[1]
-                if name not in self.policy.policies:
+                if name not in self.policy.policies and name not in self.guard_store.loaded_policies:
                     return CommandResult(output="", error=f"unknown policy: {name}")
                 self.current_policy = name
                 return CommandResult(output=f"policy set to {name}\n")
             case "list":
-                return CommandResult(output="\n".join(sorted(self.policy.policies.keys())) + "\n")
+                payload = {
+                    "built_in": sorted(self.policy.policies.keys()),
+                    "loaded": sorted(self.guard_store.loaded_policies.keys()),
+                }
+                return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+            case "load":
+                if len(parts) < 2:
+                    return CommandResult(output="", error="usage: guard load <policy.yaml|policy.json>")
+                try:
+                    data = self.guard_store.load(parts[1])
+                    name = str(data.get("name") or Path(parts[1]).stem)
+                    return CommandResult(output=f"loaded policy {name}\n", data=data, data_type=PipelineType.OBJECT)
+                except Exception as exc:
+                    return CommandResult(output="", error=f"failed to load policy: {exc}")
+            case "ebpf-status":
+                payload = {
+                    "available": self.guard_store.ebpf_available,
+                    "mode": "kernel" if self.guard_store.ebpf_available else "userspace-fallback",
+                }
+                return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
             case _:
-                return CommandResult(output="", error="usage: guard [list]|set <policy>")
+                return CommandResult(output="", error="usage: guard [list]|set <policy>|load <file>|ebpf-status")
 
     def _run_secure(self, args: str, _: str, __: Any) -> CommandResult:
         parts = shlex.split(args)
@@ -1008,6 +1360,8 @@ class NovaShell:
         if policy_name == "wasm" and command.startswith("py "):
             return CommandResult(output="", error="secure wasm mode requires wasm modules, not raw python")
         allowed, reason = self.policy.is_allowed(policy_name, command)
+        if allowed:
+            allowed, reason = self.guard_store.evaluate(policy_name, command)
         if not allowed:
             return CommandResult(output="", error=reason)
         return self.route(command)
@@ -1039,6 +1393,75 @@ class NovaShell:
             return CommandResult(output=f"{count}\n", data=count, data_type=PipelineType.OBJECT)
 
         return CommandResult(output="", error="usage: flow state set|get ... | flow count-last <sec> [pattern]")
+
+    def _run_optimizer(self, args: str, _: str, __: Any) -> CommandResult:
+        parts = shlex.split(args)
+        if not parts:
+            return CommandResult(output="", error="usage: opt suggest <task> [payload] | opt run <task> [payload]")
+
+        action = parts[0]
+        if action not in {"suggest", "run"}:
+            return CommandResult(output="", error="usage: opt suggest <task> [payload] | opt run <task> [payload]")
+
+        if len(parts) < 2:
+            return CommandResult(output="", error=f"usage: opt {action} <task> [payload]")
+
+        task = parts[1]
+        payload = " ".join(parts[2:]) if len(parts) > 2 else ""
+        suggestion = self.optimizer.suggest_engine(task, payload)
+
+        if action == "suggest":
+            return CommandResult(output=json.dumps(suggestion, ensure_ascii=False) + "\n", data=suggestion, data_type=PipelineType.OBJECT)
+
+        engine = suggestion["engine"]
+        if engine == "mesh" and self.mesh.workers:
+            workers = self.mesh.list_workers()
+            capability = "gpu" if any("gpu" in w["caps"] for w in workers) else "cpu"
+            command = f"mesh run {capability} py {payload or '0'}"
+        elif engine == "gpu":
+            command = f"py {payload}" if not payload else f"py {payload}"  # fallback-friendly path
+        elif engine == "cpp":
+            command = f"py {payload}" if payload else "py 0"
+        else:
+            command = f"py {payload}" if payload else "py 0"
+
+        result = self.route(command)
+        if result.error:
+            return result
+        response = {"suggestion": suggestion, "delegated_command": command, "output": result.output.strip()}
+        return CommandResult(output=json.dumps(response, ensure_ascii=False) + "\n", data=response, data_type=PipelineType.OBJECT)
+
+    def _run_reactive(self, args: str, _: str, __: Any) -> CommandResult:
+        parts = shlex.split(args)
+        if not parts:
+            return CommandResult(output="", error="usage: reactive on-file|on-sync|list|stop|clear ...")
+
+        action = parts[0]
+        if action == "on-file":
+            if len(parts) < 3:
+                return CommandResult(output="", error="usage: reactive on-file <glob> <pipeline> [--continuous]")
+            once = "--continuous" not in parts[3:]
+            trigger = self.reactive.register_file_trigger(parts[1], parts[2], once=once)
+            return CommandResult(output=json.dumps({"id": trigger.trigger_id, "kind": trigger.kind}, ensure_ascii=False) + "\n", data={"id": trigger.trigger_id}, data_type=PipelineType.OBJECT)
+        if action == "on-sync":
+            if len(parts) < 4:
+                return CommandResult(output="", error="usage: reactive on-sync <counter> <threshold> <pipeline> [--continuous]")
+            once = "--continuous" not in parts[4:]
+            trigger = self.reactive.register_sync_trigger(parts[1], int(parts[2]), parts[3], once=once)
+            return CommandResult(output=json.dumps({"id": trigger.trigger_id, "kind": trigger.kind}, ensure_ascii=False) + "\n", data={"id": trigger.trigger_id}, data_type=PipelineType.OBJECT)
+        if action == "list":
+            payload = self.reactive.list()
+            return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+        if action == "stop":
+            if len(parts) < 2:
+                return CommandResult(output="", error="usage: reactive stop <id>")
+            ok = self.reactive.stop(parts[1])
+            return CommandResult(output=("stopped\n" if ok else "not found\n"))
+        if action == "clear":
+            self.reactive.clear()
+            return CommandResult(output="cleared\n")
+
+        return CommandResult(output="", error="usage: reactive on-file|on-sync|list|stop|clear ...")
 
     def _run_jit_wasm(self, args: str, _: str, __: Any) -> CommandResult:
         return self.jit.execute_expression(args.strip())
@@ -1372,6 +1795,8 @@ class NovaShell:
         node_name: str | None = None,
     ) -> tuple[CommandResult, int, float]:
         allowed, reason = self.policy.is_allowed(self.current_policy, stage)
+        if allowed:
+            allowed, reason = self.guard_store.evaluate(self.current_policy, stage)
         if not allowed:
             blocked = CommandResult(output="", error=reason)
             if emit_event:
