@@ -20,6 +20,7 @@ import zipfile
 import uuid
 import sqlite3
 import hashlib
+import base64
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -134,6 +135,38 @@ class CppEngine:
                 output=run_proc.stdout,
                 error=run_proc.stderr if run_proc.stderr else None,
             )
+
+    def compile_to_wasm_and_run(self, code: str, pipeline_input: str = "") -> CommandResult:
+        with tempfile.TemporaryDirectory() as tmp:
+            source = Path(tmp) / "program.cpp"
+            wasm = Path(tmp) / "program.wasm"
+            source.write_text(code, encoding="utf-8")
+
+            compile_proc = subprocess.run(
+                ["emcc", str(source), "-O2", "-s", "STANDALONE_WASM=1", "-s", "EXPORTED_FUNCTIONS=['_main']", "-o", str(wasm)],
+                capture_output=True,
+                text=True,
+            )
+            if compile_proc.returncode != 0:
+                return CommandResult(output="", error=f"sandbox compile failed: {compile_proc.stderr.strip()}")
+
+            try:
+                import wasmtime
+            except ImportError:
+                return CommandResult(output="", error="wasmtime is required for cpp sandbox mode")
+
+            try:
+                store = wasmtime.Store()
+                module = wasmtime.Module.from_file(store.engine, str(wasm))
+                linker = wasmtime.Linker(store.engine)
+                instance = linker.instantiate(store, module)
+                run = instance.exports(store).get("_start")
+                if run is None:
+                    return CommandResult(output="", error="sandbox wasm module missing _start")
+                run(store)
+                return CommandResult(output="sandbox executed\n")
+            except Exception as exc:
+                return CommandResult(output="", error=f"sandbox runtime error: {exc}")
 
 
 class GPUEngine:
@@ -371,6 +404,98 @@ class MeshScheduler:
         chosen = max(candidates, key=score)
         chosen["load"] += 1
         return chosen
+
+class NovaZeroPool:
+    """Unified zero-copy memory manager for text/arrow payload handoff."""
+
+    def __init__(self) -> None:
+        self.objects: dict[str, dict[str, Any]] = {}
+
+    def put_bytes(self, payload: bytes, data_type: str) -> CommandResult:
+        segment = shared_memory.SharedMemory(create=True, size=max(1, len(payload)))
+        if payload:
+            segment.buf[: len(payload)] = payload
+        handle = segment.name
+        self.objects[handle] = {
+            "segment": segment,
+            "size": len(payload),
+            "type": data_type,
+            "refs": 1,
+            "created_at": time.time(),
+        }
+        data = {"handle": handle, "size": len(payload), "type": data_type, "refs": 1}
+        return CommandResult(output=json.dumps(data, ensure_ascii=False) + "\n", data=data, data_type=PipelineType.SHARED_MEMORY)
+
+    def put_text(self, text: str) -> CommandResult:
+        return self.put_bytes(text.encode("utf-8"), "text")
+
+    def put_arrow_table(self, table: Any) -> CommandResult:
+        try:
+            import pyarrow as pa
+            sink = pa.BufferOutputStream()
+            with pa.ipc.new_stream(sink, table.schema) as writer:
+                writer.write_table(table)
+            payload = sink.getvalue().to_pybytes()
+            result = self.put_bytes(payload, "arrow_table")
+            if result.data:
+                result.data["format"] = "arrow_ipc_stream"
+                result.output = json.dumps(result.data, ensure_ascii=False) + "\n"
+            return result
+        except Exception as exc:
+            return CommandResult(output="", error=f"arrow zero-copy store failed: {exc}")
+
+    def put_arrow_from_csv(self, csv_path: str) -> CommandResult:
+        try:
+            import pyarrow.csv as pacsv
+        except ImportError:
+            return CommandResult(output="", error="pyarrow is required for zero put-arrow")
+        try:
+            table = pacsv.read_csv(csv_path)
+            return self.put_arrow_table(table)
+        except Exception as exc:
+            return CommandResult(output="", error=str(exc))
+
+    def get(self, handle: str) -> CommandResult:
+        obj = self.objects.get(handle)
+        if obj is None:
+            return CommandResult(output="", error=f"zero handle not found: {handle}")
+        obj["refs"] += 1
+        data = bytes(obj["segment"].buf[: obj["size"]])
+        if obj["type"] == "text":
+            text = data.decode("utf-8", errors="replace")
+            return CommandResult(output=text + ("\n" if not text.endswith("\n") else ""), data=text, data_type=PipelineType.TEXT)
+        encoded = base64.b64encode(data).decode("ascii")
+        payload = {"handle": handle, "type": obj["type"], "size": obj["size"], "refs": obj["refs"], "base64": encoded}
+        return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.SHARED_MEMORY)
+
+    def list(self) -> list[dict[str, Any]]:
+        return [
+            {"handle": h, "size": o["size"], "type": o["type"], "refs": o["refs"], "created_at": o["created_at"]}
+            for h, o in sorted(self.objects.items())
+        ]
+
+    def release(self, handle: str) -> CommandResult:
+        obj = self.objects.get(handle)
+        if obj is None:
+            return CommandResult(output="", error=f"zero handle not found: {handle}")
+        obj["refs"] -= 1
+        if obj["refs"] <= 0:
+            with contextlib.suppress(Exception):
+                obj["segment"].close()
+            with contextlib.suppress(Exception):
+                obj["segment"].unlink()
+            self.objects.pop(handle, None)
+            return CommandResult(output="released\n")
+        return CommandResult(output=f"refs={obj['refs']}\n")
+
+    def cleanup(self) -> None:
+        for handle, obj in list(self.objects.items()):
+            with contextlib.suppress(Exception):
+                obj["segment"].close()
+            with contextlib.suppress(Exception):
+                obj["segment"].unlink()
+            self.objects.pop(handle, None)
+
 
 class FlowStateStore:
     """State backend for event/window-aware streaming decisions."""
@@ -1000,6 +1125,50 @@ class NovaGraphCompiler:
         return "\n".join(lines)
 
 
+class NovaSynth:
+    """AI-native (heuristic/telemetry) engine selector and autotuner."""
+
+    def __init__(self, shell: "NovaShell") -> None:
+        self.shell = shell
+
+    def suggest(self, code: str) -> dict[str, Any]:
+        text = code.strip()
+        lower = text.lower()
+        engine = "py"
+        reason = "default python path"
+
+        if any(k in lower for k in ["matrix", "tensor", "vector", "fft"]):
+            engine = "gpu"
+            reason = "numeric workload pattern"
+        elif "for " in lower or "while " in lower:
+            engine = "cpp"
+            reason = "loop-heavy pattern"
+
+        # telemetry bias from optimizer if available
+        opt = self.shell.optimizer.suggest_engine("synth", text)
+        if opt.get("engine") in {"py", "cpp", "gpu", "mesh"}:
+            if engine == "py" and opt["engine"] != "py":
+                engine = opt["engine"]
+                reason += "; telemetry override"
+
+        return {"engine": engine, "reason": reason, "input": code}
+
+    def autotune(self, code: str) -> CommandResult:
+        suggestion = self.suggest(code)
+        engine = suggestion["engine"]
+        payload = code.strip()
+
+        if engine == "cpp" and payload.startswith("py "):
+            payload = payload[len("py ") :].strip()
+            if payload:
+                return self.shell.route(f"cpp.expr {payload}")
+        if engine == "gpu":
+            return CommandResult(output="", error="autotune selected gpu; provide kernel file for gpu execution")
+        if engine == "mesh" and self.shell.mesh.workers:
+            return self.shell.route(f"mesh intelligent-run cpu py {payload or '0'}")
+        return self.shell.route(code if code.strip().startswith(("py ", "cpp ", "gpu ", "sys ")) else f"py {payload}")
+
+
 class VisionServer:
     """Small HTTP server to inspect runtime events and graph state."""
 
@@ -1035,6 +1204,15 @@ class VisionServer:
                             for node in shell.last_graph.nodes
                         ]
                     })
+                    return
+                if parsed.path == "/pulse/state":
+                    tail = shell.events.events[-25:]
+                    bottlenecks = sorted(
+                        [e for e in tail if e.get("duration_ms")],
+                        key=lambda e: float(e.get("duration_ms", 0.0)),
+                        reverse=True,
+                    )[:5]
+                    self._write_json({"recent_events": tail, "bottlenecks": bottlenecks, "watch_hooks": list(shell._dflow_subscribers.keys())})
                     return
                 if parsed.path == "/lsp/completions":
                     prefix = urllib.parse.parse_qs(parsed.query).get("prefix", [""])[0]
@@ -1090,6 +1268,21 @@ class VisionServer:
                         self._write_json(result.data)
                     return
 
+                if parsed.path == "/flow/event":
+                    try:
+                        payload = json.loads(body.decode("utf-8")) if body else {}
+                    except Exception:
+                        payload = {}
+                    event_name = str(payload.get("event", ""))
+                    value = str(payload.get("payload", ""))
+                    executed = []
+                    for pipeline in shell._dflow_subscribers.get(event_name, []):
+                        cmd = pipeline.replace("_", shlex.quote(value))
+                        res = shell.route(cmd)
+                        executed.append({"pipeline": pipeline, "error": res.error or ""})
+                    self._write_json({"event": event_name, "executed": executed})
+                    return
+
                 if parsed.path == "/fabric/put-bytes":
                     segment = shared_memory.SharedMemory(create=True, size=max(1, len(body)))
                     if body:
@@ -1137,11 +1330,13 @@ class NovaShell:
         self.system = SystemEngine()
         self.events = EventBus()
         self.fabric = NovaFabric()
+        self.zero = NovaZeroPool()
         self.policy = PolicyEngine()
         self.mesh = MeshScheduler()
         self.flow_state = FlowStateStore()
         self.jit = NovaComputeJIT()
         self.optimizer = NovaOptimizer(self)
+        self.synth = NovaSynth(self)
         self.guard_store = GuardPolicyStore()
         self.fabric_remote = FabricRemoteBridge()
         self.reactive = ReactiveFlowEngine(self)
@@ -1155,11 +1350,14 @@ class NovaShell:
         self.current_policy = "open"
         self.current_trace_id = ""
         self._ns_runtime: NovaInterpreter | None = None
+        self._dflow_subscribers: dict[str, list[str]] = {}
+        self.wasm_sandbox_default = False
 
         self.commands: dict[str, Callable[[str, str, Any], CommandResult]] = {
             "py": self._run_python,
             "python": self._run_python,
             "cpp": self._run_cpp,
+            "cpp.sandbox": self._run_cpp_sandbox,
             "cpp.expr": self._run_cpp_expr,
             "cpp.expr_chain": self._run_cpp_expr_chain,
             "gpu": self._run_gpu,
@@ -1169,13 +1367,17 @@ class NovaShell:
             "remote": self._run_remote,
             "ai": self._run_ai,
             "vision": self._run_vision,
+            "pulse": self._run_pulse,
             "fabric": self._run_fabric,
+            "zero": self._run_zero,
             "mesh": self._run_mesh,
             "guard": self._run_guard,
             "secure": self._run_secure,
             "flow": self._run_flow,
             "reactive": self._run_reactive,
+            "dflow": self._run_dflow,
             "opt": self._run_optimizer,
+            "synth": self._run_synth,
             "graph": self._run_graph,
             "sync": self._run_sync,
             "lens": self._run_lens,
@@ -1220,6 +1422,7 @@ class NovaShell:
         self.vision.stop()
         self.reactive.clear()
         self.fabric.cleanup()
+        self.zero.cleanup()
         self.flow_state.close()
         self.lens.close()
         if not self.loop.is_closed():
@@ -1493,7 +1696,15 @@ class NovaShell:
         blocked = self._is_ebpf_blocked(code)
         if blocked:
             return CommandResult(output="", error=blocked)
+        if self.wasm_sandbox_default:
+            return self.cpp.compile_to_wasm_and_run(code, pipeline_input)
         return self.cpp.compile_and_run(code, pipeline_input)
+
+    def _run_cpp_sandbox(self, code: str, pipeline_input: str, _: Any) -> CommandResult:
+        blocked = self._is_ebpf_blocked(code)
+        if blocked:
+            return CommandResult(output="", error=blocked)
+        return self.cpp.compile_to_wasm_and_run(code, pipeline_input)
 
     def _run_gpu(self, args: str, pipeline_input: str, _: Any) -> CommandResult:
         kernel_file = args.strip()
@@ -1691,6 +1902,19 @@ class NovaShell:
                     return CommandResult(output=f"loaded policy {name}\n", data=data, data_type=PipelineType.OBJECT)
                 except Exception as exc:
                     return CommandResult(output="", error=f"failed to load policy: {exc}")
+            case "sandbox":
+                if len(parts) < 2:
+                    return CommandResult(output="", error="usage: guard sandbox on|off|status")
+                if parts[1] == "on":
+                    self.wasm_sandbox_default = True
+                    return CommandResult(output="sandbox on\n")
+                if parts[1] == "off":
+                    self.wasm_sandbox_default = False
+                    return CommandResult(output="sandbox off\n")
+                if parts[1] == "status":
+                    payload = {"sandbox_default": self.wasm_sandbox_default}
+                    return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+                return CommandResult(output="", error="usage: guard sandbox on|off|status")
             case "ebpf-status":
                 payload = {
                     "available": self.guard_store.ebpf_available,
@@ -1710,7 +1934,7 @@ class NovaShell:
                 self.guard_store.enforced_policy = None
                 return CommandResult(output="released\n")
             case _:
-                return CommandResult(output="", error="usage: guard [list]|set <policy>|load <file>|ebpf-status|ebpf-compile <policy>|ebpf-enforce <policy>|ebpf-release")
+                return CommandResult(output="", error="usage: guard [list]|set <policy>|load <file>|sandbox on|off|status|ebpf-status|ebpf-compile <policy>|ebpf-enforce <policy>|ebpf-release")
 
     def _run_secure(self, args: str, _: str, __: Any) -> CommandResult:
         parts = shlex.split(args)
@@ -1823,6 +2047,102 @@ class NovaShell:
             return CommandResult(output="cleared\n")
 
         return CommandResult(output="", error="usage: reactive on-file|on-sync|list|stop|clear ...")
+
+    def _run_zero(self, args: str, _: str, __: Any) -> CommandResult:
+        parts = shlex.split(args)
+        if not parts:
+            return CommandResult(output="", error="usage: zero put <text> | zero put-arrow <csv> | zero get <handle> | zero list | zero release <handle>")
+        action = parts[0]
+        if action == "put":
+            value = args[len("put") :].strip()
+            return self.zero.put_text(value)
+        if action == "put-arrow":
+            if len(parts) < 2:
+                return CommandResult(output="", error="usage: zero put-arrow <csv>")
+            return self.zero.put_arrow_from_csv(parts[1])
+        if action == "get":
+            if len(parts) < 2:
+                return CommandResult(output="", error="usage: zero get <handle>")
+            return self.zero.get(parts[1])
+        if action == "list":
+            payload = self.zero.list()
+            return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+        if action == "release":
+            if len(parts) < 2:
+                return CommandResult(output="", error="usage: zero release <handle>")
+            return self.zero.release(parts[1])
+        return CommandResult(output="", error="usage: zero put <text> | zero put-arrow <csv> | zero get <handle> | zero list | zero release <handle>")
+
+    def _run_synth(self, args: str, _: str, __: Any) -> CommandResult:
+        parts = shlex.split(args)
+        if not parts:
+            return CommandResult(output="", error="usage: synth suggest <code> | synth autotune <code>")
+        action = parts[0]
+        payload = args[len(action) :].strip()
+        if action == "suggest":
+            if not payload:
+                return CommandResult(output="", error="usage: synth suggest <code>")
+            data = self.synth.suggest(payload)
+            return CommandResult(output=json.dumps(data, ensure_ascii=False) + "\n", data=data, data_type=PipelineType.OBJECT)
+        if action == "autotune":
+            if not payload:
+                return CommandResult(output="", error="usage: synth autotune <code>")
+            result = self.synth.autotune(payload)
+            if result.error:
+                return result
+            payload_data = {"result": result.output}
+            return CommandResult(output=json.dumps(payload_data, ensure_ascii=False) + "\n", data=payload_data, data_type=PipelineType.OBJECT)
+        return CommandResult(output="", error="usage: synth suggest <code> | synth autotune <code>")
+
+    def _run_dflow(self, args: str, _: str, __: Any) -> CommandResult:
+        parts = shlex.split(args)
+        if not parts:
+            return CommandResult(output="", error="usage: dflow subscribe|publish|list ...")
+        action = parts[0]
+        if action == "subscribe":
+            if len(parts) < 3:
+                return CommandResult(output="", error="usage: dflow subscribe <event> <pipeline>")
+            self._dflow_subscribers.setdefault(parts[1], []).append(parts[2])
+            return CommandResult(output="subscribed\n")
+        if action == "publish":
+            if len(parts) < 3:
+                return CommandResult(output="", error="usage: dflow publish <event> <payload> [--broadcast]")
+            event_name = parts[1]
+            payload = parts[2]
+            executed: list[dict[str, str]] = []
+            for pipeline in self._dflow_subscribers.get(event_name, []):
+                command = pipeline.replace("_", shlex.quote(payload))
+                result = self.route(command)
+                executed.append({"pipeline": pipeline, "error": result.error or ""})
+            if "--broadcast" in parts and self.mesh.workers:
+                event_data = json.dumps({"event": event_name, "payload": payload}).encode("utf-8")
+                for worker in self.mesh.list_workers():
+                    req = urllib.request.Request(worker["url"].rstrip("/") + "/flow/event", data=event_data, headers={"Content-Type": "application/json"}, method="POST")
+                    with contextlib.suppress(Exception):
+                        urllib.request.urlopen(req, timeout=5).read()
+            out = {"event": event_name, "executed": executed}
+            return CommandResult(output=json.dumps(out, ensure_ascii=False) + "\n", data=out, data_type=PipelineType.OBJECT)
+        if action == "list":
+            return CommandResult(output=json.dumps(self._dflow_subscribers, ensure_ascii=False) + "\n", data=self._dflow_subscribers, data_type=PipelineType.OBJECT)
+        return CommandResult(output="", error="usage: dflow subscribe|publish|list ...")
+
+    def _run_pulse(self, args: str, _: str, __: Any) -> CommandResult:
+        parts = shlex.split(args)
+        action = parts[0] if parts else "status"
+        if action == "status":
+            payload = {
+                "vision_running": self.vision._server is not None,
+                "recent_event_count": len(self.events.events[-25:]),
+                "active_reactive_triggers": len([t for t in self.reactive.triggers.values() if t.active]),
+                "dflow_topics": sorted(self._dflow_subscribers.keys()),
+            }
+            return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+        if action == "snapshot":
+            tail = self.events.events[-25:]
+            bottlenecks = sorted(tail, key=lambda e: float(e.get("duration_ms", 0.0)), reverse=True)[:5]
+            payload = {"events": tail, "bottlenecks": bottlenecks}
+            return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+        return CommandResult(output="", error="usage: pulse [status|snapshot]")
 
     def _run_jit_wasm(self, args: str, _: str, __: Any) -> CommandResult:
         return self.jit.execute_expression(args.strip())
