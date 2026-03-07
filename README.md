@@ -1,65 +1,149 @@
 # Nova-shell
 
-Nova-shell ist eine **Unified Compute & Data Orchestration Runtime** mit polyglotten Engines, Pipeline-Optimierung, NovaScript-DSL und Observability.
+Nova-shell ist eine **Unified Compute & Data Orchestration Runtime** mit polyglotten Engines, DSL, AOT-Pipelines, Lineage, Mesh-Offloading und Security-Enforcement.
 
-## Enterprise-Upgrade: 5 vollständig implementierte Bausteine
+## Nächste Ebene: 5 professionell umgesetzte Enterprise-Module
 
-### 1) NovaGraph — AOT-Kompilierung von Cross-Engine-Pipelines
-- Neuer `graph`-Befehl:
-  - `graph aot <pipeline>`
-  - `graph run <pipeline>`
-  - `graph show <graph_id>`
-- AOT-Optimizer erkennt und fusioniert aufeinanderfolgende `cpp.expr`-Stages in `cpp.expr_chain`.
-- Für fusionierte C++-Expr-Pipelines wird ein gemeinsamer C++-Codepfad erzeugt.
+### 1) NovaZero — Unified Zero-Copy Memory Bridge
+- Neuer globaler Shared-Memory-Pool `NovaZeroPool`.
+- Kommandos:
+  - `zero put <text>`
+  - `zero put-arrow <csv>`
+  - `zero get <handle>`
+  - `zero list`
+  - `zero release <handle>`
+- Arrow-Pfade nutzen IPC-Streams in Shared Memory für engine-übergreifenden Austausch ohne JSON-Roundtrips.
 
-### 2) NovaLens — Time-Travel Debugging & Data Lineage (CAS)
-- Persistente Lineage via SQLite (`.nova_lens/lineage.db`) und Content-Addressable Storage (`.nova_lens/cas`).
-- Jeder Stage-Output wird gehasht (SHA-256) und versioniert gespeichert.
-- Lens-Befehle:
-  - `lens list [n]`
-  - `lens last`
-  - `lens show <id>`
-  - `lens replay <id>`
+### 2) NovaSynth — AI-Native Engine Selector & Autotuner
+- Neue Runtime-Komponente `NovaSynth` (heuristisch + Telemetrie-gestützt).
+- Kommandos:
+  - `synth suggest <code>`
+  - `synth autotune <code>`
+- Nutzt Mustererkennung + Optimizer-Signale, um Workloads dynamisch auf `py/cpp/gpu/mesh` auszurichten.
 
-### 3) NovaMesh Intelligence — Latency-Aware Task Offloading
-- Mesh-Worker besitzen nun Telemetrie-Metadaten: `latency_ms`, `data_handles`, `last_seen`.
-- Neue Mesh-Befehle:
-  - `mesh beat <worker_url> [latency_ms] [handle1,handle2]`
-  - `mesh intelligent-run <capability> <command> [--handle h]`
-- Scheduler priorisiert Datenlokalität + Latenz + Last statt nur Round-Robin/Load.
+### 3) NovaPulse — Real-Time Observability & Visual Debugger Surface
+- Vision API erweitert mit Pulse-State-Daten:
+  - `GET /pulse/state`
+- CLI-Kommandos:
+  - `pulse status`
+  - `pulse snapshot`
+- Liefert Bottleneck-Sicht (Top-Latenzen), Event-Tails und Trigger/Topic-Überblick.
 
-### 4) NovaScript Reactive Hooks — Distributed Stream Processing
-- NovaScript-Grammatik erweitert um `watch <variable>:`-Hooks.
-- Hook-Execution wird bei Variablenänderung ausgelöst.
-- Runtime-Steuerung:
-  - `ns.exec ...` / `ns.run ...` lädt Watch-Hooks
-  - `ns.emit <variable> <value>` triggert Hooks aktiv
-- Zusätzlich weiter vorhanden: `reactive on-file/on-sync` auf Shell-Ebene.
+### 4) NovaFlow — Distributed Reactive Workflows
+- Neuer verteilter Flow-Layer (`dflow`) zusätzlich zu lokalen `reactive`-Triggern.
+- Kommandos:
+  - `dflow subscribe <event> <pipeline>`
+  - `dflow publish <event> <payload> [--broadcast]`
+  - `dflow list`
+- Vision-Endpunkt `POST /flow/event` erlaubt Mesh-weite Eventzustellung.
 
-### 5) NovaGuard eBPF-Enforcement — Kernel-Level vorbereitete Enforcement-Schicht
-- Dynamische Policy-Ladung und Enforcement-Modi:
-  - `guard load <policy.yaml|policy.json>`
+### 5) NovaGuard Sandbox Isolation (WASM-First)
+- C++ kann standardmäßig in Sandbox laufen (`WASM-first`) statt nativem Host-Binary.
+- Kommandos:
+  - `guard sandbox on|off|status`
+  - `cpp.sandbox <cpp_code>`
+- Erweiterte Guard/eBPF-Flows:
   - `guard ebpf-status`
   - `guard ebpf-compile <policy>`
   - `guard ebpf-enforce <policy>`
   - `guard ebpf-release`
-- Bei aktivem Enforcement werden geblockte Muster in `sys`/`cpp` vor Ausführung verhindert.
-- eBPF-Availability wird erkannt; ohne Kernel-Bindings läuft Userspace-Enforcement-Fallback.
 
 ---
 
-## Weitere Runtime-Features
+## Weitere Kernfeatures
 
 - Engines: `py/python`, `cpp`, `gpu`, `wasm`, `remote`, `sys`.
-- Typed/streaming Pipelines, Generatoren, `parallel`, `watch`.
-- Mesh, Fabric (`put/get`, `remote-put/get`, `rdma-put/get`), Flow State, CRDT Sync.
-- Optimizer (`opt suggest/run`) und NovaScript Contracts + `ns.check`.
-- Vision API: `/events`, `/graph`, `/commands`, `/lsp/completions`, `/fabric/*`.
+- NovaGraph AOT (`graph aot|run|show`) inkl. C++-Expr-Fusion.
+- NovaLens CAS-Lineage (`lens list|last|show|replay`).
+- Mesh Intelligence (`mesh beat`, `mesh intelligent-run`).
+- NovaScript 2.0 Contracts + Reactive Hooks (`watch`, `ns.emit`, `ns.check`).
+- Fabric inkl. Remote/RDMA-orientierter Transferpfade.
 
 ## Quickstart
 
 ```bash
-python nova_shell.py
+python -m nova_shell
+```
+
+oder nach Installation:
+
+```bash
+nova-shell
+```
+
+Einzelkommando ohne REPL:
+
+```bash
+nova-shell --no-plugins -c "py 1 + 1"
+```
+
+Runtime-Diagnose:
+
+```bash
+nova-shell doctor
+nova-shell doctor json
+```
+
+## Packaging & Release
+
+- Paket-Metadaten liegen in `pyproject.toml`.
+- CLI-Entry-Point: `nova-shell`.
+- Release-Profile:
+  - `core`
+  - `enterprise`
+- Standalone-Builds erfolgen mit Nuitka.
+- Installer-Artefakte:
+  - Windows: `MSI` plus optionale `winget`-Manifeste
+  - Linux: `AppImage` plus `.deb`
+- Supply-Chain-Artefakte:
+  - CycloneDX-SBOM pro Build (`*.sbom.cyclonedx.json`)
+  - Subject-Checksums für Attestations (`*-subjects.checksums.txt`)
+  - GitHub Artifact Attestations für Provenance und SBOM
+- Windows-Wrapper:
+  - `./scripts/build_windows.ps1` lädt `VsDevCmd` automatisch, damit MSVC-Header wie `excpt.h` im Build verfügbar sind
+- Signierung & Release-Notes:
+  - Windows Authenticode via `signtool`
+  - detached GPG signatures via `scripts/sign_release.py`
+  - aggregierte Release-Notes via `scripts/generate_release_notes.py`
+- Cross-Platform-Wrapper:
+  - Windows: `./scripts/build_windows.ps1`
+  - Linux: `./scripts/build_linux.sh`
+- Vollständige Release-Dokumentation: `docs/RELEASE.md`
+
+Beispiele:
+
+```powershell
+./scripts/build_windows.ps1 -Profile core
+./scripts/build_windows.ps1 -Profile enterprise
+./scripts/build_windows.ps1 -Profile core -SourceDateEpoch 1700000000
+```
+
+```bash
+./scripts/build_linux.sh core
+./scripts/build_linux.sh enterprise
+SOURCE_DATE_EPOCH=1700000000 ./scripts/build_linux.sh core
+```
+
+Direkter Installer-Build:
+
+```bash
+python scripts/build_release.py --profile core --mode installers
+SOURCE_DATE_EPOCH=1700000000 python scripts/build_release.py --profile core --mode all --clean
+python scripts/build_release.py --profile core --mode all --base-download-url "https://github.com/<org>/<repo>/releases/download/v0.8.0"
+python scripts/generate_release_notes.py --root dist/release --output dist/release/release-notes.md
+python scripts/sign_release.py --root dist/release --verify
+```
+
+Verifikation:
+
+```bash
+gpg --verify dist/release/<...>/<artifact>.sig dist/release/<...>/<artifact>
+gh attestation verify dist/release/<...>/<artifact> --repo <org>/<repo>
+gh attestation verify dist/release/<...>/<artifact> --repo <org>/<repo> --predicate-type https://cyclonedx.org/bom
+```
+
+```powershell
+signtool verify /pa dist\release\<...>\nova-shell.msi
 ```
 
 ## Tests

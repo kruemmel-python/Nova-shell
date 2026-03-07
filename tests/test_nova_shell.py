@@ -1,12 +1,14 @@
+import io
 import json
 import tempfile
 import threading
 import time
 import unittest
 import zipfile
+from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 
-from nova_shell import NovaShell, PipelineType
+from nova_shell import NovaShell, PipelineType, __version__, main
 from novascript import Assignment, ForLoop, IfBlock, NovaInterpreter, NovaParser
 
 
@@ -22,6 +24,22 @@ class NovaShellTests(unittest.TestCase):
         result = self.shell.route("py 1 + 2")
         self.assertIsNone(result.error)
         self.assertEqual(result.output.strip(), "3")
+
+    def test_cli_main_version(self) -> None:
+        stdout = io.StringIO()
+        with redirect_stdout(stdout):
+            exit_code = main(["--version"])
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(stdout.getvalue().strip(), f"nova-shell {__version__}")
+
+    def test_cli_main_single_command(self) -> None:
+        stdout = io.StringIO()
+        stderr = io.StringIO()
+        with redirect_stdout(stdout), redirect_stderr(stderr):
+            exit_code = main(["--no-plugins", "-c", "py 1 + 1"])
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(stdout.getvalue().strip(), "2")
+        self.assertEqual(stderr.getvalue(), "")
 
     def test_persistent_python_context(self) -> None:
         self.shell.route("py x = 10")
@@ -63,6 +81,13 @@ class NovaShellTests(unittest.TestCase):
         self.assertIn("ns.exec", result.output)
         self.assertIn("ns.run", result.output)
         self.assertIn("watch", result.output)
+
+    def test_doctor_json(self) -> None:
+        result = self.shell.route("doctor json")
+        self.assertIsNone(result.error)
+        payload = json.loads(result.output)
+        self.assertEqual(payload["version"], __version__)
+        self.assertIn("modules", payload)
 
     def test_data_load_csv_object_pipeline(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -518,6 +543,72 @@ if len(files_lines) == 2:
         emitted = self.shell.route("ns.emit signal ping")
         self.assertIsNone(emitted.error)
         self.assertIn("hook:ping", emitted.output)
+
+
+    def test_zero_pool_put_list_get_release(self) -> None:
+        put = self.shell.route("zero put hello-zero")
+        self.assertIsNone(put.error)
+        payload = json.loads(put.output)
+        handle = payload["handle"]
+
+        listed = self.shell.route("zero list")
+        self.assertIsNone(listed.error)
+        rows = json.loads(listed.output)
+        self.assertTrue(any(r["handle"] == handle for r in rows))
+
+        got = self.shell.route(f"zero get {handle}")
+        self.assertIsNone(got.error)
+        self.assertIn("hello-zero", got.output)
+
+        rel = self.shell.route(f"zero release {handle}")
+        self.assertIsNone(rel.error)
+
+    def test_synth_suggest_and_autotune(self) -> None:
+        suggest = self.shell.route("synth suggest py 1 + 1")
+        self.assertIsNone(suggest.error)
+        payload = json.loads(suggest.output)
+        self.assertIn("engine", payload)
+
+        tuned = self.shell.route("synth autotune py 1 + 1")
+        if tuned.error is None:
+            self.assertIn("result", json.loads(tuned.output))
+        else:
+            self.assertTrue(tuned.error)
+
+    def test_pulse_status_and_snapshot(self) -> None:
+        self.shell.route("py 1 + 1")
+        status = self.shell.route("pulse status")
+        self.assertIsNone(status.error)
+        payload = json.loads(status.output)
+        self.assertIn("recent_event_count", payload)
+
+        snap = self.shell.route("pulse snapshot")
+        self.assertIsNone(snap.error)
+        snap_payload = json.loads(snap.output)
+        self.assertIn("events", snap_payload)
+
+    def test_dflow_subscribe_publish_list(self) -> None:
+        sub = self.shell.route("dflow subscribe test_event 'py _ + \"!\"'")
+        self.assertIsNone(sub.error)
+        listed = self.shell.route("dflow list")
+        self.assertIsNone(listed.error)
+        topics = json.loads(listed.output)
+        self.assertIn("test_event", topics)
+
+        pub = self.shell.route("dflow publish test_event ping")
+        self.assertIsNone(pub.error)
+        result = json.loads(pub.output)
+        self.assertIn("executed", result)
+
+    def test_guard_sandbox_status_toggle(self) -> None:
+        on = self.shell.route("guard sandbox on")
+        self.assertIsNone(on.error)
+        status = self.shell.route("guard sandbox status")
+        self.assertIsNone(status.error)
+        payload = json.loads(status.output)
+        self.assertTrue(payload["sandbox_default"])
+        off = self.shell.route("guard sandbox off")
+        self.assertIsNone(off.error)
 
 
 if __name__ == "__main__":

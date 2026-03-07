@@ -1,0 +1,15 @@
+.nova_lens/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.venv/
+.venv-build/
+build/
+dist/
+release-artifacts/
+nuitka-crash-report.xml

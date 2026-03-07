@@ -1,0 +1,21 @@
+{
+  "package_name": "Nova-shell",
+  "package_slug": "nova-shell",
+  "package_identifier": "NovaShell.NovaShell",
+  "publisher": "Nova-shell Team",
+  "description": "Unified compute and data orchestration runtime.",
+  "long_description": "Nova-shell is a unified compute and data orchestration runtime for polyglot pipelines, observability, distributed workflows and secure execution.",
+  "maintainer_name": "Nova-shell Team",
+  "maintainer_email": "packages@nova-shell.invalid",
+  "license": "LicenseRef-Proprietary",
+  "upgrade_code": "65BF3F20-6FC0-4A8E-84F6-9F6C6953EF2D",
+  "app_id": "nova-shell",
+  "homepage": "",
+  "publisher_url": "",
+  "publisher_support_url": "",
+  "moniker": "nova-shell",
+  "tags": ["cli", "runtime", "orchestration"],
+  "linux_categories": ["Development", "Utility"],
+  "linux_section": "utils",
+  "install_scope": "machine"
+}

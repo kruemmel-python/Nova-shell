@@ -1,0 +1,13 @@
+include README.md
+include pyproject.toml
+include nova_shell.py
+include novascript.py
+include release_packaging.py
+include release_notes.py
+include release_signing.py
+include release_sbom.py
+recursive-include tests *.py
+recursive-include scripts *.py *.ps1 *.sh
+recursive-include docs *.md
+recursive-include packaging *.json *.svg postinst prerm
+recursive-include .github/workflows *.yml

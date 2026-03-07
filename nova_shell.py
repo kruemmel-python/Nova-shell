@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import argparse
 import atexit
 import asyncio
 import contextlib
@@ -14,12 +15,16 @@ import os
 import glob
 import fnmatch
 import shlex
+import shutil
 import subprocess
 import tempfile
 import zipfile
 import uuid
 import sqlite3
 import hashlib
+import base64
+import platform
+import sys
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -36,6 +41,9 @@ try:
     import readline
 except ImportError:  # pragma: no cover - platform dependent
     readline = None
+
+
+__version__ = "0.8.0"
 
 
 class PipelineType(str, Enum):
@@ -71,6 +79,13 @@ class PipelineGraph:
 
     def add(self, node: PipelineNode) -> None:
         self.nodes.append(node)
+
+
+def split_command(text: str) -> list[str]:
+    lexer = shlex.shlex(text, posix=True)
+    lexer.whitespace_split = True
+    lexer.escape = ""
+    return list(lexer)
 
 
 class PythonEngine:
@@ -116,24 +131,65 @@ class CppEngine:
 
             source.write_text(code, encoding="utf-8")
 
-            compile_proc = subprocess.run(
-                ["g++", "-std=c++20", "-O2", str(source), "-o", str(binary)],
-                capture_output=True,
-                text=True,
-            )
+            try:
+                compile_proc = subprocess.run(
+                    ["g++", "-std=c++20", "-O2", str(source), "-o", str(binary)],
+                    capture_output=True,
+                    text=True,
+                )
+            except FileNotFoundError:
+                return CommandResult(output="", error="g++ is required for cpp commands")
             if compile_proc.returncode != 0:
                 return CommandResult(output="", error=compile_proc.stderr)
 
-            run_proc = subprocess.run(
-                [str(binary)],
-                capture_output=True,
-                text=True,
-                input=pipeline_input,
-            )
+            try:
+                run_proc = subprocess.run(
+                    [str(binary)],
+                    capture_output=True,
+                    text=True,
+                    input=pipeline_input,
+                )
+            except FileNotFoundError:
+                return CommandResult(output="", error="compiled cpp binary could not be executed")
             return CommandResult(
                 output=run_proc.stdout,
                 error=run_proc.stderr if run_proc.stderr else None,
             )
+
+    def compile_to_wasm_and_run(self, code: str, pipeline_input: str = "") -> CommandResult:
+        with tempfile.TemporaryDirectory() as tmp:
+            source = Path(tmp) / "program.cpp"
+            wasm = Path(tmp) / "program.wasm"
+            source.write_text(code, encoding="utf-8")
+
+            try:
+                compile_proc = subprocess.run(
+                    ["emcc", str(source), "-O2", "-s", "STANDALONE_WASM=1", "-s", "EXPORTED_FUNCTIONS=['_main']", "-o", str(wasm)],
+                    capture_output=True,
+                    text=True,
+                )
+            except FileNotFoundError:
+                return CommandResult(output="", error="emcc is required for cpp sandbox mode")
+            if compile_proc.returncode != 0:
+                return CommandResult(output="", error=f"sandbox compile failed: {compile_proc.stderr.strip()}")
+
+            try:
+                import wasmtime
+            except ImportError:
+                return CommandResult(output="", error="wasmtime is required for cpp sandbox mode")
+
+            try:
+                store = wasmtime.Store()
+                module = wasmtime.Module.from_file(store.engine, str(wasm))
+                linker = wasmtime.Linker(store.engine)
+                instance = linker.instantiate(store, module)
+                run = instance.exports(store).get("_start")
+                if run is None:
+                    return CommandResult(output="", error="sandbox wasm module missing _start")
+                run(store)
+                return CommandResult(output="sandbox executed\n")
+            except Exception as exc:
+                return CommandResult(output="", error=f"sandbox runtime error: {exc}")
 
 
 class GPUEngine:
@@ -209,13 +265,27 @@ class DataEngine:
 class SystemEngine:
     """Run host shell commands."""
 
-    def execute(self, command: str, pipeline_input: str = "") -> CommandResult:
+    def execute(self, command: str, pipeline_input: str = "", cwd: Path | None = None) -> CommandResult:
+        parts = split_command(command)
+        if parts and parts[0] == "printf":
+            payload = " ".join(parts[1:])
+            try:
+                payload = payload.encode("utf-8").decode("unicode_escape")
+            except UnicodeDecodeError:
+                pass
+            return CommandResult(
+                output=payload,
+                data=payload,
+                data_type=PipelineType.TEXT,
+            )
+
         proc = subprocess.run(
             command,
             shell=True,
             capture_output=True,
             text=True,
             input=pipeline_input,
+            cwd=str(cwd) if cwd is not None else None,
         )
         return CommandResult(
             output=proc.stdout,
@@ -296,7 +366,7 @@ class PolicyEngine:
         if denied is None:
             return False, f"unknown policy: {policy}"
 
-        parts = shlex.split(stage)
+        parts = split_command(stage)
         if not parts:
             return True, None
         cmd = parts[0]
@@ -371,6 +441,98 @@ class MeshScheduler:
         chosen = max(candidates, key=score)
         chosen["load"] += 1
         return chosen
+
+class NovaZeroPool:
+    """Unified zero-copy memory manager for text/arrow payload handoff."""
+
+    def __init__(self) -> None:
+        self.objects: dict[str, dict[str, Any]] = {}
+
+    def put_bytes(self, payload: bytes, data_type: str) -> CommandResult:
+        segment = shared_memory.SharedMemory(create=True, size=max(1, len(payload)))
+        if payload:
+            segment.buf[: len(payload)] = payload
+        handle = segment.name
+        self.objects[handle] = {
+            "segment": segment,
+            "size": len(payload),
+            "type": data_type,
+            "refs": 1,
+            "created_at": time.time(),
+        }
+        data = {"handle": handle, "size": len(payload), "type": data_type, "refs": 1}
+        return CommandResult(output=json.dumps(data, ensure_ascii=False) + "\n", data=data, data_type=PipelineType.SHARED_MEMORY)
+
+    def put_text(self, text: str) -> CommandResult:
+        return self.put_bytes(text.encode("utf-8"), "text")
+
+    def put_arrow_table(self, table: Any) -> CommandResult:
+        try:
+            import pyarrow as pa
+            sink = pa.BufferOutputStream()
+            with pa.ipc.new_stream(sink, table.schema) as writer:
+                writer.write_table(table)
+            payload = sink.getvalue().to_pybytes()
+            result = self.put_bytes(payload, "arrow_table")
+            if result.data:
+                result.data["format"] = "arrow_ipc_stream"
+                result.output = json.dumps(result.data, ensure_ascii=False) + "\n"
+            return result
+        except Exception as exc:
+            return CommandResult(output="", error=f"arrow zero-copy store failed: {exc}")
+
+    def put_arrow_from_csv(self, csv_path: str) -> CommandResult:
+        try:
+            import pyarrow.csv as pacsv
+        except ImportError:
+            return CommandResult(output="", error="pyarrow is required for zero put-arrow")
+        try:
+            table = pacsv.read_csv(csv_path)
+            return self.put_arrow_table(table)
+        except Exception as exc:
+            return CommandResult(output="", error=str(exc))
+
+    def get(self, handle: str) -> CommandResult:
+        obj = self.objects.get(handle)
+        if obj is None:
+            return CommandResult(output="", error=f"zero handle not found: {handle}")
+        obj["refs"] += 1
+        data = bytes(obj["segment"].buf[: obj["size"]])
+        if obj["type"] == "text":
+            text = data.decode("utf-8", errors="replace")
+            return CommandResult(output=text + ("\n" if not text.endswith("\n") else ""), data=text, data_type=PipelineType.TEXT)
+        encoded = base64.b64encode(data).decode("ascii")
+        payload = {"handle": handle, "type": obj["type"], "size": obj["size"], "refs": obj["refs"], "base64": encoded}
+        return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.SHARED_MEMORY)
+
+    def list(self) -> list[dict[str, Any]]:
+        return [
+            {"handle": h, "size": o["size"], "type": o["type"], "refs": o["refs"], "created_at": o["created_at"]}
+            for h, o in sorted(self.objects.items())
+        ]
+
+    def release(self, handle: str) -> CommandResult:
+        obj = self.objects.get(handle)
+        if obj is None:
+            return CommandResult(output="", error=f"zero handle not found: {handle}")
+        obj["refs"] -= 1
+        if obj["refs"] <= 0:
+            with contextlib.suppress(Exception):
+                obj["segment"].close()
+            with contextlib.suppress(Exception):
+                obj["segment"].unlink()
+            self.objects.pop(handle, None)
+            return CommandResult(output="released\n")
+        return CommandResult(output=f"refs={obj['refs']}\n")
+
+    def cleanup(self) -> None:
+        for handle, obj in list(self.objects.items()):
+            with contextlib.suppress(Exception):
+                obj["segment"].close()
+            with contextlib.suppress(Exception):
+                obj["segment"].unlink()
+            self.objects.pop(handle, None)
+
 
 class FlowStateStore:
     """State backend for event/window-aware streaming decisions."""
@@ -876,7 +1038,7 @@ class GuardPolicyStore:
 
         blocked_cmds = set(policy.get("block_commands", []))
         blocked_prefixes = [str(v) for v in policy.get("block_prefixes", [])]
-        parts = shlex.split(stage)
+        parts = split_command(stage)
         if not parts:
             return True, None
         cmd = parts[0]
@@ -1000,6 +1162,50 @@ class NovaGraphCompiler:
         return "\n".join(lines)
 
 
+class NovaSynth:
+    """AI-native (heuristic/telemetry) engine selector and autotuner."""
+
+    def __init__(self, shell: "NovaShell") -> None:
+        self.shell = shell
+
+    def suggest(self, code: str) -> dict[str, Any]:
+        text = code.strip()
+        lower = text.lower()
+        engine = "py"
+        reason = "default python path"
+
+        if any(k in lower for k in ["matrix", "tensor", "vector", "fft"]):
+            engine = "gpu"
+            reason = "numeric workload pattern"
+        elif "for " in lower or "while " in lower:
+            engine = "cpp"
+            reason = "loop-heavy pattern"
+
+        # telemetry bias from optimizer if available
+        opt = self.shell.optimizer.suggest_engine("synth", text)
+        if opt.get("engine") in {"py", "cpp", "gpu", "mesh"}:
+            if engine == "py" and opt["engine"] != "py":
+                engine = opt["engine"]
+                reason += "; telemetry override"
+
+        return {"engine": engine, "reason": reason, "input": code}
+
+    def autotune(self, code: str) -> CommandResult:
+        suggestion = self.suggest(code)
+        engine = suggestion["engine"]
+        payload = code.strip()
+
+        if engine == "cpp" and payload.startswith("py "):
+            payload = payload[len("py ") :].strip()
+            if payload:
+                return self.shell.route(f"cpp.expr {payload}")
+        if engine == "gpu":
+            return CommandResult(output="", error="autotune selected gpu; provide kernel file for gpu execution")
+        if engine == "mesh" and self.shell.mesh.workers:
+            return self.shell.route(f"mesh intelligent-run cpu py {payload or '0'}")
+        return self.shell.route(code if code.strip().startswith(("py ", "cpp ", "gpu ", "sys ")) else f"py {payload}")
+
+
 class VisionServer:
     """Small HTTP server to inspect runtime events and graph state."""
 
@@ -1035,6 +1241,15 @@ class VisionServer:
                             for node in shell.last_graph.nodes
                         ]
                     })
+                    return
+                if parsed.path == "/pulse/state":
+                    tail = shell.events.events[-25:]
+                    bottlenecks = sorted(
+                        [e for e in tail if e.get("duration_ms")],
+                        key=lambda e: float(e.get("duration_ms", 0.0)),
+                        reverse=True,
+                    )[:5]
+                    self._write_json({"recent_events": tail, "bottlenecks": bottlenecks, "watch_hooks": list(shell._dflow_subscribers.keys())})
                     return
                 if parsed.path == "/lsp/completions":
                     prefix = urllib.parse.parse_qs(parsed.query).get("prefix", [""])[0]
@@ -1090,6 +1305,21 @@ class VisionServer:
                         self._write_json(result.data)
                     return
 
+                if parsed.path == "/flow/event":
+                    try:
+                        payload = json.loads(body.decode("utf-8")) if body else {}
+                    except Exception:
+                        payload = {}
+                    event_name = str(payload.get("event", ""))
+                    value = str(payload.get("payload", ""))
+                    executed = []
+                    for pipeline in shell._dflow_subscribers.get(event_name, []):
+                        cmd = pipeline.replace("_", shlex.quote(value))
+                        res = shell.route(cmd)
+                        executed.append({"pipeline": pipeline, "error": res.error or ""})
+                    self._write_json({"event": event_name, "executed": executed})
+                    return
+
                 if parsed.path == "/fabric/put-bytes":
                     segment = shared_memory.SharedMemory(create=True, size=max(1, len(body)))
                     if body:
@@ -1137,11 +1367,13 @@ class NovaShell:
         self.system = SystemEngine()
         self.events = EventBus()
         self.fabric = NovaFabric()
+        self.zero = NovaZeroPool()
         self.policy = PolicyEngine()
         self.mesh = MeshScheduler()
         self.flow_state = FlowStateStore()
         self.jit = NovaComputeJIT()
         self.optimizer = NovaOptimizer(self)
+        self.synth = NovaSynth(self)
         self.guard_store = GuardPolicyStore()
         self.fabric_remote = FabricRemoteBridge()
         self.reactive = ReactiveFlowEngine(self)
@@ -1155,11 +1387,14 @@ class NovaShell:
         self.current_policy = "open"
         self.current_trace_id = ""
         self._ns_runtime: NovaInterpreter | None = None
+        self._dflow_subscribers: dict[str, list[str]] = {}
+        self.wasm_sandbox_default = False
 
         self.commands: dict[str, Callable[[str, str, Any], CommandResult]] = {
             "py": self._run_python,
             "python": self._run_python,
             "cpp": self._run_cpp,
+            "cpp.sandbox": self._run_cpp_sandbox,
             "cpp.expr": self._run_cpp_expr,
             "cpp.expr_chain": self._run_cpp_expr_chain,
             "gpu": self._run_gpu,
@@ -1169,13 +1404,17 @@ class NovaShell:
             "remote": self._run_remote,
             "ai": self._run_ai,
             "vision": self._run_vision,
+            "pulse": self._run_pulse,
             "fabric": self._run_fabric,
+            "zero": self._run_zero,
             "mesh": self._run_mesh,
             "guard": self._run_guard,
             "secure": self._run_secure,
             "flow": self._run_flow,
             "reactive": self._run_reactive,
+            "dflow": self._run_dflow,
             "opt": self._run_optimizer,
+            "synth": self._run_synth,
             "graph": self._run_graph,
             "sync": self._run_sync,
             "lens": self._run_lens,
@@ -1188,6 +1427,7 @@ class NovaShell:
             "sys": self._run_system,
             "cd": self._cd,
             "pwd": self._pwd,
+            "doctor": self._doctor,
             "help": self._help,
             "events": self._events,
             "ns.exec": self._ns_exec,
@@ -1220,6 +1460,7 @@ class NovaShell:
         self.vision.stop()
         self.reactive.clear()
         self.fabric.cleanup()
+        self.zero.cleanup()
         self.flow_state.close()
         self.lens.close()
         if not self.loop.is_closed():
@@ -1245,15 +1486,19 @@ class NovaShell:
             if callable(register):
                 register(self)
 
+    def _resolve_path(self, path_text: str) -> Path:
+        target = Path(os.path.expanduser(path_text))
+        if not target.is_absolute():
+            target = self.cwd / target
+        return target.resolve(strict=False)
+
     def _cd(self, path_arg: str, _: str, __: Any) -> CommandResult:
-        target_text = path_arg.strip() or "~"
+        parts = split_command(path_arg)
+        target_text = parts[0] if parts else "~"
         try:
-            target = Path(os.path.expanduser(target_text))
-            if not target.is_absolute():
-                target = (self.cwd / target).resolve()
+            target = self._resolve_path(target_text)
             if not target.exists() or not target.is_dir():
                 return CommandResult(output="", error=f"directory not found: {target_text}")
-            os.chdir(target)
             self.cwd = target
             return CommandResult(output="")
         except Exception as exc:
@@ -1261,6 +1506,54 @@ class NovaShell:
 
     def _pwd(self, _: str, __: str, ___: Any) -> CommandResult:
         return CommandResult(output=f"{self.cwd}\n", data=str(self.cwd), data_type=PipelineType.TEXT)
+
+    def _doctor(self, args: str, _: str, __: Any) -> CommandResult:
+        parts = split_command(args)
+        modules = {
+            "psutil": False,
+            "yaml": False,
+            "pyarrow": False,
+            "wasmtime": False,
+            "numpy": False,
+            "pyopencl": False,
+        }
+        for module_name in list(modules.keys()):
+            with contextlib.suppress(Exception):
+                __import__(module_name)
+                modules[module_name] = True
+
+        payload = {
+            "version": __version__,
+            "platform": platform.platform(),
+            "python": sys.version.split()[0],
+            "executable": sys.executable,
+            "cwd": str(self.cwd),
+            "commands": {
+                "g++": shutil.which("g++") or "",
+                "emcc": shutil.which("emcc") or "",
+                "cl": shutil.which("cl") or "",
+            },
+            "modules": modules,
+            "sandbox_default": self.wasm_sandbox_default,
+        }
+
+        if parts and parts[0] == "json":
+            return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+
+        lines = [
+            f"Nova-shell {payload['version']}",
+            f"platform: {payload['platform']}",
+            f"python: {payload['python']}",
+            f"executable: {payload['executable']}",
+            f"cwd: {payload['cwd']}",
+            f"g++: {payload['commands']['g++'] or 'missing'}",
+            f"emcc: {payload['commands']['emcc'] or 'missing'}",
+            f"cl: {payload['commands']['cl'] or 'missing'}",
+            f"sandbox_default: {payload['sandbox_default']}",
+        ]
+        for name, available in payload["modules"].items():
+            lines.append(f"{name}: {'ok' if available else 'missing'}")
+        return CommandResult(output="\n".join(lines) + "\n", data=payload, data_type=PipelineType.OBJECT)
 
     def _help(self, _: str, __: str, ___: Any) -> CommandResult:
         commands = "\n".join(sorted(self.commands.keys()))
@@ -1290,8 +1583,12 @@ class NovaShell:
         return CommandResult(output="Usage: events last|clear|stats\n")
 
     def _tail_follow(self, file_path: Path, follow_seconds: float) -> Iterable[str]:
+        initial_size = file_path.stat().st_size if file_path.exists() else 0
         with file_path.open("r", encoding="utf-8") as handle:
-            handle.seek(0, os.SEEK_END)
+            if initial_size > 0:
+                handle.seek(0, os.SEEK_END)
+            else:
+                handle.seek(0)
             deadline = time.time() + follow_seconds
             while time.time() < deadline:
                 line = handle.readline()
@@ -1301,11 +1598,11 @@ class NovaShell:
                 time.sleep(0.05)
 
     def _watch(self, args: str, _: str, __: Any) -> CommandResult:
-        parts = shlex.split(args)
+        parts = split_command(args)
         if not parts:
             return CommandResult(output="", error="usage: watch <file> [--lines N] [--follow-seconds S]")
 
-        file_path = Path(parts[0])
+        file_path = self._resolve_path(parts[0])
         lines_count = 10
         follow_seconds = 0.0
 
@@ -1367,14 +1664,14 @@ class NovaShell:
             return CommandResult(output="", error=str(exc))
 
     def _ns_run(self, file_path: str, _: str, __: Any) -> CommandResult:
-        script_path = file_path.strip()
-        if not script_path:
+        parts = split_command(file_path)
+        if not parts:
             return CommandResult(output="", error="usage: ns.run <script.ns>")
 
         try:
             parser = NovaParser()
             interpreter = NovaInterpreter(self)
-            nodes = parser.parse_file(script_path)
+            nodes = parser.parse_file(str(self._resolve_path(parts[0])))
             self._ns_runtime = interpreter
             output = interpreter.execute(nodes)
             return CommandResult(output=output)
@@ -1382,7 +1679,7 @@ class NovaShell:
             return CommandResult(output="", error=str(exc))
 
     def _ns_emit(self, args: str, _: str, __: Any) -> CommandResult:
-        parts = shlex.split(args)
+        parts = split_command(args)
         if len(parts) < 2:
             return CommandResult(output="", error="usage: ns.emit <variable> <value>")
         if self._ns_runtime is None:
@@ -1444,7 +1741,7 @@ class NovaShell:
         return self.cpp.compile_and_run(code, pipeline_input)
 
     def _run_graph(self, args: str, _: str, __: Any) -> CommandResult:
-        parts = shlex.split(args)
+        parts = split_command(args)
         if not parts:
             return CommandResult(output="", error="usage: graph aot <pipeline> | graph run <pipeline> | graph show <id>")
 
@@ -1493,22 +1790,30 @@ class NovaShell:
         blocked = self._is_ebpf_blocked(code)
         if blocked:
             return CommandResult(output="", error=blocked)
+        if self.wasm_sandbox_default:
+            return self.cpp.compile_to_wasm_and_run(code, pipeline_input)
         return self.cpp.compile_and_run(code, pipeline_input)
 
+    def _run_cpp_sandbox(self, code: str, pipeline_input: str, _: Any) -> CommandResult:
+        blocked = self._is_ebpf_blocked(code)
+        if blocked:
+            return CommandResult(output="", error=blocked)
+        return self.cpp.compile_to_wasm_and_run(code, pipeline_input)
+
     def _run_gpu(self, args: str, pipeline_input: str, _: Any) -> CommandResult:
-        kernel_file = args.strip()
-        if not kernel_file:
+        parts = split_command(args)
+        if not parts:
             return CommandResult(output="", error="usage: gpu <kernel_file>")
-        return self.gpu.run_kernel(kernel_file, pipeline_input)
+        return self.gpu.run_kernel(str(self._resolve_path(parts[0])), pipeline_input)
 
     def _run_wasm(self, args: str, _: str, __: Any) -> CommandResult:
-        wasm_file = args.strip()
-        if not wasm_file:
+        parts = split_command(args)
+        if not parts:
             return CommandResult(output="", error="usage: wasm <module.wasm>")
-        return self.wasm.execute(wasm_file)
+        return self.wasm.execute(str(self._resolve_path(parts[0])))
 
     def _run_remote(self, args: str, _: str, __: Any) -> CommandResult:
-        parts = shlex.split(args)
+        parts = split_command(args)
         if len(parts) < 2:
             return CommandResult(output="", error="usage: remote <worker_url> <command>")
         worker_url = parts[0]
@@ -1531,7 +1836,7 @@ class NovaShell:
         return CommandResult(output=f"{suggestion}\n", data={"pipeline": suggestion}, data_type=PipelineType.OBJECT)
 
     def _run_vision(self, args: str, _: str, __: Any) -> CommandResult:
-        parts = shlex.split(args)
+        parts = split_command(args)
         if not parts:
             return CommandResult(output="", error="usage: vision start|stop|status [port]")
         action = parts[0]
@@ -1546,7 +1851,7 @@ class NovaShell:
         return CommandResult(output="", error="usage: vision start|stop|status [port]")
 
     def _run_fabric(self, args: str, _: str, __: Any) -> CommandResult:
-        parts = shlex.split(args)
+        parts = split_command(args)
         if not parts:
             return CommandResult(output="", error="usage: fabric put <text> | fabric get <handle> | fabric put-arrow <csv> | fabric remote-put <url> <text> | fabric remote-get <url> <handle> | fabric rdma-put <url> <file> | fabric rdma-get <url> <handle> <out_file>")
         match parts[0]:
@@ -1556,11 +1861,12 @@ class NovaShell:
             case "put-arrow":
                 if len(parts) < 2:
                     return CommandResult(output="", error="usage: fabric put-arrow <csv_file>")
-                arrow_result = self.data.load_csv_arrow(parts[1])
+                csv_path = self._resolve_path(parts[1])
+                arrow_result = self.data.load_csv_arrow(str(csv_path))
                 if arrow_result.error:
                     return arrow_result
                 # Store a compact textual descriptor in shared memory for cross-engine handle exchange.
-                descriptor = f"arrow:{parts[1]}:{arrow_result.output.strip()}"
+                descriptor = f"arrow:{csv_path}:{arrow_result.output.strip()}"
                 return self.fabric.put(descriptor)
             case "get":
                 if len(parts) < 2:
@@ -1595,16 +1901,16 @@ class NovaShell:
             case "rdma-put":
                 if len(parts) < 3:
                     return CommandResult(output="", error="usage: fabric rdma-put <url> <file>")
-                return self.fabric_remote.put_file(parts[1], parts[2])
+                return self.fabric_remote.put_file(parts[1], str(self._resolve_path(parts[2])))
             case "rdma-get":
                 if len(parts) < 4:
                     return CommandResult(output="", error="usage: fabric rdma-get <url> <handle> <out_file>")
-                return self.fabric_remote.get_file(parts[1], parts[2], parts[3])
+                return self.fabric_remote.get_file(parts[1], parts[2], str(self._resolve_path(parts[3])))
             case _:
                 return CommandResult(output="", error="usage: fabric put <text> | fabric get <handle> | fabric put-arrow <csv> | fabric remote-put <url> <text> | fabric remote-get <url> <handle> | fabric rdma-put <url> <file> | fabric rdma-get <url> <handle> <out_file>")
 
     def _run_mesh(self, args: str, _: str, __: Any) -> CommandResult:
-        parts = shlex.split(args)
+        parts = split_command(args)
         if not parts:
             return CommandResult(output="", error="usage: mesh add|list|run|intelligent-run|beat ...")
 
@@ -1664,7 +1970,7 @@ class NovaShell:
         return CommandResult(output="", error="usage: mesh add|list|run|intelligent-run|beat ...")
 
     def _run_guard(self, args: str, _: str, __: Any) -> CommandResult:
-        parts = shlex.split(args)
+        parts = split_command(args)
         if not parts:
             return CommandResult(output=f"current policy: {self.current_policy}\n")
         match parts[0]:
@@ -1686,11 +1992,25 @@ class NovaShell:
                 if len(parts) < 2:
                     return CommandResult(output="", error="usage: guard load <policy.yaml|policy.json>")
                 try:
-                    data = self.guard_store.load(parts[1])
-                    name = str(data.get("name") or Path(parts[1]).stem)
+                    policy_path = self._resolve_path(parts[1])
+                    data = self.guard_store.load(str(policy_path))
+                    name = str(data.get("name") or policy_path.stem)
                     return CommandResult(output=f"loaded policy {name}\n", data=data, data_type=PipelineType.OBJECT)
                 except Exception as exc:
                     return CommandResult(output="", error=f"failed to load policy: {exc}")
+            case "sandbox":
+                if len(parts) < 2:
+                    return CommandResult(output="", error="usage: guard sandbox on|off|status")
+                if parts[1] == "on":
+                    self.wasm_sandbox_default = True
+                    return CommandResult(output="sandbox on\n")
+                if parts[1] == "off":
+                    self.wasm_sandbox_default = False
+                    return CommandResult(output="sandbox off\n")
+                if parts[1] == "status":
+                    payload = {"sandbox_default": self.wasm_sandbox_default}
+                    return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+                return CommandResult(output="", error="usage: guard sandbox on|off|status")
             case "ebpf-status":
                 payload = {
                     "available": self.guard_store.ebpf_available,
@@ -1710,10 +2030,10 @@ class NovaShell:
                 self.guard_store.enforced_policy = None
                 return CommandResult(output="released\n")
             case _:
-                return CommandResult(output="", error="usage: guard [list]|set <policy>|load <file>|ebpf-status|ebpf-compile <policy>|ebpf-enforce <policy>|ebpf-release")
+                return CommandResult(output="", error="usage: guard [list]|set <policy>|load <file>|sandbox on|off|status|ebpf-status|ebpf-compile <policy>|ebpf-enforce <policy>|ebpf-release")
 
     def _run_secure(self, args: str, _: str, __: Any) -> CommandResult:
-        parts = shlex.split(args)
+        parts = split_command(args)
         if len(parts) < 2:
             return CommandResult(output="", error="usage: secure <policy> <command>")
         policy_name = parts[0]
@@ -1728,7 +2048,7 @@ class NovaShell:
         return self.route(command)
 
     def _run_flow(self, args: str, _: str, __: Any) -> CommandResult:
-        parts = shlex.split(args)
+        parts = split_command(args)
         if not parts:
             return CommandResult(output="", error="usage: flow state set|get ... | flow count-last <sec> [pattern]")
 
@@ -1756,7 +2076,7 @@ class NovaShell:
         return CommandResult(output="", error="usage: flow state set|get ... | flow count-last <sec> [pattern]")
 
     def _run_optimizer(self, args: str, _: str, __: Any) -> CommandResult:
-        parts = shlex.split(args)
+        parts = split_command(args)
         if not parts:
             return CommandResult(output="", error="usage: opt suggest <task> [payload] | opt run <task> [payload]")
 
@@ -1793,7 +2113,7 @@ class NovaShell:
         return CommandResult(output=json.dumps(response, ensure_ascii=False) + "\n", data=response, data_type=PipelineType.OBJECT)
 
     def _run_reactive(self, args: str, _: str, __: Any) -> CommandResult:
-        parts = shlex.split(args)
+        parts = split_command(args)
         if not parts:
             return CommandResult(output="", error="usage: reactive on-file|on-sync|list|stop|clear ...")
 
@@ -1824,11 +2144,107 @@ class NovaShell:
 
         return CommandResult(output="", error="usage: reactive on-file|on-sync|list|stop|clear ...")
 
+    def _run_zero(self, args: str, _: str, __: Any) -> CommandResult:
+        parts = split_command(args)
+        if not parts:
+            return CommandResult(output="", error="usage: zero put <text> | zero put-arrow <csv> | zero get <handle> | zero list | zero release <handle>")
+        action = parts[0]
+        if action == "put":
+            value = args[len("put") :].strip()
+            return self.zero.put_text(value)
+        if action == "put-arrow":
+            if len(parts) < 2:
+                return CommandResult(output="", error="usage: zero put-arrow <csv>")
+            return self.zero.put_arrow_from_csv(str(self._resolve_path(parts[1])))
+        if action == "get":
+            if len(parts) < 2:
+                return CommandResult(output="", error="usage: zero get <handle>")
+            return self.zero.get(parts[1])
+        if action == "list":
+            payload = self.zero.list()
+            return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+        if action == "release":
+            if len(parts) < 2:
+                return CommandResult(output="", error="usage: zero release <handle>")
+            return self.zero.release(parts[1])
+        return CommandResult(output="", error="usage: zero put <text> | zero put-arrow <csv> | zero get <handle> | zero list | zero release <handle>")
+
+    def _run_synth(self, args: str, _: str, __: Any) -> CommandResult:
+        parts = split_command(args)
+        if not parts:
+            return CommandResult(output="", error="usage: synth suggest <code> | synth autotune <code>")
+        action = parts[0]
+        payload = args[len(action) :].strip()
+        if action == "suggest":
+            if not payload:
+                return CommandResult(output="", error="usage: synth suggest <code>")
+            data = self.synth.suggest(payload)
+            return CommandResult(output=json.dumps(data, ensure_ascii=False) + "\n", data=data, data_type=PipelineType.OBJECT)
+        if action == "autotune":
+            if not payload:
+                return CommandResult(output="", error="usage: synth autotune <code>")
+            result = self.synth.autotune(payload)
+            if result.error:
+                return result
+            payload_data = {"result": result.output}
+            return CommandResult(output=json.dumps(payload_data, ensure_ascii=False) + "\n", data=payload_data, data_type=PipelineType.OBJECT)
+        return CommandResult(output="", error="usage: synth suggest <code> | synth autotune <code>")
+
+    def _run_dflow(self, args: str, _: str, __: Any) -> CommandResult:
+        parts = split_command(args)
+        if not parts:
+            return CommandResult(output="", error="usage: dflow subscribe|publish|list ...")
+        action = parts[0]
+        if action == "subscribe":
+            if len(parts) < 3:
+                return CommandResult(output="", error="usage: dflow subscribe <event> <pipeline>")
+            self._dflow_subscribers.setdefault(parts[1], []).append(parts[2])
+            return CommandResult(output="subscribed\n")
+        if action == "publish":
+            if len(parts) < 3:
+                return CommandResult(output="", error="usage: dflow publish <event> <payload> [--broadcast]")
+            event_name = parts[1]
+            payload = parts[2]
+            executed: list[dict[str, str]] = []
+            for pipeline in self._dflow_subscribers.get(event_name, []):
+                command = pipeline.replace("_", shlex.quote(payload))
+                result = self.route(command)
+                executed.append({"pipeline": pipeline, "error": result.error or ""})
+            if "--broadcast" in parts and self.mesh.workers:
+                event_data = json.dumps({"event": event_name, "payload": payload}).encode("utf-8")
+                for worker in self.mesh.list_workers():
+                    req = urllib.request.Request(worker["url"].rstrip("/") + "/flow/event", data=event_data, headers={"Content-Type": "application/json"}, method="POST")
+                    with contextlib.suppress(Exception):
+                        urllib.request.urlopen(req, timeout=5).read()
+            out = {"event": event_name, "executed": executed}
+            return CommandResult(output=json.dumps(out, ensure_ascii=False) + "\n", data=out, data_type=PipelineType.OBJECT)
+        if action == "list":
+            return CommandResult(output=json.dumps(self._dflow_subscribers, ensure_ascii=False) + "\n", data=self._dflow_subscribers, data_type=PipelineType.OBJECT)
+        return CommandResult(output="", error="usage: dflow subscribe|publish|list ...")
+
+    def _run_pulse(self, args: str, _: str, __: Any) -> CommandResult:
+        parts = split_command(args)
+        action = parts[0] if parts else "status"
+        if action == "status":
+            payload = {
+                "vision_running": self.vision._server is not None,
+                "recent_event_count": len(self.events.events[-25:]),
+                "active_reactive_triggers": len([t for t in self.reactive.triggers.values() if t.active]),
+                "dflow_topics": sorted(self._dflow_subscribers.keys()),
+            }
+            return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+        if action == "snapshot":
+            tail = self.events.events[-25:]
+            bottlenecks = sorted(tail, key=lambda e: float(e.get("duration_ms", 0.0)), reverse=True)[:5]
+            payload = {"events": tail, "bottlenecks": bottlenecks}
+            return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+        return CommandResult(output="", error="usage: pulse [status|snapshot]")
+
     def _run_jit_wasm(self, args: str, _: str, __: Any) -> CommandResult:
         return self.jit.execute_expression(args.strip())
 
     def _run_sync(self, args: str, _: str, __: Any) -> CommandResult:
-        parts = shlex.split(args)
+        parts = split_command(args)
         if not parts:
             return CommandResult(output="", error="usage: sync inc|get|set|get-key|merge|export ...")
 
@@ -1878,7 +2294,7 @@ class NovaShell:
         return CommandResult(output="", error="usage: sync inc|get|set|get-key|merge|export ...")
 
     def _run_lens(self, args: str, _: str, __: Any) -> CommandResult:
-        parts = shlex.split(args)
+        parts = split_command(args)
         if not parts:
             return CommandResult(output="", error="usage: lens list [n] | lens last | lens show <id> | lens replay <id>")
         action = parts[0]
@@ -1905,11 +2321,15 @@ class NovaShell:
         return CommandResult(output="", error="usage: lens list [n] | lens last | lens show <id> | lens replay <id>")
 
     def _run_on(self, args: str, _: str, __: Any) -> CommandResult:
-        parts = shlex.split(args)
+        parts = split_command(args)
         if len(parts) < 4 or parts[0] != "file":
             return CommandResult(output="", error='usage: on file "<glob>" --timeout <seconds> "<pipeline with _>"')
 
-        pattern = parts[1]
+        pattern_path = Path(os.path.expanduser(parts[1]))
+        if pattern_path.is_absolute():
+            pattern = str(pattern_path)
+        else:
+            pattern = str((self.cwd / pattern_path).resolve(strict=False))
         timeout_s = 3.0
         if "--timeout" in parts:
             idx = parts.index("--timeout")
@@ -1934,22 +2354,22 @@ class NovaShell:
         return CommandResult(output="", error="on file timeout reached")
 
     def _run_pack(self, args: str, _: str, __: Any) -> CommandResult:
-        parts = shlex.split(args)
+        parts = split_command(args)
         if len(parts) < 1:
             return CommandResult(output="", error="usage: pack <script.ns> --output <bundle.npx> [--requirements req.txt]")
 
-        script_path = Path(parts[0])
-        output_path = Path("bundle.npx")
+        script_path = self._resolve_path(parts[0])
+        output_path = self._resolve_path("bundle.npx")
         requirements_path: Path | None = None
 
         i = 1
         while i < len(parts):
             if parts[i] == "--output" and i + 1 < len(parts):
-                output_path = Path(parts[i + 1])
+                output_path = self._resolve_path(parts[i + 1])
                 i += 2
                 continue
             if parts[i] == "--requirements" and i + 1 < len(parts):
-                requirements_path = Path(parts[i + 1])
+                requirements_path = self._resolve_path(parts[i + 1])
                 i += 2
                 continue
             return CommandResult(output="", error=f"unknown pack option: {parts[i]}")
@@ -1974,7 +2394,7 @@ class NovaShell:
         return CommandResult(output=f"packed {output_path}\n", data={"bundle": str(output_path)}, data_type=PipelineType.OBJECT)
 
     def _run_observe(self, args: str, _: str, __: Any) -> CommandResult:
-        parts = shlex.split(args)
+        parts = split_command(args)
         if len(parts) < 2 or parts[0] != "run":
             return CommandResult(output="", error="usage: observe run <pipeline>")
 
@@ -1997,7 +2417,7 @@ class NovaShell:
         return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
 
     def _run_studio(self, args: str, _: str, __: Any) -> CommandResult:
-        parts = shlex.split(args)
+        parts = split_command(args)
         if not parts:
             return CommandResult(output="", error="usage: studio completions <prefix> | studio graph | studio events")
 
@@ -2014,29 +2434,30 @@ class NovaShell:
         return CommandResult(output="", error="usage: studio completions <prefix> | studio graph | studio events")
 
     def _run_data_load(self, args: str, _: str, __: Any) -> CommandResult:
-        parts = shlex.split(args)
+        parts = split_command(args)
         if not parts:
             return CommandResult(output="", error="usage: data.load <csv_file> [--arrow]")
-        file_path = parts[0]
+        file_path = str(self._resolve_path(parts[0]))
         if len(parts) > 1 and parts[1] == "--arrow":
             return self.data.load_csv_arrow(file_path)
         return self.data.load_csv(file_path)
 
     def _run_data(self, args: str, _: str, __: Any) -> CommandResult:
-        parts = shlex.split(args)
+        parts = split_command(args)
         if not parts:
             return CommandResult(output="", error="usage: data load <csv_file> [--arrow]")
         if parts[0] == "load" and len(parts) >= 2:
+            file_path = str(self._resolve_path(parts[1]))
             if len(parts) > 2 and parts[2] == "--arrow":
-                return self.data.load_csv_arrow(parts[1])
-            return self.data.load_csv(parts[1])
+                return self.data.load_csv_arrow(file_path)
+            return self.data.load_csv(file_path)
         return CommandResult(output="", error=f"unknown data command: {' '.join(parts)}")
 
     def _run_system(self, command: str, pipeline_input: str, _: Any) -> CommandResult:
         blocked = self._is_ebpf_blocked(command)
         if blocked:
             return CommandResult(output="", error=blocked)
-        return self.system.execute(command, pipeline_input)
+        return self.system.execute(command, pipeline_input, cwd=self.cwd)
 
     def _split_pipeline(self, command: str) -> list[str]:
         stages: list[str] = []
@@ -2082,7 +2503,7 @@ class NovaShell:
         return graph
 
     def _route_single(self, command: str, pipeline_input: str = "", pipeline_data: Any = None) -> CommandResult:
-        parts = shlex.split(command)
+        parts = split_command(command)
         if not parts:
             return CommandResult(output="")
 
@@ -2305,9 +2726,9 @@ class NovaShell:
         return self.loop.run_until_complete(self.route_async(command))
 
     def repl(self) -> None:
-        print("NovaShell 0.7 Compute Runtime")
+        print(f"NovaShell {__version__} Compute Runtime")
         print(
-            "Commands: py | cpp | gpu | wasm | jit_wasm | data | data.load | remote | mesh | ai | vision | fabric | guard | secure | flow | sync | lens | studio | on | pack | observe | watch | parallel | events | ns.exec | ns.run | sys | cd | pwd | help | exit"
+            "Commands: py | cpp | gpu | wasm | jit_wasm | data | data.load | remote | mesh | ai | vision | fabric | guard | secure | flow | sync | lens | studio | on | pack | observe | watch | parallel | events | ns.exec | ns.run | sys | cd | pwd | doctor | help | exit"
         )
         print("Pipelines: cmd | watch file | parallel py ...\n")
 
@@ -2329,7 +2750,34 @@ class NovaShell:
                 return
 
 
-if __name__ == "__main__":
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(prog="nova-shell", description="Nova-shell unified compute runtime")
+    parser.add_argument("-c", "--command", help="run a single command and exit")
+    parser.add_argument("--no-plugins", action="store_true", help="skip plugin discovery")
+    parser.add_argument("--version", action="store_true", help="print the Nova-shell version")
+    args = parser.parse_args(argv)
+
+    if args.version:
+        print(f"nova-shell {__version__}")
+        return 0
+
     shell = NovaShell()
-    shell.load_plugins()
+    if not args.no_plugins:
+        shell.load_plugins()
+
+    if args.command is not None:
+        result = shell.route(args.command)
+        if result.output:
+            print(result.output, end="" if result.output.endswith("\n") else "\n")
+        if result.error:
+            print(f"ERROR: {result.error}", file=sys.stderr)
+            return 1
+        return 0
+
     shell.repl()
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
+
