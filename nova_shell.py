@@ -12,12 +12,15 @@ import time
 import json
 import os
 import glob
+import fnmatch
 import shlex
 import subprocess
 import tempfile
 import zipfile
 import uuid
+import sqlite3
 import urllib.error
+import urllib.parse
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
@@ -301,6 +304,79 @@ class PolicyEngine:
         return True, None
 
 
+class MeshScheduler:
+    """Topology-aware worker registry and simple autonomous stage scheduler."""
+
+    def __init__(self) -> None:
+        self.workers: list[dict[str, Any]] = []
+
+    def add_worker(self, url: str, caps: set[str]) -> None:
+        self.workers = [w for w in self.workers if w["url"] != url]
+        self.workers.append({"url": url, "caps": caps, "load": 0})
+
+    def list_workers(self) -> list[dict[str, Any]]:
+        return [
+            {"url": w["url"], "caps": sorted(w["caps"]), "load": w["load"]}
+            for w in sorted(self.workers, key=lambda item: (item["load"], item["url"]))
+        ]
+
+    def select_worker(self, capability: str) -> dict[str, Any] | None:
+        candidates = [w for w in self.workers if capability in w["caps"]]
+        if not candidates:
+            return None
+        chosen = min(candidates, key=lambda item: item["load"])
+        chosen["load"] += 1
+        return chosen
+
+
+class FlowStateStore:
+    """State backend for event/window-aware streaming decisions."""
+
+    def __init__(self, db_path: str = ":memory:") -> None:
+        self.conn = sqlite3.connect(db_path, check_same_thread=False)
+        self._init_schema()
+
+    def _init_schema(self) -> None:
+        self.conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS flow_events (
+                ts REAL NOT NULL,
+                event TEXT NOT NULL
+            )
+            """
+        )
+        self.conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS flow_state (
+                key TEXT PRIMARY KEY,
+                value TEXT NOT NULL
+            )
+            """
+        )
+        self.conn.commit()
+
+    def add_event(self, event: str) -> None:
+        self.conn.execute("INSERT INTO flow_events(ts, event) VALUES(?, ?)", (time.time(), event))
+        self.conn.commit()
+
+    def count_last(self, seconds: float, pattern: str = "*") -> int:
+        cutoff = time.time() - seconds
+        cur = self.conn.execute("SELECT event FROM flow_events WHERE ts >= ?", (cutoff,))
+        return sum(1 for (event,) in cur.fetchall() if fnmatch.fnmatch(event, pattern))
+
+    def set(self, key: str, value: str) -> None:
+        self.conn.execute("INSERT OR REPLACE INTO flow_state(key, value) VALUES(?, ?)", (key, value))
+        self.conn.commit()
+
+    def get(self, key: str) -> str | None:
+        cur = self.conn.execute("SELECT value FROM flow_state WHERE key = ?", (key,))
+        row = cur.fetchone()
+        return row[0] if row else None
+
+    def close(self) -> None:
+        self.conn.close()
+
+
 class RemoteEngine:
     """Minimal remote execution client for NovaMesh-like workers."""
 
@@ -375,6 +451,15 @@ class VisionServer:
                             for node in shell.last_graph.nodes
                         ]
                     }
+                elif self.path.startswith("/lsp/completions"):
+                    parsed = urllib.parse.urlparse(self.path)
+                    prefix = urllib.parse.parse_qs(parsed.query).get("prefix", [""])[0]
+                    data = {
+                        "prefix": prefix,
+                        "items": sorted([name for name in shell.commands.keys() if name.startswith(prefix)]),
+                    }
+                elif self.path == "/commands":
+                    data = sorted(shell.commands.keys())
                 else:
                     self.send_response(404)
                     self.end_headers()
@@ -423,6 +508,8 @@ class NovaShell:
         self.events = EventBus()
         self.fabric = NovaFabric()
         self.policy = PolicyEngine()
+        self.mesh = MeshScheduler()
+        self.flow_state = FlowStateStore()
         self.last_graph = PipelineGraph()
         self.vision = VisionServer(self)
         self.current_policy = "open"
@@ -440,11 +527,14 @@ class NovaShell:
             "ai": self._run_ai,
             "vision": self._run_vision,
             "fabric": self._run_fabric,
+            "mesh": self._run_mesh,
             "guard": self._run_guard,
             "secure": self._run_secure,
+            "flow": self._run_flow,
             "on": self._run_on,
             "pack": self._run_pack,
             "observe": self._run_observe,
+            "studio": self._run_studio,
             "watch": self._watch,
             "sys": self._run_system,
             "cd": self._cd,
@@ -478,6 +568,7 @@ class NovaShell:
     def _close_loop(self) -> None:
         self.vision.stop()
         self.fabric.cleanup()
+        self.flow_state.close()
         if not self.loop.is_closed():
             self.loop.close()
 
@@ -694,17 +785,58 @@ class NovaShell:
     def _run_fabric(self, args: str, _: str, __: Any) -> CommandResult:
         parts = shlex.split(args)
         if not parts:
-            return CommandResult(output="", error="usage: fabric put <text> | fabric get <handle>")
+            return CommandResult(output="", error="usage: fabric put <text> | fabric get <handle> | fabric put-arrow <csv>")
         match parts[0]:
             case "put":
                 value = args[len("put") :].strip()
                 return self.fabric.put(value)
+            case "put-arrow":
+                if len(parts) < 2:
+                    return CommandResult(output="", error="usage: fabric put-arrow <csv_file>")
+                arrow_result = self.data.load_csv_arrow(parts[1])
+                if arrow_result.error:
+                    return arrow_result
+                # Store a compact textual descriptor in shared memory for cross-engine handle exchange.
+                descriptor = f"arrow:{parts[1]}:{arrow_result.output.strip()}"
+                return self.fabric.put(descriptor)
             case "get":
                 if len(parts) < 2:
                     return CommandResult(output="", error="usage: fabric get <handle>")
                 return self.fabric.get(parts[1])
             case _:
-                return CommandResult(output="", error="usage: fabric put <text> | fabric get <handle>")
+                return CommandResult(output="", error="usage: fabric put <text> | fabric get <handle> | fabric put-arrow <csv>")
+
+    def _run_mesh(self, args: str, _: str, __: Any) -> CommandResult:
+        parts = shlex.split(args)
+        if not parts:
+            return CommandResult(output="", error="usage: mesh add|list|run ...")
+
+        action = parts[0]
+        if action == "add":
+            if len(parts) < 3:
+                return CommandResult(output="", error="usage: mesh add <worker_url> <cap1,cap2,...>")
+            caps = {cap.strip() for cap in parts[2].split(",") if cap.strip()}
+            self.mesh.add_worker(parts[1], caps)
+            return CommandResult(output=f"mesh worker added: {parts[1]}\n")
+        if action == "list":
+            return CommandResult(
+                output=json.dumps(self.mesh.list_workers(), ensure_ascii=False) + "\n",
+                data=self.mesh.list_workers(),
+                data_type=PipelineType.OBJECT,
+            )
+        if action == "run":
+            if len(parts) < 3:
+                return CommandResult(output="", error="usage: mesh run <capability> <command>")
+            capability = parts[1]
+            worker = self.mesh.select_worker(capability)
+            if worker is None:
+                return CommandResult(output="", error=f"no worker available for capability: {capability}")
+            command = " ".join(parts[2:])
+            try:
+                return self.remote.execute(worker["url"], command)
+            finally:
+                worker["load"] = max(worker["load"] - 1, 0)
+        return CommandResult(output="", error="usage: mesh add|list|run ...")
 
     def _run_guard(self, args: str, _: str, __: Any) -> CommandResult:
         parts = shlex.split(args)
@@ -730,10 +862,40 @@ class NovaShell:
             return CommandResult(output="", error="usage: secure <policy> <command>")
         policy_name = parts[0]
         command = args[len(policy_name) :].strip()
+        if policy_name == "wasm" and command.startswith("py "):
+            return CommandResult(output="", error="secure wasm mode requires wasm modules, not raw python")
         allowed, reason = self.policy.is_allowed(policy_name, command)
         if not allowed:
             return CommandResult(output="", error=reason)
         return self.route(command)
+
+    def _run_flow(self, args: str, _: str, __: Any) -> CommandResult:
+        parts = shlex.split(args)
+        if not parts:
+            return CommandResult(output="", error="usage: flow state set|get ... | flow count-last <sec> [pattern]")
+
+        if parts[0] == "state":
+            if len(parts) < 3:
+                return CommandResult(output="", error="usage: flow state set|get <key> [value]")
+            if parts[1] == "set":
+                if len(parts) < 4:
+                    return CommandResult(output="", error="usage: flow state set <key> <value>")
+                self.flow_state.set(parts[2], " ".join(parts[3:]))
+                return CommandResult(output="ok\n")
+            if parts[1] == "get":
+                value = self.flow_state.get(parts[2])
+                return CommandResult(output=(f"{value}\n" if value is not None else "\n"))
+            return CommandResult(output="", error="usage: flow state set|get <key> [value]")
+
+        if parts[0] == "count-last":
+            if len(parts) < 2:
+                return CommandResult(output="", error="usage: flow count-last <seconds> [pattern]")
+            seconds = float(parts[1])
+            pattern = parts[2] if len(parts) > 2 else "*"
+            count = self.flow_state.count_last(seconds, pattern)
+            return CommandResult(output=f"{count}\n", data=count, data_type=PipelineType.OBJECT)
+
+        return CommandResult(output="", error="usage: flow state set|get ... | flow count-last <sec> [pattern]")
 
     def _run_on(self, args: str, _: str, __: Any) -> CommandResult:
         parts = shlex.split(args)
@@ -825,6 +987,23 @@ class NovaShell:
             "stats": stats.data if stats.data else {},
         }
         return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+
+    def _run_studio(self, args: str, _: str, __: Any) -> CommandResult:
+        parts = shlex.split(args)
+        if not parts:
+            return CommandResult(output="", error="usage: studio completions <prefix> | studio graph | studio events")
+
+        if parts[0] == "completions":
+            prefix = parts[1] if len(parts) > 1 else ""
+            items = sorted([name for name in self.commands.keys() if name.startswith(prefix)])
+            return CommandResult(output=json.dumps(items, ensure_ascii=False) + "\n", data=items, data_type=PipelineType.OBJECT)
+        if parts[0] == "graph":
+            payload = [{"name": node.name, "stages": node.stages, "parallel": node.parallel} for node in self.last_graph.nodes]
+            return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+        if parts[0] == "events":
+            return CommandResult(output=json.dumps(self.events.events, ensure_ascii=False) + "\n", data=self.events.events, data_type=PipelineType.OBJECT)
+
+        return CommandResult(output="", error="usage: studio completions <prefix> | studio graph | studio events")
 
     def _run_data_load(self, args: str, _: str, __: Any) -> CommandResult:
         parts = shlex.split(args)
@@ -1017,21 +1196,21 @@ class NovaShell:
             rows_processed = len(current_output.splitlines())
 
         if emit_event:
-            self.events.emit(
-                {
-                    "stage": stage,
-                    "node": node_name or stage,
-                    "error": result.error or "",
-                    "output": result.output[:200],
-                    "data_type": result.data_type.value,
-                    "trace_id": self.current_trace_id,
-                    "duration_ms": f"{duration_ms:.3f}",
-                    "rows_processed": str(rows_processed),
-                    "cpu_percent": f"{cpu_percent:.2f}",
-                    "rss_mb": f"{rss_mb:.2f}",
-                    "cost_estimate": f"{duration_ms * 0.0001:.6f}",
-                }
-            )
+            event_payload = {
+                "stage": stage,
+                "node": node_name or stage,
+                "error": result.error or "",
+                "output": result.output[:200],
+                "data_type": result.data_type.value,
+                "trace_id": self.current_trace_id,
+                "duration_ms": f"{duration_ms:.3f}",
+                "rows_processed": str(rows_processed),
+                "cpu_percent": f"{cpu_percent:.2f}",
+                "rss_mb": f"{rss_mb:.2f}",
+                "cost_estimate": f"{duration_ms * 0.0001:.6f}",
+            }
+            self.events.emit(event_payload)
+            self.flow_state.add_event(stage)
 
         return result, rows_processed, duration_ms
 
@@ -1065,7 +1244,8 @@ class NovaShell:
 
         stages = self._split_pipeline(command)
         graph = self._build_pipeline_graph(stages)
-        self.last_graph = graph
+        if not command.strip().startswith("studio graph"):
+            self.last_graph = graph
         current_output = ""
         current_data: Any = None
         current_type = PipelineType.TEXT

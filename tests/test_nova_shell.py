@@ -324,5 +324,55 @@ if len(files_lines) == 2:
             self.assertEqual(result.output.strip(), "25")
 
 
+    def test_mesh_add_and_list(self) -> None:
+        add_result = self.shell.route("mesh add http://127.0.0.1:9999 gpu,cpu")
+        self.assertIsNone(add_result.error)
+        list_result = self.shell.route("mesh list")
+        self.assertIsNone(list_result.error)
+        payload = json.loads(list_result.output)
+        self.assertEqual(payload[0]["url"], "http://127.0.0.1:9999")
+        self.assertIn("gpu", payload[0]["caps"])
+
+    def test_mesh_run_reports_missing_capability(self) -> None:
+        result = self.shell.route("mesh run gpu py 1 + 1")
+        self.assertIsNotNone(result.error)
+        self.assertIn("no worker", result.error)
+
+    def test_flow_state_set_get_and_count_last(self) -> None:
+        set_result = self.shell.route("flow state set mode active")
+        self.assertIsNone(set_result.error)
+        get_result = self.shell.route("flow state get mode")
+        self.assertEqual(get_result.output.strip(), "active")
+
+        self.shell.route("py 1 + 1")
+        count_result = self.shell.route("flow count-last 5 py*")
+        self.assertIsNone(count_result.error)
+        self.assertGreaterEqual(int(count_result.output.strip()), 1)
+
+    def test_studio_completions_and_graph(self) -> None:
+        comp_result = self.shell.route("studio completions ns")
+        self.assertIsNone(comp_result.error)
+        items = json.loads(comp_result.output)
+        self.assertIn("ns.exec", items)
+
+        self.shell.route("py 1 + 1 | py _ + 1")
+        graph_result = self.shell.route("studio graph")
+        self.assertIsNone(graph_result.error)
+        graph = json.loads(graph_result.output)
+        self.assertTrue(graph)
+        self.assertEqual(graph[0]["name"], "py_chain")
+
+    def test_fabric_put_arrow_missing_dependency_or_success(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            csv_file = Path(tmp) / "items.csv"
+            csv_file.write_text("name,value\na,1\n", encoding="utf-8")
+            result = self.shell.route(f"fabric put-arrow {csv_file}")
+            if result.error is None:
+                handle = result.output.strip()
+                self.assertTrue(handle)
+            else:
+                self.assertIn("pyarrow", result.error)
+
+
 if __name__ == "__main__":
     unittest.main()
