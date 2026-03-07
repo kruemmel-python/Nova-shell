@@ -1,0 +1,264 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+import ast
+from pathlib import Path
+from typing import Any
+import textwrap
+
+
+@dataclass
+class Node:
+    pass
+
+
+@dataclass
+class Assignment(Node):
+    name: str
+    command: str
+    declared_type: str | None = None
+
+
+@dataclass
+class Command(Node):
+    command: str
+    output_contract: str | None = None
+
+
+@dataclass
+class ForLoop(Node):
+    var: str
+    iterable: str
+    body: list[Node]
+
+
+@dataclass
+class IfBlock(Node):
+    condition: str
+    body: list[Node]
+
+
+@dataclass
+class WatchHook(Node):
+    variable: str
+    body: list[Node]
+
+
+class NovaParser:
+    """Parse a small NovaScript subset into an AST."""
+
+    def parse(self, script: str) -> list[Node]:
+        normalized = textwrap.dedent(script)
+        lines = [line.rstrip("\n") for line in normalized.splitlines() if line.strip()]
+        nodes, _ = self._parse_block(lines, 0, 0)
+        return nodes
+
+    def parse_file(self, file_path: str | Path) -> list[Node]:
+        source = Path(file_path).read_text(encoding="utf-8")
+        return self.parse(source)
+
+    def _parse_block(self, lines: list[str], start: int, indent: int) -> tuple[list[Node], int]:
+        nodes: list[Node] = []
+        i = start
+
+        while i < len(lines):
+            line = lines[i]
+            current_indent = len(line) - len(line.lstrip(" "))
+
+            if current_indent < indent:
+                break
+            if current_indent > indent:
+                raise ValueError(f"Unexpected indentation at line: {line}")
+
+            statement = line.strip()
+
+            if statement.startswith("for ") and statement.endswith(":"):
+                header = statement[4:-1].strip()
+                var, iterable = header.split(" in ", 1)
+                body, i = self._parse_block(lines, i + 1, indent + 4)
+                nodes.append(ForLoop(var=var.strip(), iterable=iterable.strip(), body=body))
+                continue
+
+            if statement.startswith("if ") and statement.endswith(":"):
+                condition = statement[3:-1].strip()
+                body, i = self._parse_block(lines, i + 1, indent + 4)
+                nodes.append(IfBlock(condition=condition, body=body))
+                continue
+
+            if statement.startswith("watch ") and statement.endswith(":"):
+                variable = statement[6:-1].strip()
+                body, i = self._parse_block(lines, i + 1, indent + 4)
+                nodes.append(WatchHook(variable=variable, body=body))
+                continue
+
+            output_contract = None
+            if "->" in statement:
+                lhs, rhs = statement.rsplit("->", 1)
+                statement = lhs.strip()
+                output_contract = rhs.strip() or None
+
+            if "=" in statement and not statement.startswith(("py ", "sys ", "cpp ", "gpu ", "data ", "data.load")):
+                name, command = statement.split("=", 1)
+                name_part = name.strip()
+                declared_type = None
+                if ":" in name_part:
+                    var_name, type_name = name_part.split(":", 1)
+                    name_part = var_name.strip()
+                    declared_type = type_name.strip() or None
+                nodes.append(Assignment(name=name_part, command=command.strip(), declared_type=declared_type))
+            else:
+                nodes.append(Command(statement, output_contract=output_contract))
+
+            i += 1
+
+        return nodes, i
+
+
+class NovaInterpreter:
+    """Execute NovaScript AST nodes against a NovaShell instance."""
+
+    def __init__(self, shell: Any):
+        self.shell = shell
+        self.variables: dict[str, str] = {}
+        self.watchers: dict[str, list[list[Node]]] = {}
+
+    def execute(self, nodes: list[Node]) -> str:
+        last_output = ""
+        for node in nodes:
+            last_output = self.run_node(node)
+        return last_output
+
+    def _normalize_type_name(self, value: str) -> str:
+        return value.strip().lower().replace(" ", "_")
+
+    def _result_type_name(self, result: Any) -> str:
+        data_type = getattr(result, "data_type", None)
+        if data_type is None:
+            return "text"
+        raw = getattr(data_type, "value", str(data_type))
+        return self._normalize_type_name(str(raw))
+
+    def _validate_contract(self, expected: str | None, result: Any, context: str) -> None:
+        if not expected:
+            return
+        normalized_expected = self._normalize_type_name(expected)
+        actual = self._result_type_name(result)
+        if actual != normalized_expected:
+            raise RuntimeError(f"contract violation in {context}: expected {normalized_expected}, got {actual}")
+
+    def _trigger_watch(self, variable: str) -> str:
+        blocks = self.watchers.get(variable, [])
+        if not blocks:
+            return ""
+        outputs: list[str] = []
+        for body in blocks:
+            for subnode in body:
+                out = self.run_node(subnode)
+                if out:
+                    outputs.append(out)
+        return "".join(outputs)
+
+    def emit(self, variable: str, value: str) -> str:
+        self.variables[variable] = value
+        return self._trigger_watch(variable)
+
+    def run_node(self, node: Node) -> str:
+        match node:
+            case Assignment(name=name, command=command, declared_type=declared_type):
+                resolved = self._inject_variables(command)
+                result = self.shell.route(resolved)
+                if result.error:
+                    raise RuntimeError(result.error)
+                self._validate_contract(declared_type, result, f"assignment {name}")
+                self.variables[name] = result.output
+                hook_output = self._trigger_watch(name)
+                return result.output + hook_output
+
+            case Command(command=command, output_contract=output_contract):
+                resolved = self._inject_variables(command)
+                result = self.shell.route(resolved)
+                if result.error:
+                    raise RuntimeError(result.error)
+                self._validate_contract(output_contract, result, f"command '{command}'")
+                return result.output
+
+            case ForLoop(var=var, iterable=iterable, body=body):
+                iterable_value = self.variables.get(iterable, "")
+                aggregated: list[str] = []
+                for item in iterable_value.splitlines():
+                    self.variables[var] = item
+                    for subnode in body:
+                        output = self.run_node(subnode)
+                        if output:
+                            aggregated.append(output)
+                return "".join(aggregated)
+
+            case IfBlock(condition=condition, body=body):
+                if not self._eval_condition(condition):
+                    return ""
+                aggregated: list[str] = []
+                for subnode in body:
+                    output = self.run_node(subnode)
+                    if output:
+                        aggregated.append(output)
+                return "".join(aggregated)
+
+            case WatchHook(variable=variable, body=body):
+                self.watchers.setdefault(variable, []).append(body)
+                return ""
+
+            case _:
+                raise TypeError(f"Unsupported node: {node}")
+
+    def _inject_variables(self, command: str) -> str:
+        is_python = command.startswith("py ") or command.startswith("python ")
+        for name, value in self.variables.items():
+            replacement = repr(value.strip()) if is_python else value.strip()
+            command = command.replace(f"${name}", replacement)
+        return command
+
+    def _eval_condition(self, condition: str) -> bool:
+        safe_locals: dict[str, Any] = {}
+        for key, value in self.variables.items():
+            safe_locals[key] = value
+            safe_locals[f"{key}_lines"] = value.splitlines()
+
+        safe_builtins = {"len": len, "int": int, "float": float, "str": str}
+        return bool(eval(condition, {"__builtins__": safe_builtins}, safe_locals))
+
+
+class NovaJITCompiler:
+    """Compile a tiny arithmetic subset into WebAssembly text (WAT)."""
+
+    _OPS = {
+        ast.Add: 'f64.add',
+        ast.Sub: 'f64.sub',
+        ast.Mult: 'f64.mul',
+        ast.Div: 'f64.div',
+    }
+
+    def compile_expr_to_wat(self, expression: str) -> str:
+        parsed = ast.parse(expression, mode='eval')
+        body = self._compile_node(parsed.body)
+        return (
+            '(module\n'
+            '  (func (export "run") (result f64)\n'
+            f'    {body}\n'
+            '  )\n'
+            ')'
+        )
+
+    def _compile_node(self, node: ast.AST) -> str:
+        if isinstance(node, ast.Constant) and isinstance(node.value, (int, float)):
+            return f'f64.const {float(node.value)}'
+        if isinstance(node, ast.UnaryOp) and isinstance(node.op, ast.USub):
+            inner = self._compile_node(node.operand)
+            return f'f64.const -1\n    {inner}\n    f64.mul'
+        if isinstance(node, ast.BinOp):
+            op = self._OPS.get(type(node.op))
+            if op is None:
+                raise ValueError('unsupported operator for jit_wasm')
+            left = self._compile_node(node.left)
+            right = self._compile_node(node.right)
+            return f'{left}\n    {right}\n    {op}'
+        raise ValueError('unsupported expression for jit_wasm')
