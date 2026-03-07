@@ -20,7 +20,7 @@ PYTHON="${VENV}/bin/python"
 "${PYTHON}" -m pip install --upgrade pip
 
 if [[ "${PROFILE}" == "enterprise" ]]; then
-  "${PYTHON}" -m pip install --upgrade ".[release,observability,guard,arrow,wasm]"
+  "${PYTHON}" -m pip install --upgrade ".[release,observability,guard,arrow,wasm,gpu]"
 else
   "${PYTHON}" -m pip install --upgrade ".[release]"
 fi

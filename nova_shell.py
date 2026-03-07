@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import atexit
 import asyncio
+import codeop
 import contextlib
 import csv
 import inspect
@@ -44,6 +45,168 @@ except ImportError:  # pragma: no cover - platform dependent
 
 
 __version__ = "0.8.0"
+SIDELOAD_PACKAGE_DIR = "vendor-py"
+RUNTIME_CONFIG_FILE = "nova-shell-runtime.json"
+
+
+def _is_windows_runtime() -> bool:
+    return os.name == "nt" or sys.platform.startswith("win")
+
+
+def safe_system_name() -> str:
+    if _is_windows_runtime():
+        return "Windows"
+    if sys.platform == "darwin":
+        return "Darwin"
+    if sys.platform.startswith("linux"):
+        return "Linux"
+    value = platform.system().strip()
+    return value or sys.platform
+
+
+def safe_machine_name() -> str:
+    value = ""
+    if _is_windows_runtime():
+        value = os.environ.get("PROCESSOR_ARCHITEW6432", "") or os.environ.get("PROCESSOR_ARCHITECTURE", "")
+    if not value:
+        value = platform.machine()
+    normalized = value.strip().lower()
+    aliases = {
+        "x64": "amd64",
+        "x86_64": "amd64",
+        "amd64": "amd64",
+        "x86": "x86",
+        "i386": "x86",
+        "i686": "x86",
+        "aarch64": "arm64",
+        "arm64": "arm64",
+    }
+    return aliases.get(normalized, normalized or "unknown")
+
+
+def safe_platform_string() -> str:
+    if _is_windows_runtime():
+        version = sys.getwindowsversion()
+        return f"Windows-{version.major}.{version.minor}.{version.build}-{safe_machine_name()}"
+    if sys.platform.startswith("linux"):
+        return f"Linux-{safe_machine_name()}"
+    if sys.platform == "darwin":
+        return f"Darwin-{safe_machine_name()}"
+    return platform.platform()
+
+
+def configure_sideload_paths() -> None:
+    candidates = [
+        Path(sys.executable).resolve().parent / SIDELOAD_PACKAGE_DIR,
+        Path(__file__).resolve().parent / SIDELOAD_PACKAGE_DIR,
+    ]
+    for candidate in candidates:
+        candidate_text = str(candidate)
+        if candidate.is_dir() and candidate_text not in sys.path:
+            sys.path.insert(0, candidate_text)
+
+
+def load_runtime_config() -> dict[str, Any]:
+    candidates = [
+        Path(sys.executable).resolve().parent / RUNTIME_CONFIG_FILE,
+        Path(__file__).resolve().parent / RUNTIME_CONFIG_FILE,
+    ]
+    for candidate in candidates:
+        try:
+            if candidate.is_file():
+                payload = json.loads(candidate.read_text(encoding="utf-8"))
+                if isinstance(payload, dict):
+                    return payload
+        except Exception:
+            continue
+    return {}
+
+
+def _resolve_vswhere_path() -> Path | None:
+    program_files_x86 = os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)")
+    candidate = Path(program_files_x86) / "Microsoft Visual Studio" / "Installer" / "vswhere.exe"
+    return candidate if candidate.exists() else None
+
+
+def _run_vswhere(args: list[str]) -> list[str]:
+    vswhere = _resolve_vswhere_path()
+    if vswhere is None:
+        return []
+    try:
+        completed = subprocess.run(
+            [str(vswhere), *args],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+    except Exception:
+        return []
+    if completed.returncode != 0:
+        return []
+    return [line.strip() for line in completed.stdout.splitlines() if line.strip()]
+
+
+def resolve_gxx_command() -> str:
+    path = shutil.which("g++")
+    if path:
+        return path
+    if _is_windows_runtime():
+        for candidate in (
+            r"C:\msys64\ucrt64\bin\g++.exe",
+            r"C:\msys64\mingw64\bin\g++.exe",
+        ):
+            if Path(candidate).exists():
+                return candidate
+    return ""
+
+
+def resolve_cl_command() -> str:
+    path = shutil.which("cl")
+    if path:
+        return path
+    if not _is_windows_runtime():
+        return ""
+
+    install_paths = _run_vswhere(
+        [
+            "-latest",
+            "-products",
+            "*",
+            "-requires",
+            "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",
+            "-property",
+            "installationPath",
+        ]
+    )
+    for install_path in install_paths:
+        tools_root = Path(install_path) / "VC" / "Tools" / "MSVC"
+        if not tools_root.exists():
+            continue
+        versions = sorted([path for path in tools_root.iterdir() if path.is_dir()], reverse=True)
+        for version_path in versions:
+            candidate = version_path / "bin" / "Hostx64" / "x64" / "cl.exe"
+            if candidate.exists():
+                return str(candidate)
+    return ""
+
+
+def resolve_emcc_command(runtime_config: dict[str, Any], modules: dict[str, bool]) -> str:
+    path = shutil.which("emcc")
+    if path:
+        return path
+    if _is_windows_runtime():
+        for candidate in (
+            r"C:\emsdk\upstream\emscripten\emcc.bat",
+            str(Path.home() / "emsdk" / "upstream" / "emscripten" / "emcc.bat"),
+        ):
+            if Path(candidate).exists():
+                return candidate
+    if runtime_config.get("profile") == "enterprise" and modules.get("wasmtime"):
+        return "bundled-wasm-runtime"
+    return ""
+
+
+configure_sideload_paths()
 
 
 class PipelineType(str, Enum):
@@ -130,10 +293,13 @@ class CppEngine:
             binary = Path(tmp) / "program"
 
             source.write_text(code, encoding="utf-8")
+            compiler = resolve_gxx_command()
+            if not compiler:
+                return CommandResult(output="", error="g++ is required for cpp commands")
 
             try:
                 compile_proc = subprocess.run(
-                    ["g++", "-std=c++20", "-O2", str(source), "-o", str(binary)],
+                    [compiler, "-std=c++20", "-O2", str(source), "-o", str(binary)],
                     capture_output=True,
                     text=True,
                 )
@@ -161,10 +327,19 @@ class CppEngine:
             source = Path(tmp) / "program.cpp"
             wasm = Path(tmp) / "program.wasm"
             source.write_text(code, encoding="utf-8")
+            has_wasmtime = False
+            with contextlib.suppress(Exception):
+                import wasmtime  # noqa: F401
+                has_wasmtime = True
+            emcc_command = resolve_emcc_command(load_runtime_config(), {"wasmtime": has_wasmtime})
+            if not emcc_command:
+                return CommandResult(output="", error="emcc is required for cpp sandbox mode")
+            if emcc_command == "bundled-wasm-runtime":
+                return CommandResult(output="", error="enterprise runtime includes wasmtime, but cpp sandbox mode still requires an emcc compiler")
 
             try:
                 compile_proc = subprocess.run(
-                    ["emcc", str(source), "-O2", "-s", "STANDALONE_WASM=1", "-s", "EXPORTED_FUNCTIONS=['_main']", "-o", str(wasm)],
+                    [emcc_command, str(source), "-O2", "-s", "STANDALONE_WASM=1", "-s", "EXPORTED_FUNCTIONS=['_main']", "-o", str(wasm)],
                     capture_output=True,
                     text=True,
                 )
@@ -1357,6 +1532,7 @@ class VisionServer:
 
 class NovaShell:
     def __init__(self) -> None:
+        self.runtime_config = load_runtime_config()
         self.cwd = Path.cwd()
         self.python = PythonEngine()
         self.cpp = CppEngine()
@@ -1388,7 +1564,7 @@ class NovaShell:
         self.current_trace_id = ""
         self._ns_runtime: NovaInterpreter | None = None
         self._dflow_subscribers: dict[str, list[str]] = {}
-        self.wasm_sandbox_default = False
+        self.wasm_sandbox_default = bool(self.runtime_config.get("sandbox_default", False))
 
         self.commands: dict[str, Callable[[str, str, Any], CommandResult]] = {
             "py": self._run_python,
@@ -1522,17 +1698,22 @@ class NovaShell:
                 __import__(module_name)
                 modules[module_name] = True
 
+        commands = {
+            "g++": resolve_gxx_command(),
+            "cl": resolve_cl_command(),
+        }
+        commands["emcc"] = resolve_emcc_command(self.runtime_config, modules)
+        command_status = {name: bool(value) for name, value in commands.items()}
+
         payload = {
             "version": __version__,
-            "platform": platform.platform(),
+            "platform": safe_platform_string(),
             "python": sys.version.split()[0],
             "executable": sys.executable,
             "cwd": str(self.cwd),
-            "commands": {
-                "g++": shutil.which("g++") or "",
-                "emcc": shutil.which("emcc") or "",
-                "cl": shutil.which("cl") or "",
-            },
+            "profile": str(self.runtime_config.get("profile") or "dev"),
+            "commands": commands,
+            "command_status": command_status,
             "modules": modules,
             "sandbox_default": self.wasm_sandbox_default,
         }
@@ -1546,10 +1727,11 @@ class NovaShell:
             f"python: {payload['python']}",
             f"executable: {payload['executable']}",
             f"cwd: {payload['cwd']}",
-            f"g++: {payload['commands']['g++'] or 'missing'}",
-            f"emcc: {payload['commands']['emcc'] or 'missing'}",
-            f"cl: {payload['commands']['cl'] or 'missing'}",
-            f"sandbox_default: {payload['sandbox_default']}",
+            f"profile: {payload['profile']}",
+            f"g++: {'ok' if payload['command_status']['g++'] else 'missing'}",
+            f"emcc: {'ok' if payload['command_status']['emcc'] else 'missing'}",
+            f"cl: {'ok' if payload['command_status']['cl'] else 'missing'}",
+            f"sandbox_default: {'ok' if payload['sandbox_default'] else 'false'}",
         ]
         for name, available in payload["modules"].items():
             lines.append(f"{name}: {'ok' if available else 'missing'}")
@@ -2725,6 +2907,44 @@ class NovaShell:
             return self._route_internal(command)
         return self.loop.run_until_complete(self.route_async(command))
 
+    def _parse_repl_python_command(self, command: str) -> tuple[str, str] | None:
+        stripped = command.strip()
+        if stripped == "py":
+            return "py", ""
+        if stripped.startswith("py "):
+            return "py", stripped[3:]
+        if stripped == "python":
+            return "python", ""
+        if stripped.startswith("python "):
+            return "python", stripped[7:]
+        return None
+
+    def _python_block_incomplete(self, code: str) -> bool:
+        if not code:
+            return False
+        try:
+            return codeop.compile_command(code, symbol="exec") is None
+        except (OverflowError, SyntaxError, ValueError, TypeError):
+            return False
+
+    def _read_repl_command(self) -> str:
+        command = input(f"{self.cwd} > ").rstrip()
+        parsed = self._parse_repl_python_command(command)
+        if parsed is None:
+            return command.strip()
+
+        prefix, code = parsed
+        if not self._python_block_incomplete(code):
+            return command.strip()
+
+        lines = [code]
+        while True:
+            next_line = input("... ").rstrip()
+            lines.append(next_line)
+            if not self._python_block_incomplete("\n".join(lines)):
+                break
+        return f"{prefix} " + "\n".join(lines)
+
     def repl(self) -> None:
         print(f"NovaShell {__version__} Compute Runtime")
         print(
@@ -2734,7 +2954,7 @@ class NovaShell:
 
         while True:
             try:
-                command = input(f"{self.cwd} > ").strip()
+                command = self._read_repl_command()
                 if not command:
                     continue
 

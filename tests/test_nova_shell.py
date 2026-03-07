@@ -7,6 +7,7 @@ import unittest
 import zipfile
 from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
+from unittest.mock import patch
 
 from nova_shell import NovaShell, PipelineType, __version__, main
 from novascript import Assignment, ForLoop, IfBlock, NovaInterpreter, NovaParser
@@ -88,6 +89,34 @@ class NovaShellTests(unittest.TestCase):
         payload = json.loads(result.output)
         self.assertEqual(payload["version"], __version__)
         self.assertIn("modules", payload)
+
+    def test_read_repl_command_collects_multiline_python_block(self) -> None:
+        responses = iter(
+            [
+                'py with open("items.csv","w",encoding="utf-8") as f:',
+                '    f.write("id,name\\n1,Brot\\n")',
+            ]
+        )
+        with patch("builtins.input", side_effect=lambda _prompt: next(responses)):
+            command = self.shell._read_repl_command()
+        self.assertEqual(
+            command,
+            'py with open("items.csv","w",encoding="utf-8") as f:\n    f.write("id,name\\n1,Brot\\n")',
+        )
+
+    def test_python_multiline_block_writes_file(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            csv_file = Path(tmp) / "items.csv"
+            command = (
+                f'py with open(r"{csv_file}","w",encoding="utf-8") as f:\n'
+                '    f.write("id,name,price\\n1,Brot,2.50\\n2,Käse,4.20\\n3,Apfel,1.10\\n")'
+            )
+            result = self.shell.route(command)
+            self.assertIsNone(result.error)
+            self.assertEqual(
+                csv_file.read_text(encoding="utf-8"),
+                "id,name,price\n1,Brot,2.50\n2,Käse,4.20\n3,Apfel,1.10\n",
+            )
 
     def test_data_load_csv_object_pipeline(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

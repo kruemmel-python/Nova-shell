@@ -4,6 +4,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
 
@@ -46,6 +47,154 @@ class BuildReleaseTests(unittest.TestCase):
                 "def  dist/release/nova-shell.msi",
             ],
         )
+
+    def test_collect_nuitka_packages_for_enterprise_profile(self) -> None:
+        with (
+            patch.object(build_release.os, "name", "nt"),
+            patch.object(build_release.sys, "platform", "win32"),
+        ):
+            self.assertEqual(
+                build_release.collect_nuitka_packages("enterprise"),
+                ["psutil", "yaml"],
+            )
+
+    def test_collect_nuitka_modules_for_enterprise_profile(self) -> None:
+        self.assertEqual(
+            build_release.collect_nuitka_modules("enterprise"),
+            ["pyarrow", "pyarrow.csv", "pyarrow.flight"],
+        )
+
+    def test_collect_nuitka_nofollow_for_enterprise_profile(self) -> None:
+        with (
+            patch.object(build_release.os, "name", "nt"),
+            patch.object(build_release.sys, "platform", "win32"),
+        ):
+            self.assertEqual(
+                build_release.collect_nuitka_nofollow("enterprise"),
+                ["numpy", "pyarrow.tests", "pyarrow.vendored", "pyopencl", "wasmtime"],
+            )
+
+    def test_collect_nuitka_compile_flags_for_windows_enterprise_profile(self) -> None:
+        with (
+            patch.object(build_release.os, "name", "nt"),
+            patch.object(build_release.sys, "platform", "win32"),
+        ):
+            self.assertEqual(
+                build_release.collect_nuitka_compile_flags("enterprise"),
+                ["--low-memory", "--jobs=1", "--lto=no"],
+            )
+
+    def test_collect_sideload_packages_for_windows_enterprise_profile(self) -> None:
+        with (
+            patch.object(build_release.os, "name", "nt"),
+            patch.object(build_release.sys, "platform", "win32"),
+        ):
+            self.assertEqual(build_release.collect_sideload_packages("enterprise"), ["wasmtime", "numpy", "pyopencl"])
+
+    def test_collect_nuitka_deployment_flags_for_windows_enterprise_profile(self) -> None:
+        with (
+            patch.object(build_release.os, "name", "nt"),
+            patch.object(build_release.sys, "platform", "win32"),
+        ):
+            self.assertEqual(
+                build_release.collect_nuitka_deployment_flags("enterprise"),
+                ["self-execution", "excluded-module-usage"],
+            )
+
+    def test_stage_sideload_distribution_copies_record_files_without_top_level(self) -> None:
+        class FakeDistribution:
+            def __init__(self, path: Path, files: list[str]) -> None:
+                self._path = path
+                self.files = files
+
+            def locate_file(self, path: str) -> Path:
+                return self._path.parent / path
+
+            def read_text(self, filename: str) -> str | None:
+                if filename == "top_level.txt":
+                    return None
+                return None
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            site_packages = root / "site-packages"
+            site_packages.mkdir()
+
+            dist_info = site_packages / "example-1.0.dist-info"
+            dist_info.mkdir()
+            (dist_info / "METADATA").write_text("metadata", encoding="utf-8")
+
+            package_dir = site_packages / "examplepkg"
+            package_dir.mkdir()
+            (package_dir / "__init__.py").write_text("__all__ = []\n", encoding="utf-8")
+
+            libs_dir = site_packages / "examplepkg.libs"
+            libs_dir.mkdir()
+            (libs_dir / "runtime.dll").write_text("dll", encoding="utf-8")
+
+            module_file = site_packages / "helper_mod.py"
+            module_file.write_text("VALUE = 1\n", encoding="utf-8")
+
+            distribution = FakeDistribution(
+                dist_info,
+                [
+                    "example-1.0.dist-info/METADATA",
+                    "examplepkg/__init__.py",
+                    "examplepkg.libs/runtime.dll",
+                    "helper_mod.py",
+                ],
+            )
+
+            sideload_root = root / "vendor-py"
+            sideload_root.mkdir()
+
+            build_release.stage_sideload_distribution(distribution, sideload_root, copied=set())
+
+            self.assertTrue((sideload_root / "example-1.0.dist-info" / "METADATA").exists())
+            self.assertTrue((sideload_root / "examplepkg" / "__init__.py").exists())
+            self.assertTrue((sideload_root / "examplepkg.libs" / "runtime.dll").exists())
+            self.assertTrue((sideload_root / "helper_mod.py").exists())
+
+    def test_build_nuitka_command_includes_enterprise_packages_and_modules(self) -> None:
+        with (
+            tempfile.TemporaryDirectory() as tmp,
+            patch.object(build_release.os, "name", "nt"),
+            patch.object(build_release.sys, "platform", "win32"),
+        ):
+            command = build_release.build_nuitka_command("enterprise", "python", Path(tmp))
+
+        self.assertIn("--include-package=psutil", command)
+        self.assertIn("--include-package=yaml", command)
+        self.assertIn("--include-module=pyarrow", command)
+        self.assertIn("--include-module=pyarrow.csv", command)
+        self.assertIn("--include-module=pyarrow.flight", command)
+        self.assertIn("--nofollow-import-to=pyarrow.tests", command)
+        self.assertIn("--nofollow-import-to=pyarrow.vendored", command)
+        self.assertIn("--nofollow-import-to=numpy", command)
+        self.assertIn("--nofollow-import-to=pyopencl", command)
+        self.assertIn("--nofollow-import-to=wasmtime", command)
+        self.assertIn("--low-memory", command)
+        self.assertIn("--jobs=1", command)
+        self.assertIn("--lto=no", command)
+        self.assertNotIn("--include-package=wasmtime", command)
+        self.assertNotIn("--include-package=numpy", command)
+        self.assertNotIn("--include-package=pyopencl", command)
+        self.assertIn("--no-deployment-flag=self-execution", command)
+        self.assertIn("--no-deployment-flag=excluded-module-usage", command)
+
+    def test_safe_platform_helpers_avoid_windows_wmi_path(self) -> None:
+        with (
+            patch.object(build_release.os, "name", "nt"),
+            patch.object(build_release.sys, "platform", "win32"),
+            patch.dict(build_release.os.environ, {"PROCESSOR_ARCHITECTURE": "AMD64"}, clear=False),
+            patch.object(build_release.platform, "system", side_effect=AssertionError("platform.system should not be used")),
+            patch.object(build_release.platform, "machine", side_effect=AssertionError("platform.machine should not be used")),
+            patch.object(build_release.platform, "platform", side_effect=AssertionError("platform.platform should not be used")),
+            patch.object(build_release.sys, "getwindowsversion", return_value=SimpleNamespace(major=10, minor=0, build=29531)),
+        ):
+            self.assertEqual(build_release.safe_system_name(), "Windows")
+            self.assertEqual(build_release.safe_machine_name(), "amd64")
+            self.assertEqual(build_release.safe_platform_string(), "Windows-10.0.29531-amd64")
 
 
 if __name__ == "__main__":

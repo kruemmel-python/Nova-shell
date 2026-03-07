@@ -2,7 +2,10 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import faulthandler
 import hashlib
+import importlib.metadata as importlib_metadata
+import importlib.util
 import json
 import os
 import platform
@@ -12,6 +15,7 @@ import stat
 import subprocess
 import sys
 import tarfile
+import time
 import tomllib
 import zipfile
 from dataclasses import dataclass
@@ -48,10 +52,28 @@ ENTRY_MODULE = ROOT / "nova_shell.py"
 PACKAGING_DIR = ROOT / "packaging"
 ASSETS_DIR = PACKAGING_DIR / "assets"
 LINUX_DIR = PACKAGING_DIR / "linux"
+RUNTIME_CONFIG_FILE = "nova-shell-runtime.json"
 PROFILE_EXTRAS = {
     "core": [],
-    "enterprise": ["observability", "guard", "arrow", "wasm"],
+    "enterprise": ["observability", "guard", "arrow", "wasm", "gpu"],
 }
+PROFILE_NUITKA_PACKAGES = {
+    "observability": ["psutil"],
+    "guard": ["yaml"],
+    "wasm": ["wasmtime"],
+    "gpu": ["numpy", "pyopencl"],
+}
+PROFILE_NUITKA_MODULES = {
+    "arrow": ["pyarrow", "pyarrow.csv", "pyarrow.flight"],
+}
+PROFILE_NUITKA_NOFOLLOW = {
+    "arrow": ["pyarrow.tests", "pyarrow.vendored"],
+}
+HEARTBEAT_SECONDS = 30
+TRACE_FILE_ENV = "NOVA_BUILD_TRACE_FILE"
+FAULT_FILE_ENV = "NOVA_BUILD_FAULT_FILE"
+_FAULT_HANDLE: object | None = None
+SIDELOAD_PACKAGE_DIR = "vendor-py"
 
 
 @dataclass
@@ -94,6 +116,52 @@ def extract_requirement_names(requirements: list[str]) -> list[str]:
     return names
 
 
+def _is_windows_runtime() -> bool:
+    return os.name == "nt" or sys.platform.startswith("win")
+
+
+def safe_system_name() -> str:
+    if _is_windows_runtime():
+        return "Windows"
+    if sys.platform == "darwin":
+        return "Darwin"
+    if sys.platform.startswith("linux"):
+        return "Linux"
+    value = platform.system().strip()
+    return value or sys.platform
+
+
+def safe_machine_name() -> str:
+    value = ""
+    if _is_windows_runtime():
+        value = os.environ.get("PROCESSOR_ARCHITEW6432", "") or os.environ.get("PROCESSOR_ARCHITECTURE", "")
+    if not value:
+        value = platform.machine()
+    normalized = value.strip().lower()
+    aliases = {
+        "x64": "amd64",
+        "x86_64": "amd64",
+        "amd64": "amd64",
+        "x86": "x86",
+        "i386": "x86",
+        "i686": "x86",
+        "aarch64": "arm64",
+        "arm64": "arm64",
+    }
+    return aliases.get(normalized, normalized or "unknown")
+
+
+def safe_platform_string() -> str:
+    if _is_windows_runtime():
+        version = sys.getwindowsversion()
+        return f"Windows-{version.major}.{version.minor}.{version.build}-{safe_machine_name()}"
+    if sys.platform.startswith("linux"):
+        return f"Linux-{safe_machine_name()}"
+    if sys.platform == "darwin":
+        return f"Darwin-{safe_machine_name()}"
+    return platform.platform()
+
+
 def load_profile_dependencies(profile: str) -> list[str]:
     with (ROOT / "pyproject.toml").open("rb") as handle:
         payload = tomllib.load(handle)
@@ -103,6 +171,86 @@ def load_profile_dependencies(profile: str) -> list[str]:
     for extra in PROFILE_EXTRAS[profile]:
         requirements.extend(optional.get(extra, []))
     return extract_requirement_names(requirements)
+
+
+def collect_nuitka_packages(profile: str) -> list[str]:
+    packages: list[str] = []
+    for extra in PROFILE_EXTRAS[profile]:
+        packages.extend(PROFILE_NUITKA_PACKAGES.get(extra, []))
+    unique_packages = sorted(dict.fromkeys(packages))
+    if _is_windows_runtime() and profile == "enterprise":
+        sideload = set(collect_sideload_packages(profile))
+        unique_packages = [package_name for package_name in unique_packages if package_name not in sideload]
+    return unique_packages
+
+
+def collect_nuitka_modules(profile: str) -> list[str]:
+    modules: list[str] = []
+    for extra in PROFILE_EXTRAS[profile]:
+        modules.extend(PROFILE_NUITKA_MODULES.get(extra, []))
+    return sorted(dict.fromkeys(modules))
+
+
+def collect_nuitka_nofollow(profile: str) -> list[str]:
+    modules: list[str] = []
+    for extra in PROFILE_EXTRAS[profile]:
+        modules.extend(PROFILE_NUITKA_NOFOLLOW.get(extra, []))
+    if _is_windows_runtime() and profile == "enterprise":
+        modules.extend(collect_sideload_packages(profile))
+    return sorted(dict.fromkeys(modules))
+
+
+def collect_nuitka_compile_flags(profile: str) -> list[str]:
+    flags: list[str] = []
+    if _is_windows_runtime() and profile == "enterprise":
+        flags.extend(
+            [
+                "--low-memory",
+                "--jobs=1",
+                "--lto=no",
+            ]
+        )
+    return flags
+
+
+def collect_sideload_packages(profile: str) -> list[str]:
+    if _is_windows_runtime() and profile == "enterprise":
+        return ["wasmtime", "numpy", "pyopencl"]
+    return []
+
+
+def collect_nuitka_deployment_flags(profile: str) -> list[str]:
+    flags = ["self-execution"]
+    if collect_sideload_packages(profile):
+        flags.append("excluded-module-usage")
+    return flags
+
+
+def build_nuitka_command(profile: str, python_exe: str, out_dir: Path) -> list[str]:
+    command = [python_exe, "-m", "nuitka"]
+    command.extend(
+        [
+            "--standalone",
+            "--assume-yes-for-downloads",
+            "--follow-imports",
+        ]
+    )
+    for deployment_flag in collect_nuitka_deployment_flags(profile):
+        command.append(f"--no-deployment-flag={deployment_flag}")
+    command.extend(collect_nuitka_compile_flags(profile))
+    for package_name in collect_nuitka_packages(profile):
+        command.append(f"--include-package={package_name}")
+    for module_name in collect_nuitka_modules(profile):
+        command.append(f"--include-module={module_name}")
+    for module_name in collect_nuitka_nofollow(profile):
+        command.append(f"--nofollow-import-to={module_name}")
+    command.extend(
+        [
+            f"--output-dir={out_dir}",
+            str(ENTRY_MODULE),
+        ]
+    )
+    return command
 
 
 def create_build_context(source_date_epoch: int | None) -> BuildContext:
@@ -146,11 +294,86 @@ def ensure_windows_msvc_environment() -> None:
     raise SystemExit(" ".join(hints))
 
 
-def run(cmd: list[str], *, cwd: Path = ROOT, env: dict[str, str] | None = None) -> None:
-    print("+", " ".join(cmd))
-    completed = subprocess.run(cmd, cwd=cwd, env=env)
-    if completed.returncode != 0:
-        raise SystemExit(completed.returncode)
+def step(message: str) -> None:
+    trace(message)
+    print(f"==> {message}", flush=True)
+
+
+def format_duration(seconds: float) -> str:
+    total = int(seconds)
+    minutes, seconds = divmod(total, 60)
+    hours, minutes = divmod(minutes, 60)
+    if hours:
+        return f"{hours}h {minutes}m {seconds}s"
+    if minutes:
+        return f"{minutes}m {seconds}s"
+    return f"{seconds}s"
+
+
+def trace(message: str) -> None:
+    target = os.environ.get(TRACE_FILE_ENV, "").strip()
+    if not target:
+        return
+    try:
+        trace_path = Path(target)
+        trace_path.parent.mkdir(parents=True, exist_ok=True)
+        timestamp = datetime.now(timezone.utc).isoformat()
+        with trace_path.open("a", encoding="utf-8") as handle:
+            handle.write(f"{timestamp} {message}\n")
+    except Exception:
+        pass
+
+
+def enable_fault_dumps() -> None:
+    global _FAULT_HANDLE
+    target = os.environ.get(FAULT_FILE_ENV, "").strip()
+    if not target:
+        return
+    try:
+        fault_path = Path(target)
+        fault_path.parent.mkdir(parents=True, exist_ok=True)
+        _FAULT_HANDLE = fault_path.open("a", encoding="utf-8")
+        timestamp = datetime.now(timezone.utc).isoformat()
+        _FAULT_HANDLE.write(f"{timestamp} faulthandler enabled\n")
+        _FAULT_HANDLE.flush()
+        faulthandler.enable(file=_FAULT_HANDLE, all_threads=True)
+        faulthandler.dump_traceback_later(30, repeat=True, file=_FAULT_HANDLE)
+    except Exception:
+        _FAULT_HANDLE = None
+
+
+def run(
+    cmd: list[str],
+    *,
+    cwd: Path = ROOT,
+    env: dict[str, str] | None = None,
+    label: str | None = None,
+    heartbeat_seconds: int = HEARTBEAT_SECONDS,
+) -> None:
+    if label:
+        step(label)
+    trace("run command: " + " ".join(cmd))
+    print("+", " ".join(cmd), flush=True)
+    started = time.monotonic()
+    next_heartbeat = started + heartbeat_seconds
+    process = subprocess.Popen(cmd, cwd=cwd, env=env)
+    try:
+        while True:
+            returncode = process.poll()
+            if returncode is not None:
+                if returncode != 0:
+                    raise SystemExit(returncode)
+                return
+            now = time.monotonic()
+            if now >= next_heartbeat:
+                description = label or Path(cmd[0]).name
+                step(f"{description} still running ({format_duration(now - started)})")
+                next_heartbeat += heartbeat_seconds
+            time.sleep(1)
+    except KeyboardInterrupt:
+        with contextlib.suppress(Exception):
+            process.terminate()
+        raise
 
 
 def sha256sum(path: Path) -> str:
@@ -255,15 +478,25 @@ def archive_bundle(bundle_dir: Path, archive_base: Path, *, source_date_epoch: i
     return archive_path
 
 
+def remove_tree(path: Path) -> None:
+    try:
+        shutil.rmtree(path)
+        return
+    except PermissionError as exc:
+        raise SystemExit(
+            f"failed to clean build root '{path}'. Close any running nova_shell.exe instances or processes holding files in that directory, then retry."
+        ) from exc
+
+
 def write_manifest(target_dir: Path, profile: str, artifacts: list[ArtifactRecord], *, build_context: BuildContext) -> Path:
     manifest = {
         "name": PROJECT_SLUG,
         "version": __version__,
         "profile": profile,
         "platform": {
-            "system": platform.system(),
-            "machine": platform.machine(),
-            "platform": platform.platform(),
+            "system": safe_system_name(),
+            "machine": safe_machine_name(),
+            "platform": safe_platform_string(),
         },
         "built_at_utc": build_context.timestamp_utc,
         "artifacts": [artifact.__dict__ for artifact in artifacts],
@@ -291,26 +524,21 @@ def write_subject_checksums(target_dir: Path, profile: str, artifacts: list[Arti
 
 def build_python_artifacts(python_exe: str, out_dir: Path, *, build_context: BuildContext) -> list[Path]:
     out_dir.mkdir(parents=True, exist_ok=True)
-    run([python_exe, "-m", "build", "--sdist", "--wheel", "--outdir", str(out_dir)], env=build_context.env)
+    run(
+        [python_exe, "-m", "build", "--sdist", "--wheel", "--outdir", str(out_dir)],
+        env=build_context.env,
+        label="Building Python source and wheel artifacts",
+    )
     return discover_python_artifacts(out_dir)
 
 
-def build_standalone(python_exe: str, out_dir: Path, *, build_context: BuildContext) -> tuple[Path, Path]:
+def build_standalone(python_exe: str, out_dir: Path, profile: str, *, build_context: BuildContext) -> tuple[Path, Path]:
     out_dir.mkdir(parents=True, exist_ok=True)
     ensure_windows_msvc_environment()
-    nuitka_exe = shutil.which("nuitka")
-    command = [nuitka_exe] if nuitka_exe else [python_exe, "-m", "nuitka"]
     run(
-        command
-        + [
-            "--standalone",
-            "--assume-yes-for-downloads",
-            "--no-deployment-flag=self-execution",
-            "--follow-imports",
-            f"--output-dir={out_dir}",
-            str(ENTRY_MODULE),
-        ],
+        build_nuitka_command(profile, python_exe, out_dir),
         env=build_context.env,
+        label=f"Building standalone {profile} binary with Nuitka",
     )
     try:
         bundle_dir = find_bundle_dir(out_dir)
@@ -329,14 +557,17 @@ def build_standalone(python_exe: str, out_dir: Path, *, build_context: BuildCont
     return bundle_dir, executable
 
 
-def smoke_test_executable(python_exe: str, executable: Path) -> None:
-    run([python_exe, str(ROOT / "scripts" / "smoke_test_release.py"), str(executable)])
+def smoke_test_executable(python_exe: str, executable: Path, profile: str) -> None:
+    run(
+        [python_exe, str(ROOT / "scripts" / "smoke_test_release.py"), "--profile", profile, str(executable)],
+        label="Running standalone smoke tests",
+    )
 
 
-def ensure_bundle(build_root: Path, python_exe: str, *, rebuild: bool, build_context: BuildContext) -> tuple[Path, Path]:
+def ensure_bundle(build_root: Path, python_exe: str, profile: str, *, rebuild: bool, build_context: BuildContext) -> tuple[Path, Path]:
     standalone_dir = build_root / "standalone"
     if rebuild or not standalone_dir.exists():
-        return build_standalone(python_exe, standalone_dir, build_context=build_context)
+        return build_standalone(python_exe, standalone_dir, profile, build_context=build_context)
     bundle_dir = find_bundle_dir(standalone_dir)
     executable = find_executable(bundle_dir)
     normalize_tree_timestamps(bundle_dir, build_context.source_date_epoch)
@@ -356,6 +587,27 @@ def copytree_clean(src: Path, dst: Path) -> None:
     shutil.copytree(src, dst, symlinks=True)
 
 
+def copytree_filtered(src: Path, dst: Path) -> None:
+    if dst.exists():
+        shutil.rmtree(dst)
+    shutil.copytree(
+        src,
+        dst,
+        symlinks=True,
+        ignore=shutil.ignore_patterns("__pycache__", "*.pyc", "*.pyo"),
+    )
+
+
+def copy_file_filtered(src: Path, dst: Path) -> None:
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(src, dst)
+
+
+def resolve_distribution_names(package_name: str) -> list[str]:
+    mapping = importlib_metadata.packages_distributions()
+    return sorted(dict.fromkeys(mapping.get(package_name, [package_name])))
+
+
 def make_executable(path: Path) -> None:
     mode = path.stat().st_mode
     path.chmod(mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
@@ -366,6 +618,118 @@ def write_text(path: Path, content: str, *, executable: bool = False) -> None:
     path.write_text(content, encoding="utf-8")
     if executable:
         make_executable(path)
+
+
+def collect_sideload_distributions(package_names: list[str]) -> list[importlib_metadata.Distribution]:
+    queue: list[str] = []
+    for package_name in package_names:
+        queue.extend(resolve_distribution_names(package_name))
+    seen: set[str] = set()
+    distributions: list[importlib_metadata.Distribution] = []
+    while queue:
+        distribution_name = queue.pop(0)
+        normalized = distribution_name.lower()
+        if normalized in seen:
+            continue
+        seen.add(normalized)
+        try:
+            distribution = importlib_metadata.distribution(distribution_name)
+        except importlib_metadata.PackageNotFoundError:
+            continue
+        distributions.append(distribution)
+        for requirement_name in extract_requirement_names(list(distribution.requires or [])):
+            queue.append(requirement_name)
+    return distributions
+
+
+def stage_sideload_distribution(distribution: importlib_metadata.Distribution, sideload_root: Path, copied: set[str]) -> None:
+    distribution_path = Path(distribution._path).resolve()
+    site_packages = distribution_path.parent
+    copied_any = False
+
+    for record_path in list(distribution.files or []):
+        source = Path(distribution.locate_file(record_path)).resolve()
+        if not source.exists() or source.is_dir():
+            continue
+        try:
+            relative_path = source.relative_to(site_packages)
+        except ValueError:
+            continue
+        relative_key = relative_path.as_posix()
+        if relative_key in copied:
+            continue
+        copy_file_filtered(source, sideload_root / relative_path)
+        copied.add(relative_key)
+        copied_any = True
+
+    if not copied_any and distribution_path.exists():
+        target = sideload_root / distribution_path.name
+        if distribution_path.is_dir():
+            copytree_filtered(distribution_path, target)
+        else:
+            copy_file_filtered(distribution_path, target)
+
+    top_level_entries = [
+        entry.strip()
+        for entry in (distribution.read_text("top_level.txt") or "").splitlines()
+        if entry.strip()
+    ]
+    for entry in top_level_entries:
+        if entry in copied:
+            continue
+        root_candidates = [
+            site_packages / entry,
+            site_packages / f"{entry}.py",
+            site_packages / f"{entry}.pyd",
+            site_packages / f"{entry}.dll",
+        ]
+        entry_copied = False
+        for candidate in root_candidates:
+            if not candidate.exists():
+                continue
+            if candidate.is_dir():
+                for source in candidate.rglob("*"):
+                    if not source.is_file():
+                        continue
+                    relative_path = source.relative_to(site_packages)
+                    relative_key = relative_path.as_posix()
+                    if relative_key in copied:
+                        continue
+                    copy_file_filtered(source, sideload_root / relative_path)
+                    copied.add(relative_key)
+                entry_copied = True
+                continue
+            relative_path = candidate.relative_to(site_packages)
+            relative_key = relative_path.as_posix()
+            if relative_key in copied:
+                continue
+            copy_file_filtered(candidate, sideload_root / relative_path)
+            copied.add(relative_key)
+            entry_copied = True
+        if entry_copied:
+            copied.add(entry)
+
+
+def stage_sideload_packages(bundle_dir: Path, profile: str, *, build_context: BuildContext) -> None:
+    packages = collect_sideload_packages(profile)
+    if not packages:
+        return
+    step("Staging sideload runtime packages")
+    sideload_root = bundle_dir / SIDELOAD_PACKAGE_DIR
+    sideload_root.mkdir(parents=True, exist_ok=True)
+    copied: set[str] = set()
+    for distribution in collect_sideload_distributions(packages):
+        stage_sideload_distribution(distribution, sideload_root, copied)
+    normalize_tree_timestamps(bundle_dir / SIDELOAD_PACKAGE_DIR, build_context.source_date_epoch)
+
+
+def write_runtime_config(bundle_dir: Path, profile: str) -> None:
+    payload = {
+        "profile": profile,
+        "sandbox_default": profile == "enterprise",
+        "sideload_packages": collect_sideload_packages(profile),
+    }
+    write_text(bundle_dir / RUNTIME_CONFIG_FILE, json.dumps(payload, ensure_ascii=False, indent=2) + "\n")
 
 
 def build_windows_installers(
@@ -383,13 +747,16 @@ def build_windows_installers(
     installer_root.mkdir(parents=True, exist_ok=True)
 
     wix_exe = require_tool("wix", "WiX Toolset v4 is required for MSI packaging. Install it with 'dotnet tool install --global wix --version 4.*'.")
-    arch = machine_to_wix_arch(platform.machine())
+    arch = machine_to_wix_arch(safe_machine_name())
     wix_source = installer_root / "nova-shell.wxs"
     wix_source.write_text(render_wix_source(metadata, __version__, bundle_dir, executable.name), encoding="utf-8")
 
     msi_name = f"{metadata.package_slug}-{__version__}-windows-{arch}-{profile}.msi"
     msi_path = installer_root / msi_name
-    run([wix_exe, "build", "-arch", arch, "-o", str(msi_path), str(wix_source)])
+    run(
+        [wix_exe, "build", "-arch", arch, "-o", str(msi_path), str(wix_source)],
+        label="Building Windows MSI installer",
+    )
     with contextlib.suppress(FileNotFoundError):
         os.utime(msi_path, (build_context.source_date_epoch or msi_path.stat().st_mtime, build_context.source_date_epoch or msi_path.stat().st_mtime))
     if signing_config:
@@ -411,7 +778,7 @@ def build_windows_installers(
             __version__,
             installer_url,
             sha256sum(msi_path),
-            machine_to_winget_arch(platform.machine()),
+            machine_to_winget_arch(safe_machine_name()),
         )
         identifier_parts = metadata.package_identifier.split(".")
         manifest_dir = build_root / "winget" / "manifests" / identifier_parts[0][0].lower()
@@ -469,18 +836,18 @@ def build_appimage(build_root: Path, bundle_dir: Path, executable: Path, profile
     metadata = load_release_metadata()
     work_root = build_root / "installers" / "appimage-work"
     appdir = prepare_linux_appdir(bundle_dir, executable, work_root, build_context=build_context)
-    machine = platform.machine().lower()
+    machine = safe_machine_name().lower()
     output_path = build_root / "installers" / f"{metadata.package_slug}-{__version__}-{machine}-{profile}.AppImage"
     env = build_context.env.copy()
     env["ARCH"] = machine
-    run([tool, str(appdir), str(output_path)], env=env)
+    run([tool, str(appdir), str(output_path)], env=env, label="Building AppImage installer")
     return output_path
 
 
 def build_deb(build_root: Path, bundle_dir: Path, executable: Path, profile: str, *, build_context: BuildContext) -> Path:
     require_tool("dpkg-deb", "dpkg-deb is required for Debian packaging. Install the dpkg package toolchain.")
     metadata = load_release_metadata()
-    arch = machine_to_deb_arch(platform.machine())
+    arch = machine_to_deb_arch(safe_machine_name())
     package_root = build_root / "installers" / "deb-root"
     if package_root.exists():
         shutil.rmtree(package_root)
@@ -525,7 +892,11 @@ def build_deb(build_root: Path, bundle_dir: Path, executable: Path, profile: str
     normalize_tree_timestamps(package_root, build_context.source_date_epoch)
     deb_name = f"{metadata.package_slug}_{__version__}_{arch}_{profile}.deb"
     output_path = build_root / "installers" / deb_name
-    run(["dpkg-deb", "--build", "--root-owner-group", str(package_root), str(output_path)], env=build_context.env)
+    run(
+        ["dpkg-deb", "--build", "--root-owner-group", str(package_root), str(output_path)],
+        env=build_context.env,
+        label="Building Debian package",
+    )
     return output_path
 
 
@@ -560,17 +931,35 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> int:
+    enable_fault_dumps()
+    trace("main entry")
     args = parse_args()
+    trace(f"parsed args: profile={args.profile} mode={args.mode} skip_tests={args.skip_tests} clean={args.clean}")
+    trace("resolving output root")
     output_root = Path(args.output_dir).resolve()
-    build_root = output_root / f"{platform.system().lower()}-{platform.machine().lower()}" / args.profile
+    trace(f"resolved output root: {output_root}")
+    system_name = safe_system_name()
+    machine_name = safe_machine_name()
+    build_root = output_root / f"{system_name.lower()}-{machine_name.lower()}" / args.profile
+    trace(f"computed build root: {build_root}")
+    trace("creating build context")
     build_context = create_build_context(args.source_date_epoch)
+    trace("created build context")
 
+    trace("about to emit preparing step")
+    step(f"Preparing release build for profile '{args.profile}' in {display_path(build_root)}")
+    trace("preparing step emitted")
     if args.clean and build_root.exists():
-        shutil.rmtree(build_root)
+        step(f"Removing previous build root {display_path(build_root)}")
+        remove_tree(build_root)
     build_root.mkdir(parents=True, exist_ok=True)
 
     if not args.skip_tests:
-        run([args.python, "-m", "unittest", "discover", "-s", "tests", "-v"], env=build_context.env)
+        run(
+            [args.python, "-m", "unittest", "discover", "-s", "tests", "-v"],
+            env=build_context.env,
+            label="Running test suite",
+        )
 
     artifacts: list[ArtifactRecord] = []
     bundle_dir: Path | None = None
@@ -599,7 +988,16 @@ def main() -> int:
         artifacts.extend(record("python", path) for path in python_artifacts)
 
     if args.mode in {"standalone", "installers", "all"}:
-        bundle_dir, executable = ensure_bundle(build_root, args.python, rebuild=args.mode in {"standalone", "all"}, build_context=build_context)
+        step("Resolving standalone bundle")
+        bundle_dir, executable = ensure_bundle(
+            build_root,
+            args.python,
+            args.profile,
+            rebuild=args.mode in {"standalone", "all"},
+            build_context=build_context,
+        )
+        write_runtime_config(bundle_dir, args.profile)
+        stage_sideload_packages(bundle_dir, args.profile, build_context=build_context)
         if signing_config and bundle_dir is not None:
             for signable in find_artifacts_for_windows_signing(bundle_dir):
                 sign_windows_artifact(
@@ -611,14 +1009,16 @@ def main() -> int:
                     subject_name=signing_config.get("subject_name"),
                 )
                 verify_windows_artifact(signable, signtool=signing_config["signtool"])
-        smoke_test_executable(args.python, executable)
+        smoke_test_executable(args.python, executable, args.profile)
 
     if args.mode in {"standalone", "all"} and bundle_dir is not None:
-        archive_name = f"{PROJECT_SLUG}-{__version__}-{platform.system().lower()}-{platform.machine().lower()}-{args.profile}"
+        step("Archiving standalone bundle")
+        archive_name = f"{PROJECT_SLUG}-{__version__}-{system_name.lower()}-{machine_name.lower()}-{args.profile}"
         archive_path = archive_bundle(bundle_dir, build_root / archive_name, source_date_epoch=build_context.source_date_epoch)
         artifacts.append(record("standalone-archive", archive_path))
 
     if args.mode in {"installers", "all"}:
+        step("Building installer artifacts")
         assert bundle_dir is not None and executable is not None
         if os.name == "nt":
             installer_paths = build_windows_installers(
@@ -634,6 +1034,7 @@ def main() -> int:
             installer_paths = build_linux_installers(build_root, bundle_dir, executable, args.profile, build_context=build_context)
         artifacts.extend(record("installer", path) for path in installer_paths)
 
+    step("Writing manifest and SBOM metadata")
     subject_artifacts = list(artifacts)
     subject_checksums_path = write_subject_checksums(build_root, args.profile, subject_artifacts)
     manifest_path = write_manifest(build_root, args.profile, artifacts, build_context=build_context)
@@ -655,6 +1056,7 @@ def main() -> int:
     manifest_path = write_manifest(build_root, args.profile, artifacts, build_context=build_context)
     checksums_path = write_checksums(build_root, artifacts, manifest_path)
 
+    step("Release build completed")
     print(
         json.dumps(
             {
