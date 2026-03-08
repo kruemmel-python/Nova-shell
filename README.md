@@ -1,6 +1,7 @@
 # Nova-shell
 
 Nova-shell ist eine **Unified Compute & Data Orchestration Runtime** mit polyglotten Engines, DSL, AOT-Pipelines, Lineage, Mesh-Offloading und Security-Enforcement.
+<img width="2752" height="1494" alt="image" src="https://github.com/user-attachments/assets/5809887e-61d0-43d8-b8e9-cb5f9a00ac32" />
 
 Neu in der Runtime-Schicht:
 
