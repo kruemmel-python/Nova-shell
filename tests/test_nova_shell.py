@@ -11,7 +11,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from nova_shell import CommandResult, CppEngine, NovaShell, PipelineType, __version__, main
+from nova_shell import CommandResult, CppEngine, NovaAtheriaRuntime, NovaShell, PipelineType, __version__, main
 from novascript import Assignment, ForLoop, IfBlock, NovaInterpreter, NovaParser
 
 
@@ -695,6 +695,67 @@ if len(files_lines) == 2:
         self.assertEqual(rows[0][1], "video")
         self.assertEqual(rows[0][2], "Segment one")
         self.assertEqual(rows[1][2], "Segment two")
+
+    def test_atheria_runtime_persists_hyperbolic_embeddings(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            with patch("nova_shell.Path.home", return_value=tmp_path):
+                runtime = NovaAtheriaRuntime({}, tmp_path)
+                inserted = runtime.train_rows([("What is Nova-shell?", "product", "A unified runtime.")])
+
+                self.assertEqual(inserted, 1)
+                payload = json.loads(runtime.training_store_path.read_text(encoding="utf-8"))
+                self.assertEqual(payload[0]["embedding_space"], "poincare")
+                self.assertEqual(payload[0]["embedding_model"], "atheria-poincare-memory-v1")
+                self.assertEqual(len(payload[0]["embedding"]), payload[0]["embedding_dims"])
+                self.assertTrue(any(abs(float(value)) > 0.0 for value in payload[0]["embedding"]))
+
+    def test_atheria_runtime_migrates_legacy_rows_to_hyperbolic_embeddings(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            with patch("nova_shell.Path.home", return_value=tmp_path):
+                store = tmp_path / ".nova_shell_memory" / "atheria_training.json"
+                store.parent.mkdir(parents=True, exist_ok=True)
+                store.write_text(
+                    json.dumps(
+                        [
+                            {
+                                "question": "What is Atheria?",
+                                "category": "identity",
+                                "answer": "A local trainable intelligence.",
+                            }
+                        ],
+                        ensure_ascii=False,
+                        indent=2,
+                    ),
+                    encoding="utf-8",
+                )
+                runtime = NovaAtheriaRuntime({}, tmp_path)
+
+                self.assertEqual(runtime._loaded_training[0]["embedding_space"], "poincare")
+                persisted = json.loads(store.read_text(encoding="utf-8"))
+                self.assertIn("embedding", persisted[0])
+                self.assertEqual(persisted[0]["embedding_model"], "atheria-poincare-memory-v1")
+
+    def test_atheria_runtime_search_uses_poincare_hyperbolic_retrieval(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            with patch("nova_shell.Path.home", return_value=tmp_path):
+                runtime = NovaAtheriaRuntime({}, tmp_path)
+                runtime.train_rows(
+                    [
+                        ("average price in items csv", "analysis", "The average price is 2.6."),
+                        ("weather in berlin", "weather", "The forecast is sunny."),
+                    ]
+                )
+
+                results = runtime.search_training("calculate average price in items.csv")
+
+                self.assertTrue(results)
+                self.assertEqual(results[0]["category"], "analysis")
+                self.assertEqual(results[0]["retrieval_mode"], "poincare_hyperbolic")
+                self.assertIn("hyperbolic_similarity", results[0])
+                self.assertIn("distance", results[0])
 
     def test_ai_use_atheria_and_prompt_routes_to_atheria_runtime(self) -> None:
         with patch.object(self.shell.atheria, "is_available", return_value=True), patch.object(

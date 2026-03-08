@@ -1814,7 +1814,8 @@ class NovaAtheriaRuntime:
         self.training_store_path = self.storage_root / "atheria_training.json"
         self._module: Any = None
         self._core: Any = None
-        self._loaded_training: list[dict[str, str]] = self._load_training_rows()
+        self._embedding_model = "atheria-poincare-memory-v1"
+        self._loaded_training: list[dict[str, Any]] = self._load_training_rows()
 
     def _discover_source_dir(self) -> Path | None:
         candidates = [
@@ -1834,7 +1835,147 @@ class NovaAtheriaRuntime:
     def is_available(self) -> bool:
         return self._discover_source_dir() is not None
 
-    def _load_training_rows(self) -> list[dict[str, str]]:
+    def _poincare_dims(self) -> int:
+        raw = self.runtime_config.get("atheria_poincare_dims")
+        with contextlib.suppress(Exception):
+            dims = int(raw)
+            if dims >= 3:
+                return dims
+        if self._module is not None:
+            with contextlib.suppress(Exception):
+                dims = int(getattr(self._module, "POINCARE_DIMS", 0) or 0)
+                if dims >= 3:
+                    return dims
+        return 6
+
+    def _project_to_poincare_ball(self, values: Iterable[float], *, max_norm: float = 0.999) -> list[float]:
+        vector = [float(item) for item in values]
+        norm = math.sqrt(sum(item * item for item in vector))
+        if norm >= max_norm:
+            scale = max_norm / (norm + 1e-8)
+            vector = [item * scale for item in vector]
+        return vector
+
+    def _normalize_embedding(self, embedding: Any, *, dims: int) -> list[float] | None:
+        if not isinstance(embedding, list) or len(embedding) != dims:
+            return None
+        try:
+            vector = [float(item) for item in embedding]
+        except (TypeError, ValueError):
+            return None
+        return self._project_to_poincare_ball(vector)
+
+    def _embedding_features(self, text: str) -> list[str]:
+        tokens = self._tokenize(text)
+        features: list[str] = []
+        for token in tokens:
+            features.append(token)
+            if len(token) >= 4:
+                features.append(f"prefix:{token[:3]}")
+                features.append(f"suffix:{token[-3:]}")
+                max_window = min(len(token) - 2, 5)
+                for start in range(max_window):
+                    features.append(f"gram:{token[start:start + 3]}")
+        for index in range(len(tokens) - 1):
+            features.append(f"pair:{tokens[index]}::{tokens[index + 1]}")
+        return features[:256]
+
+    def _embed_text_hyperbolic(self, text: str, *, dims: int | None = None) -> list[float]:
+        resolved_dims = dims or self._poincare_dims()
+        features = self._embedding_features(text)
+        if not features:
+            return [0.0] * resolved_dims
+        accum = [0.0] * resolved_dims
+        for feature in features:
+            digest = hashlib.sha256(feature.encode("utf-8")).digest()
+            weight = 1.0
+            if feature.startswith("pair:"):
+                weight = 0.72
+            elif feature.startswith("gram:"):
+                weight = 0.44
+            elif feature.startswith("prefix:") or feature.startswith("suffix:"):
+                weight = 0.36
+            else:
+                weight = 1.0 + min(0.35, len(feature) / 48.0)
+            for index in range(resolved_dims):
+                byte = digest[index % len(digest)]
+                signed = (byte / 255.0) * 2.0 - 1.0
+                accum[index] += signed * weight
+        mean = sum(accum) / max(1, len(accum))
+        centered = [item - mean for item in accum]
+        norm = math.sqrt(sum(item * item for item in centered))
+        if norm <= 1e-8:
+            return [0.0] * resolved_dims
+        scaled = [(item / norm) * 0.72 for item in centered]
+        return self._project_to_poincare_ball(scaled)
+
+    def _blend_hyperbolic_vectors(self, weighted_vectors: Iterable[tuple[float, list[float]]], *, dims: int) -> list[float]:
+        accum = [0.0] * dims
+        total_weight = 0.0
+        for weight, vector in weighted_vectors:
+            if not vector:
+                continue
+            total_weight += abs(float(weight))
+            for index in range(min(dims, len(vector))):
+                accum[index] += float(weight) * float(vector[index])
+        if total_weight <= 1e-8:
+            return [0.0] * dims
+        blended = [item / total_weight for item in accum]
+        return self._project_to_poincare_ball(blended)
+
+    def _compose_training_embedding(self, question: str, category: str, answer: str) -> list[float]:
+        dims = self._poincare_dims()
+        return self._blend_hyperbolic_vectors(
+            [
+                (0.52, self._embed_text_hyperbolic(question, dims=dims)),
+                (0.16, self._embed_text_hyperbolic(category, dims=dims)),
+                (0.32, self._embed_text_hyperbolic(answer, dims=dims)),
+            ],
+            dims=dims,
+        )
+
+    def _build_training_row(
+        self,
+        *,
+        question: str,
+        category: str,
+        answer: str,
+        embedding: Any = None,
+        source: str = "",
+    ) -> dict[str, Any] | None:
+        q = str(question).strip()
+        a = str(answer).strip()
+        c = str(category or "general").strip() or "general"
+        if not q or not a:
+            return None
+        dims = self._poincare_dims()
+        vector = self._normalize_embedding(embedding, dims=dims)
+        if vector is None:
+            vector = self._compose_training_embedding(q, c, a)
+        return {
+            "question": q,
+            "category": c,
+            "answer": a,
+            "embedding": [round(float(item), 8) for item in vector],
+            "embedding_dims": dims,
+            "embedding_space": "poincare",
+            "embedding_model": self._embedding_model,
+            "source": str(source or "").strip(),
+        }
+
+    def _poincare_distance(self, left: list[float], right: list[float]) -> float:
+        u = self._project_to_poincare_ball(left)
+        v = self._project_to_poincare_ball(right)
+        du = sum(item * item for item in u)
+        dv = sum(item * item for item in v)
+        diff_sq = sum((a - b) * (a - b) for a, b in zip(u, v))
+        denom = max(1e-8, (1.0 - du) * (1.0 - dv))
+        arg = 1.0 + (2.0 * diff_sq / denom)
+        if arg < 1.0:
+            arg = 1.0
+        return float(math.acosh(arg))
+
+    def _load_training_rows(self) -> list[dict[str, Any]]:
         if not self.training_store_path.exists():
             return []
         try:
@@ -1843,16 +1984,26 @@ class NovaAtheriaRuntime:
             return []
         if not isinstance(payload, list):
             return []
-        rows: list[dict[str, str]] = []
+        rows: list[dict[str, Any]] = []
+        changed = False
         for item in payload:
             if not isinstance(item, dict):
                 continue
-            question = str(item.get("question") or "").strip()
-            answer = str(item.get("answer") or "").strip()
-            category = str(item.get("category") or "general").strip() or "general"
-            if not question or not answer:
+            row = self._build_training_row(
+                question=str(item.get("question") or ""),
+                category=str(item.get("category") or "general"),
+                answer=str(item.get("answer") or ""),
+                embedding=item.get("embedding"),
+                source=str(item.get("source") or ""),
+            )
+            if row is None:
                 continue
-            rows.append({"question": question, "category": category, "answer": answer})
+            rows.append(row)
+            if item.get("embedding_space") != "poincare" or item.get("embedding_model") != self._embedding_model or not isinstance(item.get("embedding"), list):
+                changed = True
+        if changed:
+            self._loaded_training = rows
+            self._save_training_rows()
         return rows
 
     def _save_training_rows(self) -> None:
@@ -1900,49 +2051,83 @@ class NovaAtheriaRuntime:
     def _tokenize(self, text: str) -> list[str]:
         return [token for token in re.findall(r"[A-Za-z0-9_\-\u00C0-\u024F]+", text.lower()) if token]
 
-    def _score_training_row(self, query: str, row: dict[str, str]) -> float:
+    def _lexical_support(self, query: str, row: dict[str, Any]) -> float:
         lowered_query = query.lower()
         haystack = f"{row.get('question', '')} {row.get('category', '')} {row.get('answer', '')}".strip()
         lowered_haystack = haystack.lower()
         query_tokens = set(self._tokenize(query))
         haystack_tokens = set(self._tokenize(haystack))
         overlap = len(query_tokens.intersection(haystack_tokens))
-        score = float(overlap)
+        score = float(overlap) / max(1.0, float(len(query_tokens) or 1))
         if row.get("question", "").lower() in lowered_query:
-            score += 3.0
+            score += 0.45
         if lowered_query and lowered_query in lowered_haystack:
-            score += 5.0
+            score += 0.7
         if row.get("category", "").lower() in lowered_query:
-            score += 1.5
-        score += min(1.5, max(0.0, len(row.get("answer", "")) / 2000.0))
-        return score
+            score += 0.18
+        score += min(0.16, max(0.0, len(row.get("answer", "")) / 2400.0))
+        return min(1.0, max(0.0, score))
 
     def search_training(self, query: str, *, limit: int = 4) -> list[dict[str, Any]]:
+        query_text = str(query).strip()
+        if not query_text:
+            return []
+        query_vector = self._embed_text_hyperbolic(query_text)
         scored: list[dict[str, Any]] = []
         for row in self._loaded_training:
-            score = self._score_training_row(query, row)
-            if score <= 0:
+            dims = int(row.get("embedding_dims") or self._poincare_dims())
+            vector = self._normalize_embedding(row.get("embedding"), dims=dims)
+            if vector is None:
+                vector = self._compose_training_embedding(
+                    str(row.get("question") or ""),
+                    str(row.get("category") or "general"),
+                    str(row.get("answer") or ""),
+                )
+                row["embedding"] = [round(float(item), 8) for item in vector]
+                row["embedding_dims"] = dims
+                row["embedding_space"] = "poincare"
+                row["embedding_model"] = self._embedding_model
+                self._save_training_rows()
+            hyper_distance = self._poincare_distance(query_vector, vector)
+            hyper_similarity = 1.0 / (1.0 + hyper_distance)
+            lexical_support = self._lexical_support(query_text, row)
+            score = 0.82 * hyper_similarity + 0.18 * lexical_support
+            if score < 0.34 and lexical_support <= 0.0:
                 continue
             scored.append(
                 {
-                    "question": row["question"],
-                    "category": row["category"],
-                    "answer": row["answer"],
+                    "question": str(row["question"]),
+                    "category": str(row["category"]),
+                    "answer": str(row["answer"]),
                     "score": round(score, 6),
+                    "distance": round(hyper_distance, 6),
+                    "hyperbolic_similarity": round(hyper_similarity, 6),
+                    "lexical_support": round(lexical_support, 6),
+                    "retrieval_mode": "poincare_hyperbolic",
+                    "embedding_space": "poincare",
                 }
             )
-        scored.sort(key=lambda item: float(item["score"]), reverse=True)
+        scored.sort(
+            key=lambda item: (
+                float(item["score"]),
+                float(item["hyperbolic_similarity"]),
+                float(item["lexical_support"]),
+            ),
+            reverse=True,
+        )
         return scored[: max(1, limit)]
 
     def train_rows(self, rows: Iterable[tuple[str, str, str]]) -> int:
-        normalized: list[dict[str, str]] = []
+        normalized: list[dict[str, Any]] = []
         for question, category, answer in rows:
-            q = str(question).strip()
-            a = str(answer).strip()
-            c = str(category or "general").strip() or "general"
-            if not q or not a:
-                continue
-            normalized.append({"question": q, "category": c, "answer": a})
+            row = self._build_training_row(
+                question=str(question),
+                category=str(category or "general"),
+                answer=str(answer),
+                source="nova-shell-train",
+            )
+            if row is not None:
+                normalized.append(row)
         if not normalized:
             return 0
         self._loaded_training.extend(normalized)
@@ -1998,6 +2183,9 @@ class NovaAtheriaRuntime:
             "core_loaded": self._core is not None,
             "trained_records": len(self._loaded_training),
             "categories": sorted({row["category"] for row in self._loaded_training}),
+            "memory_embedding_space": "poincare",
+            "memory_embedding_dims": self._poincare_dims(),
+            "memory_retrieval_mode": "poincare_hyperbolic",
         }
         if self._core is not None:
             with contextlib.suppress(Exception):
@@ -2040,6 +2228,7 @@ class NovaAtheriaRuntime:
                 "",
                 "Atheria-Zustand:",
                 f"- Resonanz: {resonance_text}",
+                f"- Retrieval: poincare_hyperbolic ({len(retrieved)} Treffer)",
                 f"- Phase: {dashboard.get('phase', 'unknown')}",
                 f"- Temperatur: {dashboard.get('system_temperature', 'unknown')}",
             ]
