@@ -55,20 +55,24 @@ LINUX_DIR = PACKAGING_DIR / "linux"
 RUNTIME_CONFIG_FILE = "nova-shell-runtime.json"
 PROFILE_EXTRAS = {
     "core": [],
-    "enterprise": ["observability", "guard", "arrow", "wasm", "gpu"],
+    "enterprise": ["observability", "guard", "arrow", "wasm", "gpu", "atheria"],
 }
 PROFILE_NUITKA_PACKAGES = {
     "observability": ["psutil"],
     "guard": ["yaml"],
     "wasm": ["wasmtime"],
     "gpu": ["numpy", "pyopencl"],
+    "atheria": ["unittest"],
 }
 PROFILE_NUITKA_MODULES = {
     "arrow": ["pyarrow", "pyarrow.csv", "pyarrow.flight"],
+    "atheria": ["ctypes.util", "ctypes.wintypes", "pdb"],
 }
 PROFILE_NUITKA_NOFOLLOW = {
     "arrow": ["pyarrow.tests", "pyarrow.vendored"],
 }
+LOCAL_RUNTIME_DIRS = ["Atheria"]
+HEAVY_SIDELOAD_DISTRIBUTIONS = {"torch"}
 HEARTBEAT_SECONDS = 30
 TRACE_FILE_ENV = "NOVA_BUILD_TRACE_FILE"
 FAULT_FILE_ENV = "NOVA_BUILD_FAULT_FILE"
@@ -178,8 +182,8 @@ def collect_nuitka_packages(profile: str) -> list[str]:
     for extra in PROFILE_EXTRAS[profile]:
         packages.extend(PROFILE_NUITKA_PACKAGES.get(extra, []))
     unique_packages = sorted(dict.fromkeys(packages))
-    if _is_windows_runtime() and profile == "enterprise":
-        sideload = set(collect_sideload_packages(profile))
+    sideload = set(collect_sideload_packages(profile))
+    if sideload:
         unique_packages = [package_name for package_name in unique_packages if package_name not in sideload]
     return unique_packages
 
@@ -214,9 +218,21 @@ def collect_nuitka_compile_flags(profile: str) -> list[str]:
 
 
 def collect_sideload_packages(profile: str) -> list[str]:
-    if _is_windows_runtime() and profile == "enterprise":
-        return ["wasmtime", "numpy", "pyopencl"]
+    if profile == "enterprise":
+        packages = ["torch"]
+        if _is_windows_runtime():
+            packages = ["wasmtime", "numpy", "pyopencl", *packages]
+        return packages
     return []
+
+
+def collect_local_runtime_directories() -> list[Path]:
+    directories: list[Path] = []
+    for relative_name in LOCAL_RUNTIME_DIRS:
+        candidate = (ROOT / relative_name).resolve()
+        if candidate.exists() and candidate.is_dir():
+            directories.append(candidate)
+    return directories
 
 
 def collect_nuitka_deployment_flags(profile: str) -> list[str]:
@@ -642,7 +658,63 @@ def collect_sideload_distributions(package_names: list[str]) -> list[importlib_m
     return distributions
 
 
+def distribution_name(distribution: importlib_metadata.Distribution) -> str:
+    with contextlib.suppress(Exception):
+        value = str(distribution.metadata.get("Name", "")).strip().lower()
+        if value:
+            return value
+    distribution_path = Path(distribution._path)
+    return distribution_path.name.split("-", 1)[0].strip().lower()
+
+
+def read_top_level_entries(distribution: importlib_metadata.Distribution) -> list[str]:
+    return [
+        entry.strip()
+        for entry in (distribution.read_text("top_level.txt") or "").splitlines()
+        if entry.strip()
+    ]
+
+
+def stage_sideload_top_level_entries(
+    distribution: importlib_metadata.Distribution,
+    sideload_root: Path,
+    copied: set[str],
+    *,
+    top_level_entries: list[str] | None = None,
+) -> None:
+    distribution_path = Path(distribution._path).resolve()
+    site_packages = distribution_path.parent
+    if distribution_path.exists():
+        target = sideload_root / distribution_path.name
+        if distribution_path.is_dir():
+            copytree_filtered(distribution_path, target)
+        else:
+            copy_file_filtered(distribution_path, target)
+
+    for entry in top_level_entries or read_top_level_entries(distribution):
+        root_candidates = [
+            site_packages / entry,
+            site_packages / f"{entry}.py",
+            site_packages / f"{entry}.pyd",
+            site_packages / f"{entry}.dll",
+        ]
+        for candidate in root_candidates:
+            if not candidate.exists():
+                continue
+            if candidate.is_dir():
+                copytree_filtered(candidate, sideload_root / candidate.name)
+            else:
+                copy_file_filtered(candidate, sideload_root / candidate.name)
+            copied.add(entry)
+            break
+
+
 def stage_sideload_distribution(distribution: importlib_metadata.Distribution, sideload_root: Path, copied: set[str]) -> None:
+    top_level_entries = read_top_level_entries(distribution)
+    if distribution_name(distribution) in HEAVY_SIDELOAD_DISTRIBUTIONS or top_level_entries:
+        stage_sideload_top_level_entries(distribution, sideload_root, copied, top_level_entries=top_level_entries)
+        return
+
     distribution_path = Path(distribution._path).resolve()
     site_packages = distribution_path.parent
     copied_any = False
@@ -721,6 +793,17 @@ def stage_sideload_packages(bundle_dir: Path, profile: str, *, build_context: Bu
     for distribution in collect_sideload_distributions(packages):
         stage_sideload_distribution(distribution, sideload_root, copied)
     normalize_tree_timestamps(bundle_dir / SIDELOAD_PACKAGE_DIR, build_context.source_date_epoch)
+
+
+def stage_local_runtime_directories(bundle_dir: Path, *, build_context: BuildContext) -> None:
+    runtime_dirs = collect_local_runtime_directories()
+    if not runtime_dirs:
+        return
+    step("Staging local runtime directories")
+    for source_dir in runtime_dirs:
+        target_dir = bundle_dir / source_dir.name
+        copytree_filtered(source_dir, target_dir)
+        normalize_tree_timestamps(target_dir, build_context.source_date_epoch)
 
 
 def write_runtime_config(bundle_dir: Path, profile: str) -> None:
@@ -998,6 +1081,7 @@ def main() -> int:
         )
         write_runtime_config(bundle_dir, args.profile)
         stage_sideload_packages(bundle_dir, args.profile, build_context=build_context)
+        stage_local_runtime_directories(bundle_dir, build_context=build_context)
         if signing_config and bundle_dir is not None:
             for signable in find_artifacts_for_windows_signing(bundle_dir):
                 sign_windows_artifact(

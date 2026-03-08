@@ -45,6 +45,9 @@ gpu = [
   "numpy>=1.26",
   "pyopencl>=2024.3",
 ]
+atheria = [
+  "torch>=2.6",
+]
 release = [
   "build>=1.2.2",
   "nuitka>=2.6",

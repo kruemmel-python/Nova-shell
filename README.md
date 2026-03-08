@@ -157,6 +157,10 @@ Lernpfad mit vielen Programmierbeispielen:
 
 [Tutorial.md](Tutorial.md)
 
+Eigene Anleitung fuer Training, Chat und Agentenbetrieb mit Atheria:
+
+[use_atheria.md](use_atheria.md)
+
 Ausfuehrliche Betriebsanleitung fuer einen lokalen Multi-Agenten-Cluster mit LM Studio:
 
 [Multi-Agenten-Clusters.md](Multi-Agenten-Clusters.md)
@@ -173,6 +177,7 @@ Ideen und Produktbilder dazu, was man konkret mit Nova-shell bauen kann:
   - `core`
   - `enterprise`
 - Standalone-Builds erfolgen mit Nuitka.
+- Der Windows-Enterprise-Installer liefert `Atheria/` plus die benoetigten Laufzeitpakete fuer lokale Atheria-Initialisierung direkt mit.
 - Installer-Artefakte:
   - Windows: `MSI` plus optionale `winget`-Manifeste
   - Linux: `AppImage` plus `.deb`

@@ -104,7 +104,7 @@ function Get-RequiredBuildModules {
 
     $modules = @("build", "nuitka")
     if ($TargetProfile -eq "enterprise") {
-        $modules += @("psutil", "yaml", "pyarrow", "wasmtime", "numpy", "pyopencl", "platformdirs", "pytools", "typing_extensions", "siphash24")
+        $modules += @("psutil", "yaml", "pyarrow", "wasmtime", "numpy", "pyopencl", "torch", "platformdirs", "pytools", "typing_extensions", "siphash24")
     }
     return $modules
 }
@@ -240,7 +240,7 @@ if ($RefreshBuildEnv) {
 }
 
 $extras = if ($Profile -eq "enterprise") {
-    ".[release,observability,guard,arrow,wasm,gpu]"
+    ".[release,observability,guard,arrow,wasm,gpu,atheria]"
 } else {
     ".[release]"
 }

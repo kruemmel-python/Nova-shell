@@ -7,8 +7,8 @@ import sys
 from pathlib import Path
 
 
-def run_check(command: list[str], expected_stdout: str | None = None) -> str:
-    completed = subprocess.run(command, capture_output=True, text=True)
+def run_check(command: list[str], *, cwd: Path, expected_stdout: str | None = None) -> str:
+    completed = subprocess.run(command, capture_output=True, text=True, cwd=str(cwd))
     if completed.returncode != 0:
         raise SystemExit(
             f"smoke test failed for {' '.join(command)}\nstdout:\n{completed.stdout}\nstderr:\n{completed.stderr}"
@@ -43,9 +43,9 @@ def main(argv: list[str] | None = None) -> int:
     if not executable.exists():
         raise SystemExit(f"standalone executable not found: {executable}")
 
-    run_check([str(executable), "--version"])
-    run_check([str(executable), "--no-plugins", "-c", "py 1 + 1"], expected_stdout="2")
-    doctor_stdout = run_check([str(executable), "--no-plugins", "-c", "doctor json"])
+    run_check([str(executable), "--version"], cwd=executable.parent)
+    run_check([str(executable), "--no-plugins", "-c", "py 1 + 1"], cwd=executable.parent, expected_stdout="2")
+    doctor_stdout = run_check([str(executable), "--no-plugins", "-c", "doctor json"], cwd=executable.parent)
     doctor_payload = json.loads(doctor_stdout)
     if args.profile == "enterprise" and not doctor_payload.get("sandbox_default"):
         raise SystemExit("doctor sandbox_default check failed for enterprise profile")
@@ -55,6 +55,11 @@ def main(argv: list[str] | None = None) -> int:
             raise SystemExit(
                 f"doctor module check failed for {module_name!r}: expected {expected}, actual {actual}"
             )
+    if args.profile == "enterprise":
+        atheria_payload = doctor_payload.get("atheria", {})
+        if not bool(atheria_payload.get("available")):
+            raise SystemExit("doctor atheria availability check failed for enterprise profile")
+        run_check([str(executable), "--no-plugins", "-c", "atheria init"], cwd=executable.parent)
 
     print(f"smoke tests passed for {executable}")
     return 0

@@ -55,13 +55,13 @@ class BuildReleaseTests(unittest.TestCase):
         ):
             self.assertEqual(
                 build_release.collect_nuitka_packages("enterprise"),
-                ["psutil", "yaml"],
+                ["psutil", "unittest", "yaml"],
             )
 
     def test_collect_nuitka_modules_for_enterprise_profile(self) -> None:
         self.assertEqual(
             build_release.collect_nuitka_modules("enterprise"),
-            ["pyarrow", "pyarrow.csv", "pyarrow.flight"],
+            ["ctypes.util", "ctypes.wintypes", "pdb", "pyarrow", "pyarrow.csv", "pyarrow.flight"],
         )
 
     def test_collect_nuitka_nofollow_for_enterprise_profile(self) -> None:
@@ -71,7 +71,7 @@ class BuildReleaseTests(unittest.TestCase):
         ):
             self.assertEqual(
                 build_release.collect_nuitka_nofollow("enterprise"),
-                ["numpy", "pyarrow.tests", "pyarrow.vendored", "pyopencl", "wasmtime"],
+                ["numpy", "pyarrow.tests", "pyarrow.vendored", "pyopencl", "torch", "wasmtime"],
             )
 
     def test_collect_nuitka_compile_flags_for_windows_enterprise_profile(self) -> None:
@@ -89,7 +89,14 @@ class BuildReleaseTests(unittest.TestCase):
             patch.object(build_release.os, "name", "nt"),
             patch.object(build_release.sys, "platform", "win32"),
         ):
-            self.assertEqual(build_release.collect_sideload_packages("enterprise"), ["wasmtime", "numpy", "pyopencl"])
+            self.assertEqual(build_release.collect_sideload_packages("enterprise"), ["wasmtime", "numpy", "pyopencl", "torch"])
+
+    def test_collect_sideload_packages_for_linux_enterprise_profile(self) -> None:
+        with (
+            patch.object(build_release.os, "name", "posix"),
+            patch.object(build_release.sys, "platform", "linux"),
+        ):
+            self.assertEqual(build_release.collect_sideload_packages("enterprise"), ["torch"])
 
     def test_collect_nuitka_deployment_flags_for_windows_enterprise_profile(self) -> None:
         with (
@@ -155,6 +162,45 @@ class BuildReleaseTests(unittest.TestCase):
             self.assertTrue((sideload_root / "examplepkg.libs" / "runtime.dll").exists())
             self.assertTrue((sideload_root / "helper_mod.py").exists())
 
+    def test_stage_sideload_distribution_uses_top_level_copy_for_torch(self) -> None:
+        class FakeDistribution:
+            def __init__(self, path: Path) -> None:
+                self._path = path
+                self.files = []
+                self.metadata = {"Name": "torch"}
+
+            def locate_file(self, path: str) -> Path:
+                return self._path.parent / path
+
+            def read_text(self, filename: str) -> str | None:
+                if filename == "top_level.txt":
+                    return "functorch\ntorch\ntorchgen\n"
+                return None
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            site_packages = root / "site-packages"
+            site_packages.mkdir()
+
+            dist_info = site_packages / "torch-1.0.dist-info"
+            dist_info.mkdir()
+            (dist_info / "METADATA").write_text("metadata", encoding="utf-8")
+
+            for folder_name in ("functorch", "torch", "torchgen"):
+                package_dir = site_packages / folder_name
+                package_dir.mkdir()
+                (package_dir / "__init__.py").write_text("VALUE = 1\n", encoding="utf-8")
+
+            sideload_root = root / "vendor-py"
+            sideload_root.mkdir()
+
+            build_release.stage_sideload_distribution(FakeDistribution(dist_info), sideload_root, copied=set())
+
+            self.assertTrue((sideload_root / "torch-1.0.dist-info" / "METADATA").exists())
+            self.assertTrue((sideload_root / "functorch" / "__init__.py").exists())
+            self.assertTrue((sideload_root / "torch" / "__init__.py").exists())
+            self.assertTrue((sideload_root / "torchgen" / "__init__.py").exists())
+
     def test_build_nuitka_command_includes_enterprise_packages_and_modules(self) -> None:
         with (
             tempfile.TemporaryDirectory() as tmp,
@@ -164,10 +210,14 @@ class BuildReleaseTests(unittest.TestCase):
             command = build_release.build_nuitka_command("enterprise", "python", Path(tmp))
 
         self.assertIn("--include-package=psutil", command)
+        self.assertIn("--include-package=unittest", command)
         self.assertIn("--include-package=yaml", command)
         self.assertIn("--include-module=pyarrow", command)
         self.assertIn("--include-module=pyarrow.csv", command)
         self.assertIn("--include-module=pyarrow.flight", command)
+        self.assertIn("--include-module=pdb", command)
+        self.assertIn("--include-module=ctypes.util", command)
+        self.assertIn("--include-module=ctypes.wintypes", command)
         self.assertIn("--nofollow-import-to=pyarrow.tests", command)
         self.assertIn("--nofollow-import-to=pyarrow.vendored", command)
         self.assertIn("--nofollow-import-to=numpy", command)
@@ -179,8 +229,34 @@ class BuildReleaseTests(unittest.TestCase):
         self.assertNotIn("--include-package=wasmtime", command)
         self.assertNotIn("--include-package=numpy", command)
         self.assertNotIn("--include-package=pyopencl", command)
+        self.assertNotIn("--include-package=torch", command)
         self.assertIn("--no-deployment-flag=self-execution", command)
         self.assertIn("--no-deployment-flag=excluded-module-usage", command)
+
+    def test_stage_local_runtime_directories_copies_atheria_tree(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source_dir = root / "Atheria"
+            source_dir.mkdir()
+            (source_dir / "atheria_core.py").write_text("VALUE = 1\n", encoding="utf-8")
+            (source_dir / "__pycache__").mkdir()
+            (source_dir / "__pycache__" / "cache.pyc").write_bytes(b"cache")
+
+            bundle_dir = root / "bundle"
+            bundle_dir.mkdir()
+
+            with patch.object(build_release, "collect_local_runtime_directories", return_value=[source_dir]):
+                build_release.stage_local_runtime_directories(
+                    bundle_dir,
+                    build_context=build_release.BuildContext(
+                        source_date_epoch=None,
+                        timestamp_utc="2026-03-08T00:00:00+00:00",
+                        env={},
+                    ),
+                )
+
+            self.assertTrue((bundle_dir / "Atheria" / "atheria_core.py").exists())
+            self.assertFalse((bundle_dir / "Atheria" / "__pycache__").exists())
 
     def test_safe_platform_helpers_avoid_windows_wmi_path(self) -> None:
         with (
