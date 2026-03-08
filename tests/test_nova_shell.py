@@ -653,6 +653,72 @@ if len(files_lines) == 2:
                     if second_shell is not None:
                         second_shell._close_loop()
 
+    def test_atheria_status_command_reports_payload(self) -> None:
+        payload = {"available": True, "trained_records": 3, "source_dir": "D:/Nova-shell/Atheria"}
+        with patch.object(self.shell.atheria, "status_payload", return_value=payload):
+            result = self.shell.route("atheria status")
+        self.assertIsNone(result.error)
+        self.assertEqual(json.loads(result.output), payload)
+
+    def test_atheria_train_qa_and_chat(self) -> None:
+        with patch.object(self.shell.atheria, "train_qa", return_value=1) as train_mock, patch.object(
+            self.shell.ai_runtime,
+            "complete_prompt",
+            return_value=CommandResult(output="Atheria reply\n", data={"text": "Atheria reply"}, data_type=PipelineType.OBJECT),
+        ) as complete_mock:
+            trained = self.shell.route('atheria train qa --question "What is Nova-shell?" --answer "A unified runtime." --category product')
+            chatted = self.shell.route('atheria chat "What is Nova-shell?"')
+
+        self.assertIsNone(trained.error)
+        self.assertEqual(json.loads(trained.output)["inserted"], 1)
+        train_mock.assert_called_once_with(question="What is Nova-shell?", answer="A unified runtime.", category="product")
+
+        self.assertIsNone(chatted.error)
+        self.assertEqual(chatted.output.strip(), "Atheria reply")
+        self.assertEqual(complete_mock.call_args.kwargs["provider"], "atheria")
+        self.assertEqual(complete_mock.call_args.kwargs["model"], "atheria-core")
+
+    def test_atheria_train_memory_uses_memory_entry(self) -> None:
+        embedded = self.shell.route('memory embed --id transcript "Segment one\n\nSegment two"')
+        self.assertIsNone(embedded.error)
+
+        with patch.object(self.shell.atheria, "train_rows", return_value=2) as train_mock:
+            result = self.shell.route("atheria train memory transcript --category video")
+
+        self.assertIsNone(result.error)
+        payload = json.loads(result.output)
+        self.assertEqual(payload["mode"], "memory")
+        self.assertEqual(payload["memory_id"], "transcript")
+        self.assertEqual(payload["inserted"], 2)
+        rows = train_mock.call_args.args[0]
+        self.assertEqual(rows[0][0], "transcript segment 1")
+        self.assertEqual(rows[0][1], "video")
+        self.assertEqual(rows[0][2], "Segment one")
+        self.assertEqual(rows[1][2], "Segment two")
+
+    def test_ai_use_atheria_and_prompt_routes_to_atheria_runtime(self) -> None:
+        with patch.object(self.shell.atheria, "is_available", return_value=True), patch.object(
+            self.shell.atheria,
+            "complete_prompt",
+            return_value={
+                "provider": "atheria",
+                "model": "atheria-core",
+                "text": "Atheria knows Nova-shell",
+                "retrieved": [],
+                "field_result": {},
+                "dashboard": {"phase": "focused"},
+            },
+        ) as complete_mock:
+            selected = self.shell.route("ai use atheria atheria-core")
+            prompted = self.shell.route('ai prompt "what is nova-shell?"')
+
+        self.assertIsNone(selected.error)
+        self.assertEqual(json.loads(selected.output)["provider"], "atheria")
+        self.assertIsNone(prompted.error)
+        self.assertEqual(prompted.output.strip(), "Atheria knows Nova-shell")
+        complete_mock.assert_called_once()
+        self.assertEqual(complete_mock.call_args.args[0], "what is nova-shell?")
+
     def test_tool_register_and_call_with_schema(self) -> None:
         register = self.shell.route(
             "tool register greet --description 'Greet user' "
@@ -864,6 +930,58 @@ if len(files_lines) == 2:
         self.assertEqual(len(calls), 2)
         self.assertIn("first report", calls[1])
         self.assertIn("draft-1", calls[1])
+
+    def test_agent_run_supports_file_context_injection(self) -> None:
+        calls: list[str] = []
+
+        def fake_complete(prompt: str, *, provider: str | None = None, model: str | None = None, system_prompt: str = "") -> CommandResult:
+            calls.append(prompt)
+            return CommandResult(output="ok\n", data={"text": "ok"}, data_type=PipelineType.OBJECT)
+
+        with tempfile.TemporaryDirectory() as tmp, patch.object(self.shell.ai_runtime, "complete_prompt", side_effect=fake_complete):
+            tmp_path = Path(tmp)
+            transcript = tmp_path / "script.md"
+            transcript.write_text("# Intro\nSprecher 1: Willkommen bei Nova-shell.\n", encoding="utf-8")
+            self.assertIsNone(self.shell.route('agent create helper "Quote {{input}}" --provider lmstudio --model local-model').error)
+            run = self.shell.route(f'agent run helper --file {transcript} "Gib mir die Einleitung."')
+
+        self.assertIsNone(run.error)
+        self.assertEqual(run.output.strip(), "ok")
+        self.assertEqual(len(calls), 1)
+        self.assertIn("Gib mir die Einleitung.", calls[0])
+        self.assertIn("Nova-shell locked context", calls[0])
+        self.assertIn("Sprecher 1: Willkommen bei Nova-shell.", calls[0])
+
+    def test_agent_message_supports_memory_context_from_source_file(self) -> None:
+        calls: list[str] = []
+
+        def fake_complete(prompt: str, *, provider: str | None = None, model: str | None = None, system_prompt: str = "") -> CommandResult:
+            calls.append(prompt)
+            return CommandResult(output="monitor-ok\n", data={"text": "monitor-ok"}, data_type=PipelineType.OBJECT)
+
+        with tempfile.TemporaryDirectory() as tmp, patch.object(self.shell.ai_runtime, "complete_prompt", side_effect=fake_complete):
+            tmp_path = Path(tmp)
+            transcript = tmp_path / "final.md"
+            transcript.write_text("Sprecher 1: Dies ist die exakte Einleitung.\n", encoding="utf-8")
+            self.shell.cwd = tmp_path
+            self.shell.ai_runtime.cwd = tmp_path
+
+            embedded = self.shell.route("memory embed --id final_transcript --file final.md")
+            self.assertIsNone(embedded.error)
+            self.assertIsNone(
+                self.shell.route(
+                    'agent create script_monitor "Nutze nur {{input}}" --provider lmstudio --model local-model'
+                ).error
+            )
+            self.assertIsNone(self.shell.route("agent spawn script_monitor_rt --from script_monitor").error)
+            message = self.shell.route('agent message script_monitor_rt --memory final_transcript "Gib mir die Einleitung von Sprecher 1."')
+
+        self.assertIsNone(message.error)
+        self.assertEqual(message.output.strip(), "monitor-ok")
+        self.assertEqual(len(calls), 1)
+        self.assertIn("Gib mir die Einleitung von Sprecher 1.", calls[0])
+        self.assertIn("Nova-shell locked context", calls[0])
+        self.assertIn("Sprecher 1: Dies ist die exakte Einleitung.", calls[0])
 
     def test_agent_workflow_runs_agents_in_sequence(self) -> None:
         def fake_complete(prompt: str, *, provider: str | None = None, model: str | None = None, system_prompt: str = "") -> CommandResult:

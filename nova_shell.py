@@ -8,6 +8,7 @@ import contextlib
 import copy
 import csv
 import inspect
+import importlib
 import importlib.util
 import io
 import http.server
@@ -1795,16 +1796,282 @@ class NovaVectorMemory:
     def count(self, *, namespace: str | None = None, project: str | None = None) -> int:
         return len(self.list_entries(namespace=namespace, project=project))
 
+    def get_entry(self, entry_id: str) -> VectorMemoryEntry | None:
+        return self.entries.get(entry_id)
+
     def close(self) -> None:
         self.conn.close()
+
+
+class NovaAtheriaRuntime:
+    """Optional local Atheria integration with persistent training records."""
+
+    def __init__(self, runtime_config: dict[str, Any], cwd: Path) -> None:
+        self.runtime_config = runtime_config
+        self.cwd = cwd
+        self.storage_root = (Path.home() / ".nova_shell_memory").resolve()
+        self.storage_root.mkdir(parents=True, exist_ok=True)
+        self.training_store_path = self.storage_root / "atheria_training.json"
+        self._module: Any = None
+        self._core: Any = None
+        self._loaded_training: list[dict[str, str]] = self._load_training_rows()
+
+    def _discover_source_dir(self) -> Path | None:
+        candidates = [
+            self.cwd / "Atheria",
+            Path(__file__).resolve().parent / "Atheria",
+            Path(sys.executable).resolve().parent / "Atheria",
+        ]
+        env_home = str(os.environ.get("ATHERIA_HOME") or "").strip()
+        if env_home:
+            candidates.insert(0, Path(os.path.expanduser(env_home)))
+        for candidate in candidates:
+            candidate = candidate.resolve(strict=False)
+            if candidate.is_dir() and (candidate / "atheria_core.py").is_file():
+                return candidate
+        return None
+
+    def is_available(self) -> bool:
+        return self._discover_source_dir() is not None
+
+    def _load_training_rows(self) -> list[dict[str, str]]:
+        if not self.training_store_path.exists():
+            return []
+        try:
+            payload = json.loads(self.training_store_path.read_text(encoding="utf-8"))
+        except Exception:
+            return []
+        if not isinstance(payload, list):
+            return []
+        rows: list[dict[str, str]] = []
+        for item in payload:
+            if not isinstance(item, dict):
+                continue
+            question = str(item.get("question") or "").strip()
+            answer = str(item.get("answer") or "").strip()
+            category = str(item.get("category") or "general").strip() or "general"
+            if not question or not answer:
+                continue
+            rows.append({"question": question, "category": category, "answer": answer})
+        return rows
+
+    def _save_training_rows(self) -> None:
+        self.training_store_path.write_text(
+            json.dumps(self._loaded_training, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+
+    def _load_atheria_module(self) -> Any:
+        if self._module is not None:
+            return self._module
+        source_dir = self._discover_source_dir()
+        if source_dir is None:
+            raise FileNotFoundError("Atheria source folder not found")
+        source_text = str(source_dir)
+        if source_text not in sys.path:
+            sys.path.insert(0, source_text)
+        importlib.invalidate_caches()
+        self._module = importlib.import_module("atheria_core")
+        return self._module
+
+    def _ensure_core(self) -> Any:
+        if self._core is not None:
+            return self._core
+        module = self._load_atheria_module()
+        tick_interval = float(self.runtime_config.get("atheria_tick_interval") or 0.04)
+        core = module.AtheriaCore(tick_interval=tick_interval)
+        core.bootstrap_default_mesh()
+        model_json_path = str(self.runtime_config.get("atheria_model_json_path") or "")
+        csv_path = str(self.runtime_config.get("atheria_csv_path") or "")
+        with contextlib.suppress(Exception):
+            if model_json_path or csv_path:
+                core.migrate_from_codedump(
+                    model_json_path=model_json_path or "model_with_qa.json",
+                    csv_path=csv_path or "data.csv",
+                )
+        if self._loaded_training:
+            core.aether.ingest_qa(
+                (row["question"], row["category"], row["answer"])
+                for row in self._loaded_training
+            )
+        self._core = core
+        return self._core
+
+    def _tokenize(self, text: str) -> list[str]:
+        return [token for token in re.findall(r"[A-Za-z0-9_\-\u00C0-\u024F]+", text.lower()) if token]
+
+    def _score_training_row(self, query: str, row: dict[str, str]) -> float:
+        lowered_query = query.lower()
+        haystack = f"{row.get('question', '')} {row.get('category', '')} {row.get('answer', '')}".strip()
+        lowered_haystack = haystack.lower()
+        query_tokens = set(self._tokenize(query))
+        haystack_tokens = set(self._tokenize(haystack))
+        overlap = len(query_tokens.intersection(haystack_tokens))
+        score = float(overlap)
+        if row.get("question", "").lower() in lowered_query:
+            score += 3.0
+        if lowered_query and lowered_query in lowered_haystack:
+            score += 5.0
+        if row.get("category", "").lower() in lowered_query:
+            score += 1.5
+        score += min(1.5, max(0.0, len(row.get("answer", "")) / 2000.0))
+        return score
+
+    def search_training(self, query: str, *, limit: int = 4) -> list[dict[str, Any]]:
+        scored: list[dict[str, Any]] = []
+        for row in self._loaded_training:
+            score = self._score_training_row(query, row)
+            if score <= 0:
+                continue
+            scored.append(
+                {
+                    "question": row["question"],
+                    "category": row["category"],
+                    "answer": row["answer"],
+                    "score": round(score, 6),
+                }
+            )
+        scored.sort(key=lambda item: float(item["score"]), reverse=True)
+        return scored[: max(1, limit)]
+
+    def train_rows(self, rows: Iterable[tuple[str, str, str]]) -> int:
+        normalized: list[dict[str, str]] = []
+        for question, category, answer in rows:
+            q = str(question).strip()
+            a = str(answer).strip()
+            c = str(category or "general").strip() or "general"
+            if not q or not a:
+                continue
+            normalized.append({"question": q, "category": c, "answer": a})
+        if not normalized:
+            return 0
+        self._loaded_training.extend(normalized)
+        self._save_training_rows()
+        if self._core is not None:
+            self._core.aether.ingest_qa((row["question"], row["category"], row["answer"]) for row in normalized)
+        return len(normalized)
+
+    def train_qa(self, *, question: str, answer: str, category: str = "general") -> int:
+        return self.train_rows([(question, category, answer)])
+
+    def train_json_file(self, path: Path) -> int:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        if not isinstance(payload, dict):
+            return 0
+        rows = [
+            (
+                str(item.get("question") or ""),
+                str(item.get("category") or "general"),
+                str(item.get("answer") or ""),
+            )
+            for item in payload.get("questions", [])
+            if isinstance(item, dict)
+        ]
+        return self.train_rows(rows)
+
+    def train_csv_file(self, path: Path) -> int:
+        rows: list[tuple[str, str, str]] = []
+        with path.open("r", encoding="utf-8", newline="") as handle:
+            reader = csv.DictReader(handle)
+            for row in reader:
+                question = str(row.get("Frage") or row.get("question") or "").strip()
+                category = str(row.get("Kategorie") or row.get("category") or "general").strip() or "general"
+                answer = str(row.get("Antwort") or row.get("answer") or "").strip()
+                if question and answer:
+                    rows.append((question, category, answer))
+        return self.train_rows(rows)
+
+    def train_text_file(self, path: Path, *, category: str = "") -> int:
+        text = path.read_text(encoding="utf-8")
+        chunks = [chunk.strip() for chunk in re.split(r"\n\s*\n", text) if chunk.strip()]
+        effective_category = category.strip() or path.stem or "document"
+        rows: list[tuple[str, str, str]] = []
+        for index, chunk in enumerate(chunks, start=1):
+            question = f"{effective_category} segment {index}"
+            rows.append((question, effective_category, chunk))
+        return self.train_rows(rows)
+
+    def status_payload(self) -> dict[str, Any]:
+        payload: dict[str, Any] = {
+            "available": self.is_available(),
+            "source_dir": str(self._discover_source_dir() or ""),
+            "core_loaded": self._core is not None,
+            "trained_records": len(self._loaded_training),
+            "categories": sorted({row["category"] for row in self._loaded_training}),
+        }
+        if self._core is not None:
+            with contextlib.suppress(Exception):
+                snapshot = self._core.dashboard_snapshot()
+                payload["core_id"] = str(getattr(self._core, "core_id", ""))
+                payload["dashboard"] = {
+                    "phase": snapshot.get("phase"),
+                    "system_temperature": snapshot.get("system_temperature"),
+                    "rhythm_state": snapshot.get("rhythm_state"),
+                    "market_role": snapshot.get("market_role"),
+                    "qa_memory_rows": snapshot.get("qa_memory_rows"),
+                }
+        return payload
+
+    def complete_prompt(self, prompt: str, *, model: str = "atheria-core", system_prompt: str = "") -> dict[str, Any]:
+        core = self._ensure_core()
+        module = self._load_atheria_module()
+        query_tensor = module._fold_vector_from_text(prompt, dims=int(core.holographic_field.pattern.numel()))
+        field_result = core.field_query(query_tensor, top_k=4)
+        retrieved = self.search_training(prompt, limit=4)
+        dashboard = core.dashboard_snapshot()
+        top_matches = list(field_result.get("top_matches") or [])
+        resonance_labels = [str(item.get("label")) for item in top_matches if isinstance(item, dict) and item.get("label")]
+        if retrieved:
+            primary = str(retrieved[0]["answer"]).strip()
+            details = [f"- {row['category']}: {row['answer']}" for row in retrieved[1:3]]
+            lines = [primary]
+            if details:
+                lines.append("")
+                lines.append("Weitere Atheria-Erinnerungen:")
+                lines.extend(details)
+        else:
+            lines = [
+                "Ich habe dazu noch kein direkt trainiertes Wissen in meinem Atheria-Speicher.",
+                "Trainiere mich mit `atheria train ...` oder stelle mir eine Frage zu bereits ingesstierten Inhalten.",
+            ]
+        resonance_text = ", ".join(resonance_labels[:4]) or "keine stabile Resonanz"
+        lines.extend(
+            [
+                "",
+                "Atheria-Zustand:",
+                f"- Resonanz: {resonance_text}",
+                f"- Phase: {dashboard.get('phase', 'unknown')}",
+                f"- Temperatur: {dashboard.get('system_temperature', 'unknown')}",
+            ]
+        )
+        if system_prompt.strip():
+            lines.extend(["", f"Systemfokus: {system_prompt.strip()[:400]}"])
+        text = "\n".join(lines).strip()
+        return {
+            "provider": "atheria",
+            "model": model,
+            "text": text,
+            "retrieved": retrieved,
+            "field_result": field_result,
+            "dashboard": {
+                "phase": dashboard.get("phase"),
+                "system_temperature": dashboard.get("system_temperature"),
+                "rhythm_state": dashboard.get("rhythm_state"),
+                "market_role": dashboard.get("market_role"),
+            },
+        }
+
+    def close(self) -> None:
+        self._core = None
 
 
 class NovaAIProviderRuntime:
     """Provider-aware AI runtime with .env loading and local/remote model support."""
 
-    def __init__(self, runtime_config: dict[str, Any], cwd: Path) -> None:
+    def __init__(self, runtime_config: dict[str, Any], cwd: Path, atheria_runtime: NovaAtheriaRuntime | None = None) -> None:
         self.runtime_config = runtime_config
         self.cwd = cwd
+        self.atheria_runtime = atheria_runtime
         self.provider_specs: dict[str, AIProviderSpec] = {
             "openai": AIProviderSpec(
                 name="openai",
@@ -1882,6 +2149,17 @@ class NovaAIProviderRuntime:
                 requires_api_key=False,
                 openai_compat=True,
             ),
+            "atheria": AIProviderSpec(
+                name="atheria",
+                kind="atheria-core",
+                env_keys=(),
+                base_url="local://atheria",
+                base_url_env="ATHERIA_BASE_URL",
+                default_model="atheria-core",
+                default_model_env="ATHERIA_MODEL",
+                fallback_models=("atheria-core",),
+                requires_api_key=False,
+            ),
         }
         self.loaded_env_files: list[str] = []
         self.active_provider = ""
@@ -1930,6 +2208,8 @@ class NovaAIProviderRuntime:
         spec = self._get_provider_spec(provider)
         if spec is None:
             return False
+        if spec.name == "atheria":
+            return bool(self.atheria_runtime is not None and self.atheria_runtime.is_available())
         if not spec.requires_api_key:
             return True
         return bool(self._provider_api_key(spec))
@@ -1940,7 +2220,7 @@ class NovaAIProviderRuntime:
         for provider in ["openai", "anthropic", "gemini", "groq", "openrouter"]:
             if self.is_configured(provider):
                 return provider
-        for provider in ["lmstudio", "ollama"]:
+        for provider in ["lmstudio", "ollama", "atheria"]:
             spec = self.provider_specs[provider]
             if os.environ.get(spec.default_model_env) or self.runtime_config.get(f"{provider}_model"):
                 return provider
@@ -2136,6 +2416,8 @@ class NovaAIProviderRuntime:
                 if name:
                     models.append(name)
             return models
+        if spec.kind == "atheria-core":
+            return ["atheria-core"]
         return list(spec.fallback_models)
 
     def _complete_via_provider(self, spec: AIProviderSpec, prompt: str, model: str, system_prompt: str) -> dict[str, Any]:
@@ -2215,6 +2497,11 @@ class NovaAIProviderRuntime:
             )
             text = str(data.get("message", {}).get("content", "")).strip()
             return {"provider": spec.name, "model": model, "text": text, "raw": data}
+
+        if spec.kind == "atheria-core":
+            if self.atheria_runtime is None:
+                raise RuntimeError("atheria runtime unavailable")
+            return self.atheria_runtime.complete_prompt(prompt, model=model, system_prompt=system_prompt)
 
         raise RuntimeError(f"unsupported ai provider kind: {spec.kind}")
 
@@ -2452,7 +2739,8 @@ class NovaShell:
         self.optimizer = NovaOptimizer(self)
         self.synth = NovaSynth(self)
         self.memory = NovaVectorMemory()
-        self.ai_runtime = NovaAIProviderRuntime(self.runtime_config, self.cwd)
+        self.atheria = NovaAtheriaRuntime(self.runtime_config, self.cwd)
+        self.ai_runtime = NovaAIProviderRuntime(self.runtime_config, self.cwd, atheria_runtime=self.atheria)
         self.guard_store = GuardPolicyStore()
         self.fabric_remote = FabricRemoteBridge()
         self.reactive = ReactiveFlowEngine(self)
@@ -2493,6 +2781,7 @@ class NovaShell:
             "data.load": self._run_data_load,
             "remote": self._run_remote,
             "ai": self._run_ai,
+            "atheria": self._run_atheria,
             "agent": self._run_agent,
             "memory": self._run_memory,
             "tool": self._run_tool,
@@ -2578,6 +2867,8 @@ class NovaShell:
         with contextlib.suppress(Exception):
             self.memory.close()
         with contextlib.suppress(Exception):
+            self.atheria.close()
+        with contextlib.suppress(Exception):
             if not self.loop.is_closed():
                 self.loop.close()
 
@@ -2642,6 +2933,7 @@ class NovaShell:
             if not target.exists() or not target.is_dir():
                 return CommandResult(output="", error=f"directory not found: {target_text}")
             self.cwd = target
+            self.atheria.cwd = target
             self.ai_runtime.cwd = target
             return CommandResult(output="")
         except Exception as exc:
@@ -2666,8 +2958,9 @@ class NovaShell:
             "wasmtime": False,
             "numpy": False,
             "pyopencl": False,
+            "atheria": self.atheria.is_available(),
         }
-        for module_name in list(modules.keys()):
+        for module_name in ["psutil", "yaml", "pyarrow", "wasmtime", "numpy", "pyopencl"]:
             modules[module_name] = module_available(module_name)
 
         commands = {
@@ -2693,6 +2986,7 @@ class NovaShell:
                 "active_model": self.ai_runtime.get_active_model(),
                 "loaded_env_files": self.ai_runtime.loaded_env_files,
             },
+            "atheria": self.atheria.status_payload(),
             "runtime": {
                 "memory_entries": len(self.memory.entries),
                 "registered_tools": len(self.tools),
@@ -2716,6 +3010,7 @@ class NovaShell:
             f"sandbox_default: {'ok' if payload['sandbox_default'] else 'false'}",
             f"ai_provider: {payload['ai']['active_provider'] or 'none'}",
             f"ai_model: {payload['ai']['active_model'] or 'none'}",
+            f"atheria_records: {payload['atheria'].get('trained_records', 0)}",
             f"memory_entries: {payload['runtime']['memory_entries']}",
             f"registered_tools: {payload['runtime']['registered_tools']}",
             f"agent_instances: {payload['runtime']['agent_instances']}",
@@ -3776,6 +4071,200 @@ class NovaShell:
 
         return CommandResult(output="", error="usage: memory embed|search|list|namespace|project|status ...")
 
+    def _run_atheria(self, args: str, pipeline_input: str, pipeline_data: Any) -> CommandResult:
+        parts = split_command(args)
+        if not parts:
+            return CommandResult(output="", error="usage: atheria status|init|train|search|chat ...")
+
+        action = parts[0]
+
+        if action == "status":
+            payload = self.atheria.status_payload()
+            return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+
+        if action == "init":
+            if not self.atheria.is_available():
+                return CommandResult(output="", error="atheria source folder not found")
+            try:
+                self.atheria._ensure_core()
+            except Exception as exc:
+                return CommandResult(output="", error=f"atheria init failed: {exc}")
+            payload = self.atheria.status_payload()
+            return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+
+        if action == "search":
+            query = " ".join(parts[1:]).strip()
+            if not query and pipeline_data is not None:
+                query = self._serialize_ai_context_value(pipeline_data)
+            if not query:
+                query = pipeline_input.strip()
+            if not query:
+                return CommandResult(output="", error="usage: atheria search <query>")
+            payload = self.atheria.search_training(query)
+            return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+
+        if action == "train":
+            if len(parts) < 2:
+                return CommandResult(output="", error="usage: atheria train qa|json|csv|file|memory ...")
+            train_action = parts[1]
+
+            if train_action == "qa":
+                question = ""
+                answer = ""
+                category = "general"
+                i = 2
+                while i < len(parts):
+                    token = parts[i]
+                    if token == "--question" and i + 1 < len(parts):
+                        question = parts[i + 1]
+                        i += 2
+                        continue
+                    if token == "--answer" and i + 1 < len(parts):
+                        answer = parts[i + 1]
+                        i += 2
+                        continue
+                    if token == "--category" and i + 1 < len(parts):
+                        category = parts[i + 1]
+                        i += 2
+                        continue
+                    i += 1
+                if not question or not answer:
+                    return CommandResult(output="", error="usage: atheria train qa --question text --answer text [--category name]")
+                inserted = self.atheria.train_qa(question=question, answer=answer, category=category)
+                payload = {"mode": "qa", "inserted": inserted, "category": category}
+                return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+
+            if train_action in {"json", "csv"}:
+                if len(parts) < 3:
+                    return CommandResult(output="", error=f"usage: atheria train {train_action} <file>")
+                file_path = self._resolve_path(parts[2])
+                if not file_path.exists() or not file_path.is_file():
+                    return CommandResult(output="", error=f"atheria training file not found: {parts[2]}")
+                try:
+                    inserted = self.atheria.train_json_file(file_path) if train_action == "json" else self.atheria.train_csv_file(file_path)
+                except Exception as exc:
+                    return CommandResult(output="", error=f"atheria training failed: {exc}")
+                payload = {"mode": train_action, "file": str(file_path), "inserted": inserted}
+                return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+
+            if train_action == "file":
+                if len(parts) < 3:
+                    return CommandResult(output="", error="usage: atheria train file <file> [--category name]")
+                category = ""
+                file_token = parts[2]
+                i = 3
+                while i < len(parts):
+                    token = parts[i]
+                    if token == "--category" and i + 1 < len(parts):
+                        category = parts[i + 1]
+                        i += 2
+                        continue
+                    i += 1
+                file_path = self._resolve_path(file_token)
+                if not file_path.exists() or not file_path.is_file():
+                    return CommandResult(output="", error=f"atheria training file not found: {file_token}")
+                suffix = file_path.suffix.lower()
+                try:
+                    if suffix == ".json":
+                        inserted = self.atheria.train_json_file(file_path)
+                    elif suffix == ".csv":
+                        inserted = self.atheria.train_csv_file(file_path)
+                    else:
+                        inserted = self.atheria.train_text_file(file_path, category=category)
+                except Exception as exc:
+                    return CommandResult(output="", error=f"atheria training failed: {exc}")
+                payload = {"mode": "file", "file": str(file_path), "category": category or file_path.stem or "document", "inserted": inserted}
+                return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+
+            if train_action == "memory":
+                if len(parts) < 3:
+                    return CommandResult(output="", error="usage: atheria train memory <memory_id> [--category name]")
+                memory_id = parts[2]
+                category = ""
+                i = 3
+                while i < len(parts):
+                    token = parts[i]
+                    if token == "--category" and i + 1 < len(parts):
+                        category = parts[i + 1]
+                        i += 2
+                        continue
+                    i += 1
+                entry = self.memory.get_entry(memory_id)
+                if entry is None:
+                    return CommandResult(output="", error=f"memory entry not found: {memory_id}")
+                source_file = str(entry.metadata.get("source_file") or "").strip()
+                try:
+                    if source_file:
+                        source_path = Path(source_file)
+                        if source_path.exists() and source_path.is_file():
+                            suffix = source_path.suffix.lower()
+                            if suffix == ".json":
+                                inserted = self.atheria.train_json_file(source_path)
+                            elif suffix == ".csv":
+                                inserted = self.atheria.train_csv_file(source_path)
+                            else:
+                                inserted = self.atheria.train_text_file(source_path, category=category)
+                            payload = {
+                                "mode": "memory",
+                                "memory_id": memory_id,
+                                "source_file": str(source_path),
+                                "category": category or source_path.stem or entry.project,
+                                "inserted": inserted,
+                            }
+                            return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+                    effective_category = category.strip() or str(entry.metadata.get("category") or "").strip() or entry.project or entry.namespace or "memory"
+                    chunks = [chunk.strip() for chunk in re.split(r"\n\s*\n", entry.text) if chunk.strip()]
+                    if not chunks and entry.text.strip():
+                        chunks = [entry.text.strip()]
+                    rows = [
+                        (f"{memory_id} segment {index}", effective_category, chunk)
+                        for index, chunk in enumerate(chunks, start=1)
+                    ]
+                    inserted = self.atheria.train_rows(rows)
+                except Exception as exc:
+                    return CommandResult(output="", error=f"atheria training failed: {exc}")
+                payload = {"mode": "memory", "memory_id": memory_id, "category": effective_category, "inserted": inserted}
+                return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+
+            return CommandResult(output="", error="usage: atheria train qa|json|csv|file|memory ...")
+
+        if action == "chat":
+            file_path_text = ""
+            system_prompt = ""
+            prompt_tokens: list[str] = []
+            i = 1
+            while i < len(parts):
+                token = parts[i]
+                if token == "--file" and i + 1 < len(parts):
+                    file_path_text = parts[i + 1]
+                    i += 2
+                    continue
+                if token == "--system" and i + 1 < len(parts):
+                    system_prompt = parts[i + 1]
+                    i += 2
+                    continue
+                prompt_tokens.append(token)
+                i += 1
+            prompt = " ".join(prompt_tokens).strip()
+            if not prompt:
+                return CommandResult(output="", error="usage: atheria chat [--file path] [--system text] <prompt>")
+            enriched_prompt, context_error = self._build_ai_prompt_with_context(
+                prompt,
+                pipeline_input=pipeline_input,
+                pipeline_data=pipeline_data,
+                file_path_text=file_path_text or None,
+            )
+            if context_error is not None:
+                return context_error
+            return self.ai_runtime.complete_prompt(
+                enriched_prompt,
+                provider="atheria",
+                model=self.ai_runtime.get_active_model("atheria") or "atheria-core",
+                system_prompt=system_prompt,
+            )
+
+        return CommandResult(output="", error="usage: atheria status|init|train|search|chat ...")
+
     def _run_tool(self, args: str, pipeline_input: str, pipeline_data: Any) -> CommandResult:
         parts = split_command(args)
         if not parts:
@@ -4047,6 +4536,80 @@ class NovaShell:
         enriched_prompt = prompt.strip() + "\n\nNova-shell context:\n" + "\n\n".join(contexts)
         return enriched_prompt, None
 
+    def _load_agent_locked_file_context(self, file_path: Path) -> str:
+        try:
+            return file_path.read_text(encoding="utf-8")
+        except UnicodeDecodeError:
+            return file_path.read_text(encoding="utf-8", errors="replace")
+
+    def _resolve_agent_memory_context(self, memory_id: str) -> tuple[str, CommandResult | None]:
+        entry = self.memory.get_entry(memory_id)
+        if entry is None:
+            return "", CommandResult(output="", error=f"memory entry not found: {memory_id}")
+        source_file = str(entry.metadata.get("source_file") or "").strip()
+        if source_file:
+            try:
+                source_path = Path(source_file)
+                if source_path.exists() and source_path.is_file():
+                    return self._load_agent_locked_file_context(source_path), None
+            except Exception as exc:
+                return "", CommandResult(output="", error=f"failed to read memory source file for {memory_id}: {exc}")
+        return entry.text, None
+
+    def _parse_agent_context_args(self, parts: list[str], *, start_index: int = 0) -> tuple[dict[str, Any], list[str]]:
+        file_path_text = ""
+        memory_ids: list[str] = []
+        remaining: list[str] = []
+        i = start_index
+        while i < len(parts):
+            token = parts[i]
+            if token == "--file" and i + 1 < len(parts):
+                file_path_text = parts[i + 1]
+                i += 2
+                continue
+            if token == "--memory" and i + 1 < len(parts):
+                memory_ids.append(parts[i + 1])
+                i += 2
+                continue
+            remaining.append(token)
+            i += 1
+        return {"file_path_text": file_path_text, "memory_ids": memory_ids}, remaining
+
+    def _build_agent_input_with_context(
+        self,
+        input_text: str,
+        *,
+        file_path_text: str = "",
+        memory_ids: list[str] | None = None,
+    ) -> tuple[str, CommandResult | None]:
+        context_blocks: list[str] = []
+        if file_path_text:
+            try:
+                file_path = self._resolve_path(file_path_text)
+                if not file_path.exists() or not file_path.is_file():
+                    return "", CommandResult(output="", error=f"agent context file not found: {file_path_text}")
+                context_blocks.append(f"[File:{file_path.name}]\n" + self._load_agent_locked_file_context(file_path))
+            except Exception as exc:
+                return "", CommandResult(output="", error=f"failed to read agent context file: {exc}")
+        for memory_id in memory_ids or []:
+            memory_text, error = self._resolve_agent_memory_context(memory_id)
+            if error is not None:
+                return "", error
+            context_blocks.append(f"[Memory:{memory_id}]\n" + memory_text)
+        if not context_blocks:
+            return input_text, None
+        base_input = input_text.strip()
+        enriched_parts = []
+        if base_input:
+            enriched_parts.append(base_input)
+        enriched_parts.append(
+            "Nova-shell locked context:\n"
+            "Use the following source blocks as the authoritative context for this task.\n"
+            "When asked for exact wording, quote only from these blocks."
+        )
+        enriched_parts.extend(context_blocks)
+        return "\n\n".join(enriched_parts), None
+
     def _run_ai(self, args: str, pipeline_input: str, pipeline_data: Any) -> CommandResult:
         parts = split_command(args)
         if not parts:
@@ -4262,21 +4825,29 @@ class NovaShell:
                 return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
             if graph_action == "run":
                 if len(parts) < 3:
-                    return CommandResult(output="", error="usage: agent graph run <name> --input text")
+                    return CommandResult(output="", error="usage: agent graph run <name> [--file path] [--memory id]... --input text")
                 graph = self.agent_graphs.get(parts[2])
                 if graph is None:
                     return CommandResult(output="", error="agent graph not found")
                 input_text = ""
-                i = 3
-                while i < len(parts):
-                    token = parts[i]
-                    if token == "--input" and i + 1 < len(parts):
-                        input_text = parts[i + 1]
+                context_options, graph_tokens = self._parse_agent_context_args(parts, start_index=3)
+                i = 0
+                while i < len(graph_tokens):
+                    token = graph_tokens[i]
+                    if token == "--input" and i + 1 < len(graph_tokens):
+                        input_text = graph_tokens[i + 1]
                         i += 2
                         continue
                     i += 1
                 if not input_text:
                     return CommandResult(output="", error="agent graph run requires --input text")
+                enriched_input, error = self._build_agent_input_with_context(
+                    input_text,
+                    file_path_text=str(context_options["file_path_text"] or ""),
+                    memory_ids=list(context_options["memory_ids"] or []),
+                )
+                if error is not None:
+                    return error
                 ordered = self._topological_agent_graph(graph)
                 inbound: dict[str, list[str]] = {node: [] for node in graph.nodes}
                 for left, right in graph.edges:
@@ -4285,7 +4856,7 @@ class NovaShell:
                 steps: list[dict[str, Any]] = []
                 for node in ordered:
                     incoming = inbound.get(node, [])
-                    node_input = input_text if not incoming else "\n\n".join(node_outputs[source] for source in incoming if source in node_outputs)
+                    node_input = enriched_input if not incoming else "\n\n".join(node_outputs[source] for source in incoming if source in node_outputs)
                     result = self._run_agent_handle(node, node_input)
                     if result.error:
                         return result
@@ -4448,43 +5019,70 @@ class NovaShell:
 
         if action == "run":
             if len(parts) < 2:
-                return CommandResult(output="", error="usage: agent run <name> [input]")
+                return CommandResult(output="", error="usage: agent run <name> [--file path] [--memory id]... [input]")
             agent = self.agents.get(parts[1])
             if agent is None:
                 return CommandResult(output="", error="agent not found")
-            input_text = args.split(parts[1], 1)[1].strip()
-            return self._run_agent_once(agent, input_text)
+            context_options, remaining = self._parse_agent_context_args(parts, start_index=2)
+            input_text = " ".join(remaining).strip()
+            enriched_input, error = self._build_agent_input_with_context(
+                input_text,
+                file_path_text=str(context_options["file_path_text"] or ""),
+                memory_ids=list(context_options["memory_ids"] or []),
+            )
+            if error is not None:
+                return error
+            return self._run_agent_once(agent, enriched_input)
 
         if action == "message":
             if len(parts) < 3:
-                return CommandResult(output="", error="usage: agent message <instance_name> <message>")
+                return CommandResult(output="", error="usage: agent message <instance_name> [--file path] [--memory id]... <message>")
             instance = self.agent_instances.get(parts[1])
             if instance is None:
                 return CommandResult(output="", error="agent runtime not found")
-            message = args.split(parts[1], 1)[1].strip()
-            return self._run_agent_instance_message(instance, message)
+            context_options, remaining = self._parse_agent_context_args(parts, start_index=2)
+            message = " ".join(remaining).strip()
+            if not message:
+                return CommandResult(output="", error="agent message requires a message")
+            enriched_message, error = self._build_agent_input_with_context(
+                message,
+                file_path_text=str(context_options["file_path_text"] or ""),
+                memory_ids=list(context_options["memory_ids"] or []),
+            )
+            if error is not None:
+                return error
+            return self._run_agent_instance_message(instance, enriched_message)
 
         if action == "workflow":
             names: list[str] = []
             input_text = ""
-            i = 1
-            while i < len(parts):
-                token = parts[i]
-                if token == "--agents" and i + 1 < len(parts):
-                    names.extend([name.strip() for name in parts[i + 1].split(",") if name.strip()])
+            context_options, workflow_tokens = self._parse_agent_context_args(parts, start_index=1)
+            i = 0
+            while i < len(workflow_tokens):
+                token = workflow_tokens[i]
+                if token == "--agents" and i + 1 < len(workflow_tokens):
+                    names.extend([name.strip() for name in workflow_tokens[i + 1].split(",") if name.strip()])
                     i += 2
                     continue
-                if token == "--input" and i + 1 < len(parts):
-                    input_text = parts[i + 1]
+                if token == "--input" and i + 1 < len(workflow_tokens):
+                    input_text = workflow_tokens[i + 1]
                     i += 2
                     continue
                 names.append(token)
                 i += 1
             if not names:
-                return CommandResult(output="", error="usage: agent workflow --agents a,b[,c] --input text")
+                return CommandResult(output="", error="usage: agent workflow [--file path] [--memory id]... --agents a,b[,c] --input text")
             current_text = input_text.strip()
             if not current_text:
                 return CommandResult(output="", error="agent workflow requires --input text")
+            enriched_input, error = self._build_agent_input_with_context(
+                current_text,
+                file_path_text=str(context_options["file_path_text"] or ""),
+                memory_ids=list(context_options["memory_ids"] or []),
+            )
+            if error is not None:
+                return error
+            current_text = enriched_input
             steps: list[dict[str, Any]] = []
             for name in names:
                 if name in self.agent_instances:

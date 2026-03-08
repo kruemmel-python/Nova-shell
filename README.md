@@ -5,6 +5,7 @@ Nova-shell ist eine **Unified Compute & Data Orchestration Runtime** mit polyglo
 Neu in der Runtime-Schicht:
 
 - AI-Provider-Integration fuer `OpenAI`, `Anthropic`, `Gemini`, `Groq`, `OpenRouter`, `Ollama` und `LM Studio`
+- lokale `Atheria`-Integration als trainierbare, chatfaehige In-Repo-KI
 - `.env`-gestuetzte API-Key- und Modell-Auswahl direkt aus Nova-shell
 - lokale `event`-Runtime fuer Event-Driven Workflows
 - `agent`-Kommandos fuer wiederverwendbare AI-Agenten
@@ -64,7 +65,7 @@ Neu in der Runtime-Schicht:
 ## Weitere Kernfeatures
 
 - Engines: `py/python`, `cpp`, `gpu`, `wasm`, `remote`, `sys`.
-- AI Runtime: `ai providers|models|use|config|env reload|prompt|plan`
+- AI Runtime: `ai providers|models|use|config|env reload|prompt|plan` plus `atheria status|init|train|search|chat`
 - AI Agents: `agent create|run|show|list|spawn|message|workflow|graph`
 - Event Runtime: `event on|emit|list|history`
 - GPU Task Graphs: `gpu graph plan|run|show`
@@ -116,6 +117,19 @@ nova-shell -c "data load items.csv | ai prompt \"Summarize this dataset\""
 
 Fuer langsame lokale Modelle kann das Timeout per `LM_STUDIO_TIMEOUT` oder `NOVA_AI_TIMEOUT` erhoeht werden.
 
+Lokale Atheria-KI initialisieren, trainieren und direkt befragen:
+
+```bash
+nova-shell -c "atheria status"
+nova-shell -c "atheria init"
+nova-shell -c "atheria train qa --question \"What is Nova-shell?\" --answer \"Nova-shell is a unified compute runtime.\" --category product"
+nova-shell -c "atheria train file podcastVideoTranscript_publish_safe.md --category video"
+nova-shell -c "atheria search \"Nova-shell runtime\""
+nova-shell -c "atheria chat \"What is Nova-shell?\""
+nova-shell -c "ai use atheria atheria-core"
+nova-shell -c "ai prompt \"Explain Nova-shell in one paragraph\""
+```
+
 Vector Memory, Tool Schemas, Planner, Agent Graphs und Mesh-Worker:
 
 ```bash
@@ -132,6 +146,8 @@ nova-shell -c "agent graph create review_chain --nodes analyst,reviewer"
 nova-shell -c "agent graph run review_chain --input \"quarterly report\""
 nova-shell -c "agent spawn analyst_rt --from analyst"
 nova-shell -c "agent message analyst_rt \"quarterly report\""
+nova-shell -c "agent run analyst --file podcastVideoTranscript_publish_safe.md \"Gib mir die Einleitung von Sprecher 1\""
+nova-shell -c "agent message script_monitor_rt --memory final_transcript \"Gib mir die Einleitung von Sprecher 1\""
 nova-shell -c "agent workflow --agents analyst,reviewer --input \"quarterly report\""
 nova-shell -c "mesh start-worker --caps cpu,py,ai"
 nova-shell -c "mesh list"

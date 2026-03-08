@@ -537,6 +537,26 @@ nova> data load items.csv | ai prompt "Summarize this dataset"
 
 Wenn ein lokales Modell in LM Studio langsam startet, kann das Timeout ueber `LM_STUDIO_TIMEOUT` oder global ueber `NOVA_AI_TIMEOUT` erhoeht werden.
 
+Die lokale Atheria-KI direkt aus dem Repo laden, trainieren und ansprechen:
+
+```text
+nova> atheria status
+nova> atheria init
+nova> atheria train qa --question "What is Nova-shell?" --answer "Nova-shell is a unified compute runtime." --category product
+nova> atheria train file podcastVideoTranscript_publish_safe.md --category video
+nova> atheria search "Nova-shell runtime"
+nova> atheria chat "What is Nova-shell?"
+```
+
+Wenn du Atheria als aktiven Provider fuer `ai` und `agent` verwenden willst:
+
+```text
+nova> ai use atheria atheria-core
+nova> ai prompt "Explain Nova-shell in one paragraph"
+nova> agent create storyteller "Tell a concise story about {{input}}" --provider atheria --model atheria-core
+nova> agent run storyteller "Nova-shell and Atheria"
+```
+
 Ohne aktiven Provider bleibt `ai plan` der lokale Heuristikpfad:
 
 ```text
@@ -611,6 +631,8 @@ Multi-Agent-Runtime mit Spawn, Message, Workflow und Graph:
 nova> agent create reviewer "Review {{input}}" --provider lmstudio --model local-model
 nova> agent spawn analyst_rt --from analyst
 nova> agent message analyst_rt "prepare the quarterly report outline"
+nova> agent run analyst --file podcastVideoTranscript_publish_safe.md "Gib mir die Einleitung von Sprecher 1"
+nova> agent message script_monitor_rt --memory final_transcript "Gib mir die Einleitung von Sprecher 1"
 nova> agent workflow --agents analyst,reviewer --input "quarterly report"
 nova> agent graph create review_chain --nodes analyst,reviewer
 nova> agent graph run review_chain --input "quarterly report"
