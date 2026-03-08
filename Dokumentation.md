@@ -177,6 +177,66 @@ cpp.sandbox 'int main(){ return 0; }'
 - `atheria chat --file <pfad> <prompt>`: Chat mit Dateikontext. Beispiel: `atheria chat --file items.csv "Summarize this dataset"`
 - `atheria chat --system <text> <prompt>`: Chat mit Systemfokus. Beispiel: `atheria chat --system "Answer as an architect." "How should Nova-shell use Atheria?"`
 
+### `Atheria komplett`
+
+Das ist der empfohlene End-to-End-Ablauf fuer Atheria in einer frischen Session:
+
+1. Verfuegbarkeit pruefen:
+
+```text
+atheria status
+```
+
+2. Runtime initialisieren:
+
+```text
+atheria init
+```
+
+3. Einfaches Q/A-Wissen trainieren:
+
+```text
+atheria train qa --question "What is Nova-shell?" --answer "Nova-shell is a unified compute runtime." --category product
+```
+
+4. Eine Datei als Wissensquelle trainieren:
+
+```text
+atheria train file podcastVideoTranscript_publish_safe.md --category video
+```
+
+5. Optional Nova-Memory nach Atheria uebernehmen:
+
+```text
+memory namespace video_production
+memory project nova_shell_explainer
+memory embed --id final_transcript --file podcastVideoTranscript_publish_safe.md
+atheria train memory final_transcript --category video
+```
+
+6. Im trainierten Wissen suchen:
+
+```text
+atheria search "Nova-shell runtime"
+```
+
+7. Direkt mit Atheria chatten:
+
+```text
+atheria chat "What is Nova-shell?"
+atheria chat --file items.csv "Summarize this dataset"
+atheria chat --system "Answer as a technical architect." "How should Nova-shell use Atheria?"
+```
+
+8. Atheria als aktiven Provider fuer `ai` und `agent` verwenden:
+
+```text
+ai use atheria atheria-core
+ai prompt "Explain Nova-shell in one paragraph"
+agent create storyteller "Tell a concise story about {{input}}" --provider atheria --model atheria-core
+agent run storyteller "Nova-shell and Atheria"
+```
+
 ### `agent`
 
 - `agent list`: Listet definierte Agenten. Beispiel: `agent list`
