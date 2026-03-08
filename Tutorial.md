@@ -582,14 +582,14 @@ Schema-basiertes Tool registrieren und aufrufen:
 
 ```text
 nova> tool register summarize_csv --description "summarize a csv file" --schema '{"type":"object","properties":{"file":{"type":"string"}},"required":["file"]}' --pipeline 'ai prompt --file {{file}} "Summarize this dataset"'
-nova> tool call summarize_csv file=items.csv
+nova> tool.call summarize_csv file=items.csv
 ```
 
 Wenn ein Tool Python-Literale einsetzen soll, kann das Template `{{py:name}}` nutzen:
 
 ```text
 nova> tool register greet --description "say hello" --schema '{"type":"object","properties":{"name":{"type":"string"}},"required":["name"]}' --pipeline 'py "Hello " + {{py:name}}'
-nova> tool call greet name=Nova
+nova> tool.call greet name=Nova
 ```
 
 Planner-Agent fuer Pipeline-Generierung:
@@ -597,6 +597,8 @@ Planner-Agent fuer Pipeline-Generierung:
 ```text
 nova> ai plan "calculate csv average"
 nova> ai plan "summarize the latest dataset"
+nova> ai plan --run "calculate average price in items.csv"
+nova> ai plan --run --retries 2 "calculate average price in items.csv"
 ```
 
 Multi-Agent-Runtime mit Spawn, Message und Workflow:

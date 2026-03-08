@@ -346,6 +346,7 @@ class ToolSchemaDefinition:
     description: str
     schema: dict[str, Any]
     pipeline_template: str
+    builtin: bool = False
     created_at: float = field(default_factory=time.time)
 
 
@@ -2287,6 +2288,7 @@ class NovaShell:
         self.agents: dict[str, AIAgentDefinition] = {}
         self.agent_instances: dict[str, AgentRuntimeInstance] = {}
         self.tools: dict[str, ToolSchemaDefinition] = {}
+        self._register_builtin_tools()
         self.vision = VisionServer(self)
         self.current_policy = "open"
         self.current_trace_id = ""
@@ -2310,6 +2312,10 @@ class NovaShell:
             "agent": self._run_agent,
             "memory": self._run_memory,
             "tool": self._run_tool,
+            "tool.register": lambda args, pipeline_input, pipeline_data: self._run_tool(f"register {args}".strip(), pipeline_input, pipeline_data),
+            "tool.call": lambda args, pipeline_input, pipeline_data: self._run_tool(f"call {args}".strip(), pipeline_input, pipeline_data),
+            "tool.list": lambda args, pipeline_input, pipeline_data: self._run_tool(f"list {args}".strip(), pipeline_input, pipeline_data),
+            "tool.show": lambda args, pipeline_input, pipeline_data: self._run_tool(f"show {args}".strip(), pipeline_input, pipeline_data),
             "vision": self._run_vision,
             "pulse": self._run_pulse,
             "fabric": self._run_fabric,
@@ -2395,6 +2401,33 @@ class NovaShell:
             register = namespace.get("register")
             if callable(register):
                 register(self)
+
+    def _register_builtin_tools(self) -> None:
+        builtin_tools = [
+            ToolSchemaDefinition(
+                name="csv_load",
+                description="load rows from a csv file into pipeline data",
+                schema={"type": "object", "properties": {"file": {"type": "string"}}, "required": ["file"]},
+                pipeline_template="data load {{file}}",
+                builtin=True,
+            ),
+            ToolSchemaDefinition(
+                name="table_mean",
+                description="calculate the arithmetic mean for a numeric column from pipeline rows",
+                schema={"type": "object", "properties": {"column": {"type": "string"}}, "required": ["column"]},
+                pipeline_template='py sum(float(row[{{py:column}}]) for row in _) / len(_)',
+                builtin=True,
+            ),
+            ToolSchemaDefinition(
+                name="dataset_summarize",
+                description="summarize a dataset file with the active ai provider",
+                schema={"type": "object", "properties": {"file": {"type": "string"}}, "required": ["file"]},
+                pipeline_template='ai prompt --file {{file}} "Summarize this dataset"',
+                builtin=True,
+            ),
+        ]
+        for tool in builtin_tools:
+            self.tools.setdefault(tool.name, tool)
 
     def _resolve_path(self, path_text: str) -> Path:
         target = Path(os.path.expanduser(path_text))
@@ -2527,12 +2560,17 @@ class NovaShell:
             else:
                 handle.seek(0)
             deadline = time.time() + follow_seconds
-            while time.time() < deadline:
+            while time.time() <= deadline:
                 line = handle.readline()
                 if line:
                     yield line.rstrip("\n")
                     continue
                 time.sleep(0.05)
+            while True:
+                line = handle.readline()
+                if not line:
+                    break
+                yield line.rstrip("\n")
 
     def _watch(self, args: str, _: str, __: Any) -> CommandResult:
         parts = split_command(args)
@@ -2938,10 +2976,58 @@ class NovaShell:
                 "description": tool.description,
                 "schema": tool.schema,
                 "pipeline_template": tool.pipeline_template,
+                "builtin": tool.builtin,
                 "created_at": tool.created_at,
             }
             for tool in self.tools.values()
         ]
+
+    def _tool_invocation_command(self, tool_name: str, args_payload: dict[str, Any] | None = None) -> str:
+        args_payload = args_payload or {}
+        parts = [f"tool.call {tool_name}"]
+        for key, value in args_payload.items():
+            parts.append(f"{key}={self._shell_literal(value)}")
+        return " ".join(parts)
+
+    def _compose_plan_pipeline(self, steps: list[dict[str, Any]]) -> str:
+        commands: list[str] = []
+        for step in steps:
+            tool_name = str(step.get("tool") or step.get("name") or "").strip()
+            if not tool_name:
+                continue
+            args_payload = step.get("args", {})
+            if not isinstance(args_payload, dict):
+                args_payload = {}
+            commands.append(self._tool_invocation_command(tool_name, args_payload))
+        return " | ".join(commands)
+
+    def _extract_csv_goal(self, prompt: str) -> tuple[str, str] | None:
+        lowered = prompt.lower()
+        file_matches = re.findall(r"([A-Za-z0-9_.-]+\.csv)", prompt, flags=re.IGNORECASE)
+        if not file_matches:
+            return None
+        filename = file_matches[0]
+        column = ""
+        patterns = [
+            r"(?:average|mean)\s+(?:of\s+)?([A-Za-z_][A-Za-z0-9_]*)",
+            r"([A-Za-z_][A-Za-z0-9_]*)\s+(?:average|mean)",
+        ]
+        excluded = {"calculate", "csv", "items", "file", "in", "from"}
+        for pattern in patterns:
+            match = re.search(pattern, lowered)
+            if not match:
+                continue
+            candidate = match.group(1).strip().strip(".,:;")
+            if candidate and candidate not in excluded:
+                column = candidate
+                break
+        if not column and "price" in lowered:
+            column = "price"
+        if not column and "value" in lowered:
+            column = "value"
+        if not column:
+            column = "A"
+        return filename, column
 
     def _memory_context_hits(self, query: str, *, limit: int = 3) -> list[dict[str, Any]]:
         if not self.memory.entries:
@@ -2973,7 +3059,9 @@ class NovaShell:
         planner_prompt = "\n".join(
             [
                 "You are Nova Planner. Generate one runnable Nova-shell pipeline.",
-                "Respond with JSON only using keys: pipeline, summary, mode, tools, agents, memory_ids.",
+                "Prefer tool orchestration over raw shell code when possible.",
+                "Respond with JSON only using keys: pipeline, steps, summary, mode, tools, agents, memory_ids.",
+                "Each step should be an object: {\"tool\": \"tool_name\", \"args\": {...}}.",
                 "Do not wrap the JSON in markdown.",
                 "",
                 f"User goal: {prompt}",
@@ -2999,14 +3087,247 @@ class NovaShell:
             payload = json.loads(text)
         except Exception:
             payload = {"pipeline": text, "summary": "provider returned plain text", "mode": "provider-text"}
+        steps = payload.get("steps", [])
+        if not isinstance(steps, list):
+            steps = []
         pipeline = str(payload.get("pipeline", "")).strip()
+        if not pipeline and steps:
+            pipeline = self._compose_plan_pipeline([step for step in steps if isinstance(step, dict)])
         if not pipeline:
             return CommandResult(output="", error="planner returned no pipeline")
         payload.setdefault("mode", "provider")
         payload.setdefault("tools", [item["name"] for item in tool_rows[:3]])
         payload.setdefault("agents", [])
         payload.setdefault("memory_ids", [item["id"] for item in memory_hits])
+        payload["pipeline"] = pipeline
+        payload.setdefault("steps", steps)
         return CommandResult(output=f"{pipeline}\n", data=payload, data_type=PipelineType.OBJECT)
+
+    def _parse_plan_steps_from_pipeline(self, pipeline: str) -> list[dict[str, Any]]:
+        steps: list[dict[str, Any]] = []
+        for stage in self._split_pipeline(pipeline):
+            stripped = stage.strip()
+            if not stripped.startswith(("tool.call ", "tool call ")):
+                continue
+            normalized = stripped.replace("tool.call", "tool call", 1)
+            parts = split_command(normalized)
+            if len(parts) < 3:
+                continue
+            tool_name = parts[2]
+            args_text = normalized.split(tool_name, 1)[1].strip()
+            payload, _ = self._parse_tool_call_payload(args_text)
+            steps.append({"tool": tool_name, "args": payload or {}})
+        return steps
+
+    def _normalize_plan_payload(self, payload: dict[str, Any]) -> dict[str, Any]:
+        normalized = dict(payload)
+        steps = normalized.get("steps", [])
+        if not isinstance(steps, list):
+            steps = []
+        valid_steps = [step for step in steps if isinstance(step, dict)]
+        pipeline = str(normalized.get("pipeline", "")).strip()
+        if not valid_steps and pipeline:
+            valid_steps = self._parse_plan_steps_from_pipeline(pipeline)
+        if not pipeline and valid_steps:
+            pipeline = self._compose_plan_pipeline(valid_steps)
+        normalized["steps"] = valid_steps
+        normalized["pipeline"] = pipeline
+        return normalized
+
+    def _validate_plan_steps(self, steps: list[dict[str, Any]]) -> str | None:
+        if not steps:
+            return None
+        for step in steps:
+            tool_name = str(step.get("tool") or "").strip()
+            if not tool_name:
+                return "plan step missing tool name"
+            tool = self.tools.get(tool_name)
+            if tool is None:
+                return f"tool not found: {tool_name}"
+            args_payload = step.get("args", {})
+            if not isinstance(args_payload, dict):
+                return f"tool step args must be an object: {tool_name}"
+            validation_error = self._validate_tool_payload(tool.schema, args_payload)
+            if validation_error:
+                return f"{tool_name}: {validation_error}"
+        return None
+
+    def _provider_repair_plan(self, prompt: str, plan_payload: dict[str, Any], failure: dict[str, Any]) -> dict[str, Any] | None:
+        provider = self.ai_runtime.get_active_provider()
+        if not provider:
+            return None
+        repair_prompt = "\n".join(
+            [
+                "You are Nova Planner Repair. Return repaired JSON only.",
+                "Use keys: pipeline, steps, summary, mode, tools, agents, memory_ids.",
+                f"Original user goal: {prompt}",
+                "",
+                "Current plan:",
+                json.dumps(plan_payload, ensure_ascii=False),
+                "",
+                "Failure:",
+                json.dumps(failure, ensure_ascii=False),
+                "",
+                "Available tools:",
+                json.dumps(self._tool_catalog_rows(), ensure_ascii=False),
+            ]
+        )
+        repaired = self.ai_runtime.complete_prompt(
+            repair_prompt,
+            provider=provider,
+            model=self.ai_runtime.get_active_model(provider),
+            system_prompt="Repair the Nova-shell plan. Prefer valid tool graphs.",
+        )
+        if repaired.error:
+            return None
+        with contextlib.suppress(Exception):
+            parsed = json.loads(repaired.output.strip())
+            if isinstance(parsed, dict):
+                return self._normalize_plan_payload(parsed)
+        return None
+
+    def _heuristic_repair_plan(self, prompt: str, failure: dict[str, Any]) -> dict[str, Any] | None:
+        lowered = prompt.lower()
+        csv_goal = self._extract_csv_goal(prompt)
+        if csv_goal and any(keyword in lowered for keyword in ["average", "mean"]):
+            filename, column = csv_goal
+            steps = [
+                {"tool": "csv_load", "args": {"file": filename}},
+                {"tool": "table_mean", "args": {"column": column}},
+            ]
+            return self._normalize_plan_payload(
+                {
+                    "pipeline": self._compose_plan_pipeline(steps),
+                    "steps": steps,
+                    "mode": "repair-heuristic",
+                    "summary": f"repair mean calculation for {filename}",
+                    "tools": ["csv_load", "table_mean"],
+                    "agents": [],
+                    "memory_ids": [item["id"] for item in self._memory_context_hits(prompt, limit=3)],
+                    "repair_reason": failure.get("error", ""),
+                }
+            )
+        if csv_goal and any(keyword in lowered for keyword in ["summarize", "summary", "describe"]):
+            filename, _ = csv_goal
+            steps = [{"tool": "dataset_summarize", "args": {"file": filename}}]
+            return self._normalize_plan_payload(
+                {
+                    "pipeline": self._compose_plan_pipeline(steps),
+                    "steps": steps,
+                    "mode": "repair-heuristic",
+                    "summary": f"repair dataset summary for {filename}",
+                    "tools": ["dataset_summarize"],
+                    "agents": [],
+                    "memory_ids": [item["id"] for item in self._memory_context_hits(prompt, limit=3)],
+                    "repair_reason": failure.get("error", ""),
+                }
+            )
+        return None
+
+    def _repair_plan_after_failure(self, prompt: str, plan_payload: dict[str, Any], failure: dict[str, Any], attempt: int) -> dict[str, Any] | None:
+        repaired = self._provider_repair_plan(prompt, plan_payload, failure)
+        if repaired is None:
+            repaired = self._heuristic_repair_plan(prompt, failure)
+        if repaired is None:
+            return None
+        repaired.setdefault("replanned", [])
+        repaired["replanned"] = list(plan_payload.get("replanned", [])) + [
+            {"attempt": attempt, "failure": failure, "pipeline": repaired.get("pipeline", "")}
+        ]
+        return repaired
+
+    def _execute_plan_payload(self, prompt: str, plan_payload: dict[str, Any], *, max_replans: int = 1) -> CommandResult:
+        attempts: list[dict[str, Any]] = []
+        current_payload = self._normalize_plan_payload(plan_payload)
+        for attempt in range(max(1, max_replans + 1)):
+            steps = list(current_payload.get("steps", []))
+            pipeline = str(current_payload.get("pipeline", "")).strip()
+            validation_error = self._validate_plan_steps(steps)
+            if validation_error:
+                failure = {"phase": "validation", "error": validation_error, "pipeline": pipeline}
+                attempts.append({"attempt": attempt + 1, "status": "validation_failed", "failure": failure})
+                if attempt >= max_replans:
+                    return CommandResult(output="", error=validation_error)
+                repaired = self._repair_plan_after_failure(prompt, current_payload, failure, attempt + 1)
+                if repaired is None:
+                    return CommandResult(output="", error=validation_error)
+                current_payload = repaired
+                continue
+            if not steps and pipeline:
+                result = self.route(pipeline)
+                if result.error:
+                    failure = {"phase": "execution", "error": result.error, "pipeline": pipeline}
+                    attempts.append({"attempt": attempt + 1, "status": "execution_failed", "failure": failure})
+                    if attempt >= max_replans:
+                        return result
+                    repaired = self._repair_plan_after_failure(prompt, current_payload, failure, attempt + 1)
+                    if repaired is None:
+                        return result
+                    current_payload = repaired
+                    continue
+                final_payload = dict(current_payload)
+                final_payload["attempts"] = attempts + [{"attempt": attempt + 1, "status": "ok"}]
+                final_payload["execution"] = {
+                    "output": result.output.strip(),
+                    "data_type": result.data_type.value if isinstance(result.data_type, PipelineType) else str(result.data_type),
+                }
+                return CommandResult(output=result.output, data=final_payload, data_type=PipelineType.OBJECT)
+            current_output = ""
+            current_data: Any = None
+            current_type = PipelineType.TEXT
+            step_trace: list[dict[str, Any]] = []
+            failed = False
+            for index, step in enumerate(steps):
+                tool_name = str(step.get("tool") or "").strip()
+                args_payload = step.get("args", {})
+                if not isinstance(args_payload, dict):
+                    args_payload = {}
+                command = self._tool_invocation_command(tool_name, args_payload)
+                result = self._route_internal_with_input(
+                    command,
+                    initial_output=current_output,
+                    initial_data=current_data,
+                    initial_type=current_type,
+                )
+                step_trace.append(
+                    {
+                        "index": index,
+                        "tool": tool_name,
+                        "args": args_payload,
+                        "output": result.output.strip(),
+                        "error": result.error or "",
+                    }
+                )
+                if result.error:
+                    failure = {
+                        "phase": "execution",
+                        "step_index": index,
+                        "step": step,
+                        "error": result.error,
+                        "pipeline": pipeline or self._compose_plan_pipeline(steps),
+                    }
+                    attempts.append({"attempt": attempt + 1, "status": "execution_failed", "failure": failure, "steps": step_trace})
+                    if attempt >= max_replans:
+                        return CommandResult(output="", error=result.error)
+                    repaired = self._repair_plan_after_failure(prompt, current_payload, failure, attempt + 1)
+                    if repaired is None:
+                        return CommandResult(output="", error=result.error)
+                    current_payload = repaired
+                    failed = True
+                    break
+                current_output = result.output
+                current_data = result.data
+                current_type = result.data_type
+            if failed:
+                continue
+            final_payload = dict(current_payload)
+            final_payload["attempts"] = attempts + [{"attempt": attempt + 1, "status": "ok", "steps": step_trace}]
+            final_payload["execution"] = {
+                "output": current_output.strip(),
+                "data_type": current_type.value if isinstance(current_type, PipelineType) else str(current_type),
+            }
+            return CommandResult(output=current_output, data=final_payload, data_type=PipelineType.OBJECT)
+        return CommandResult(output="", error="plan execution failed")
 
     def _run_memory(self, args: str, pipeline_input: str, pipeline_data: Any) -> CommandResult:
         parts = split_command(args)
@@ -3183,16 +3504,15 @@ class NovaShell:
             if render_error is not None:
                 return render_error
             assert rendered_pipeline is not None
-            result = self.route(rendered_pipeline)
+            result = self._route_internal_with_input(
+                rendered_pipeline,
+                initial_output=pipeline_input,
+                initial_data=pipeline_data,
+                initial_type=self._pipeline_type_from_value(pipeline_data if pipeline_data is not None else pipeline_input),
+            )
             if result.error:
                 return result
-            output_payload = {
-                "tool": tool.name,
-                "args": payload,
-                "pipeline": rendered_pipeline,
-                "output": result.output.strip(),
-            }
-            return CommandResult(output=result.output, data=output_payload, data_type=PipelineType.OBJECT)
+            return CommandResult(output=result.output, data=result.data, data_type=result.data_type)
 
         return CommandResult(output="", error="usage: tool register|call|list|show ...")
 
@@ -3200,10 +3520,44 @@ class NovaShell:
         lowered = prompt.lower()
         tool_candidates = self._planner_tool_candidates(prompt)
         memory_hits = self._memory_context_hits(prompt, limit=3)
-        if tool_candidates:
-            suggestion = f"tool call {tool_candidates[0].name}"
+        csv_goal = self._extract_csv_goal(prompt)
+        if csv_goal and any(keyword in lowered for keyword in ["average", "mean"]):
+            filename, column = csv_goal
+            steps = [
+                {"tool": "csv_load", "args": {"file": filename}},
+                {"tool": "table_mean", "args": {"column": column}},
+            ]
+            suggestion = self._compose_plan_pipeline(steps)
             payload = {
                 "pipeline": suggestion,
+                "steps": steps,
+                "mode": "heuristic-tool-graph",
+                "summary": f"load {filename} and compute mean for {column}",
+                "tools": ["csv_load", "table_mean"],
+                "agents": [],
+                "memory_ids": [item["id"] for item in memory_hits],
+            }
+            return CommandResult(output=f"{suggestion}\n", data=payload, data_type=PipelineType.OBJECT)
+        if csv_goal and any(keyword in lowered for keyword in ["summarize", "summary", "describe"]):
+            filename, _ = csv_goal
+            steps = [{"tool": "dataset_summarize", "args": {"file": filename}}]
+            suggestion = self._compose_plan_pipeline(steps)
+            payload = {
+                "pipeline": suggestion,
+                "steps": steps,
+                "mode": "heuristic-tool-graph",
+                "summary": f"summarize dataset {filename}",
+                "tools": ["dataset_summarize"],
+                "agents": [],
+                "memory_ids": [item["id"] for item in memory_hits],
+            }
+            return CommandResult(output=f"{suggestion}\n", data=payload, data_type=PipelineType.OBJECT)
+        if tool_candidates:
+            steps = [{"tool": tool_candidates[0].name, "args": {}}]
+            suggestion = self._compose_plan_pipeline(steps)
+            payload = {
+                "pipeline": suggestion,
+                "steps": steps,
                 "mode": "heuristic-tool",
                 "summary": f"use registered tool {tool_candidates[0].name}",
                 "tools": [tool.name for tool in tool_candidates],
@@ -3224,6 +3578,7 @@ class NovaShell:
             suggestion = "py # TODO: generated pipeline"
         payload = {
             "pipeline": suggestion,
+            "steps": [],
             "mode": "heuristic",
             "summary": "fallback heuristic plan",
             "tools": [],
@@ -3351,14 +3706,38 @@ class NovaShell:
             payload = {"loaded_env_files": files}
             return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
         if action == "plan":
-            prompt = args[len("plan") :].strip().strip('"')
+            run_plan = False
+            max_replans = 1
+            prompt_tokens: list[str] = []
+            i = 1
+            while i < len(parts):
+                token = parts[i]
+                if token == "--run":
+                    run_plan = True
+                    i += 1
+                    continue
+                if token == "--retries" and i + 1 < len(parts):
+                    with contextlib.suppress(Exception):
+                        max_replans = max(0, int(parts[i + 1]))
+                    i += 2
+                    continue
+                prompt_tokens.append(token)
+                i += 1
+            prompt = " ".join(prompt_tokens).strip().strip('"')
             if not prompt:
-                return CommandResult(output="", error="usage: ai plan <prompt>")
+                return CommandResult(output="", error="usage: ai plan [--run] [--retries n] <prompt>")
             if self.ai_runtime.get_active_provider():
                 provider_plan = self._provider_ai_plan(prompt)
                 if provider_plan.error is None:
-                    return provider_plan
-            return self._heuristic_ai_plan(prompt)
+                    plan_result = provider_plan
+                else:
+                    plan_result = self._heuristic_ai_plan(prompt)
+            else:
+                plan_result = self._heuristic_ai_plan(prompt)
+            if not run_plan or plan_result.error:
+                return plan_result
+            plan_payload = dict(plan_result.data) if isinstance(plan_result.data, dict) else {"pipeline": plan_result.output.strip()}
+            return self._execute_plan_payload(prompt, plan_payload, max_replans=max_replans)
         if action == "prompt":
             file_path_text: str | None = None
             prompt_tokens: list[str] = []

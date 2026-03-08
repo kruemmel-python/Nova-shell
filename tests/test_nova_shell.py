@@ -282,7 +282,7 @@ class NovaShellTests(unittest.TestCase):
     def test_ai_synthesis_command(self) -> None:
         result = self.shell.route('ai "calculate csv average"')
         self.assertIsNone(result.error)
-        self.assertIn("data load", result.output)
+        self.assertIn("tool.call csv_load", result.output)
 
     def test_vision_server_lifecycle(self) -> None:
         start = self.shell.route("vision start 8877")
@@ -587,7 +587,7 @@ if len(files_lines) == 2:
             self.shell.ai_runtime.active_model = ""
             result = self.shell.route('ai "calculate csv average"')
         self.assertIsNone(result.error)
-        self.assertIn("data load file.csv", result.output)
+        self.assertIn("tool.call csv_load", result.output)
 
     def test_memory_embed_and_search(self) -> None:
         first = self.shell.route('memory embed --id groceries "Brot Käse Apfel Preise Lebensmittel"')
@@ -614,6 +614,10 @@ if len(files_lines) == 2:
         self.assertIsNone(called.error)
         self.assertEqual(called.output.strip(), "Hello Nova")
 
+        dot_called = self.shell.route("tool.call greet name=Nova")
+        self.assertIsNone(dot_called.error)
+        self.assertEqual(dot_called.output.strip(), "Hello Nova")
+
         missing = self.shell.route("tool call greet")
         self.assertIsNotNone(missing.error)
         self.assertIn("missing required tool argument: name", missing.error)
@@ -629,7 +633,7 @@ if len(files_lines) == 2:
             self.shell.ai_runtime.active_model = ""
             result = self.shell.route('ai plan "calculate csv average"')
         self.assertIsNone(result.error)
-        self.assertEqual(result.output.strip(), "tool call csv_average")
+        self.assertEqual(result.output.strip(), "tool.call csv_average")
         self.assertEqual(result.data["mode"], "heuristic-tool")
 
     def test_ai_plan_uses_provider_json_when_available(self) -> None:
@@ -641,15 +645,84 @@ if len(files_lines) == 2:
             self.shell.ai_runtime,
             "complete_prompt",
             return_value=CommandResult(
-                output='{"pipeline":"tool call summarize","summary":"use summarize","mode":"provider","tools":["summarize"],"agents":[],"memory_ids":[]}\n',
+                output='{"steps":[{"tool":"dataset_summarize","args":{"file":"items.csv"}}],"summary":"use summarize","mode":"provider","tools":["dataset_summarize"],"agents":[],"memory_ids":[]}\n',
                 data={"text": "ignored"},
                 data_type=PipelineType.OBJECT,
             ),
         ):
             result = self.shell.route('ai plan "summarize the latest dataset"')
         self.assertIsNone(result.error)
-        self.assertEqual(result.output.strip(), "tool call summarize")
+        self.assertEqual(result.output.strip(), "tool.call dataset_summarize file=items.csv")
         self.assertEqual(result.data["summary"], "use summarize")
+        self.assertEqual(result.data["steps"][0]["tool"], "dataset_summarize")
+
+    def test_ai_plan_builds_tool_graph_for_csv_average(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp, patch.object(self.shell.ai_runtime, "get_active_provider", return_value=""):
+            tmp_path = Path(tmp)
+            csv_file = tmp_path / "items.csv"
+            csv_file.write_text("id,name,price\n1,Brot,2.50\n2,Käse,4.20\n3,Apfel,1.10\n", encoding="utf-8")
+            self.shell.cwd = tmp_path
+            self.shell.ai_runtime.cwd = tmp_path
+            result = self.shell.route('ai plan "calculate average price in items.csv"')
+
+        self.assertIsNone(result.error)
+        self.assertEqual(result.output.strip(), "tool.call csv_load file=items.csv | tool.call table_mean column=price")
+        self.assertEqual(result.data["mode"], "heuristic-tool-graph")
+        self.assertEqual([step["tool"] for step in result.data["steps"]], ["csv_load", "table_mean"])
+
+    def test_ai_plan_run_executes_tool_graph(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp, patch.object(self.shell.ai_runtime, "get_active_provider", return_value=""):
+            tmp_path = Path(tmp)
+            csv_file = tmp_path / "items.csv"
+            csv_file.write_text("id,name,price\n1,Brot,2.50\n2,Käse,4.20\n3,Apfel,1.10\n", encoding="utf-8")
+            self.shell.cwd = tmp_path
+            self.shell.ai_runtime.cwd = tmp_path
+            result = self.shell.route('ai plan --run "calculate average price in items.csv"')
+
+        self.assertIsNone(result.error)
+        self.assertEqual(result.output.strip(), "2.6")
+        self.assertEqual(result.data["pipeline"], "tool.call csv_load file=items.csv | tool.call table_mean column=price")
+        self.assertEqual(result.data["execution"]["output"], "2.6")
+
+    def test_ai_plan_run_repairs_invalid_provider_plan(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            csv_file = tmp_path / "items.csv"
+            csv_file.write_text("id,name,price\n1,Brot,2.50\n2,Käse,4.20\n3,Apfel,1.10\n", encoding="utf-8")
+            self.shell.cwd = tmp_path
+            self.shell.ai_runtime.cwd = tmp_path
+
+            responses = iter(
+                [
+                    CommandResult(
+                        output='{"steps":[{"tool":"csv_load","args":{"file":"items.csv"}},{"tool":"table_mean","args":{}}],"summary":"broken plan","mode":"provider"}\n',
+                        data={"text": "broken plan"},
+                        data_type=PipelineType.OBJECT,
+                    ),
+                    CommandResult(
+                        output='{"steps":[{"tool":"csv_load","args":{"file":"items.csv"}},{"tool":"table_mean","args":{"column":"price"}}],"summary":"repaired plan","mode":"provider-repair"}\n',
+                        data={"text": "repaired plan"},
+                        data_type=PipelineType.OBJECT,
+                    ),
+                ]
+            )
+
+            with patch.object(self.shell.ai_runtime, "get_active_provider", return_value="lmstudio"), patch.object(
+                self.shell.ai_runtime,
+                "get_active_model",
+                return_value="planner-model",
+            ), patch.object(
+                self.shell.ai_runtime,
+                "complete_prompt",
+                side_effect=lambda *args, **kwargs: next(responses),
+            ):
+                result = self.shell.route('ai plan --run --retries 2 "calculate average price in items.csv"')
+
+        self.assertIsNone(result.error)
+        self.assertEqual(result.output.strip(), "2.6")
+        self.assertEqual(result.data["execution"]["output"], "2.6")
+        self.assertTrue(result.data["replanned"])
+        self.assertEqual(result.data["attempts"][0]["status"], "validation_failed")
 
     def test_ai_prompt_with_pipeline_data_adds_context(self) -> None:
         calls: list[str] = []
