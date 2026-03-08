@@ -1817,7 +1817,25 @@ class NovaAIProviderRuntime:
             self.active_model = chosen_model
             return CommandResult(output=payload["text"] + ("\n" if payload["text"] and not payload["text"].endswith("\n") else ""), data=payload, data_type=PipelineType.OBJECT)
         except Exception as exc:
-            return CommandResult(output="", error=f"ai provider error ({provider_name}): {exc}")
+            return CommandResult(output="", error=f"ai provider error ({provider_name}): {self._format_provider_error(spec, exc)}")
+
+    def _format_provider_error(self, spec: AIProviderSpec, exc: Exception) -> str:
+        message = str(exc).strip() or exc.__class__.__name__
+        timeout = isinstance(exc, TimeoutError)
+        reason = getattr(exc, "reason", None)
+        if isinstance(reason, TimeoutError):
+            timeout = True
+        if not timeout and "timed out" in message.lower():
+            timeout = True
+        if reason is not None and "timed out" in str(reason).lower():
+            timeout = True
+        if timeout and spec.name in {"lmstudio", "ollama"}:
+            timeout_env = "LM_STUDIO_TIMEOUT" if spec.name == "lmstudio" else "OLLAMA_TIMEOUT"
+            return (
+                f"{message}; local model may still be loading. "
+                f"Warm the model in {spec.name} or increase `{timeout_env}` / `NOVA_AI_TIMEOUT`."
+            )
+        return message
 
     def _get_provider_spec(self, provider: str | None) -> AIProviderSpec | None:
         if not provider:
@@ -1840,6 +1858,29 @@ class NovaAIProviderRuntime:
     def _provider_base_url(self, spec: AIProviderSpec) -> str:
         return str(os.environ.get(spec.base_url_env) or self.runtime_config.get(f"{spec.name}_base_url") or spec.base_url).rstrip("/")
 
+    def _provider_timeout_seconds(self, spec: AIProviderSpec, *, purpose: str) -> int:
+        env_candidates = [
+            f"{spec.name.upper().replace('-', '_')}_TIMEOUT",
+            f"{spec.name.upper().replace('-', '_')}_REQUEST_TIMEOUT",
+            "NOVA_AI_TIMEOUT",
+        ]
+        if spec.name == "lmstudio":
+            env_candidates = ["LM_STUDIO_TIMEOUT", "LMSTUDIO_TIMEOUT", *env_candidates]
+        default_timeout = 180 if spec.name in {"lmstudio", "ollama"} else 60
+        if purpose == "models":
+            default_timeout = 30 if spec.name in {"lmstudio", "ollama"} else 20
+        for env_name in env_candidates:
+            value = os.environ.get(env_name)
+            if not value:
+                continue
+            with contextlib.suppress(Exception):
+                return max(1, int(float(value)))
+        config_value = self.runtime_config.get(f"{spec.name}_timeout") or self.runtime_config.get("ai_timeout")
+        with contextlib.suppress(Exception):
+            if config_value is not None:
+                return max(1, int(float(config_value)))
+        return default_timeout
+
     def _http_json(self, url: str, *, method: str = "GET", payload: Any = None, headers: dict[str, str] | None = None, timeout: int = 30) -> Any:
         body = None
         merged_headers = {"User-Agent": "nova-shell/0.8.0"}
@@ -1861,14 +1902,14 @@ class NovaAIProviderRuntime:
             api_key = self._provider_api_key(spec)
             if api_key:
                 headers["Authorization"] = f"Bearer {api_key}"
-            data = self._http_json(f"{base_url}/models", headers=headers)
+            data = self._http_json(f"{base_url}/models", headers=headers, timeout=self._provider_timeout_seconds(spec, purpose="models"))
             return [str(item.get("id")) for item in data.get("data", []) if item.get("id")]
         if spec.kind == "ollama-chat":
-            data = self._http_json(f"{base_url}/api/tags")
+            data = self._http_json(f"{base_url}/api/tags", timeout=self._provider_timeout_seconds(spec, purpose="models"))
             return [str(item.get("name")) for item in data.get("models", []) if item.get("name")]
         if spec.kind == "gemini-generate-content":
             api_key = self._provider_api_key(spec)
-            data = self._http_json(f"{base_url}/models?key={urllib.parse.quote(api_key)}")
+            data = self._http_json(f"{base_url}/models?key={urllib.parse.quote(api_key)}", timeout=self._provider_timeout_seconds(spec, purpose="models"))
             models = []
             for item in data.get("models", []):
                 name = str(item.get("name", ""))
@@ -1895,6 +1936,7 @@ class NovaAIProviderRuntime:
                 method="POST",
                 payload={"model": model, "messages": messages, "temperature": 0.2},
                 headers=headers,
+                timeout=self._provider_timeout_seconds(spec, purpose="completion"),
             )
             choices = data.get("choices", [])
             message = choices[0].get("message", {}) if choices else {}
@@ -1916,6 +1958,7 @@ class NovaAIProviderRuntime:
                     "messages": [{"role": "user", "content": prompt}],
                 },
                 headers={"x-api-key": api_key, "anthropic-version": "2023-06-01"},
+                timeout=self._provider_timeout_seconds(spec, purpose="completion"),
             )
             parts = data.get("content", [])
             text = "".join(str(part.get("text", "")) for part in parts if isinstance(part, dict)).strip()
@@ -1932,6 +1975,7 @@ class NovaAIProviderRuntime:
                 f"{base_url}/models/{urllib.parse.quote(model, safe='')}:generateContent?key={urllib.parse.quote(api_key)}",
                 method="POST",
                 payload=payload,
+                timeout=self._provider_timeout_seconds(spec, purpose="completion"),
             )
             candidates = data.get("candidates", [])
             parts = []
@@ -1949,6 +1993,7 @@ class NovaAIProviderRuntime:
                 f"{base_url}/api/chat",
                 method="POST",
                 payload={"model": model, "messages": messages, "stream": False},
+                timeout=self._provider_timeout_seconds(spec, purpose="completion"),
             )
             text = str(data.get("message", {}).get("content", "")).strip()
             return {"provider": spec.name, "model": model, "text": text, "raw": data}
@@ -2669,7 +2714,98 @@ class NovaShell:
         payload = {"pipeline": suggestion, "mode": "heuristic"}
         return CommandResult(output=f"{suggestion}\n", data=payload, data_type=PipelineType.OBJECT)
 
-    def _run_ai(self, args: str, _: str, __: Any) -> CommandResult:
+    def _ai_prompt_needs_data_context(self, prompt: str) -> bool:
+        lowered = prompt.lower()
+        keywords = [
+            "dataset",
+            "csv",
+            "table",
+            "dataframe",
+            "rows",
+            "columns",
+            "summarize this data",
+            "summarize this dataset",
+            "analyze this data",
+            "describe this dataset",
+        ]
+        return any(keyword in lowered for keyword in keywords)
+
+    def _serialize_ai_context_value(self, value: Any) -> str:
+        if value is None:
+            return ""
+        if isinstance(value, list):
+            preview = value[:5]
+            payload = {"type": "list", "count": len(value), "preview": preview}
+            return json.dumps(payload, ensure_ascii=False, indent=2)
+        if isinstance(value, dict):
+            payload = {"type": "object", "keys": list(value.keys())[:20], "preview": value}
+            return json.dumps(payload, ensure_ascii=False, indent=2)
+        if hasattr(value, "num_rows") and hasattr(value, "column_names"):
+            preview_rows: list[dict[str, Any]] = []
+            with contextlib.suppress(Exception):
+                preview_rows = value.slice(0, min(5, int(value.num_rows))).to_pylist()  # type: ignore[attr-defined]
+            payload = {
+                "type": "arrow_table",
+                "rows": int(getattr(value, "num_rows", 0)),
+                "columns": list(getattr(value, "column_names", [])),
+                "preview": preview_rows,
+            }
+            return json.dumps(payload, ensure_ascii=False, indent=2)
+        text = str(value)
+        return text[:4000]
+
+    def _load_ai_file_context(self, file_path: Path) -> str:
+        suffix = file_path.suffix.lower()
+        if suffix == ".csv":
+            with file_path.open(newline="", encoding="utf-8") as handle:
+                reader = csv.DictReader(handle)
+                rows = []
+                for index, row in enumerate(reader):
+                    rows.append(row)
+                    if index >= 4:
+                        break
+            payload = {"type": "csv", "path": str(file_path), "preview_rows": rows}
+            return json.dumps(payload, ensure_ascii=False, indent=2)
+        if suffix == ".json":
+            payload = json.loads(file_path.read_text(encoding="utf-8"))
+            return self._serialize_ai_context_value(payload)
+        text = file_path.read_text(encoding="utf-8")
+        payload = {"type": "text", "path": str(file_path), "preview": text[:4000]}
+        return json.dumps(payload, ensure_ascii=False, indent=2)
+
+    def _build_ai_prompt_with_context(
+        self,
+        prompt: str,
+        *,
+        pipeline_input: str,
+        pipeline_data: Any,
+        file_path_text: str | None = None,
+    ) -> tuple[str, CommandResult | None]:
+        contexts: list[str] = []
+
+        if file_path_text:
+            try:
+                file_path = self._resolve_path(file_path_text)
+                if not file_path.exists() or not file_path.is_file():
+                    return "", CommandResult(output="", error=f"ai context file not found: {file_path_text}")
+                contexts.append("File context:\n" + self._load_ai_file_context(file_path))
+            except Exception as exc:
+                return "", CommandResult(output="", error=f"failed to read ai context file: {exc}")
+
+        if pipeline_data is not None:
+            serialized = self._serialize_ai_context_value(pipeline_data)
+            if serialized:
+                contexts.append("Pipeline data:\n" + serialized)
+        elif pipeline_input.strip():
+            contexts.append("Pipeline text:\n" + pipeline_input[:4000])
+
+        if not contexts:
+            return prompt, None
+
+        enriched_prompt = prompt.strip() + "\n\nNova-shell context:\n" + "\n\n".join(contexts)
+        return enriched_prompt, None
+
+    def _run_ai(self, args: str, pipeline_input: str, pipeline_data: Any) -> CommandResult:
         parts = split_command(args)
         if not parts:
             return CommandResult(output="", error="usage: ai providers|models [provider]|use <provider> [model]|config|env reload [file]|plan <prompt>|prompt <prompt>|<prompt>")
@@ -2702,10 +2838,34 @@ class NovaShell:
                 return CommandResult(output="", error="usage: ai plan <prompt>")
             return self._heuristic_ai_plan(prompt)
         if action == "prompt":
-            prompt = args[len("prompt") :].strip().strip('"')
+            file_path_text: str | None = None
+            prompt_tokens: list[str] = []
+            i = 1
+            while i < len(parts):
+                token = parts[i]
+                if token == "--file" and i + 1 < len(parts):
+                    file_path_text = parts[i + 1]
+                    i += 2
+                    continue
+                prompt_tokens.append(token)
+                i += 1
+            prompt = " ".join(prompt_tokens).strip().strip('"')
             if not prompt:
-                return CommandResult(output="", error="usage: ai prompt <prompt>")
-            return self.ai_runtime.complete_prompt(prompt)
+                return CommandResult(output="", error="usage: ai prompt [--file path] <prompt>")
+            enriched_prompt, context_error = self._build_ai_prompt_with_context(
+                prompt,
+                pipeline_input=pipeline_input,
+                pipeline_data=pipeline_data,
+                file_path_text=file_path_text,
+            )
+            if context_error is not None:
+                return context_error
+            if enriched_prompt == prompt and self._ai_prompt_needs_data_context(prompt):
+                return CommandResult(
+                    output="",
+                    error='dataset context missing. use `data load file.csv | ai prompt "Summarize this dataset"` or `ai prompt --file file.csv "Summarize this dataset"`',
+                )
+            return self.ai_runtime.complete_prompt(enriched_prompt)
 
         prompt = args.strip().strip('"')
         if not prompt:

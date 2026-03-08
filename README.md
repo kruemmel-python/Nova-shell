@@ -104,6 +104,15 @@ nova-shell -c "ai use lmstudio local-model"
 nova-shell -c "ai prompt \"Summarize this dataset\""
 ```
 
+Mit Dateikontext oder Pipeline:
+
+```bash
+nova-shell -c "ai prompt --file items.csv \"Summarize this dataset\""
+nova-shell -c "data load items.csv | ai prompt \"Summarize this dataset\""
+```
+
+Fuer langsame lokale Modelle kann das Timeout per `LM_STUDIO_TIMEOUT` oder `NOVA_AI_TIMEOUT` erhoeht werden.
+
 Lernpfad mit vielen Programmierbeispielen:
 
 [Tutorial.md](Tutorial.md)

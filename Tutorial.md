@@ -528,6 +528,15 @@ Live-Prompt gegen den aktiven Provider senden:
 nova> ai prompt "Summarize this dataset"
 ```
 
+Fuer echte Datenkontexte ist die Datei- oder Pipeline-Variante besser:
+
+```text
+nova> ai prompt --file items.csv "Summarize this dataset"
+nova> data load items.csv | ai prompt "Summarize this dataset"
+```
+
+Wenn ein lokales Modell in LM Studio langsam startet, kann das Timeout ueber `LM_STUDIO_TIMEOUT` oder global ueber `NOVA_AI_TIMEOUT` erhoeht werden.
+
 Ohne aktiven Provider bleibt `ai plan` der lokale Heuristikpfad:
 
 ```text
