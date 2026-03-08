@@ -589,6 +589,68 @@ if len(files_lines) == 2:
         self.assertIsNone(result.error)
         self.assertIn("data load file.csv", result.output)
 
+    def test_memory_embed_and_search(self) -> None:
+        first = self.shell.route('memory embed --id groceries "Brot Käse Apfel Preise Lebensmittel"')
+        self.assertIsNone(first.error)
+
+        second = self.shell.route('memory embed --id infra "GPU Mesh Worker Scheduler Cluster"')
+        self.assertIsNone(second.error)
+
+        search = self.shell.route('memory search "Käse Lebensmittel"')
+        self.assertIsNone(search.error)
+        payload = json.loads(search.output)
+        self.assertGreaterEqual(len(payload), 1)
+        self.assertEqual(payload[0]["id"], "groceries")
+
+    def test_tool_register_and_call_with_schema(self) -> None:
+        register = self.shell.route(
+            "tool register greet --description 'Greet user' "
+            "--schema '{\"type\":\"object\",\"properties\":{\"name\":{\"type\":\"string\"}},\"required\":[\"name\"]}' "
+            "--pipeline 'py \"Hello \" + {{py:name}}'"
+        )
+        self.assertIsNone(register.error)
+
+        called = self.shell.route("tool call greet name=Nova")
+        self.assertIsNone(called.error)
+        self.assertEqual(called.output.strip(), "Hello Nova")
+
+        missing = self.shell.route("tool call greet")
+        self.assertIsNotNone(missing.error)
+        self.assertIn("missing required tool argument: name", missing.error)
+
+    def test_ai_plan_prefers_registered_tool_candidate(self) -> None:
+        self.shell.route(
+            "tool register csv_average --description 'calculate csv average from file' "
+            "--schema '{\"type\":\"object\",\"properties\":{\"file\":{\"type\":\"string\"}}}' "
+            "--pipeline 'data load {{file}} | py sum(float(r[\"A\"]) for r in _) / len(_)'"
+        )
+        with patch.object(self.shell.ai_runtime, "get_active_provider", return_value=""):
+            self.shell.ai_runtime.active_provider = ""
+            self.shell.ai_runtime.active_model = ""
+            result = self.shell.route('ai plan "calculate csv average"')
+        self.assertIsNone(result.error)
+        self.assertEqual(result.output.strip(), "tool call csv_average")
+        self.assertEqual(result.data["mode"], "heuristic-tool")
+
+    def test_ai_plan_uses_provider_json_when_available(self) -> None:
+        with patch.object(self.shell.ai_runtime, "get_active_provider", return_value="lmstudio"), patch.object(
+            self.shell.ai_runtime,
+            "get_active_model",
+            return_value="planner-model",
+        ), patch.object(
+            self.shell.ai_runtime,
+            "complete_prompt",
+            return_value=CommandResult(
+                output='{"pipeline":"tool call summarize","summary":"use summarize","mode":"provider","tools":["summarize"],"agents":[],"memory_ids":[]}\n',
+                data={"text": "ignored"},
+                data_type=PipelineType.OBJECT,
+            ),
+        ):
+            result = self.shell.route('ai plan "summarize the latest dataset"')
+        self.assertIsNone(result.error)
+        self.assertEqual(result.output.strip(), "tool call summarize")
+        self.assertEqual(result.data["summary"], "use summarize")
+
     def test_ai_prompt_with_pipeline_data_adds_context(self) -> None:
         calls: list[str] = []
 
@@ -654,6 +716,49 @@ if len(files_lines) == 2:
         self.assertEqual(calls[0]["model"], "local-model")
         self.assertEqual(calls[0]["system_prompt"], "You are precise.")
         self.assertIn("quarterly report", calls[0]["prompt"])
+
+    def test_agent_spawn_and_message_preserves_history(self) -> None:
+        calls: list[str] = []
+        replies = iter(["draft-1", "draft-2"])
+
+        def fake_complete(prompt: str, *, provider: str | None = None, model: str | None = None, system_prompt: str = "") -> CommandResult:
+            calls.append(prompt)
+            return CommandResult(output=next(replies) + "\n", data={"text": "ok"}, data_type=PipelineType.OBJECT)
+
+        with patch.object(self.shell.ai_runtime, "complete_prompt", side_effect=fake_complete):
+            create = self.shell.route('agent create analyst "Summarize {{input}}" --provider lmstudio --model local-model')
+            self.assertIsNone(create.error)
+            spawned = self.shell.route("agent spawn analyst_rt --from analyst")
+            self.assertIsNone(spawned.error)
+            first = self.shell.route("agent message analyst_rt first report")
+            self.assertIsNone(first.error)
+            second = self.shell.route("agent message analyst_rt follow up")
+            self.assertIsNone(second.error)
+
+        self.assertEqual(first.output.strip(), "draft-1")
+        self.assertEqual(second.output.strip(), "draft-2")
+        self.assertEqual(len(calls), 2)
+        self.assertIn("first report", calls[1])
+        self.assertIn("draft-1", calls[1])
+
+    def test_agent_workflow_runs_agents_in_sequence(self) -> None:
+        def fake_complete(prompt: str, *, provider: str | None = None, model: str | None = None, system_prompt: str = "") -> CommandResult:
+            if prompt.startswith("Analyze"):
+                return CommandResult(output="analysis\n", data={"text": "analysis"}, data_type=PipelineType.OBJECT)
+            if prompt.startswith("Review"):
+                return CommandResult(output="reviewed analysis\n", data={"text": "reviewed analysis"}, data_type=PipelineType.OBJECT)
+            return CommandResult(output="fallback\n", data={"text": "fallback"}, data_type=PipelineType.OBJECT)
+
+        with patch.object(self.shell.ai_runtime, "complete_prompt", side_effect=fake_complete):
+            self.assertIsNone(self.shell.route('agent create analyst "Analyze {{input}}" --provider lmstudio --model local-model').error)
+            self.assertIsNone(self.shell.route('agent create reviewer "Review {{input}}" --provider lmstudio --model local-model').error)
+            workflow = self.shell.route('agent workflow --agents analyst,reviewer --input "quarterly report"')
+
+        self.assertIsNone(workflow.error)
+        self.assertEqual(workflow.output.strip(), "reviewed analysis")
+        self.assertEqual(len(workflow.data["steps"]), 2)
+        self.assertEqual(workflow.data["steps"][0]["output"], "analysis")
+        self.assertEqual(workflow.data["steps"][1]["output"], "reviewed analysis")
 
     def test_agent_run_lmstudio_timeout_returns_local_provider_hint(self) -> None:
         with patch("nova_shell.urllib.request.urlopen", side_effect=TimeoutError("timed out")):

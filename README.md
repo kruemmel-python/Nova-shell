@@ -113,6 +113,19 @@ nova-shell -c "data load items.csv | ai prompt \"Summarize this dataset\""
 
 Fuer langsame lokale Modelle kann das Timeout per `LM_STUDIO_TIMEOUT` oder `NOVA_AI_TIMEOUT` erhoeht werden.
 
+Vector Memory, Tool Schemas, Planner und Multi-Agent-Runtime:
+
+```bash
+nova-shell -c "memory embed --id sales-q1 \"Q1 revenue grew 18 percent in DACH\""
+nova-shell -c "memory search \"DACH revenue\""
+nova-shell -c "tool register summarize_csv --description \"summarize a csv file\" --schema '{\"type\":\"object\",\"properties\":{\"file\":{\"type\":\"string\"}},\"required\":[\"file\"]}' --pipeline 'ai prompt --file {{file}} \"Summarize this dataset\"'"
+nova-shell -c "tool call summarize_csv file=items.csv"
+nova-shell -c "ai plan \"calculate csv average\""
+nova-shell -c "agent spawn analyst_rt --from analyst"
+nova-shell -c "agent message analyst_rt \"quarterly report\""
+nova-shell -c "agent workflow --agents analyst,reviewer --input \"quarterly report\""
+```
+
 Lernpfad mit vielen Programmierbeispielen:
 
 [Tutorial.md](Tutorial.md)

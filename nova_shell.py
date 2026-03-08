@@ -8,14 +8,17 @@ import contextlib
 import copy
 import csv
 import inspect
+import importlib.util
 import io
 import http.server
 import threading
 import time
 import json
+import math
 import os
 import glob
 import fnmatch
+import re
 import shlex
 import shutil
 import subprocess
@@ -105,6 +108,12 @@ def configure_sideload_paths() -> None:
         candidate_text = str(candidate)
         if candidate.is_dir() and candidate_text not in sys.path:
             sys.path.insert(0, candidate_text)
+
+
+def module_available(module_name: str) -> bool:
+    with contextlib.suppress(Exception):
+        return importlib.util.find_spec(module_name) is not None
+    return False
 
 
 def load_runtime_config() -> dict[str, Any]:
@@ -319,6 +328,36 @@ class AIAgentDefinition:
     provider: str
     model: str
     system_prompt: str = ""
+    created_at: float = field(default_factory=time.time)
+
+
+@dataclass
+class VectorMemoryEntry:
+    entry_id: str
+    text: str
+    vector: list[float]
+    metadata: dict[str, Any] = field(default_factory=dict)
+    created_at: float = field(default_factory=time.time)
+
+
+@dataclass
+class ToolSchemaDefinition:
+    name: str
+    description: str
+    schema: dict[str, Any]
+    pipeline_template: str
+    created_at: float = field(default_factory=time.time)
+
+
+@dataclass
+class AgentRuntimeInstance:
+    name: str
+    provider: str
+    model: str
+    system_prompt: str
+    prompt_template: str
+    source_agent: str = ""
+    history: list[dict[str, str]] = field(default_factory=list)
     created_at: float = field(default_factory=time.time)
 
 
@@ -1581,6 +1620,73 @@ class NovaSynth:
         return self.shell.route(code if code.strip().startswith(("py ", "cpp ", "gpu ", "sys ")) else f"py {payload}")
 
 
+class NovaVectorMemory:
+    """Small local vector memory using deterministic hashed embeddings."""
+
+    def __init__(self, dimensions: int = 64) -> None:
+        self.dimensions = dimensions
+        self.entries: dict[str, VectorMemoryEntry] = {}
+
+    def _tokenize(self, text: str) -> list[str]:
+        return [token for token in re.findall(r"[A-Za-z0-9_\-\u00C0-\u024F]+", text.lower()) if token]
+
+    def _embed(self, text: str) -> list[float]:
+        vector = [0.0] * self.dimensions
+        tokens = self._tokenize(text)
+        if not tokens:
+            return vector
+        for token in tokens:
+            digest = hashlib.sha256(token.encode("utf-8")).digest()
+            index = int.from_bytes(digest[:4], "big") % self.dimensions
+            sign = 1.0 if digest[4] % 2 == 0 else -1.0
+            vector[index] += sign
+        norm = math.sqrt(sum(value * value for value in vector))
+        if norm <= 0:
+            return vector
+        return [value / norm for value in vector]
+
+    def embed(self, text: str, *, entry_id: str | None = None, metadata: dict[str, Any] | None = None) -> VectorMemoryEntry:
+        chosen_id = (entry_id or f"mem_{uuid.uuid4().hex[:8]}").strip()
+        entry = VectorMemoryEntry(
+            entry_id=chosen_id,
+            text=text,
+            vector=self._embed(text),
+            metadata=dict(metadata or {}),
+        )
+        self.entries[chosen_id] = entry
+        return entry
+
+    def search(self, query: str, *, limit: int = 5) -> list[dict[str, Any]]:
+        query_vector = self._embed(query)
+        scored: list[dict[str, Any]] = []
+        for entry in self.entries.values():
+            score = sum(a * b for a, b in zip(query_vector, entry.vector))
+            scored.append(
+                {
+                    "id": entry.entry_id,
+                    "score": round(float(score), 6),
+                    "text": entry.text,
+                    "metadata": entry.metadata,
+                    "created_at": entry.created_at,
+                }
+            )
+        scored.sort(key=lambda item: float(item["score"]), reverse=True)
+        return scored[: max(1, limit)]
+
+    def list_entries(self) -> list[dict[str, Any]]:
+        rows = []
+        for entry in self.entries.values():
+            rows.append(
+                {
+                    "id": entry.entry_id,
+                    "text_preview": entry.text[:160],
+                    "metadata": entry.metadata,
+                    "created_at": entry.created_at,
+                }
+            )
+        return rows
+
+
 class NovaAIProviderRuntime:
     """Provider-aware AI runtime with .env loading and local/remote model support."""
 
@@ -2166,6 +2272,7 @@ class NovaShell:
         self.jit = NovaComputeJIT()
         self.optimizer = NovaOptimizer(self)
         self.synth = NovaSynth(self)
+        self.memory = NovaVectorMemory()
         self.ai_runtime = NovaAIProviderRuntime(self.runtime_config, self.cwd)
         self.guard_store = GuardPolicyStore()
         self.fabric_remote = FabricRemoteBridge()
@@ -2178,6 +2285,8 @@ class NovaShell:
         self.last_graph = PipelineGraph()
         self.gpu_task_graphs: dict[str, GPUTaskGraphArtifact] = {}
         self.agents: dict[str, AIAgentDefinition] = {}
+        self.agent_instances: dict[str, AgentRuntimeInstance] = {}
+        self.tools: dict[str, ToolSchemaDefinition] = {}
         self.vision = VisionServer(self)
         self.current_policy = "open"
         self.current_trace_id = ""
@@ -2199,6 +2308,8 @@ class NovaShell:
             "remote": self._run_remote,
             "ai": self._run_ai,
             "agent": self._run_agent,
+            "memory": self._run_memory,
+            "tool": self._run_tool,
             "vision": self._run_vision,
             "pulse": self._run_pulse,
             "fabric": self._run_fabric,
@@ -2325,9 +2436,7 @@ class NovaShell:
             "pyopencl": False,
         }
         for module_name in list(modules.keys()):
-            with contextlib.suppress(Exception):
-                __import__(module_name)
-                modules[module_name] = True
+            modules[module_name] = module_available(module_name)
 
         commands = {
             "g++": resolve_gxx_command(),
@@ -2352,6 +2461,11 @@ class NovaShell:
                 "active_model": self.ai_runtime.get_active_model(),
                 "loaded_env_files": self.ai_runtime.loaded_env_files,
             },
+            "runtime": {
+                "memory_entries": len(self.memory.entries),
+                "registered_tools": len(self.tools),
+                "agent_instances": len(self.agent_instances),
+            },
         }
 
         if parts and parts[0] == "json":
@@ -2370,6 +2484,9 @@ class NovaShell:
             f"sandbox_default: {'ok' if payload['sandbox_default'] else 'false'}",
             f"ai_provider: {payload['ai']['active_provider'] or 'none'}",
             f"ai_model: {payload['ai']['active_model'] or 'none'}",
+            f"memory_entries: {payload['runtime']['memory_entries']}",
+            f"registered_tools: {payload['runtime']['registered_tools']}",
+            f"agent_instances: {payload['runtime']['agent_instances']}",
         ]
         for name, available in payload["modules"].items():
             lines.append(f"{name}: {'ok' if available else 'missing'}")
@@ -2701,17 +2818,418 @@ class NovaShell:
         command = args[len(worker_url) :].strip()
         return self.remote.execute(worker_url, command)
 
+    def _shell_literal(self, value: Any) -> str:
+        if value is None:
+            return "''"
+        if isinstance(value, bool):
+            return "true" if value else "false"
+        if isinstance(value, (int, float)):
+            return str(value)
+        if isinstance(value, (list, dict)):
+            return shlex.quote(json.dumps(value, ensure_ascii=False))
+        return shlex.quote(str(value))
+
+    def _template_literal(self, value: Any, format_name: str) -> str:
+        if format_name == "py":
+            return repr(value)
+        if format_name == "json":
+            return json.dumps(value, ensure_ascii=False)
+        if format_name == "raw":
+            return str(value)
+        return self._shell_literal(value)
+
+    def _parse_json_object_arg(self, text: str, *, field_name: str) -> tuple[dict[str, Any] | None, CommandResult | None]:
+        try:
+            value = json.loads(text)
+        except Exception as exc:
+            return None, CommandResult(output="", error=f"invalid {field_name} json: {exc}")
+        if not isinstance(value, dict):
+            return None, CommandResult(output="", error=f"{field_name} must be a json object")
+        return value, None
+
+    def _coerce_tool_value(self, value: str) -> Any:
+        lowered = value.lower()
+        if lowered in {"true", "false"}:
+            return lowered == "true"
+        with contextlib.suppress(Exception):
+            if "." in value:
+                return float(value)
+            return int(value)
+        if (value.startswith("{") and value.endswith("}")) or (value.startswith("[") and value.endswith("]")):
+            with contextlib.suppress(Exception):
+                return json.loads(value)
+        return value
+
+    def _parse_tool_call_payload(self, args_text: str) -> tuple[dict[str, Any] | None, CommandResult | None]:
+        raw = args_text.strip()
+        if not raw:
+            return {}, None
+        if raw.startswith("{"):
+            return self._parse_json_object_arg(raw, field_name="tool args")
+        payload: dict[str, Any] = {}
+        for token in split_command(raw):
+            if "=" not in token:
+                return None, CommandResult(output="", error="tool call arguments must be json or key=value pairs")
+            key, value = token.split("=", 1)
+            payload[key] = self._coerce_tool_value(value)
+        return payload, None
+
+    def _schema_type_matches(self, expected: str, value: Any) -> bool:
+        if expected == "string":
+            return isinstance(value, str)
+        if expected == "number":
+            return isinstance(value, (int, float)) and not isinstance(value, bool)
+        if expected == "integer":
+            return isinstance(value, int) and not isinstance(value, bool)
+        if expected == "boolean":
+            return isinstance(value, bool)
+        if expected == "array":
+            return isinstance(value, list)
+        if expected == "object":
+            return isinstance(value, dict)
+        return True
+
+    def _validate_tool_payload(self, schema: dict[str, Any], payload: dict[str, Any]) -> str | None:
+        if not schema:
+            return None
+        if schema.get("type") not in {None, "object"}:
+            return "tool schema root type must be object"
+        required = [str(name) for name in schema.get("required", [])]
+        for name in required:
+            if name not in payload:
+                return f"missing required tool argument: {name}"
+        properties = schema.get("properties", {})
+        if isinstance(properties, dict):
+            for name, definition in properties.items():
+                if name not in payload or not isinstance(definition, dict):
+                    continue
+                expected = str(definition.get("type", "")).strip()
+                if expected and not self._schema_type_matches(expected, payload[name]):
+                    return f"tool argument '{name}' must be {expected}"
+        return None
+
+    def _resolve_template_value(self, payload: dict[str, Any], dotted_name: str) -> Any:
+        current: Any = payload
+        for part in dotted_name.split("."):
+            if isinstance(current, dict) and part in current:
+                current = current[part]
+                continue
+            raise KeyError(dotted_name)
+        return current
+
+    def _render_tool_pipeline(self, template: str, payload: dict[str, Any]) -> tuple[str | None, CommandResult | None]:
+        def replace(match: re.Match[str]) -> str:
+            format_name = (match.group(1) or "shell").strip().lower()
+            key = match.group(2).strip()
+            value = self._resolve_template_value(payload, key)
+            return self._template_literal(value, format_name)
+
+        try:
+            rendered = re.sub(r"\{\{\s*(?:(shell|py|json|raw):)?([A-Za-z0-9_.-]+)\s*\}\}", replace, template)
+        except KeyError as exc:
+            missing = str(exc).strip("'")
+            return None, CommandResult(output="", error=f"tool pipeline references unknown argument: {missing}")
+        return rendered, None
+
+    def _tool_catalog_rows(self) -> list[dict[str, Any]]:
+        return [
+            {
+                "name": tool.name,
+                "description": tool.description,
+                "schema": tool.schema,
+                "pipeline_template": tool.pipeline_template,
+                "created_at": tool.created_at,
+            }
+            for tool in self.tools.values()
+        ]
+
+    def _memory_context_hits(self, query: str, *, limit: int = 3) -> list[dict[str, Any]]:
+        if not self.memory.entries:
+            return []
+        return self.memory.search(query, limit=limit)
+
+    def _planner_tool_candidates(self, prompt: str) -> list[ToolSchemaDefinition]:
+        lowered = prompt.lower()
+        candidates: list[tuple[int, ToolSchemaDefinition]] = []
+        prompt_tokens = set(self.memory._tokenize(prompt))
+        for tool in self.tools.values():
+            haystack = f"{tool.name} {tool.description}".lower()
+            score = 0
+            if tool.name.lower() in lowered:
+                score += 4
+            description_tokens = set(self.memory._tokenize(haystack))
+            score += len(prompt_tokens.intersection(description_tokens))
+            if score > 0:
+                candidates.append((score, tool))
+        candidates.sort(key=lambda item: (-item[0], item[1].name))
+        return [tool for _, tool in candidates[:3]]
+
+    def _provider_ai_plan(self, prompt: str) -> CommandResult:
+        provider = self.ai_runtime.get_active_provider()
+        if not provider:
+            return CommandResult(output="", error="no active ai provider")
+        tool_rows = self._tool_catalog_rows()
+        memory_hits = self._memory_context_hits(prompt, limit=3)
+        planner_prompt = "\n".join(
+            [
+                "You are Nova Planner. Generate one runnable Nova-shell pipeline.",
+                "Respond with JSON only using keys: pipeline, summary, mode, tools, agents, memory_ids.",
+                "Do not wrap the JSON in markdown.",
+                "",
+                f"User goal: {prompt}",
+                "",
+                "Available tools:",
+                json.dumps(tool_rows, ensure_ascii=False),
+                "",
+                "Relevant memory:",
+                json.dumps(memory_hits, ensure_ascii=False),
+            ]
+        )
+        result = self.ai_runtime.complete_prompt(
+            planner_prompt,
+            provider=provider,
+            model=self.ai_runtime.get_active_model(provider),
+            system_prompt="Produce strict JSON for Nova-shell planning.",
+        )
+        if result.error:
+            return result
+        text = result.output.strip()
+        payload: dict[str, Any]
+        try:
+            payload = json.loads(text)
+        except Exception:
+            payload = {"pipeline": text, "summary": "provider returned plain text", "mode": "provider-text"}
+        pipeline = str(payload.get("pipeline", "")).strip()
+        if not pipeline:
+            return CommandResult(output="", error="planner returned no pipeline")
+        payload.setdefault("mode", "provider")
+        payload.setdefault("tools", [item["name"] for item in tool_rows[:3]])
+        payload.setdefault("agents", [])
+        payload.setdefault("memory_ids", [item["id"] for item in memory_hits])
+        return CommandResult(output=f"{pipeline}\n", data=payload, data_type=PipelineType.OBJECT)
+
+    def _run_memory(self, args: str, pipeline_input: str, pipeline_data: Any) -> CommandResult:
+        parts = split_command(args)
+        if not parts:
+            return CommandResult(output="", error="usage: memory embed|search|list ...")
+        action = parts[0]
+
+        if action == "embed":
+            entry_id = ""
+            file_path_text = ""
+            metadata: dict[str, Any] = {}
+            text_tokens: list[str] = []
+            i = 1
+            while i < len(parts):
+                token = parts[i]
+                if token in {"--id", "--key"} and i + 1 < len(parts):
+                    entry_id = parts[i + 1]
+                    i += 2
+                    continue
+                if token == "--file" and i + 1 < len(parts):
+                    file_path_text = parts[i + 1]
+                    i += 2
+                    continue
+                if token == "--meta" and i + 1 < len(parts):
+                    parsed_meta, error = self._parse_json_object_arg(parts[i + 1], field_name="memory metadata")
+                    if error is not None:
+                        return error
+                    metadata = parsed_meta or {}
+                    i += 2
+                    continue
+                text_tokens.append(token)
+                i += 1
+            text = " ".join(text_tokens).strip()
+            if file_path_text:
+                file_path = self._resolve_path(file_path_text)
+                if not file_path.exists() or not file_path.is_file():
+                    return CommandResult(output="", error=f"memory file not found: {file_path_text}")
+                text = self._load_ai_file_context(file_path)
+                metadata.setdefault("source_file", str(file_path))
+            elif not text and pipeline_data is not None:
+                text = self._serialize_ai_context_value(pipeline_data)
+            elif not text:
+                text = pipeline_input.strip()
+            if not text:
+                return CommandResult(output="", error="usage: memory embed [--id name] [--file path] [--meta json] <text>")
+            entry = self.memory.embed(text, entry_id=entry_id or None, metadata=metadata)
+            payload = {
+                "id": entry.entry_id,
+                "dimensions": len(entry.vector),
+                "metadata": entry.metadata,
+                "text_preview": entry.text[:200],
+            }
+            return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+
+        if action == "search":
+            limit = 5
+            query_tokens: list[str] = []
+            i = 1
+            while i < len(parts):
+                token = parts[i]
+                if token == "--limit" and i + 1 < len(parts):
+                    with contextlib.suppress(Exception):
+                        limit = max(1, int(parts[i + 1]))
+                    i += 2
+                    continue
+                query_tokens.append(token)
+                i += 1
+            query = " ".join(query_tokens).strip() or pipeline_input.strip()
+            if not query:
+                return CommandResult(output="", error="usage: memory search [--limit n] <query>")
+            payload = self.memory.search(query, limit=limit)
+            return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+
+        if action == "list":
+            payload = self.memory.list_entries()
+            return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+
+        return CommandResult(output="", error="usage: memory embed|search|list ...")
+
+    def _run_tool(self, args: str, pipeline_input: str, pipeline_data: Any) -> CommandResult:
+        parts = split_command(args)
+        if not parts:
+            return CommandResult(output="", error="usage: tool register|call|list|show ...")
+        action = parts[0]
+
+        if action == "list":
+            payload = self._tool_catalog_rows()
+            return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+
+        if action == "show":
+            if len(parts) < 2:
+                return CommandResult(output="", error="usage: tool show <name>")
+            tool = self.tools.get(parts[1])
+            if tool is None:
+                return CommandResult(output="", error="tool not found")
+            payload = {
+                "name": tool.name,
+                "description": tool.description,
+                "schema": tool.schema,
+                "pipeline_template": tool.pipeline_template,
+                "created_at": tool.created_at,
+            }
+            return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+
+        if action == "register":
+            if len(parts) < 2:
+                return CommandResult(output="", error="usage: tool register <name> --description text --schema json --pipeline template")
+            name = parts[1]
+            description = ""
+            schema: dict[str, Any] = {}
+            pipeline_template = ""
+            i = 2
+            while i < len(parts):
+                token = parts[i]
+                if token == "--description" and i + 1 < len(parts):
+                    description = parts[i + 1]
+                    i += 2
+                    continue
+                if token == "--schema" and i + 1 < len(parts):
+                    parsed_schema, error = self._parse_json_object_arg(parts[i + 1], field_name="tool schema")
+                    if error is not None:
+                        return error
+                    schema = parsed_schema or {}
+                    i += 2
+                    continue
+                if token == "--schema-file" and i + 1 < len(parts):
+                    schema_path = self._resolve_path(parts[i + 1])
+                    if not schema_path.exists() or not schema_path.is_file():
+                        return CommandResult(output="", error=f"tool schema file not found: {parts[i + 1]}")
+                    parsed_schema, error = self._parse_json_object_arg(schema_path.read_text(encoding="utf-8"), field_name="tool schema")
+                    if error is not None:
+                        return error
+                    schema = parsed_schema or {}
+                    i += 2
+                    continue
+                if token == "--pipeline" and i + 1 < len(parts):
+                    pipeline_template = parts[i + 1]
+                    i += 2
+                    continue
+                i += 1
+            if not pipeline_template:
+                return CommandResult(output="", error="tool pipeline template must not be empty")
+            validation_error = self._validate_tool_payload(schema, {})
+            if validation_error and not validation_error.startswith("missing required tool argument"):
+                return CommandResult(output="", error=validation_error)
+            tool = ToolSchemaDefinition(name=name, description=description, schema=schema, pipeline_template=pipeline_template)
+            self.tools[name] = tool
+            payload = {
+                "name": tool.name,
+                "description": tool.description,
+                "schema": tool.schema,
+                "pipeline_template": tool.pipeline_template,
+            }
+            return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+
+        if action == "call":
+            if len(parts) < 2:
+                return CommandResult(output="", error="usage: tool call <name> [json|key=value ...]")
+            tool = self.tools.get(parts[1])
+            if tool is None:
+                return CommandResult(output="", error="tool not found")
+            payload, error = self._parse_tool_call_payload(args.split(parts[1], 1)[1].strip())
+            if error is not None:
+                return error
+            payload = payload or {}
+            if pipeline_data is not None and "_" not in payload:
+                payload["_"] = pipeline_data
+            elif pipeline_input.strip() and "_" not in payload:
+                payload["_"] = pipeline_input.strip()
+            validation_error = self._validate_tool_payload(tool.schema, payload)
+            if validation_error:
+                return CommandResult(output="", error=validation_error)
+            rendered_pipeline, render_error = self._render_tool_pipeline(tool.pipeline_template, payload)
+            if render_error is not None:
+                return render_error
+            assert rendered_pipeline is not None
+            result = self.route(rendered_pipeline)
+            if result.error:
+                return result
+            output_payload = {
+                "tool": tool.name,
+                "args": payload,
+                "pipeline": rendered_pipeline,
+                "output": result.output.strip(),
+            }
+            return CommandResult(output=result.output, data=output_payload, data_type=PipelineType.OBJECT)
+
+        return CommandResult(output="", error="usage: tool register|call|list|show ...")
+
     def _heuristic_ai_plan(self, prompt: str) -> CommandResult:
         lowered = prompt.lower()
+        tool_candidates = self._planner_tool_candidates(prompt)
+        memory_hits = self._memory_context_hits(prompt, limit=3)
+        if tool_candidates:
+            suggestion = f"tool call {tool_candidates[0].name}"
+            payload = {
+                "pipeline": suggestion,
+                "mode": "heuristic-tool",
+                "summary": f"use registered tool {tool_candidates[0].name}",
+                "tools": [tool.name for tool in tool_candidates],
+                "agents": [],
+                "memory_ids": [item["id"] for item in memory_hits],
+            }
+            return CommandResult(output=f"{suggestion}\n", data=payload, data_type=PipelineType.OBJECT)
         if "csv" in lowered and "average" in lowered:
             suggestion = "data load file.csv | py sum(float(r['A']) for r in _) / len(_)"
         elif "anomal" in lowered or "error" in lowered:
             suggestion = "watch logs.txt --follow-seconds 10 | py _.lower()"
         elif "event" in lowered or "trigger" in lowered:
             suggestion = "event on task_created 'py _.upper()'"
+        elif "workflow" in lowered and self.agents:
+            first_agents = ",".join(list(self.agents.keys())[:2])
+            suggestion = f"agent workflow --agents {first_agents} --input {shlex.quote(prompt)}" if first_agents else "py # TODO: generated workflow"
         else:
             suggestion = "py # TODO: generated pipeline"
-        payload = {"pipeline": suggestion, "mode": "heuristic"}
+        payload = {
+            "pipeline": suggestion,
+            "mode": "heuristic",
+            "summary": "fallback heuristic plan",
+            "tools": [],
+            "agents": [],
+            "memory_ids": [item["id"] for item in memory_hits],
+        }
         return CommandResult(output=f"{suggestion}\n", data=payload, data_type=PipelineType.OBJECT)
 
     def _ai_prompt_needs_data_context(self, prompt: str) -> bool:
@@ -2836,6 +3354,10 @@ class NovaShell:
             prompt = args[len("plan") :].strip().strip('"')
             if not prompt:
                 return CommandResult(output="", error="usage: ai plan <prompt>")
+            if self.ai_runtime.get_active_provider():
+                provider_plan = self._provider_ai_plan(prompt)
+                if provider_plan.error is None:
+                    return provider_plan
             return self._heuristic_ai_plan(prompt)
         if action == "prompt":
             file_path_text: str | None = None
@@ -2877,21 +3399,70 @@ class NovaShell:
                 return provider_result
         return self._heuristic_ai_plan(prompt)
 
-    def _render_agent_prompt(self, agent: AIAgentDefinition, input_text: str) -> str:
-        if "{{input}}" in agent.prompt_template:
-            return agent.prompt_template.replace("{{input}}", input_text)
-        if "{input}" in agent.prompt_template:
+    def _render_prompt_template(self, prompt_template: str, input_text: str) -> str:
+        if "{{input}}" in prompt_template:
+            return prompt_template.replace("{{input}}", input_text)
+        if "{input}" in prompt_template:
             try:
-                return agent.prompt_template.format(input=input_text)
+                return prompt_template.format(input=input_text)
             except Exception:
                 pass
         suffix = f"\n\nInput:\n{input_text}" if input_text else ""
-        return agent.prompt_template + suffix
+        return prompt_template + suffix
+
+    def _render_agent_prompt(self, agent: AIAgentDefinition, input_text: str) -> str:
+        return self._render_prompt_template(agent.prompt_template, input_text)
+
+    def _run_agent_once(self, agent: AIAgentDefinition, input_text: str) -> CommandResult:
+        prompt = self._render_agent_prompt(agent, input_text)
+        result = self.ai_runtime.complete_prompt(
+            prompt,
+            provider=agent.provider,
+            model=agent.model,
+            system_prompt=agent.system_prompt,
+        )
+        if result.error:
+            return result
+        payload = {
+            "agent": agent.name,
+            "provider": agent.provider,
+            "model": agent.model,
+            "prompt": prompt,
+            "response": result.output.strip(),
+        }
+        return CommandResult(output=result.output, data=payload, data_type=PipelineType.OBJECT)
+
+    def _run_agent_instance_message(self, instance: AgentRuntimeInstance, message: str) -> CommandResult:
+        instance.history.append({"role": "user", "content": message})
+        prompt = self._render_prompt_template(instance.prompt_template, message)
+        if instance.history:
+            transcript = "\n".join(f"{item['role']}: {item['content']}" for item in instance.history[-12:])
+            prompt = prompt.strip() + "\n\nConversation history:\n" + transcript
+        result = self.ai_runtime.complete_prompt(
+            prompt,
+            provider=instance.provider,
+            model=instance.model,
+            system_prompt=instance.system_prompt,
+        )
+        if result.error:
+            return result
+        reply = result.output.strip()
+        instance.history.append({"role": "assistant", "content": reply})
+        payload = {
+            "agent": instance.name,
+            "provider": instance.provider,
+            "model": instance.model,
+            "message": message,
+            "response": reply,
+            "history_length": len(instance.history),
+            "source_agent": instance.source_agent,
+        }
+        return CommandResult(output=result.output, data=payload, data_type=PipelineType.OBJECT)
 
     def _run_agent(self, args: str, _: str, __: Any) -> CommandResult:
         parts = split_command(args)
         if not parts:
-            return CommandResult(output="", error="usage: agent create|run|show|list ...")
+            return CommandResult(output="", error="usage: agent create|run|show|list|spawn|message|workflow ...")
 
         action = parts[0]
         if action == "list":
@@ -2919,6 +3490,73 @@ class NovaShell:
                 "model": agent.model,
                 "system_prompt": agent.system_prompt,
                 "prompt_template": agent.prompt_template,
+            }
+            return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+
+        if action == "spawn":
+            if len(parts) < 2:
+                return CommandResult(output="", error="usage: agent spawn <instance_name> --from <agent>|--prompt <template> [--provider p] [--model m] [--system text]")
+            instance_name = parts[1]
+            source_agent = ""
+            prompt_template = ""
+            provider = ""
+            model = ""
+            system_prompt = ""
+            i = 2
+            while i < len(parts):
+                token = parts[i]
+                if token == "--from" and i + 1 < len(parts):
+                    source_agent = parts[i + 1]
+                    i += 2
+                    continue
+                if token == "--prompt" and i + 1 < len(parts):
+                    prompt_template = parts[i + 1]
+                    i += 2
+                    continue
+                if token == "--provider" and i + 1 < len(parts):
+                    provider = parts[i + 1]
+                    i += 2
+                    continue
+                if token == "--model" and i + 1 < len(parts):
+                    model = parts[i + 1]
+                    i += 2
+                    continue
+                if token == "--system" and i + 1 < len(parts):
+                    system_prompt = parts[i + 1]
+                    i += 2
+                    continue
+                i += 1
+            if source_agent:
+                definition = self.agents.get(source_agent)
+                if definition is None:
+                    return CommandResult(output="", error="agent not found")
+                prompt_template = prompt_template or definition.prompt_template
+                provider = provider or definition.provider
+                model = model or definition.model
+                system_prompt = system_prompt or definition.system_prompt
+            else:
+                provider = provider or self.ai_runtime.get_active_provider()
+                model = model or self.ai_runtime.get_active_model(provider)
+            if not prompt_template:
+                return CommandResult(output="", error="agent runtime prompt_template must not be empty")
+            if not provider or not model:
+                return CommandResult(output="", error="agent runtime requires a provider and model")
+            instance = AgentRuntimeInstance(
+                name=instance_name,
+                provider=provider,
+                model=model,
+                system_prompt=system_prompt,
+                prompt_template=prompt_template,
+                source_agent=source_agent,
+            )
+            self.agent_instances[instance_name] = instance
+            payload = {
+                "name": instance.name,
+                "provider": instance.provider,
+                "model": instance.model,
+                "system_prompt": instance.system_prompt,
+                "prompt_template": instance.prompt_template,
+                "source_agent": instance.source_agent,
             }
             return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
 
@@ -2982,25 +3620,56 @@ class NovaShell:
             if agent is None:
                 return CommandResult(output="", error="agent not found")
             input_text = args.split(parts[1], 1)[1].strip()
-            prompt = self._render_agent_prompt(agent, input_text)
-            result = self.ai_runtime.complete_prompt(
-                prompt,
-                provider=agent.provider,
-                model=agent.model,
-                system_prompt=agent.system_prompt,
-            )
-            if result.error:
-                return result
-            payload = {
-                "agent": agent.name,
-                "provider": agent.provider,
-                "model": agent.model,
-                "prompt": prompt,
-                "response": result.output.strip(),
-            }
-            return CommandResult(output=result.output, data=payload, data_type=PipelineType.OBJECT)
+            return self._run_agent_once(agent, input_text)
 
-        return CommandResult(output="", error="usage: agent create|run|show|list ...")
+        if action == "message":
+            if len(parts) < 3:
+                return CommandResult(output="", error="usage: agent message <instance_name> <message>")
+            instance = self.agent_instances.get(parts[1])
+            if instance is None:
+                return CommandResult(output="", error="agent runtime not found")
+            message = args.split(parts[1], 1)[1].strip()
+            return self._run_agent_instance_message(instance, message)
+
+        if action == "workflow":
+            names: list[str] = []
+            input_text = ""
+            i = 1
+            while i < len(parts):
+                token = parts[i]
+                if token == "--agents" and i + 1 < len(parts):
+                    names.extend([name.strip() for name in parts[i + 1].split(",") if name.strip()])
+                    i += 2
+                    continue
+                if token == "--input" and i + 1 < len(parts):
+                    input_text = parts[i + 1]
+                    i += 2
+                    continue
+                names.append(token)
+                i += 1
+            if not names:
+                return CommandResult(output="", error="usage: agent workflow --agents a,b[,c] --input text")
+            current_text = input_text.strip()
+            if not current_text:
+                return CommandResult(output="", error="agent workflow requires --input text")
+            steps: list[dict[str, Any]] = []
+            for name in names:
+                if name in self.agent_instances:
+                    result = self._run_agent_instance_message(self.agent_instances[name], current_text)
+                else:
+                    definition = self.agents.get(name)
+                    if definition is None:
+                        return CommandResult(output="", error=f"agent not found in workflow: {name}")
+                    result = self._run_agent_once(definition, current_text)
+                if result.error:
+                    return result
+                output_text = result.output.strip()
+                steps.append({"agent": name, "input": current_text, "output": output_text})
+                current_text = output_text
+            payload = {"agents": names, "input": input_text, "steps": steps, "final_output": current_text}
+            return CommandResult(output=(current_text + "\n") if current_text else "", data=payload, data_type=PipelineType.OBJECT)
+
+        return CommandResult(output="", error="usage: agent create|run|show|list|spawn|message|workflow ...")
 
     def _subscribe_event_pipeline(self, event_name: str, pipeline: str) -> None:
         self._dflow_subscribers.setdefault(event_name, []).append(pipeline)
@@ -4036,7 +4705,7 @@ class NovaShell:
     def repl(self) -> None:
         print(f"NovaShell {__version__} Compute Runtime")
         print(
-            "Commands: py | cpp | gpu | wasm | jit_wasm | data | data.load | remote | mesh | ai | agent | event | vision | fabric | guard | secure | flow | sync | lens | studio | on | pack | observe | watch | parallel | events | ns.exec | ns.run | sys | cd | pwd | clear | cls | doctor | help | exit"
+            "Commands: py | cpp | gpu | wasm | jit_wasm | data | data.load | remote | mesh | ai | agent | memory | tool | event | vision | fabric | guard | secure | flow | sync | lens | studio | on | pack | observe | watch | parallel | events | ns.exec | ns.run | sys | cd | pwd | clear | cls | doctor | help | exit"
         )
         print("Pipelines: cmd | watch file | parallel py ...\n")
 

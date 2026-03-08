@@ -571,6 +571,43 @@ nova> agent run analyst quarterly report
 nova> agent list
 ```
 
+Vector Memory fuer semantische Kurzzeit-Erinnerung:
+
+```text
+nova> memory embed --id sales-q1 "Q1 revenue grew 18 percent in DACH"
+nova> memory search "DACH revenue"
+```
+
+Schema-basiertes Tool registrieren und aufrufen:
+
+```text
+nova> tool register summarize_csv --description "summarize a csv file" --schema '{"type":"object","properties":{"file":{"type":"string"}},"required":["file"]}' --pipeline 'ai prompt --file {{file}} "Summarize this dataset"'
+nova> tool call summarize_csv file=items.csv
+```
+
+Wenn ein Tool Python-Literale einsetzen soll, kann das Template `{{py:name}}` nutzen:
+
+```text
+nova> tool register greet --description "say hello" --schema '{"type":"object","properties":{"name":{"type":"string"}},"required":["name"]}' --pipeline 'py "Hello " + {{py:name}}'
+nova> tool call greet name=Nova
+```
+
+Planner-Agent fuer Pipeline-Generierung:
+
+```text
+nova> ai plan "calculate csv average"
+nova> ai plan "summarize the latest dataset"
+```
+
+Multi-Agent-Runtime mit Spawn, Message und Workflow:
+
+```text
+nova> agent create reviewer "Review {{input}}" --provider lmstudio --model local-model
+nova> agent spawn analyst_rt --from analyst
+nova> agent message analyst_rt "prepare the quarterly report outline"
+nova> agent workflow --agents analyst,reviewer --input "quarterly report"
+```
+
 ## 17. NovaGraph und C++-Fusion
 
 GPU-Task-Graph planen:
