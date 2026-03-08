@@ -2,6 +2,14 @@
 
 Nova-shell ist eine **Unified Compute & Data Orchestration Runtime** mit polyglotten Engines, DSL, AOT-Pipelines, Lineage, Mesh-Offloading und Security-Enforcement.
 
+Neu in der Runtime-Schicht:
+
+- AI-Provider-Integration fuer `OpenAI`, `Anthropic`, `Gemini`, `Groq`, `OpenRouter`, `Ollama` und `LM Studio`
+- `.env`-gestuetzte API-Key- und Modell-Auswahl direkt aus Nova-shell
+- lokale `event`-Runtime fuer Event-Driven Workflows
+- `agent`-Kommandos fuer wiederverwendbare AI-Agenten
+- `gpu graph` als erster GPU-Task-Graph-Pfad
+
 ## Nächste Ebene: 5 professionell umgesetzte Enterprise-Module
 
 ### 1) NovaZero — Unified Zero-Copy Memory Bridge
@@ -53,6 +61,10 @@ Nova-shell ist eine **Unified Compute & Data Orchestration Runtime** mit polyglo
 ## Weitere Kernfeatures
 
 - Engines: `py/python`, `cpp`, `gpu`, `wasm`, `remote`, `sys`.
+- AI Runtime: `ai providers|models|use|config|env reload|prompt|plan`
+- AI Agents: `agent create|run|show|list`
+- Event Runtime: `event on|emit|list|history`
+- GPU Task Graphs: `gpu graph plan|run|show`
 - NovaGraph AOT (`graph aot|run|show`) inkl. C++-Expr-Fusion.
 - NovaLens CAS-Lineage (`lens list|last|show|replay`).
 - Mesh Intelligence (`mesh beat`, `mesh intelligent-run`).
@@ -82,6 +94,14 @@ Runtime-Diagnose:
 ```bash
 nova-shell doctor
 nova-shell doctor json
+```
+
+AI-Provider aus `.env` oder Umgebung nutzen:
+
+```bash
+nova-shell -c "ai providers"
+nova-shell -c "ai use lmstudio local-model"
+nova-shell -c "ai prompt \"Summarize this dataset\""
 ```
 
 Lernpfad mit vielen Programmierbeispielen:

@@ -123,6 +123,47 @@ def load_runtime_config() -> dict[str, Any]:
     return {}
 
 
+def parse_dotenv_text(text: str) -> dict[str, str]:
+    values: dict[str, str] = {}
+    for raw_line in text.splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#"):
+            continue
+        if line.startswith("export "):
+            line = line[len("export ") :].strip()
+        if "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        key = key.strip()
+        value = value.strip()
+        if not key:
+            continue
+        if value and value[0] == value[-1] and value[0] in {"'", '"'}:
+            value = value[1:-1]
+        values[key] = value
+    return values
+
+
+def load_dotenv_files(candidates: Iterable[Path], *, override: bool = False) -> list[str]:
+    loaded: list[str] = []
+    seen: set[str] = set()
+    for candidate in candidates:
+        candidate = candidate.resolve(strict=False)
+        candidate_text = str(candidate)
+        if candidate_text in seen or not candidate.is_file():
+            continue
+        seen.add(candidate_text)
+        try:
+            values = parse_dotenv_text(candidate.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        for key, value in values.items():
+            if override or key not in os.environ:
+                os.environ[key] = value
+        loaded.append(candidate_text)
+    return loaded
+
+
 def _resolve_vswhere_path() -> Path | None:
     program_files_x86 = os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)")
     candidate = Path(program_files_x86) / "Microsoft Visual Studio" / "Installer" / "vswhere.exe"
@@ -255,6 +296,39 @@ class PipelineGraph:
 
     def add(self, node: PipelineNode) -> None:
         self.nodes.append(node)
+
+
+@dataclass(frozen=True)
+class AIProviderSpec:
+    name: str
+    kind: str
+    env_keys: tuple[str, ...]
+    base_url: str
+    base_url_env: str
+    default_model: str
+    default_model_env: str
+    fallback_models: tuple[str, ...] = ()
+    requires_api_key: bool = True
+    openai_compat: bool = False
+
+
+@dataclass
+class AIAgentDefinition:
+    name: str
+    prompt_template: str
+    provider: str
+    model: str
+    system_prompt: str = ""
+    created_at: float = field(default_factory=time.time)
+
+
+@dataclass
+class GPUTaskGraphArtifact:
+    graph_id: str
+    kernels: list[str]
+    input_payload: str
+    final_output: str = ""
+    final_data: Any = None
 
 
 def split_command(text: str) -> list[str]:
@@ -1507,6 +1581,381 @@ class NovaSynth:
         return self.shell.route(code if code.strip().startswith(("py ", "cpp ", "gpu ", "sys ")) else f"py {payload}")
 
 
+class NovaAIProviderRuntime:
+    """Provider-aware AI runtime with .env loading and local/remote model support."""
+
+    def __init__(self, runtime_config: dict[str, Any], cwd: Path) -> None:
+        self.runtime_config = runtime_config
+        self.cwd = cwd
+        self.provider_specs: dict[str, AIProviderSpec] = {
+            "openai": AIProviderSpec(
+                name="openai",
+                kind="openai-chat",
+                env_keys=("OPENAI_API_KEY",),
+                base_url="https://api.openai.com/v1",
+                base_url_env="OPENAI_BASE_URL",
+                default_model="gpt-4o-mini",
+                default_model_env="OPENAI_MODEL",
+                fallback_models=("gpt-4o-mini", "gpt-4.1-mini", "gpt-4o"),
+                openai_compat=True,
+            ),
+            "anthropic": AIProviderSpec(
+                name="anthropic",
+                kind="anthropic-messages",
+                env_keys=("ANTHROPIC_API_KEY",),
+                base_url="https://api.anthropic.com/v1",
+                base_url_env="ANTHROPIC_BASE_URL",
+                default_model="claude-3-5-haiku-latest",
+                default_model_env="ANTHROPIC_MODEL",
+                fallback_models=("claude-3-5-haiku-latest", "claude-3-7-sonnet-latest"),
+            ),
+            "gemini": AIProviderSpec(
+                name="gemini",
+                kind="gemini-generate-content",
+                env_keys=("GEMINI_API_KEY", "GOOGLE_API_KEY"),
+                base_url="https://generativelanguage.googleapis.com/v1beta",
+                base_url_env="GEMINI_BASE_URL",
+                default_model="gemini-2.0-flash",
+                default_model_env="GEMINI_MODEL",
+                fallback_models=("gemini-2.0-flash", "gemini-1.5-flash"),
+            ),
+            "groq": AIProviderSpec(
+                name="groq",
+                kind="openai-chat",
+                env_keys=("GROQ_API_KEY",),
+                base_url="https://api.groq.com/openai/v1",
+                base_url_env="GROQ_BASE_URL",
+                default_model="llama-3.3-70b-versatile",
+                default_model_env="GROQ_MODEL",
+                fallback_models=("llama-3.3-70b-versatile", "llama-3.1-8b-instant"),
+                openai_compat=True,
+            ),
+            "openrouter": AIProviderSpec(
+                name="openrouter",
+                kind="openai-chat",
+                env_keys=("OPENROUTER_API_KEY",),
+                base_url="https://openrouter.ai/api/v1",
+                base_url_env="OPENROUTER_BASE_URL",
+                default_model="openai/gpt-4o-mini",
+                default_model_env="OPENROUTER_MODEL",
+                fallback_models=("openai/gpt-4o-mini", "anthropic/claude-3.5-haiku"),
+                openai_compat=True,
+            ),
+            "ollama": AIProviderSpec(
+                name="ollama",
+                kind="ollama-chat",
+                env_keys=(),
+                base_url="http://127.0.0.1:11434",
+                base_url_env="OLLAMA_BASE_URL",
+                default_model="llama3.2",
+                default_model_env="OLLAMA_MODEL",
+                fallback_models=("llama3.2", "mistral", "qwen2.5"),
+                requires_api_key=False,
+            ),
+            "lmstudio": AIProviderSpec(
+                name="lmstudio",
+                kind="openai-chat",
+                env_keys=("LM_STUDIO_API_KEY",),
+                base_url="http://127.0.0.1:1234/v1",
+                base_url_env="LM_STUDIO_BASE_URL",
+                default_model="",
+                default_model_env="LM_STUDIO_MODEL",
+                fallback_models=(),
+                requires_api_key=False,
+                openai_compat=True,
+            ),
+        }
+        self.loaded_env_files: list[str] = []
+        self.active_provider = ""
+        self.active_model = ""
+        self.reload_env()
+        self.active_provider = str(os.environ.get("NOVA_AI_PROVIDER") or runtime_config.get("ai_provider") or "")
+        self.active_model = str(os.environ.get("NOVA_AI_MODEL") or runtime_config.get("ai_model") or "")
+
+    def reload_env(self, path_text: str | None = None, *, override: bool = True) -> list[str]:
+        candidates: list[Path] = []
+        if path_text:
+            custom = Path(os.path.expanduser(path_text))
+            if not custom.is_absolute():
+                custom = self.cwd / custom
+            candidates.append(custom)
+        else:
+            candidates.extend(
+                [
+                    self.cwd / ".env",
+                    Path(sys.executable).resolve().parent / ".env",
+                    Path(__file__).resolve().parent / ".env",
+                ]
+            )
+        self.loaded_env_files = load_dotenv_files(candidates, override=override)
+        return list(self.loaded_env_files)
+
+    def list_providers(self) -> list[dict[str, Any]]:
+        rows: list[dict[str, Any]] = []
+        for name, spec in self.provider_specs.items():
+            key_name = self._provider_key_name(spec)
+            rows.append(
+                {
+                    "provider": name,
+                    "configured": self.is_configured(name),
+                    "active": name == self.get_active_provider(),
+                    "model": self.get_active_model(name),
+                    "base_url": self._provider_base_url(spec),
+                    "api_key_env": key_name,
+                    "auth_required": spec.requires_api_key,
+                    "source": "local-runtime" if not spec.requires_api_key else "api",
+                }
+            )
+        return rows
+
+    def is_configured(self, provider: str) -> bool:
+        spec = self._get_provider_spec(provider)
+        if spec is None:
+            return False
+        if not spec.requires_api_key:
+            return True
+        return bool(self._provider_api_key(spec))
+
+    def get_active_provider(self) -> str:
+        if self.active_provider and self.active_provider in self.provider_specs:
+            return self.active_provider
+        for provider in ["openai", "anthropic", "gemini", "groq", "openrouter"]:
+            if self.is_configured(provider):
+                return provider
+        for provider in ["lmstudio", "ollama"]:
+            spec = self.provider_specs[provider]
+            if os.environ.get(spec.default_model_env) or self.runtime_config.get(f"{provider}_model"):
+                return provider
+        return ""
+
+    def get_active_model(self, provider: str | None = None) -> str:
+        selected_provider = provider or self.get_active_provider()
+        if not selected_provider:
+            return ""
+        spec = self._get_provider_spec(selected_provider)
+        if spec is None:
+            return ""
+        if self.active_provider == selected_provider and self.active_model:
+            return self.active_model
+        return str(os.environ.get(spec.default_model_env) or self.runtime_config.get(f"{selected_provider}_model") or spec.default_model)
+
+    def use_provider(self, provider: str, model: str | None = None) -> CommandResult:
+        spec = self._get_provider_spec(provider)
+        if spec is None:
+            return CommandResult(output="", error=f"unknown ai provider: {provider}")
+        if not self.is_configured(provider):
+            return CommandResult(output="", error=f"provider '{provider}' is not configured; set {self._provider_key_name(spec) or 'the required API key'} or start the local runtime")
+
+        chosen_model = (model or self.get_active_model(provider)).strip()
+        if not chosen_model:
+            models_result = self.list_models(provider)
+            if models_result.error is None:
+                models = list(models_result.data.get("models", [])) if isinstance(models_result.data, dict) else []
+                if models:
+                    chosen_model = str(models[0])
+        if not chosen_model:
+            return CommandResult(output="", error=f"provider '{provider}' has no active model; specify one with ai use {provider} <model>")
+
+        self.active_provider = provider
+        self.active_model = chosen_model
+        payload = {"provider": provider, "model": chosen_model, "base_url": self._provider_base_url(spec)}
+        return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+
+    def list_models(self, provider: str | None = None) -> CommandResult:
+        provider_name = provider or self.get_active_provider()
+        spec = self._get_provider_spec(provider_name)
+        if spec is None:
+            return CommandResult(output="", error="no ai provider selected")
+
+        try:
+            models = self._fetch_models(spec)
+            if not models:
+                models = list(spec.fallback_models)
+            payload = {"provider": provider_name, "models": models, "base_url": self._provider_base_url(spec)}
+            return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+        except Exception as exc:
+            payload = {"provider": provider_name, "models": list(spec.fallback_models), "base_url": self._provider_base_url(spec), "error": str(exc)}
+            return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+
+    def config_payload(self) -> dict[str, Any]:
+        provider = self.get_active_provider()
+        return {
+            "active_provider": provider,
+            "active_model": self.get_active_model(provider) if provider else "",
+            "loaded_env_files": self.loaded_env_files,
+            "providers": self.list_providers(),
+        }
+
+    def complete_prompt(
+        self,
+        prompt: str,
+        *,
+        provider: str | None = None,
+        model: str | None = None,
+        system_prompt: str = "",
+    ) -> CommandResult:
+        provider_name = provider or self.get_active_provider()
+        spec = self._get_provider_spec(provider_name)
+        if spec is None:
+            return CommandResult(output="", error="no ai provider configured; use ai use <provider> [model] or configure a .env file")
+        if not self.is_configured(provider_name):
+            return CommandResult(output="", error=f"provider '{provider_name}' is not configured")
+
+        chosen_model = (model or self.get_active_model(provider_name)).strip()
+        if not chosen_model:
+            models_result = self.list_models(provider_name)
+            if models_result.error is None and isinstance(models_result.data, dict):
+                models = list(models_result.data.get("models", []))
+                if models:
+                    chosen_model = str(models[0])
+        if not chosen_model:
+            return CommandResult(output="", error=f"provider '{provider_name}' has no selected model")
+
+        try:
+            payload = self._complete_via_provider(spec, prompt, chosen_model, system_prompt)
+            self.active_provider = provider_name
+            self.active_model = chosen_model
+            return CommandResult(output=payload["text"] + ("\n" if payload["text"] and not payload["text"].endswith("\n") else ""), data=payload, data_type=PipelineType.OBJECT)
+        except Exception as exc:
+            return CommandResult(output="", error=f"ai provider error ({provider_name}): {exc}")
+
+    def _get_provider_spec(self, provider: str | None) -> AIProviderSpec | None:
+        if not provider:
+            return None
+        return self.provider_specs.get(provider.lower())
+
+    def _provider_key_name(self, spec: AIProviderSpec) -> str:
+        for key_name in spec.env_keys:
+            if os.environ.get(key_name):
+                return key_name
+        return spec.env_keys[0] if spec.env_keys else ""
+
+    def _provider_api_key(self, spec: AIProviderSpec) -> str:
+        for key_name in spec.env_keys:
+            value = os.environ.get(key_name, "").strip()
+            if value:
+                return value
+        return ""
+
+    def _provider_base_url(self, spec: AIProviderSpec) -> str:
+        return str(os.environ.get(spec.base_url_env) or self.runtime_config.get(f"{spec.name}_base_url") or spec.base_url).rstrip("/")
+
+    def _http_json(self, url: str, *, method: str = "GET", payload: Any = None, headers: dict[str, str] | None = None, timeout: int = 30) -> Any:
+        body = None
+        merged_headers = {"User-Agent": "nova-shell/0.8.0"}
+        if headers:
+            merged_headers.update(headers)
+        if payload is not None:
+            body = json.dumps(payload).encode("utf-8")
+            merged_headers.setdefault("Content-Type", "application/json")
+        request = urllib.request.Request(url, data=body, headers=merged_headers, method=method)
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            charset = response.headers.get_content_charset() or "utf-8"
+            text = response.read().decode(charset)
+        return json.loads(text) if text else {}
+
+    def _fetch_models(self, spec: AIProviderSpec) -> list[str]:
+        base_url = self._provider_base_url(spec)
+        if spec.kind == "openai-chat":
+            headers: dict[str, str] = {}
+            api_key = self._provider_api_key(spec)
+            if api_key:
+                headers["Authorization"] = f"Bearer {api_key}"
+            data = self._http_json(f"{base_url}/models", headers=headers)
+            return [str(item.get("id")) for item in data.get("data", []) if item.get("id")]
+        if spec.kind == "ollama-chat":
+            data = self._http_json(f"{base_url}/api/tags")
+            return [str(item.get("name")) for item in data.get("models", []) if item.get("name")]
+        if spec.kind == "gemini-generate-content":
+            api_key = self._provider_api_key(spec)
+            data = self._http_json(f"{base_url}/models?key={urllib.parse.quote(api_key)}")
+            models = []
+            for item in data.get("models", []):
+                name = str(item.get("name", ""))
+                if name.startswith("models/"):
+                    name = name[len("models/") :]
+                if name:
+                    models.append(name)
+            return models
+        return list(spec.fallback_models)
+
+    def _complete_via_provider(self, spec: AIProviderSpec, prompt: str, model: str, system_prompt: str) -> dict[str, Any]:
+        base_url = self._provider_base_url(spec)
+        if spec.kind == "openai-chat":
+            headers: dict[str, str] = {}
+            api_key = self._provider_api_key(spec)
+            if api_key:
+                headers["Authorization"] = f"Bearer {api_key}"
+            messages = []
+            if system_prompt:
+                messages.append({"role": "system", "content": system_prompt})
+            messages.append({"role": "user", "content": prompt})
+            data = self._http_json(
+                f"{base_url}/chat/completions",
+                method="POST",
+                payload={"model": model, "messages": messages, "temperature": 0.2},
+                headers=headers,
+            )
+            choices = data.get("choices", [])
+            message = choices[0].get("message", {}) if choices else {}
+            content = message.get("content", "")
+            if isinstance(content, list):
+                content = "".join(str(part.get("text", "")) for part in content if isinstance(part, dict))
+            text = str(content).strip()
+            return {"provider": spec.name, "model": model, "text": text, "raw": data}
+
+        if spec.kind == "anthropic-messages":
+            api_key = self._provider_api_key(spec)
+            data = self._http_json(
+                f"{base_url}/messages",
+                method="POST",
+                payload={
+                    "model": model,
+                    "max_tokens": 1024,
+                    "system": system_prompt,
+                    "messages": [{"role": "user", "content": prompt}],
+                },
+                headers={"x-api-key": api_key, "anthropic-version": "2023-06-01"},
+            )
+            parts = data.get("content", [])
+            text = "".join(str(part.get("text", "")) for part in parts if isinstance(part, dict)).strip()
+            return {"provider": spec.name, "model": model, "text": text, "raw": data}
+
+        if spec.kind == "gemini-generate-content":
+            api_key = self._provider_api_key(spec)
+            payload: dict[str, Any] = {
+                "contents": [{"role": "user", "parts": [{"text": prompt}]}],
+            }
+            if system_prompt:
+                payload["systemInstruction"] = {"parts": [{"text": system_prompt}]}
+            data = self._http_json(
+                f"{base_url}/models/{urllib.parse.quote(model, safe='')}:generateContent?key={urllib.parse.quote(api_key)}",
+                method="POST",
+                payload=payload,
+            )
+            candidates = data.get("candidates", [])
+            parts = []
+            if candidates:
+                parts = candidates[0].get("content", {}).get("parts", [])
+            text = "".join(str(part.get("text", "")) for part in parts if isinstance(part, dict)).strip()
+            return {"provider": spec.name, "model": model, "text": text, "raw": data}
+
+        if spec.kind == "ollama-chat":
+            messages = []
+            if system_prompt:
+                messages.append({"role": "system", "content": system_prompt})
+            messages.append({"role": "user", "content": prompt})
+            data = self._http_json(
+                f"{base_url}/api/chat",
+                method="POST",
+                payload={"model": model, "messages": messages, "stream": False},
+            )
+            text = str(data.get("message", {}).get("content", "")).strip()
+            return {"provider": spec.name, "model": model, "text": text, "raw": data}
+
+        raise RuntimeError(f"unsupported ai provider kind: {spec.kind}")
+
+
 class VisionServer:
     """Small HTTP server to inspect runtime events and graph state."""
 
@@ -1613,11 +2062,8 @@ class VisionServer:
                         payload = {}
                     event_name = str(payload.get("event", ""))
                     value = str(payload.get("payload", ""))
-                    executed = []
-                    for pipeline in shell._dflow_subscribers.get(event_name, []):
-                        res = shell._route_with_input(pipeline, value)
-                        executed.append({"pipeline": pipeline, "error": res.error or "", "output": res.output.strip()})
-                    self._write_json({"event": event_name, "executed": executed})
+                    result = shell._publish_event(event_name, value, broadcast=False)
+                    self._write_json(result.data)
                     return
 
                 if parsed.path == "/fabric/put-bytes":
@@ -1675,6 +2121,7 @@ class NovaShell:
         self.jit = NovaComputeJIT()
         self.optimizer = NovaOptimizer(self)
         self.synth = NovaSynth(self)
+        self.ai_runtime = NovaAIProviderRuntime(self.runtime_config, self.cwd)
         self.guard_store = GuardPolicyStore()
         self.fabric_remote = FabricRemoteBridge()
         self.reactive = ReactiveFlowEngine(self)
@@ -1684,6 +2131,8 @@ class NovaShell:
         self.sync_map = LWWMapCRDT(self.node_id)
         self.lens = NovaLensStore()
         self.last_graph = PipelineGraph()
+        self.gpu_task_graphs: dict[str, GPUTaskGraphArtifact] = {}
+        self.agents: dict[str, AIAgentDefinition] = {}
         self.vision = VisionServer(self)
         self.current_policy = "open"
         self.current_trace_id = ""
@@ -1704,11 +2153,13 @@ class NovaShell:
             "data.load": self._run_data_load,
             "remote": self._run_remote,
             "ai": self._run_ai,
+            "agent": self._run_agent,
             "vision": self._run_vision,
             "pulse": self._run_pulse,
             "fabric": self._run_fabric,
             "zero": self._run_zero,
             "mesh": self._run_mesh,
+            "event": self._run_event,
             "guard": self._run_guard,
             "secure": self._run_secure,
             "flow": self._run_flow,
@@ -1803,6 +2254,7 @@ class NovaShell:
             if not target.exists() or not target.is_dir():
                 return CommandResult(output="", error=f"directory not found: {target_text}")
             self.cwd = target
+            self.ai_runtime.cwd = target
             return CommandResult(output="")
         except Exception as exc:
             return CommandResult(output="", error=str(exc))
@@ -1850,6 +2302,11 @@ class NovaShell:
             "command_status": command_status,
             "modules": modules,
             "sandbox_default": self.wasm_sandbox_default,
+            "ai": {
+                "active_provider": self.ai_runtime.get_active_provider(),
+                "active_model": self.ai_runtime.get_active_model(),
+                "loaded_env_files": self.ai_runtime.loaded_env_files,
+            },
         }
 
         if parts and parts[0] == "json":
@@ -1866,6 +2323,8 @@ class NovaShell:
             f"emcc: {'ok' if payload['command_status']['emcc'] else 'missing'}",
             f"cl: {'ok' if payload['command_status']['cl'] else 'missing'}",
             f"sandbox_default: {'ok' if payload['sandbox_default'] else 'false'}",
+            f"ai_provider: {payload['ai']['active_provider'] or 'none'}",
+            f"ai_model: {payload['ai']['active_model'] or 'none'}",
         ]
         for name, available in payload["modules"].items():
             lines.append(f"{name}: {'ok' if available else 'missing'}")
@@ -2116,10 +2575,71 @@ class NovaShell:
             return CommandResult(output="", error=blocked)
         return self.cpp.compile_to_wasm_and_run(code, pipeline_input)
 
+    def _plan_gpu_task_graph(self, kernels: list[str], input_payload: str = "") -> GPUTaskGraphArtifact:
+        artifact = GPUTaskGraphArtifact(
+            graph_id=uuid.uuid4().hex[:12],
+            kernels=[str(self._resolve_path(kernel)) for kernel in kernels],
+            input_payload=input_payload,
+        )
+        self.gpu_task_graphs[artifact.graph_id] = artifact
+        return artifact
+
+    def _run_gpu_task_graph(self, kernels: list[str], input_payload: str = "") -> CommandResult:
+        artifact = self._plan_gpu_task_graph(kernels, input_payload)
+        current_output = input_payload
+        final_result = CommandResult(output="")
+        for kernel in artifact.kernels:
+            final_result = self.gpu.run_kernel(kernel, current_output)
+            if final_result.error:
+                return final_result
+            current_output = final_result.output.strip()
+        artifact.final_output = final_result.output
+        artifact.final_data = final_result.data
+        payload = {
+            "graph_id": artifact.graph_id,
+            "kernels": artifact.kernels,
+            "output": artifact.final_output,
+        }
+        return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+
     def _run_gpu(self, args: str, pipeline_input: str, _: Any) -> CommandResult:
         parts = split_command(args)
         if not parts:
-            return CommandResult(output="", error="usage: gpu <kernel_file>")
+            return CommandResult(output="", error="usage: gpu <kernel_file> | gpu graph plan|run|show ...")
+        if parts[0] == "graph":
+            if len(parts) < 3:
+                return CommandResult(output="", error="usage: gpu graph plan <kernel1> [kernel2 ...] | gpu graph run <kernel1> [kernel2 ...] [--input values] | gpu graph show <id>")
+            action = parts[1]
+            if action == "show":
+                artifact = self.gpu_task_graphs.get(parts[2])
+                if artifact is None:
+                    return CommandResult(output="", error="gpu task graph not found")
+                payload = {
+                    "graph_id": artifact.graph_id,
+                    "kernels": artifact.kernels,
+                    "input_payload": artifact.input_payload,
+                    "output": artifact.final_output,
+                }
+                return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+
+            kernel_tokens = parts[2:]
+            input_payload = pipeline_input
+            if "--input" in kernel_tokens:
+                idx = kernel_tokens.index("--input")
+                if idx + 1 >= len(kernel_tokens):
+                    return CommandResult(output="", error="usage: gpu graph run <kernel1> [kernel2 ...] [--input values]")
+                input_payload = kernel_tokens[idx + 1]
+                kernel_tokens = kernel_tokens[:idx] + kernel_tokens[idx + 2 :]
+            if not kernel_tokens:
+                return CommandResult(output="", error="gpu graph requires at least one kernel file")
+
+            if action == "plan":
+                artifact = self._plan_gpu_task_graph(kernel_tokens, input_payload)
+                payload = {"graph_id": artifact.graph_id, "kernels": artifact.kernels, "input_payload": artifact.input_payload}
+                return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+            if action == "run":
+                return self._run_gpu_task_graph(kernel_tokens, input_payload)
+            return CommandResult(output="", error="usage: gpu graph plan|run|show ...")
         return self.gpu.run_kernel(str(self._resolve_path(parts[0])), pipeline_input)
 
     def _run_wasm(self, args: str, _: str, __: Any) -> CommandResult:
@@ -2136,20 +2656,254 @@ class NovaShell:
         command = args[len(worker_url) :].strip()
         return self.remote.execute(worker_url, command)
 
-    def _run_ai(self, args: str, _: str, __: Any) -> CommandResult:
-        prompt = args.strip().strip('"')
-        if not prompt:
-            return CommandResult(output="", error="usage: ai \"<prompt>\"")
-
+    def _heuristic_ai_plan(self, prompt: str) -> CommandResult:
         lowered = prompt.lower()
         if "csv" in lowered and "average" in lowered:
             suggestion = "data load file.csv | py sum(float(r['A']) for r in _) / len(_)"
         elif "anomal" in lowered or "error" in lowered:
             suggestion = "watch logs.txt --follow-seconds 10 | py _.lower()"
+        elif "event" in lowered or "trigger" in lowered:
+            suggestion = "event on task_created 'py _.upper()'"
         else:
             suggestion = "py # TODO: generated pipeline"
+        payload = {"pipeline": suggestion, "mode": "heuristic"}
+        return CommandResult(output=f"{suggestion}\n", data=payload, data_type=PipelineType.OBJECT)
 
-        return CommandResult(output=f"{suggestion}\n", data={"pipeline": suggestion}, data_type=PipelineType.OBJECT)
+    def _run_ai(self, args: str, _: str, __: Any) -> CommandResult:
+        parts = split_command(args)
+        if not parts:
+            return CommandResult(output="", error="usage: ai providers|models [provider]|use <provider> [model]|config|env reload [file]|plan <prompt>|prompt <prompt>|<prompt>")
+
+        action = parts[0]
+        if action == "providers":
+            payload = self.ai_runtime.list_providers()
+            return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+        if action == "models":
+            provider = parts[1] if len(parts) > 1 else None
+            return self.ai_runtime.list_models(provider)
+        if action == "use":
+            if len(parts) < 2:
+                return CommandResult(output="", error="usage: ai use <provider> [model]")
+            model = parts[2] if len(parts) > 2 else None
+            return self.ai_runtime.use_provider(parts[1], model)
+        if action == "config":
+            payload = self.ai_runtime.config_payload()
+            return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+        if action == "env":
+            if len(parts) < 2 or parts[1] != "reload":
+                return CommandResult(output="", error="usage: ai env reload [file]")
+            path_text = parts[2] if len(parts) > 2 else None
+            files = self.ai_runtime.reload_env(path_text)
+            payload = {"loaded_env_files": files}
+            return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+        if action == "plan":
+            prompt = args[len("plan") :].strip().strip('"')
+            if not prompt:
+                return CommandResult(output="", error="usage: ai plan <prompt>")
+            return self._heuristic_ai_plan(prompt)
+        if action == "prompt":
+            prompt = args[len("prompt") :].strip().strip('"')
+            if not prompt:
+                return CommandResult(output="", error="usage: ai prompt <prompt>")
+            return self.ai_runtime.complete_prompt(prompt)
+
+        prompt = args.strip().strip('"')
+        if not prompt:
+            return CommandResult(output="", error="usage: ai <prompt>")
+        active_provider = self.ai_runtime.get_active_provider()
+        if active_provider:
+            provider_result = self.ai_runtime.complete_prompt(prompt)
+            if provider_result.error is None:
+                return provider_result
+        return self._heuristic_ai_plan(prompt)
+
+    def _render_agent_prompt(self, agent: AIAgentDefinition, input_text: str) -> str:
+        if "{{input}}" in agent.prompt_template:
+            return agent.prompt_template.replace("{{input}}", input_text)
+        if "{input}" in agent.prompt_template:
+            try:
+                return agent.prompt_template.format(input=input_text)
+            except Exception:
+                pass
+        suffix = f"\n\nInput:\n{input_text}" if input_text else ""
+        return agent.prompt_template + suffix
+
+    def _run_agent(self, args: str, _: str, __: Any) -> CommandResult:
+        parts = split_command(args)
+        if not parts:
+            return CommandResult(output="", error="usage: agent create|run|show|list ...")
+
+        action = parts[0]
+        if action == "list":
+            payload = [
+                {
+                    "name": agent.name,
+                    "provider": agent.provider,
+                    "model": agent.model,
+                    "system_prompt": agent.system_prompt,
+                    "prompt_template": agent.prompt_template,
+                }
+                for agent in self.agents.values()
+            ]
+            return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+
+        if action == "show":
+            if len(parts) < 2:
+                return CommandResult(output="", error="usage: agent show <name>")
+            agent = self.agents.get(parts[1])
+            if agent is None:
+                return CommandResult(output="", error="agent not found")
+            payload = {
+                "name": agent.name,
+                "provider": agent.provider,
+                "model": agent.model,
+                "system_prompt": agent.system_prompt,
+                "prompt_template": agent.prompt_template,
+            }
+            return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+
+        if action == "create":
+            if len(parts) < 3:
+                return CommandResult(output="", error="usage: agent create <name> <prompt_template> [--provider p] [--model m] [--system text]")
+            name = parts[1]
+            prompt_tokens: list[str] = []
+            provider = ""
+            model = ""
+            system_prompt = ""
+            i = 2
+            while i < len(parts):
+                token = parts[i]
+                if token == "--provider" and i + 1 < len(parts):
+                    provider = parts[i + 1]
+                    i += 2
+                    continue
+                if token == "--model" and i + 1 < len(parts):
+                    model = parts[i + 1]
+                    i += 2
+                    continue
+                if token == "--system" and i + 1 < len(parts):
+                    system_prompt = parts[i + 1]
+                    i += 2
+                    continue
+                prompt_tokens.append(token)
+                i += 1
+            prompt_template = " ".join(prompt_tokens).strip()
+            if not prompt_template:
+                return CommandResult(output="", error="agent prompt_template must not be empty")
+
+            selected_provider = provider or self.ai_runtime.get_active_provider()
+            if not selected_provider:
+                return CommandResult(output="", error="configure an ai provider first with ai use <provider> [model]")
+            selected_model = model or self.ai_runtime.get_active_model(selected_provider)
+            if not selected_model:
+                return CommandResult(output="", error=f"provider '{selected_provider}' has no selected model")
+
+            agent = AIAgentDefinition(
+                name=name,
+                prompt_template=prompt_template,
+                provider=selected_provider,
+                model=selected_model,
+                system_prompt=system_prompt,
+            )
+            self.agents[name] = agent
+            payload = {
+                "name": agent.name,
+                "provider": agent.provider,
+                "model": agent.model,
+                "system_prompt": agent.system_prompt,
+                "prompt_template": agent.prompt_template,
+            }
+            return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+
+        if action == "run":
+            if len(parts) < 2:
+                return CommandResult(output="", error="usage: agent run <name> [input]")
+            agent = self.agents.get(parts[1])
+            if agent is None:
+                return CommandResult(output="", error="agent not found")
+            input_text = args.split(parts[1], 1)[1].strip()
+            prompt = self._render_agent_prompt(agent, input_text)
+            result = self.ai_runtime.complete_prompt(
+                prompt,
+                provider=agent.provider,
+                model=agent.model,
+                system_prompt=agent.system_prompt,
+            )
+            if result.error:
+                return result
+            payload = {
+                "agent": agent.name,
+                "provider": agent.provider,
+                "model": agent.model,
+                "prompt": prompt,
+                "response": result.output.strip(),
+            }
+            return CommandResult(output=result.output, data=payload, data_type=PipelineType.OBJECT)
+
+        return CommandResult(output="", error="usage: agent create|run|show|list ...")
+
+    def _subscribe_event_pipeline(self, event_name: str, pipeline: str) -> None:
+        self._dflow_subscribers.setdefault(event_name, []).append(pipeline)
+
+    def _publish_event(self, event_name: str, payload: str, *, broadcast: bool = False) -> CommandResult:
+        self.events.emit(
+            {
+                "stage": f"event {event_name}",
+                "node": "event.emit",
+                "error": "",
+                "output": payload[:200],
+                "data_type": PipelineType.TEXT.value,
+                "trace_id": self.current_trace_id,
+                "duration_ms": "0.000",
+                "rows_processed": "1" if payload else "0",
+                "cpu_percent": "0.0",
+                "rss_mb": "0.0",
+                "cost_estimate": "0.0",
+            }
+        )
+        executed: list[dict[str, str]] = []
+        for pipeline in self._dflow_subscribers.get(event_name, []):
+            result = self._route_with_input(pipeline, payload)
+            executed.append({"pipeline": pipeline, "error": result.error or "", "output": result.output.strip()})
+        if broadcast and self.mesh.workers:
+            event_data = json.dumps({"event": event_name, "payload": payload}).encode("utf-8")
+            for worker in self.mesh.list_workers():
+                req = urllib.request.Request(worker["url"].rstrip("/") + "/flow/event", data=event_data, headers={"Content-Type": "application/json"}, method="POST")
+                with contextlib.suppress(Exception):
+                    urllib.request.urlopen(req, timeout=5).read()
+        out = {"event": event_name, "payload": payload, "broadcast": broadcast, "executed": executed}
+        return CommandResult(output=json.dumps(out, ensure_ascii=False) + "\n", data=out, data_type=PipelineType.OBJECT)
+
+    def _run_event(self, args: str, _: str, __: Any) -> CommandResult:
+        parts = split_command(args)
+        if not parts:
+            return CommandResult(output="", error="usage: event on|emit|list|history ...")
+        action = parts[0]
+        if action == "on":
+            if len(parts) < 3:
+                return CommandResult(output="", error="usage: event on <name> <pipeline>")
+            self._subscribe_event_pipeline(parts[1], parts[2])
+            return CommandResult(output="subscribed\n")
+        if action == "emit":
+            if len(parts) < 3:
+                return CommandResult(output="", error="usage: event emit <name> <payload> [--broadcast]")
+            event_name = parts[1]
+            payload_parts = parts[2:]
+            broadcast = False
+            if payload_parts and payload_parts[-1] == "--broadcast":
+                broadcast = True
+                payload_parts = payload_parts[:-1]
+            if not payload_parts:
+                return CommandResult(output="", error="usage: event emit <name> <payload> [--broadcast]")
+            return self._publish_event(event_name, " ".join(payload_parts), broadcast=broadcast)
+        if action == "list":
+            return CommandResult(output=json.dumps(self._dflow_subscribers, ensure_ascii=False) + "\n", data=self._dflow_subscribers, data_type=PipelineType.OBJECT)
+        if action == "history":
+            limit = int(parts[1]) if len(parts) > 1 else 25
+            history = [event for event in self.events.events if str(event.get("node", "")) == "event.emit"]
+            payload = history[-limit:]
+            return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+        return CommandResult(output="", error="usage: event on|emit|list|history ...")
 
     def _run_vision(self, args: str, _: str, __: Any) -> CommandResult:
         parts = split_command(args)
@@ -2528,7 +3282,7 @@ class NovaShell:
         if action == "subscribe":
             if len(parts) < 3:
                 return CommandResult(output="", error="usage: dflow subscribe <event> <pipeline>")
-            self._dflow_subscribers.setdefault(parts[1], []).append(parts[2])
+            self._subscribe_event_pipeline(parts[1], parts[2])
             return CommandResult(output="subscribed\n")
         if action == "publish":
             if len(parts) < 3:
@@ -2541,19 +3295,7 @@ class NovaShell:
                 payload_parts = payload_parts[:-1]
             if not payload_parts:
                 return CommandResult(output="", error="usage: dflow publish <event> <payload> [--broadcast]")
-            payload = " ".join(payload_parts)
-            executed: list[dict[str, str]] = []
-            for pipeline in self._dflow_subscribers.get(event_name, []):
-                result = self._route_with_input(pipeline, payload)
-                executed.append({"pipeline": pipeline, "error": result.error or "", "output": result.output.strip()})
-            if broadcast and self.mesh.workers:
-                event_data = json.dumps({"event": event_name, "payload": payload}).encode("utf-8")
-                for worker in self.mesh.list_workers():
-                    req = urllib.request.Request(worker["url"].rstrip("/") + "/flow/event", data=event_data, headers={"Content-Type": "application/json"}, method="POST")
-                    with contextlib.suppress(Exception):
-                        urllib.request.urlopen(req, timeout=5).read()
-            out = {"event": event_name, "executed": executed}
-            return CommandResult(output=json.dumps(out, ensure_ascii=False) + "\n", data=out, data_type=PipelineType.OBJECT)
+            return self._publish_event(event_name, " ".join(payload_parts), broadcast=broadcast)
         if action == "list":
             return CommandResult(output=json.dumps(self._dflow_subscribers, ensure_ascii=False) + "\n", data=self._dflow_subscribers, data_type=PipelineType.OBJECT)
         return CommandResult(output="", error="usage: dflow subscribe|publish|list ...")
@@ -3134,7 +3876,7 @@ class NovaShell:
     def repl(self) -> None:
         print(f"NovaShell {__version__} Compute Runtime")
         print(
-            "Commands: py | cpp | gpu | wasm | jit_wasm | data | data.load | remote | mesh | ai | vision | fabric | guard | secure | flow | sync | lens | studio | on | pack | observe | watch | parallel | events | ns.exec | ns.run | sys | cd | pwd | clear | cls | doctor | help | exit"
+            "Commands: py | cpp | gpu | wasm | jit_wasm | data | data.load | remote | mesh | ai | agent | event | vision | fabric | guard | secure | flow | sync | lens | studio | on | pack | observe | watch | parallel | events | ns.exec | ns.run | sys | cd | pwd | clear | cls | doctor | help | exit"
         )
         print("Pipelines: cmd | watch file | parallel py ...\n")
 

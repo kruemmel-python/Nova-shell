@@ -446,7 +446,34 @@ Dieses Modell eignet sich fuer:
 - asynchrone Batch-Verarbeitung
 - lokale Automatisierung
 
-## 14. Verteilte Events mit NovaFlow
+## 14. Event-Driven Runtime
+
+Lokale Event-Subscriptions anlegen:
+
+```text
+nova> event on local_event 'py _.upper()'
+subscribed
+```
+
+Event emittieren:
+
+```text
+nova> event emit local_event hello nova
+```
+
+Event-Historie ansehen:
+
+```text
+nova> event history 10
+```
+
+Wenn Mesh-Worker vorhanden sind, kann das Event auch verteilt werden:
+
+```text
+nova> event emit local_event hello nova --broadcast
+```
+
+## 15. Verteilte Events mit NovaFlow
 
 Auf ein Event abonnieren:
 
@@ -473,7 +500,39 @@ Wenn Mesh-Worker existieren, kann mit `--broadcast` auch remote verteilt werden:
 nova> dflow publish test_event ping --broadcast
 ```
 
-## 15. NovaSynth und Optimierung
+## 16. NovaSynth und Optimierung
+
+AI-Provider-Konfiguration anzeigen:
+
+```text
+nova> ai providers
+nova> ai config
+```
+
+Modelle fuer LM Studio oder einen anderen Provider anzeigen:
+
+```text
+nova> ai models lmstudio
+nova> ai use lmstudio local-model
+```
+
+`.env` erneut laden:
+
+```text
+nova> ai env reload
+```
+
+Live-Prompt gegen den aktiven Provider senden:
+
+```text
+nova> ai prompt "Summarize this dataset"
+```
+
+Ohne aktiven Provider bleibt `ai plan` der lokale Heuristikpfad:
+
+```text
+nova> ai plan "calculate csv average"
+```
 
 Heuristische Engine-Empfehlung:
 
@@ -495,7 +554,27 @@ nova> ai "calculate csv average"
 data load file.csv | py sum(float(r['A']) for r in _) / len(_)
 ```
 
-## 16. NovaGraph und C++-Fusion
+Einfachen Agenten anlegen und ausfuehren:
+
+```text
+nova> agent create analyst "Summarize {{input}}" --provider lmstudio --model local-model
+nova> agent run analyst quarterly report
+nova> agent list
+```
+
+## 17. NovaGraph und C++-Fusion
+
+GPU-Task-Graph planen:
+
+```text
+nova> gpu graph plan kernel_a.cl kernel_b.cl --input "1 2 3"
+```
+
+GPU-Task-Graph ausfuehren:
+
+```text
+nova> gpu graph run kernel_a.cl kernel_b.cl --input "1 2 3"
+```
 
 Pipeline optimiert analysieren:
 
@@ -520,7 +599,7 @@ Hinweis:
 - Fuer `cpp` und `graph run` mit C++-Stages wird `g++` benoetigt.
 - Auf Windows hilft `doctor` beim Toolchain-Check.
 
-## 17. Security und Sandbox
+## 18. Security und Sandbox
 
 Aktuellen Sandbox-Status pruefen:
 
@@ -571,7 +650,7 @@ nova> guard ebpf-compile guard.json
 nova> guard ebpf-enforce guard.json
 ```
 
-## 18. Was braucht Zusatz-Tooling?
+## 19. Was braucht Zusatz-Tooling?
 
 Einige Beispiele funktionieren nur mit optionalen Modulen oder Toolchains:
 
@@ -587,7 +666,7 @@ Pruefe alles gesammelt mit:
 nova> doctor
 ```
 
-## 19. Empfohlener Lernpfad
+## 20. Empfohlener Lernpfad
 
 Wenn du Nova-shell systematisch lernen willst, ist diese Reihenfolge sinnvoll:
 
@@ -602,7 +681,7 @@ Wenn du Nova-shell systematisch lernen willst, ist diese Reihenfolge sinnvoll:
 9. `reactive`, `dflow`, `mesh`
 10. Guard, Sandbox und sichere Ausfuehrung
 
-## 20. Naechste Schritte
+## 21. Naechste Schritte
 
 Nach diesem Tutorial sind die besten Anschlusspunkte:
 

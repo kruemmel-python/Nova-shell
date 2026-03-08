@@ -11,8 +11,26 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from nova_shell import CppEngine, NovaShell, PipelineType, __version__, main
+from nova_shell import CommandResult, CppEngine, NovaShell, PipelineType, __version__, main
 from novascript import Assignment, ForLoop, IfBlock, NovaInterpreter, NovaParser
+
+
+class FakeHTTPResponse:
+    def __init__(self, payload: object) -> None:
+        self.payload = payload
+        self.headers = self
+
+    def read(self) -> bytes:
+        return json.dumps(self.payload).encode("utf-8")
+
+    def get_content_charset(self) -> str:
+        return "utf-8"
+
+    def __enter__(self) -> "FakeHTTPResponse":
+        return self
+
+    def __exit__(self, exc_type: object, exc: object, tb: object) -> bool:
+        return False
 
 
 class NovaShellTests(unittest.TestCase):
@@ -513,6 +531,116 @@ if len(files_lines) == 2:
         put = self.shell.route("fabric remote-put http://127.0.0.1:1 hello")
         self.assertIsNotNone(put.error)
         self.assertIn("remote-put", put.error)
+
+    def test_ai_env_reload_and_providers(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            env_file = Path(tmp) / ".env"
+            env_file.write_text("OPENAI_API_KEY=test-openai\nLM_STUDIO_BASE_URL=http://127.0.0.1:1234/v1\n", encoding="utf-8")
+            self.shell.cwd = Path(tmp)
+            self.shell.ai_runtime.cwd = Path(tmp)
+            reload_result = self.shell.route("ai env reload")
+            self.assertIsNone(reload_result.error)
+            payload = json.loads(reload_result.output)
+            self.assertIn(str(env_file), payload["loaded_env_files"])
+
+            providers = self.shell.route("ai providers")
+            self.assertIsNone(providers.error)
+            rows = json.loads(providers.output)
+            openai = next(item for item in rows if item["provider"] == "openai")
+            lmstudio = next(item for item in rows if item["provider"] == "lmstudio")
+            self.assertTrue(openai["configured"])
+            self.assertTrue(lmstudio["configured"])
+
+    def test_ai_models_use_and_prompt_with_lmstudio(self) -> None:
+        def fake_urlopen(request: object, timeout: int = 0) -> FakeHTTPResponse:
+            url = request.full_url if hasattr(request, "full_url") else str(request)
+            if url.endswith("/models"):
+                return FakeHTTPResponse({"data": [{"id": "local-model"}, {"id": "fallback-model"}]})
+            if url.endswith("/chat/completions"):
+                return FakeHTTPResponse({"choices": [{"message": {"content": "hello from lmstudio"}}]})
+            raise AssertionError(f"unexpected url: {url}")
+
+        with patch("nova_shell.urllib.request.urlopen", side_effect=fake_urlopen):
+            models = self.shell.route("ai models lmstudio")
+            self.assertIsNone(models.error)
+            models_payload = json.loads(models.output)
+            self.assertIn("local-model", models_payload["models"])
+
+            selected = self.shell.route("ai use lmstudio local-model")
+            self.assertIsNone(selected.error)
+            selected_payload = json.loads(selected.output)
+            self.assertEqual(selected_payload["provider"], "lmstudio")
+            self.assertEqual(selected_payload["model"], "local-model")
+
+            prompt = self.shell.route('ai prompt "say hello"')
+            self.assertIsNone(prompt.error)
+            self.assertIn("hello from lmstudio", prompt.output)
+
+    def test_ai_prompt_without_provider_uses_heuristic_plan(self) -> None:
+        with patch.object(self.shell.ai_runtime, "get_active_provider", return_value=""):
+            self.shell.ai_runtime.active_provider = ""
+            self.shell.ai_runtime.active_model = ""
+            result = self.shell.route('ai "calculate csv average"')
+        self.assertIsNone(result.error)
+        self.assertIn("data load file.csv", result.output)
+
+    def test_agent_create_and_run(self) -> None:
+        calls: list[dict[str, str]] = []
+
+        def fake_complete(prompt: str, *, provider: str | None = None, model: str | None = None, system_prompt: str = "") -> CommandResult:
+            calls.append({"prompt": prompt, "provider": provider or "", "model": model or "", "system_prompt": system_prompt})
+            return CommandResult(output="agent-response\n", data={"text": "agent-response"}, data_type=PipelineType.OBJECT)
+
+        with patch.object(self.shell.ai_runtime, "complete_prompt", side_effect=fake_complete):
+            create = self.shell.route('agent create helper "Summarize {{input}}" --provider lmstudio --model local-model --system "You are precise."')
+            self.assertIsNone(create.error)
+            run = self.shell.route("agent run helper quarterly report")
+            self.assertIsNone(run.error)
+            self.assertEqual(run.output.strip(), "agent-response")
+
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(calls[0]["provider"], "lmstudio")
+        self.assertEqual(calls[0]["model"], "local-model")
+        self.assertEqual(calls[0]["system_prompt"], "You are precise.")
+        self.assertIn("quarterly report", calls[0]["prompt"])
+
+    def test_event_on_emit_and_history(self) -> None:
+        sub = self.shell.route("event on local_event 'py _.upper()'")
+        self.assertIsNone(sub.error)
+
+        emitted = self.shell.route("event emit local_event hello nova")
+        self.assertIsNone(emitted.error)
+        payload = json.loads(emitted.output)
+        self.assertEqual(payload["executed"][0]["output"], "HELLO NOVA")
+
+        history = self.shell.route("event history 1")
+        self.assertIsNone(history.error)
+        history_payload = json.loads(history.output)
+        self.assertTrue(any(str(entry["stage"]).startswith("event local_event") for entry in history_payload))
+
+    def test_gpu_graph_plan_and_run(self) -> None:
+        calls: list[tuple[str, str]] = []
+
+        def fake_run_kernel(kernel_file: str, pipeline_input: str = "") -> CommandResult:
+            calls.append((kernel_file, pipeline_input))
+            if len(calls) == 1:
+                return CommandResult(output="2 4 6\n", data=[2.0, 4.0, 6.0], data_type=PipelineType.ARRAY_STREAM)
+            return CommandResult(output="4 8 12\n", data=[4.0, 8.0, 12.0], data_type=PipelineType.ARRAY_STREAM)
+
+        with patch.object(self.shell.gpu, "run_kernel", side_effect=fake_run_kernel):
+            plan = self.shell.route('gpu graph plan first.cl second.cl --input "1 2 3"')
+            self.assertIsNone(plan.error)
+            plan_payload = json.loads(plan.output)
+            self.assertEqual(len(plan_payload["kernels"]), 2)
+
+            run = self.shell.route('gpu graph run first.cl second.cl --input "1 2 3"')
+            self.assertIsNone(run.error)
+            run_payload = json.loads(run.output)
+            self.assertEqual(run_payload["output"].strip(), "4 8 12")
+
+        self.assertEqual(len(calls), 2)
+        self.assertEqual(calls[0][1], "1 2 3")
+        self.assertEqual(calls[1][1], "2 4 6")
 
 
     def test_optimizer_suggest_and_run(self) -> None:
