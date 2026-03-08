@@ -157,6 +157,10 @@ Lernpfad mit vielen Programmierbeispielen:
 
 [Tutorial.md](Tutorial.md)
 
+Vollstaendige Command-Referenz:
+
+[Dokumentation.md](Dokumentation.md)
+
 Schnellster Einstieg fuer Endnutzer:
 
 [Atheria_Schnellstart.md](Atheria_Schnellstart.md)

@@ -1,5 +1,6 @@
 include README.md
 include Tutorial.md
+include Dokumentation.md
 include Atheria_Schnellstart.md
 include use_atheria.md
 include Multi-Agenten-Clusters.md
