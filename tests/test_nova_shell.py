@@ -552,7 +552,10 @@ if len(files_lines) == 2:
             self.assertTrue(lmstudio["configured"])
 
     def test_ai_models_use_and_prompt_with_lmstudio(self) -> None:
+        observed_timeouts: list[int] = []
+
         def fake_urlopen(request: object, timeout: int = 0) -> FakeHTTPResponse:
+            observed_timeouts.append(int(timeout))
             url = request.full_url if hasattr(request, "full_url") else str(request)
             if url.endswith("/models"):
                 return FakeHTTPResponse({"data": [{"id": "local-model"}, {"id": "fallback-model"}]})
@@ -576,6 +579,8 @@ if len(files_lines) == 2:
             self.assertIsNone(prompt.error)
             self.assertIn("hello from lmstudio", prompt.output)
 
+        self.assertGreaterEqual(max(observed_timeouts), 180)
+
     def test_ai_prompt_without_provider_uses_heuristic_plan(self) -> None:
         with patch.object(self.shell.ai_runtime, "get_active_provider", return_value=""):
             self.shell.ai_runtime.active_provider = ""
@@ -583,6 +588,52 @@ if len(files_lines) == 2:
             result = self.shell.route('ai "calculate csv average"')
         self.assertIsNone(result.error)
         self.assertIn("data load file.csv", result.output)
+
+    def test_ai_prompt_with_pipeline_data_adds_context(self) -> None:
+        calls: list[str] = []
+
+        def fake_complete(prompt: str, *, provider: str | None = None, model: str | None = None, system_prompt: str = "") -> CommandResult:
+            calls.append(prompt)
+            return CommandResult(output="summary\n", data={"text": "summary"}, data_type=PipelineType.OBJECT)
+
+        with tempfile.TemporaryDirectory() as tmp, patch.object(self.shell.ai_runtime, "complete_prompt", side_effect=fake_complete):
+            csv_file = Path(tmp) / "items.csv"
+            csv_file.write_text("id,name,price\n1,Brot,2.50\n2,Käse,4.20\n", encoding="utf-8")
+            result = self.shell.route(f'data load {csv_file} | ai prompt "Summarize this dataset"')
+
+        self.assertIsNone(result.error)
+        self.assertEqual(result.output.strip(), "summary")
+        self.assertEqual(len(calls), 1)
+        self.assertIn("Nova-shell context", calls[0])
+        self.assertIn("Brot", calls[0])
+
+    def test_ai_prompt_file_option_uses_shell_cwd(self) -> None:
+        calls: list[str] = []
+
+        def fake_complete(prompt: str, *, provider: str | None = None, model: str | None = None, system_prompt: str = "") -> CommandResult:
+            calls.append(prompt)
+            return CommandResult(output="file-summary\n", data={"text": "file-summary"}, data_type=PipelineType.OBJECT)
+
+        with tempfile.TemporaryDirectory() as tmp, patch.object(self.shell.ai_runtime, "complete_prompt", side_effect=fake_complete):
+            tmp_path = Path(tmp)
+            csv_file = tmp_path / "items.csv"
+            csv_file.write_text("id,name,price\n1,Brot,2.50\n", encoding="utf-8")
+            self.shell.cwd = tmp_path
+            self.shell.ai_runtime.cwd = tmp_path
+            result = self.shell.route('ai prompt --file items.csv "Summarize this dataset"')
+
+        self.assertIsNone(result.error)
+        self.assertEqual(result.output.strip(), "file-summary")
+        self.assertEqual(len(calls), 1)
+        self.assertIn("preview_rows", calls[0])
+        self.assertIn("Brot", calls[0])
+
+    def test_ai_prompt_dataset_without_context_returns_guidance(self) -> None:
+        with patch.object(self.shell.ai_runtime, "complete_prompt") as complete_mock:
+            result = self.shell.route('ai prompt "Summarize this dataset"')
+        self.assertIsNotNone(result.error)
+        self.assertIn("dataset context missing", result.error)
+        complete_mock.assert_not_called()
 
     def test_agent_create_and_run(self) -> None:
         calls: list[dict[str, str]] = []
@@ -603,6 +654,16 @@ if len(files_lines) == 2:
         self.assertEqual(calls[0]["model"], "local-model")
         self.assertEqual(calls[0]["system_prompt"], "You are precise.")
         self.assertIn("quarterly report", calls[0]["prompt"])
+
+    def test_agent_run_lmstudio_timeout_returns_local_provider_hint(self) -> None:
+        with patch("nova_shell.urllib.request.urlopen", side_effect=TimeoutError("timed out")):
+            create = self.shell.route('agent create helper "Summarize {{input}}" --provider lmstudio --model local-model')
+            self.assertIsNone(create.error)
+            run = self.shell.route("agent run helper quarterly report")
+
+        self.assertIsNotNone(run.error)
+        self.assertIn("local model may still be loading", run.error)
+        self.assertIn("LM_STUDIO_TIMEOUT", run.error)
 
     def test_event_on_emit_and_history(self) -> None:
         sub = self.shell.route("event on local_event 'py _.upper()'")
