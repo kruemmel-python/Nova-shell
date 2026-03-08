@@ -157,6 +157,10 @@ Lernpfad mit vielen Programmierbeispielen:
 
 [Tutorial.md](Tutorial.md)
 
+Schnellster Einstieg fuer Endnutzer:
+
+[Atheria_Schnellstart.md](Atheria_Schnellstart.md)
+
 Eigene Anleitung fuer Training, Chat und Agentenbetrieb mit Atheria:
 
 [use_atheria.md](use_atheria.md)
