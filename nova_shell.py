@@ -19,6 +19,7 @@ import os
 import glob
 import fnmatch
 import re
+import socket
 import shlex
 import shutil
 import subprocess
@@ -334,6 +335,8 @@ class AIAgentDefinition:
 @dataclass
 class VectorMemoryEntry:
     entry_id: str
+    namespace: str
+    project: str
     text: str
     vector: list[float]
     metadata: dict[str, Any] = field(default_factory=dict)
@@ -360,6 +363,24 @@ class AgentRuntimeInstance:
     source_agent: str = ""
     history: list[dict[str, str]] = field(default_factory=list)
     created_at: float = field(default_factory=time.time)
+
+
+@dataclass
+class AgentGraphDefinition:
+    name: str
+    nodes: list[str]
+    edges: list[tuple[str, str]] = field(default_factory=list)
+    created_at: float = field(default_factory=time.time)
+
+
+@dataclass
+class LocalManagedWorker:
+    worker_id: str
+    url: str
+    caps: set[str]
+    process: subprocess.Popen[Any]
+    log_path: Path
+    started_at: float = field(default_factory=time.time)
 
 
 @dataclass
@@ -788,6 +809,14 @@ class MeshScheduler:
             }
         )
 
+    def get_worker(self, url: str) -> dict[str, Any] | None:
+        return next((w for w in self.workers if w["url"] == url), None)
+
+    def remove_worker(self, url: str) -> bool:
+        before = len(self.workers)
+        self.workers = [w for w in self.workers if w["url"] != url]
+        return len(self.workers) != before
+
     def heartbeat(self, url: str, *, latency_ms: float | None = None, data_handles: Iterable[str] | None = None) -> bool:
         worker = next((w for w in self.workers if w["url"] == url), None)
         if worker is None:
@@ -800,8 +829,9 @@ class MeshScheduler:
         return True
 
     def list_workers(self) -> list[dict[str, Any]]:
-        return [
-            {
+        rows: list[dict[str, Any]] = []
+        for w in sorted(self.workers, key=lambda item: (item["load"], item["url"])):
+            row = {
                 "url": w["url"],
                 "caps": sorted(w["caps"]),
                 "load": w["load"],
@@ -809,8 +839,11 @@ class MeshScheduler:
                 "data_handles": sorted(w.get("data_handles", set())),
                 "last_seen": w.get("last_seen", 0.0),
             }
-            for w in sorted(self.workers, key=lambda item: (item["load"], item["url"]))
-        ]
+            for key in ("managed_local", "worker_id", "pid", "log_path"):
+                if key in w:
+                    row[key] = w[key]
+            rows.append(row)
+        return rows
 
     def select_worker(self, capability: str) -> dict[str, Any] | None:
         candidates = [w for w in self.workers if capability in w["caps"]]
@@ -1622,11 +1655,48 @@ class NovaSynth:
 
 
 class NovaVectorMemory:
-    """Small local vector memory using deterministic hashed embeddings."""
+    """Persistent local vector memory using deterministic hashed embeddings."""
 
-    def __init__(self, dimensions: int = 64) -> None:
+    def __init__(self, dimensions: int = 64, db_path: str | Path | None = None) -> None:
         self.dimensions = dimensions
+        self.db_path = Path(db_path or (Path.home() / ".nova_shell_memory" / "vector_memory.db")).resolve()
+        self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        self.conn = sqlite3.connect(self.db_path, check_same_thread=False)
         self.entries: dict[str, VectorMemoryEntry] = {}
+        self._init_schema()
+        self._load_entries()
+
+    def _init_schema(self) -> None:
+        self.conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS vector_memory (
+                id TEXT PRIMARY KEY,
+                namespace TEXT NOT NULL,
+                project TEXT NOT NULL,
+                text TEXT NOT NULL,
+                vector_json TEXT NOT NULL,
+                metadata_json TEXT NOT NULL,
+                created_at REAL NOT NULL
+            )
+            """
+        )
+        self.conn.commit()
+
+    def _load_entries(self) -> None:
+        cur = self.conn.execute(
+            "SELECT id, namespace, project, text, vector_json, metadata_json, created_at FROM vector_memory"
+        )
+        self.entries.clear()
+        for row in cur.fetchall():
+            self.entries[str(row[0])] = VectorMemoryEntry(
+                entry_id=str(row[0]),
+                namespace=str(row[1]),
+                project=str(row[2]),
+                text=str(row[3]),
+                vector=list(json.loads(str(row[4]))),
+                metadata=dict(json.loads(str(row[5]))),
+                created_at=float(row[6]),
+            )
 
     def _tokenize(self, text: str) -> list[str]:
         return [token for token in re.findall(r"[A-Za-z0-9_\-\u00C0-\u024F]+", text.lower()) if token]
@@ -1646,25 +1716,54 @@ class NovaVectorMemory:
             return vector
         return [value / norm for value in vector]
 
-    def embed(self, text: str, *, entry_id: str | None = None, metadata: dict[str, Any] | None = None) -> VectorMemoryEntry:
+    def embed(
+        self,
+        text: str,
+        *,
+        entry_id: str | None = None,
+        metadata: dict[str, Any] | None = None,
+        namespace: str = "default",
+        project: str = "default",
+    ) -> VectorMemoryEntry:
         chosen_id = (entry_id or f"mem_{uuid.uuid4().hex[:8]}").strip()
         entry = VectorMemoryEntry(
             entry_id=chosen_id,
+            namespace=namespace.strip() or "default",
+            project=project.strip() or "default",
             text=text,
             vector=self._embed(text),
             metadata=dict(metadata or {}),
         )
         self.entries[chosen_id] = entry
+        self.conn.execute(
+            "INSERT OR REPLACE INTO vector_memory(id, namespace, project, text, vector_json, metadata_json, created_at) VALUES(?, ?, ?, ?, ?, ?, ?)",
+            (
+                entry.entry_id,
+                entry.namespace,
+                entry.project,
+                entry.text,
+                json.dumps(entry.vector),
+                json.dumps(entry.metadata, ensure_ascii=False),
+                entry.created_at,
+            ),
+        )
+        self.conn.commit()
         return entry
 
-    def search(self, query: str, *, limit: int = 5) -> list[dict[str, Any]]:
+    def search(self, query: str, *, limit: int = 5, namespace: str | None = None, project: str | None = None) -> list[dict[str, Any]]:
         query_vector = self._embed(query)
         scored: list[dict[str, Any]] = []
         for entry in self.entries.values():
+            if namespace and entry.namespace != namespace:
+                continue
+            if project and entry.project != project:
+                continue
             score = sum(a * b for a, b in zip(query_vector, entry.vector))
             scored.append(
                 {
                     "id": entry.entry_id,
+                    "namespace": entry.namespace,
+                    "project": entry.project,
                     "score": round(float(score), 6),
                     "text": entry.text,
                     "metadata": entry.metadata,
@@ -1674,18 +1773,30 @@ class NovaVectorMemory:
         scored.sort(key=lambda item: float(item["score"]), reverse=True)
         return scored[: max(1, limit)]
 
-    def list_entries(self) -> list[dict[str, Any]]:
+    def list_entries(self, *, namespace: str | None = None, project: str | None = None) -> list[dict[str, Any]]:
         rows = []
         for entry in self.entries.values():
+            if namespace and entry.namespace != namespace:
+                continue
+            if project and entry.project != project:
+                continue
             rows.append(
                 {
                     "id": entry.entry_id,
+                    "namespace": entry.namespace,
+                    "project": entry.project,
                     "text_preview": entry.text[:160],
                     "metadata": entry.metadata,
                     "created_at": entry.created_at,
                 }
             )
         return rows
+
+    def count(self, *, namespace: str | None = None, project: str | None = None) -> int:
+        return len(self.list_entries(namespace=namespace, project=project))
+
+    def close(self) -> None:
+        self.conn.close()
 
 
 class NovaAIProviderRuntime:
@@ -2253,6 +2364,73 @@ class VisionServer:
         return CommandResult(output="vision stopped\n")
 
 
+class MeshWorkerServer:
+    """Small HTTP worker runtime for local mesh execution."""
+
+    def __init__(self, shell: "NovaShell", caps: set[str]) -> None:
+        self.shell = shell
+        self.caps = set(caps)
+
+    def serve(self, host: str, port: int) -> int:
+        shell = self.shell
+        caps = sorted(self.caps)
+
+        class Handler(http.server.BaseHTTPRequestHandler):
+            def _write_json(self, payload: Any, status: int = 200) -> None:
+                body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+                self.send_response(status)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+
+            def do_GET(self) -> None:  # noqa: N802
+                parsed = urllib.parse.urlparse(self.path)
+                if parsed.path in {"/health", "/"}:
+                    self._write_json({"status": "ok", "caps": caps, "node_id": shell.node_id})
+                    return
+                if parsed.path == "/caps":
+                    self._write_json({"caps": caps})
+                    return
+                self.send_response(404)
+                self.end_headers()
+
+            def do_POST(self) -> None:  # noqa: N802
+                parsed = urllib.parse.urlparse(self.path)
+                if parsed.path not in {"/", "/execute"}:
+                    self.send_response(404)
+                    self.end_headers()
+                    return
+                length = int(self.headers.get("Content-Length", "0"))
+                body = self.rfile.read(length) if length > 0 else b"{}"
+                try:
+                    payload = json.loads(body.decode("utf-8"))
+                except Exception:
+                    payload = {}
+                command = str(payload.get("command", "")).strip()
+                if not command:
+                    self._write_json({"output": "", "data": None, "error": "missing command", "data_type": PipelineType.TEXT.value}, status=400)
+                    return
+                result = shell.route(command)
+                response = {
+                    "output": result.output,
+                    "data": result.data,
+                    "error": result.error,
+                    "data_type": result.data_type.value,
+                }
+                self._write_json(response, status=200 if result.error is None else 500)
+
+            def log_message(self, format: str, *args: Any) -> None:  # noqa: A003
+                return
+
+        server = http.server.ThreadingHTTPServer((host, port), Handler)
+        try:
+            server.serve_forever()
+        finally:
+            server.server_close()
+        return 0
+
+
 class NovaShell:
     def __init__(self) -> None:
         self.runtime_config = load_runtime_config()
@@ -2287,6 +2465,7 @@ class NovaShell:
         self.gpu_task_graphs: dict[str, GPUTaskGraphArtifact] = {}
         self.agents: dict[str, AIAgentDefinition] = {}
         self.agent_instances: dict[str, AgentRuntimeInstance] = {}
+        self.agent_graphs: dict[str, AgentGraphDefinition] = {}
         self.tools: dict[str, ToolSchemaDefinition] = {}
         self._register_builtin_tools()
         self.vision = VisionServer(self)
@@ -2295,6 +2474,11 @@ class NovaShell:
         self._ns_runtime: NovaInterpreter | None = None
         self._dflow_subscribers: dict[str, list[str]] = {}
         self.wasm_sandbox_default = bool(self.runtime_config.get("sandbox_default", False))
+        self.current_memory_namespace = str(self.runtime_config.get("memory_namespace") or "default")
+        self.current_memory_project = str(self.runtime_config.get("memory_project") or "default")
+        self.local_mesh_workers: dict[str, LocalManagedWorker] = {}
+        self.mesh_log_dir = Path(tempfile.gettempdir()) / "nova-shell-mesh-workers"
+        self.mesh_log_dir.mkdir(parents=True, exist_ok=True)
 
         self.commands: dict[str, Callable[[str, str, Any], CommandResult]] = {
             "py": self._run_python,
@@ -2357,6 +2541,7 @@ class NovaShell:
 
         self._loop_owner_thread = threading.get_ident()
         self.loop = asyncio.new_event_loop()
+        self._closed = False
         atexit.register(self._close_loop)
 
     def _init_history(self) -> None:
@@ -2373,14 +2558,28 @@ class NovaShell:
         readline.write_history_file(self._history_file)
 
     def _close_loop(self) -> None:
-        self.vision.stop()
-        self.reactive.clear()
-        self.fabric.cleanup()
-        self.zero.cleanup()
-        self.flow_state.close()
-        self.lens.close()
-        if not self.loop.is_closed():
-            self.loop.close()
+        if self._closed:
+            return
+        self._closed = True
+        with contextlib.suppress(Exception):
+            self._stop_all_local_mesh_workers()
+        with contextlib.suppress(Exception):
+            self.vision.stop()
+        with contextlib.suppress(Exception):
+            self.reactive.clear()
+        with contextlib.suppress(Exception):
+            self.fabric.cleanup()
+        with contextlib.suppress(Exception):
+            self.zero.cleanup()
+        with contextlib.suppress(Exception):
+            self.flow_state.close()
+        with contextlib.suppress(Exception):
+            self.lens.close()
+        with contextlib.suppress(Exception):
+            self.memory.close()
+        with contextlib.suppress(Exception):
+            if not self.loop.is_closed():
+                self.loop.close()
 
     def register_command(self, name: str, handler: Callable[..., CommandResult]) -> None:
         params = len(inspect.signature(handler).parameters)
@@ -3029,10 +3228,151 @@ class NovaShell:
             column = "A"
         return filename, column
 
+    def _resolve_memory_scope(self, namespace: str | None = None, project: str | None = None, *, all_scopes: bool = False) -> tuple[str | None, str | None]:
+        if all_scopes:
+            return None, None
+        return namespace or self.current_memory_namespace, project or self.current_memory_project
+
+    def _parse_memory_scope_args(self, parts: list[str], *, start_index: int = 0) -> tuple[dict[str, Any], list[str]]:
+        namespace = ""
+        project = ""
+        all_scopes = False
+        limit: int | None = None
+        remaining: list[str] = []
+        i = start_index
+        while i < len(parts):
+            token = parts[i]
+            if token == "--namespace" and i + 1 < len(parts):
+                namespace = parts[i + 1]
+                i += 2
+                continue
+            if token == "--project" and i + 1 < len(parts):
+                project = parts[i + 1]
+                i += 2
+                continue
+            if token == "--all":
+                all_scopes = True
+                i += 1
+                continue
+            if token == "--limit" and i + 1 < len(parts):
+                with contextlib.suppress(Exception):
+                    limit = max(1, int(parts[i + 1]))
+                i += 2
+                continue
+            remaining.append(token)
+            i += 1
+        return {"namespace": namespace, "project": project, "all_scopes": all_scopes, "limit": limit}, remaining
+
+    def _memory_scope_payload(self) -> dict[str, Any]:
+        return {
+            "namespace": self.current_memory_namespace,
+            "project": self.current_memory_project,
+            "count": self.memory.count(namespace=self.current_memory_namespace, project=self.current_memory_project),
+            "total_count": self.memory.count(),
+        }
+
     def _memory_context_hits(self, query: str, *, limit: int = 3) -> list[dict[str, Any]]:
         if not self.memory.entries:
             return []
-        return self.memory.search(query, limit=limit)
+        namespace, project = self._resolve_memory_scope()
+        return self.memory.search(query, limit=limit, namespace=namespace, project=project)
+
+    def _parse_agent_graph_edges(self, edges_text: str, nodes: list[str]) -> list[tuple[str, str]]:
+        edges: list[tuple[str, str]] = []
+        if not edges_text.strip():
+            return [(nodes[index], nodes[index + 1]) for index in range(len(nodes) - 1)]
+        for token in [item.strip() for item in edges_text.split(",") if item.strip()]:
+            if ">" in token:
+                left, right = token.split(">", 1)
+            elif "->" in token:
+                left, right = token.split("->", 1)
+            else:
+                continue
+            edges.append((left.strip(), right.strip()))
+        return edges
+
+    def _topological_agent_graph(self, graph: AgentGraphDefinition) -> list[str]:
+        indegree = {node: 0 for node in graph.nodes}
+        outgoing: dict[str, list[str]] = {node: [] for node in graph.nodes}
+        for left, right in graph.edges:
+            if left not in indegree or right not in indegree:
+                raise ValueError("agent graph edge references unknown node")
+            indegree[right] += 1
+            outgoing[left].append(right)
+        queue = [node for node in graph.nodes if indegree[node] == 0]
+        ordered: list[str] = []
+        while queue:
+            node = queue.pop(0)
+            ordered.append(node)
+            for target in outgoing.get(node, []):
+                indegree[target] -= 1
+                if indegree[target] == 0:
+                    queue.append(target)
+        if len(ordered) != len(graph.nodes):
+            raise ValueError("agent graph contains a cycle")
+        return ordered
+
+    def _resolve_agent_handle(self, name: str) -> tuple[AgentRuntimeInstance | None, AIAgentDefinition | None]:
+        if name in self.agent_instances:
+            return self.agent_instances[name], None
+        return None, self.agents.get(name)
+
+    def _run_agent_handle(self, name: str, input_text: str) -> CommandResult:
+        instance, definition = self._resolve_agent_handle(name)
+        if instance is not None:
+            return self._run_agent_instance_message(instance, input_text)
+        if definition is not None:
+            return self._run_agent_once(definition, input_text)
+        return CommandResult(output="", error=f"agent not found: {name}")
+
+    def _find_free_port(self) -> int:
+        sock = socket.socket()
+        try:
+            sock.bind(("127.0.0.1", 0))
+            return int(sock.getsockname()[1])
+        finally:
+            sock.close()
+
+    def _local_worker_command(self, host: str, port: int, caps: set[str]) -> list[str]:
+        caps_text = ",".join(sorted(caps))
+        if getattr(sys, "frozen", False):
+            return [sys.executable, "--serve-worker", "--worker-host", host, "--worker-port", str(port), "--worker-caps", caps_text]
+        return [sys.executable, str(Path(__file__).resolve()), "--serve-worker", "--worker-host", host, "--worker-port", str(port), "--worker-caps", caps_text]
+
+    def _wait_for_worker_health(self, url: str, *, timeout_seconds: float = 10.0) -> bool:
+        deadline = time.time() + timeout_seconds
+        while time.time() < deadline:
+            try:
+                with urllib.request.urlopen(url.rstrip("/") + "/health", timeout=1) as response:
+                    payload = json.loads(response.read().decode("utf-8"))
+                if payload.get("status") == "ok":
+                    return True
+            except Exception:
+                time.sleep(0.1)
+        return False
+
+    def _stop_local_mesh_worker(self, identifier: str) -> bool:
+        match = self.local_mesh_workers.get(identifier)
+        if match is None:
+            match = next((worker for worker in self.local_mesh_workers.values() if worker.url == identifier or worker.url.endswith(f":{identifier}") or worker.worker_id == identifier), None)
+        if match is None:
+            return False
+        process = match.process
+        with contextlib.suppress(Exception):
+            if process.poll() is None:
+                process.terminate()
+        with contextlib.suppress(Exception):
+            process.wait(timeout=5)
+        with contextlib.suppress(Exception):
+            if process.poll() is None:
+                process.kill()
+        self.mesh.remove_worker(match.url)
+        self.local_mesh_workers.pop(match.worker_id, None)
+        return True
+
+    def _stop_all_local_mesh_workers(self) -> None:
+        for worker_id in list(self.local_mesh_workers.keys()):
+            self._stop_local_mesh_worker(worker_id)
 
     def _planner_tool_candidates(self, prompt: str) -> list[ToolSchemaDefinition]:
         lowered = prompt.lower()
@@ -3332,15 +3672,37 @@ class NovaShell:
     def _run_memory(self, args: str, pipeline_input: str, pipeline_data: Any) -> CommandResult:
         parts = split_command(args)
         if not parts:
-            return CommandResult(output="", error="usage: memory embed|search|list ...")
+            return CommandResult(output="", error="usage: memory embed|search|list|namespace|project|status ...")
         action = parts[0]
+
+        if action == "namespace":
+            if len(parts) == 1:
+                payload = self._memory_scope_payload()
+                return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+            self.current_memory_namespace = parts[1].strip() or "default"
+            payload = self._memory_scope_payload()
+            return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+
+        if action == "project":
+            if len(parts) == 1:
+                payload = self._memory_scope_payload()
+                return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+            self.current_memory_project = parts[1].strip() or "default"
+            payload = self._memory_scope_payload()
+            return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+
+        if action == "status":
+            payload = self._memory_scope_payload()
+            return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
 
         if action == "embed":
             entry_id = ""
             file_path_text = ""
             metadata: dict[str, Any] = {}
-            text_tokens: list[str] = []
+            scope_options, text_tokens = self._parse_memory_scope_args(parts, start_index=1)
+            namespace, project = self._resolve_memory_scope(scope_options["namespace"], scope_options["project"], all_scopes=bool(scope_options["all_scopes"]))
             i = 1
+            text_tokens = []
             while i < len(parts):
                 token = parts[i]
                 if token in {"--id", "--key"} and i + 1 < len(parts):
@@ -3358,6 +3720,12 @@ class NovaShell:
                     metadata = parsed_meta or {}
                     i += 2
                     continue
+                if token in {"--namespace", "--project", "--limit"} and i + 1 < len(parts):
+                    i += 2
+                    continue
+                if token == "--all":
+                    i += 1
+                    continue
                 text_tokens.append(token)
                 i += 1
             text = " ".join(text_tokens).strip()
@@ -3372,10 +3740,18 @@ class NovaShell:
             elif not text:
                 text = pipeline_input.strip()
             if not text:
-                return CommandResult(output="", error="usage: memory embed [--id name] [--file path] [--meta json] <text>")
-            entry = self.memory.embed(text, entry_id=entry_id or None, metadata=metadata)
+                return CommandResult(output="", error="usage: memory embed [--id name] [--namespace n] [--project p] [--file path] [--meta json] <text>")
+            entry = self.memory.embed(
+                text,
+                entry_id=entry_id or None,
+                metadata=metadata,
+                namespace=namespace or "default",
+                project=project or "default",
+            )
             payload = {
                 "id": entry.entry_id,
+                "namespace": entry.namespace,
+                "project": entry.project,
                 "dimensions": len(entry.vector),
                 "metadata": entry.metadata,
                 "text_preview": entry.text[:200],
@@ -3383,29 +3759,22 @@ class NovaShell:
             return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
 
         if action == "search":
-            limit = 5
-            query_tokens: list[str] = []
-            i = 1
-            while i < len(parts):
-                token = parts[i]
-                if token == "--limit" and i + 1 < len(parts):
-                    with contextlib.suppress(Exception):
-                        limit = max(1, int(parts[i + 1]))
-                    i += 2
-                    continue
-                query_tokens.append(token)
-                i += 1
+            scope_options, query_tokens = self._parse_memory_scope_args(parts, start_index=1)
+            limit = int(scope_options["limit"] or 5)
+            namespace, project = self._resolve_memory_scope(scope_options["namespace"], scope_options["project"], all_scopes=bool(scope_options["all_scopes"]))
             query = " ".join(query_tokens).strip() or pipeline_input.strip()
             if not query:
-                return CommandResult(output="", error="usage: memory search [--limit n] <query>")
-            payload = self.memory.search(query, limit=limit)
+                return CommandResult(output="", error="usage: memory search [--namespace n] [--project p] [--all] [--limit n] <query>")
+            payload = self.memory.search(query, limit=limit, namespace=namespace, project=project)
             return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
 
         if action == "list":
-            payload = self.memory.list_entries()
+            scope_options, _ = self._parse_memory_scope_args(parts, start_index=1)
+            namespace, project = self._resolve_memory_scope(scope_options["namespace"], scope_options["project"], all_scopes=bool(scope_options["all_scopes"]))
+            payload = self.memory.list_entries(namespace=namespace, project=project)
             return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
 
-        return CommandResult(output="", error="usage: memory embed|search|list ...")
+        return CommandResult(output="", error="usage: memory embed|search|list|namespace|project|status ...")
 
     def _run_tool(self, args: str, pipeline_input: str, pipeline_data: Any) -> CommandResult:
         parts = split_command(args)
@@ -3841,9 +4210,94 @@ class NovaShell:
     def _run_agent(self, args: str, _: str, __: Any) -> CommandResult:
         parts = split_command(args)
         if not parts:
-            return CommandResult(output="", error="usage: agent create|run|show|list|spawn|message|workflow ...")
+            return CommandResult(output="", error="usage: agent create|run|show|list|spawn|message|workflow|graph ...")
 
         action = parts[0]
+        if action == "graph":
+            if len(parts) < 2:
+                return CommandResult(output="", error="usage: agent graph create|show|list|run ...")
+            graph_action = parts[1]
+            if graph_action == "list":
+                payload = [
+                    {"name": graph.name, "nodes": graph.nodes, "edges": graph.edges, "created_at": graph.created_at}
+                    for graph in self.agent_graphs.values()
+                ]
+                return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+            if graph_action == "show":
+                if len(parts) < 3:
+                    return CommandResult(output="", error="usage: agent graph show <name>")
+                graph = self.agent_graphs.get(parts[2])
+                if graph is None:
+                    return CommandResult(output="", error="agent graph not found")
+                payload = {"name": graph.name, "nodes": graph.nodes, "edges": graph.edges, "created_at": graph.created_at}
+                return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+            if graph_action == "create":
+                if len(parts) < 3:
+                    return CommandResult(output="", error="usage: agent graph create <name> --nodes a,b[,c] [--edges a>b,b>c]")
+                name = parts[2]
+                nodes: list[str] = []
+                edges_text = ""
+                i = 3
+                while i < len(parts):
+                    token = parts[i]
+                    if token == "--nodes" and i + 1 < len(parts):
+                        nodes = [node.strip() for node in parts[i + 1].split(",") if node.strip()]
+                        i += 2
+                        continue
+                    if token == "--edges" and i + 1 < len(parts):
+                        edges_text = parts[i + 1]
+                        i += 2
+                        continue
+                    i += 1
+                if not nodes:
+                    return CommandResult(output="", error="agent graph requires --nodes a,b[,c]")
+                edges = self._parse_agent_graph_edges(edges_text, nodes)
+                graph = AgentGraphDefinition(name=name, nodes=nodes, edges=edges)
+                try:
+                    self._topological_agent_graph(graph)
+                except Exception as exc:
+                    return CommandResult(output="", error=str(exc))
+                self.agent_graphs[name] = graph
+                payload = {"name": graph.name, "nodes": graph.nodes, "edges": graph.edges}
+                return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+            if graph_action == "run":
+                if len(parts) < 3:
+                    return CommandResult(output="", error="usage: agent graph run <name> --input text")
+                graph = self.agent_graphs.get(parts[2])
+                if graph is None:
+                    return CommandResult(output="", error="agent graph not found")
+                input_text = ""
+                i = 3
+                while i < len(parts):
+                    token = parts[i]
+                    if token == "--input" and i + 1 < len(parts):
+                        input_text = parts[i + 1]
+                        i += 2
+                        continue
+                    i += 1
+                if not input_text:
+                    return CommandResult(output="", error="agent graph run requires --input text")
+                ordered = self._topological_agent_graph(graph)
+                inbound: dict[str, list[str]] = {node: [] for node in graph.nodes}
+                for left, right in graph.edges:
+                    inbound[right].append(left)
+                node_outputs: dict[str, str] = {}
+                steps: list[dict[str, Any]] = []
+                for node in ordered:
+                    incoming = inbound.get(node, [])
+                    node_input = input_text if not incoming else "\n\n".join(node_outputs[source] for source in incoming if source in node_outputs)
+                    result = self._run_agent_handle(node, node_input)
+                    if result.error:
+                        return result
+                    output_text = result.output.strip()
+                    node_outputs[node] = output_text
+                    steps.append({"node": node, "input": node_input, "output": output_text})
+                sinks = [node for node in graph.nodes if all(left != node for left, _ in graph.edges)]
+                final_output = "\n\n".join(node_outputs.get(node, "") for node in sinks if node_outputs.get(node, ""))
+                payload = {"name": graph.name, "nodes": graph.nodes, "edges": graph.edges, "steps": steps, "final_output": final_output}
+                return CommandResult(output=(final_output + "\n") if final_output else "", data=payload, data_type=PipelineType.OBJECT)
+            return CommandResult(output="", error="usage: agent graph create|show|list|run ...")
+
         if action == "list":
             payload = [
                 {
@@ -4048,7 +4502,7 @@ class NovaShell:
             payload = {"agents": names, "input": input_text, "steps": steps, "final_output": current_text}
             return CommandResult(output=(current_text + "\n") if current_text else "", data=payload, data_type=PipelineType.OBJECT)
 
-        return CommandResult(output="", error="usage: agent create|run|show|list|spawn|message|workflow ...")
+        return CommandResult(output="", error="usage: agent create|run|show|list|spawn|message|workflow|graph ...")
 
     def _subscribe_event_pipeline(self, event_name: str, pipeline: str) -> None:
         self._dflow_subscribers.setdefault(event_name, []).append(pipeline)
@@ -4185,9 +4639,66 @@ class NovaShell:
     def _run_mesh(self, args: str, _: str, __: Any) -> CommandResult:
         parts = split_command(args)
         if not parts:
-            return CommandResult(output="", error="usage: mesh add|list|run|intelligent-run|beat ...")
+            return CommandResult(output="", error="usage: mesh add|list|run|intelligent-run|beat|start-worker|stop-worker ...")
 
         action = parts[0]
+        if action == "start-worker":
+            host = "127.0.0.1"
+            port = 0
+            caps: set[str] = {"cpu", "py", "ai"}
+            i = 1
+            while i < len(parts):
+                token = parts[i]
+                if token == "--host" and i + 1 < len(parts):
+                    host = parts[i + 1]
+                    i += 2
+                    continue
+                if token == "--port" and i + 1 < len(parts):
+                    with contextlib.suppress(Exception):
+                        port = int(parts[i + 1])
+                    i += 2
+                    continue
+                if token == "--caps" and i + 1 < len(parts):
+                    caps = {cap.strip() for cap in parts[i + 1].split(",") if cap.strip()}
+                    i += 2
+                    continue
+                i += 1
+            if port <= 0:
+                port = self._find_free_port()
+            url = f"http://{host}:{port}"
+            worker_id = uuid.uuid4().hex[:8]
+            log_path = self.mesh_log_dir / f"worker-{worker_id}.log"
+            command = self._local_worker_command(host, port, caps)
+            with log_path.open("w", encoding="utf-8") as handle:
+                process = subprocess.Popen(command, stdout=handle, stderr=subprocess.STDOUT, cwd=str(self.cwd))
+            if not self._wait_for_worker_health(url):
+                with contextlib.suppress(Exception):
+                    process.terminate()
+                return CommandResult(output="", error=f"worker failed to start: {url}")
+            managed = LocalManagedWorker(worker_id=worker_id, url=url, caps=caps, process=process, log_path=log_path)
+            self.local_mesh_workers[worker_id] = managed
+            self.mesh.add_worker(url, caps)
+            worker = self.mesh.get_worker(url)
+            if worker is not None:
+                worker["managed_local"] = True
+                worker["worker_id"] = worker_id
+                worker["pid"] = process.pid
+                worker["log_path"] = str(log_path)
+            payload = {
+                "worker_id": worker_id,
+                "url": url,
+                "caps": sorted(caps),
+                "pid": process.pid,
+                "log_path": str(log_path),
+            }
+            return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+        if action == "stop-worker":
+            if len(parts) < 2:
+                return CommandResult(output="", error="usage: mesh stop-worker <worker_id|url|port>")
+            ok = self._stop_local_mesh_worker(parts[1])
+            if not ok:
+                return CommandResult(output="", error="managed local worker not found")
+            return CommandResult(output="stopped\n")
         if action == "add":
             if len(parts) < 3:
                 return CommandResult(output="", error="usage: mesh add <worker_url> <cap1,cap2,...>")
@@ -4240,7 +4751,7 @@ class NovaShell:
                 return self.remote.execute(worker["url"], command)
             finally:
                 worker["load"] = max(worker["load"] - 1, 0)
-        return CommandResult(output="", error="usage: mesh add|list|run|intelligent-run|beat ...")
+        return CommandResult(output="", error="usage: mesh add|list|run|intelligent-run|beat|start-worker|stop-worker ...")
 
     def _run_guard(self, args: str, _: str, __: Any) -> CommandResult:
         parts = split_command(args)
@@ -5111,6 +5622,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("-c", "--command", help="run a single command and exit")
     parser.add_argument("--no-plugins", action="store_true", help="skip plugin discovery")
     parser.add_argument("--version", action="store_true", help="print the Nova-shell version")
+    parser.add_argument("--serve-worker", action="store_true", help="run a local mesh worker HTTP server")
+    parser.add_argument("--worker-host", default="127.0.0.1", help="host for --serve-worker")
+    parser.add_argument("--worker-port", type=int, default=8769, help="port for --serve-worker")
+    parser.add_argument("--worker-caps", default="cpu,py,ai", help="comma-separated capabilities for --serve-worker")
     args = parser.parse_args(argv)
 
     if args.version:
@@ -5120,6 +5635,11 @@ def main(argv: list[str] | None = None) -> int:
     shell = NovaShell()
     if not args.no_plugins:
         shell.load_plugins()
+
+    if args.serve_worker:
+        caps = {cap.strip() for cap in args.worker_caps.split(",") if cap.strip()}
+        worker_server = MeshWorkerServer(shell, caps)
+        return worker_server.serve(args.worker_host, args.worker_port)
 
     if args.command is not None:
         result = shell.route(args.command)

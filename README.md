@@ -8,6 +8,9 @@ Neu in der Runtime-Schicht:
 - `.env`-gestuetzte API-Key- und Modell-Auswahl direkt aus Nova-shell
 - lokale `event`-Runtime fuer Event-Driven Workflows
 - `agent`-Kommandos fuer wiederverwendbare AI-Agenten
+- persistente Vector-Memory-Scopes ueber `memory namespace` und `memory project`
+- `agent graph` fuer gerichtete Multi-Agent-Topologien
+- lokale `mesh`-Worker, die echte Worker-Prozesse auf dem Host starten koennen
 - `gpu graph` als erster GPU-Task-Graph-Pfad
 
 ## Nächste Ebene: 5 professionell umgesetzte Enterprise-Module
@@ -62,12 +65,12 @@ Neu in der Runtime-Schicht:
 
 - Engines: `py/python`, `cpp`, `gpu`, `wasm`, `remote`, `sys`.
 - AI Runtime: `ai providers|models|use|config|env reload|prompt|plan`
-- AI Agents: `agent create|run|show|list`
+- AI Agents: `agent create|run|show|list|spawn|message|workflow|graph`
 - Event Runtime: `event on|emit|list|history`
 - GPU Task Graphs: `gpu graph plan|run|show`
 - NovaGraph AOT (`graph aot|run|show`) inkl. C++-Expr-Fusion.
 - NovaLens CAS-Lineage (`lens list|last|show|replay`).
-- Mesh Intelligence (`mesh beat`, `mesh intelligent-run`).
+- Mesh Intelligence (`mesh beat`, `mesh intelligent-run`, `mesh start-worker`, `mesh stop-worker`).
 - NovaScript 2.0 Contracts + Reactive Hooks (`watch`, `ns.emit`, `ns.check`).
 - Fabric inkl. Remote/RDMA-orientierter Transferpfade.
 
@@ -113,9 +116,11 @@ nova-shell -c "data load items.csv | ai prompt \"Summarize this dataset\""
 
 Fuer langsame lokale Modelle kann das Timeout per `LM_STUDIO_TIMEOUT` oder `NOVA_AI_TIMEOUT` erhoeht werden.
 
-Vector Memory, Tool Schemas, Planner und Multi-Agent-Runtime:
+Vector Memory, Tool Schemas, Planner, Agent Graphs und Mesh-Worker:
 
 ```bash
+nova-shell -c "memory namespace pricing"
+nova-shell -c "memory project q1"
 nova-shell -c "memory embed --id sales-q1 \"Q1 revenue grew 18 percent in DACH\""
 nova-shell -c "memory search \"DACH revenue\""
 nova-shell -c "tool register summarize_csv --description \"summarize a csv file\" --schema '{\"type\":\"object\",\"properties\":{\"file\":{\"type\":\"string\"}},\"required\":[\"file\"]}' --pipeline 'ai prompt --file {{file}} \"Summarize this dataset\"'"
@@ -123,14 +128,22 @@ nova-shell -c "tool.call summarize_csv file=items.csv"
 nova-shell -c "ai plan \"calculate csv average\""
 nova-shell -c "ai plan --run \"calculate average price in items.csv\""
 nova-shell -c "ai plan --run --retries 2 \"calculate average price in items.csv\""
+nova-shell -c "agent graph create review_chain --nodes analyst,reviewer"
+nova-shell -c "agent graph run review_chain --input \"quarterly report\""
 nova-shell -c "agent spawn analyst_rt --from analyst"
 nova-shell -c "agent message analyst_rt \"quarterly report\""
 nova-shell -c "agent workflow --agents analyst,reviewer --input \"quarterly report\""
+nova-shell -c "mesh start-worker --caps cpu,py,ai"
+nova-shell -c "mesh list"
 ```
 
 Lernpfad mit vielen Programmierbeispielen:
 
 [Tutorial.md](Tutorial.md)
+
+Ausfuehrliche Betriebsanleitung fuer einen lokalen Multi-Agenten-Cluster mit LM Studio:
+
+[Multi-Agenten-Clusters.md](Multi-Agenten-Clusters.md)
 
 Ideen und Produktbilder dazu, was man konkret mit Nova-shell bauen kann:
 

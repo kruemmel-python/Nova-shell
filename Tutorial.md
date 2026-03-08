@@ -571,10 +571,14 @@ nova> agent run analyst quarterly report
 nova> agent list
 ```
 
-Vector Memory fuer semantische Kurzzeit-Erinnerung:
+Vector Memory fuer laengerfristigen Projektkontext:
 
 ```text
+nova> memory namespace pricing
+nova> memory project q1
 nova> memory embed --id sales-q1 "Q1 revenue grew 18 percent in DACH"
+nova> memory status
+nova> memory list
 nova> memory search "DACH revenue"
 ```
 
@@ -601,13 +605,24 @@ nova> ai plan --run "calculate average price in items.csv"
 nova> ai plan --run --retries 2 "calculate average price in items.csv"
 ```
 
-Multi-Agent-Runtime mit Spawn, Message und Workflow:
+Multi-Agent-Runtime mit Spawn, Message, Workflow und Graph:
 
 ```text
 nova> agent create reviewer "Review {{input}}" --provider lmstudio --model local-model
 nova> agent spawn analyst_rt --from analyst
 nova> agent message analyst_rt "prepare the quarterly report outline"
 nova> agent workflow --agents analyst,reviewer --input "quarterly report"
+nova> agent graph create review_chain --nodes analyst,reviewer
+nova> agent graph run review_chain --input "quarterly report"
+```
+
+Lokalen Mesh-Worker starten und fuer Remote-Ausfuehrung nutzen:
+
+```text
+nova> mesh start-worker --caps cpu,py,ai
+nova> mesh list
+nova> mesh run py py 1 + 1
+nova> mesh stop-worker <worker_id>
 ```
 
 ## 17. NovaGraph und C++-Fusion

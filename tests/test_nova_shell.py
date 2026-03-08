@@ -6,7 +6,7 @@ import threading
 import time
 import unittest
 import zipfile
-from contextlib import redirect_stderr, redirect_stdout
+from contextlib import redirect_stderr, redirect_stdout, suppress
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -39,7 +39,11 @@ class NovaShellTests(unittest.TestCase):
         self.shell = NovaShell()
 
     def tearDown(self) -> None:
-        self.shell.route(f"cd {self.original_cwd}")
+        try:
+            self.shell.route(f"cd {self.original_cwd}")
+        finally:
+            with suppress(Exception):
+                self.shell._close_loop()
 
     def test_python_expression(self) -> None:
         result = self.shell.route("py 1 + 2")
@@ -602,6 +606,53 @@ if len(files_lines) == 2:
         self.assertGreaterEqual(len(payload), 1)
         self.assertEqual(payload[0]["id"], "groceries")
 
+    def test_memory_namespace_project_scope_persists_across_shells(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            temp_home = Path(tmp)
+            first_shell: NovaShell | None = None
+            second_shell: NovaShell | None = None
+            with patch("nova_shell.Path.home", return_value=temp_home):
+                try:
+                    first_shell = NovaShell()
+                    self.assertIsNone(first_shell.route("memory namespace finance").error)
+                    self.assertIsNone(first_shell.route("memory project q1").error)
+                    self.assertIsNone(first_shell.route('memory embed --id sales "Revenue price gross margin"').error)
+                    self.assertIsNone(first_shell.route("memory project q2").error)
+                    self.assertIsNone(first_shell.route('memory embed --id forecast "Forecast pipeline bookings"').error)
+
+                    status = first_shell.route("memory status")
+                    self.assertIsNone(status.error)
+                    status_payload = json.loads(status.output)
+                    self.assertEqual(status_payload["namespace"], "finance")
+                    self.assertEqual(status_payload["project"], "q2")
+                    self.assertEqual(status_payload["count"], 1)
+                    self.assertEqual(status_payload["total_count"], 2)
+
+                    scoped = first_shell.route("memory list")
+                    self.assertIsNone(scoped.error)
+                    self.assertEqual([row["id"] for row in json.loads(scoped.output)], ["forecast"])
+
+                    all_rows = first_shell.route("memory list --all")
+                    self.assertIsNone(all_rows.error)
+                    self.assertEqual({row["id"] for row in json.loads(all_rows.output)}, {"sales", "forecast"})
+                finally:
+                    if first_shell is not None:
+                        first_shell._close_loop()
+
+                try:
+                    second_shell = NovaShell()
+                    self.assertIsNone(second_shell.route("memory namespace finance").error)
+                    self.assertIsNone(second_shell.route("memory project q1").error)
+                    search = second_shell.route('memory search "revenue price"')
+                    self.assertIsNone(search.error)
+                    payload = json.loads(search.output)
+                    self.assertEqual(payload[0]["id"], "sales")
+                    self.assertEqual(payload[0]["namespace"], "finance")
+                    self.assertEqual(payload[0]["project"], "q1")
+                finally:
+                    if second_shell is not None:
+                        second_shell._close_loop()
+
     def test_tool_register_and_call_with_schema(self) -> None:
         register = self.shell.route(
             "tool register greet --description 'Greet user' "
@@ -833,6 +884,33 @@ if len(files_lines) == 2:
         self.assertEqual(workflow.data["steps"][0]["output"], "analysis")
         self.assertEqual(workflow.data["steps"][1]["output"], "reviewed analysis")
 
+    def test_agent_graph_runs_nodes_in_topological_order(self) -> None:
+        calls: list[dict[str, str]] = []
+
+        def fake_complete(prompt: str, *, provider: str | None = None, model: str | None = None, system_prompt: str = "") -> CommandResult:
+            calls.append({"prompt": prompt, "model": model or "", "provider": provider or ""})
+            if model == "analyst-model":
+                return CommandResult(output=f"analysis:{prompt}\n", data={"text": prompt}, data_type=PipelineType.OBJECT)
+            if model == "reviewer-model":
+                return CommandResult(output=f"review:{prompt}\n", data={"text": prompt}, data_type=PipelineType.OBJECT)
+            return CommandResult(output=f"default:{prompt}\n", data={"text": prompt}, data_type=PipelineType.OBJECT)
+
+        with patch.object(self.shell.ai_runtime, "complete_prompt", side_effect=fake_complete):
+            self.assertIsNone(self.shell.route('agent create analyst "Analyze {{input}}" --provider lmstudio --model analyst-model').error)
+            self.assertIsNone(self.shell.route('agent create reviewer "Review {{input}}" --provider lmstudio --model reviewer-model').error)
+            created = self.shell.route("agent graph create review_chain --nodes analyst,reviewer")
+            self.assertIsNone(created.error)
+            run = self.shell.route('agent graph run review_chain --input "quarterly report"')
+
+        self.assertIsNone(run.error)
+        self.assertEqual(run.output.strip(), "review:Review analysis:Analyze quarterly report")
+        self.assertEqual(len(run.data["steps"]), 2)
+        self.assertEqual(run.data["steps"][0]["node"], "analyst")
+        self.assertEqual(run.data["steps"][0]["input"], "quarterly report")
+        self.assertEqual(run.data["steps"][1]["node"], "reviewer")
+        self.assertEqual(run.data["steps"][1]["input"], "analysis:Analyze quarterly report")
+        self.assertEqual([call["model"] for call in calls], ["analyst-model", "reviewer-model"])
+
     def test_agent_run_lmstudio_timeout_returns_local_provider_hint(self) -> None:
         with patch("nova_shell.urllib.request.urlopen", side_effect=TimeoutError("timed out")):
             create = self.shell.route('agent create helper "Summarize {{input}}" --provider lmstudio --model local-model')
@@ -991,6 +1069,35 @@ if len(files_lines) == 2:
         self.assertIsNone(beat.error)
         run = self.shell.route("mesh intelligent-run gpu py 1+1 --handle handleA")
         self.assertIsNotNone(run.error)
+
+    def test_mesh_start_worker_run_and_stop(self) -> None:
+        started = self.shell.route("mesh start-worker --caps cpu,py")
+        self.assertIsNone(started.error)
+        payload = json.loads(started.output)
+        worker_id = payload["worker_id"]
+        worker_url = payload["url"]
+
+        try:
+            self.assertTrue(Path(payload["log_path"]).exists())
+            listed = self.shell.route("mesh list")
+            self.assertIsNone(listed.error)
+            workers = json.loads(listed.output)
+            match = next(worker for worker in workers if worker["url"] == worker_url)
+            self.assertTrue(match["managed_local"])
+            self.assertEqual(match["worker_id"], worker_id)
+            self.assertIn("py", match["caps"])
+
+            run = self.shell.route("mesh run py py 1 + 1")
+            self.assertIsNone(run.error)
+            self.assertEqual(run.output.strip(), "2")
+        finally:
+            stop = self.shell.route(f"mesh stop-worker {worker_id}")
+            self.assertIsNone(stop.error)
+            self.assertEqual(stop.output.strip(), "stopped")
+
+        listed_after = self.shell.route("mesh list")
+        self.assertIsNone(listed_after.error)
+        self.assertFalse(any(worker.get("worker_id") == worker_id for worker in json.loads(listed_after.output)))
 
     def test_guard_ebpf_compile_and_enforce_blocks_term(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
