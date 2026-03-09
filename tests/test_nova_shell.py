@@ -186,6 +186,17 @@ class NovaShellTests(unittest.TestCase):
             piped = self.shell.route(f"data load {csv_file} | py len(_)")
             self.assertEqual(piped.output.strip(), "2")
 
+    def test_data_load_alias_matches_data_load(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            csv_file = Path(tmp) / "items.csv"
+            csv_file.write_text("name,value\na,1\nb,2\n", encoding="utf-8")
+
+            result = self.shell.route(f"data.load {csv_file}")
+            self.assertIsNone(result.error)
+            parsed = json.loads(result.output)
+            self.assertEqual(len(parsed), 2)
+            self.assertEqual(parsed[1]["name"], "b")
+
     def test_parallel_pipeline(self) -> None:
         result = self.shell.route("printf 'a\nb\n' | parallel py _.upper()")
         self.assertIsNone(result.error)
@@ -836,6 +847,24 @@ if len(files_lines) == 2:
         self.assertIsNotNone(missing.error)
         self.assertIn("missing required tool argument: name", missing.error)
 
+    def test_tool_alias_commands_list_and_show(self) -> None:
+        register = self.shell.route(
+            "tool.register greet_alias --description 'Greet alias user' "
+            "--schema '{\"type\":\"object\",\"properties\":{\"name\":{\"type\":\"string\"}},\"required\":[\"name\"]}' "
+            "--pipeline 'py \"Hello \" + {{py:name}}'"
+        )
+        self.assertIsNone(register.error)
+
+        listed = self.shell.route("tool.list")
+        self.assertIsNone(listed.error)
+        tools = json.loads(listed.output)
+        self.assertTrue(any(tool["name"] == "greet_alias" for tool in tools))
+
+        shown = self.shell.route("tool.show greet_alias")
+        self.assertIsNone(shown.error)
+        payload = json.loads(shown.output)
+        self.assertEqual(payload["name"], "greet_alias")
+
     def test_ai_plan_prefers_registered_tool_candidate(self) -> None:
         self.shell.route(
             "tool register csv_average --description 'calculate csv average from file' "
@@ -1200,6 +1229,13 @@ if len(files_lines) == 2:
         self.assertEqual(len(calls), 2)
         self.assertEqual(calls[0][1], "1 2 3")
         self.assertEqual(calls[1][1], "2 4 6")
+
+    def test_cpp_sandbox_reports_missing_emcc_or_usage(self) -> None:
+        result = self.shell.route("cpp.sandbox 1 + 1")
+        if result.error:
+            self.assertIn("emcc", result.error)
+        else:
+            self.assertTrue(result.output.strip())
 
 
     def test_optimizer_suggest_and_run(self) -> None:
