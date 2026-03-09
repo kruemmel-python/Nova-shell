@@ -433,6 +433,29 @@ if len(files_lines) == 2:
             self.assertIsNone(result.error)
             self.assertEqual(result.output.strip(), "25")
 
+    def test_ns_run_supports_comments_range_and_object_conditions(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            script_file = Path(tmp) / "watch_test.ns"
+            script_file.write_text(
+                "# comment\n"
+                "watch resonance_detected:\n"
+                '    match_data = flow state get "last_match"\n'
+                '    analysis = py $match_data + "!"\n'
+                '    py "ALARM:" + $analysis\n'
+                "for i in range(2):\n"
+                '    current_scan = py {"score": 0.9, "summary": "hit"}\n'
+                "    if float(current_scan.score) > 0.85:\n"
+                '        flow state set "last_match" $current_scan\n'
+                '        ns.emit resonance_detected "TRUE"\n'
+                "    sys sleep 0\n",
+                encoding="utf-8",
+            )
+            result = self.shell.route(f"ns.run {script_file}")
+
+        self.assertIsNone(result.error)
+        self.assertIn("ALARM:", result.output)
+        self.assertEqual(result.output.count("ALARM:"), 2)
+
     def test_ns_check_uses_shell_cwd_for_relative_path(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp).resolve()

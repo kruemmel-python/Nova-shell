@@ -50,7 +50,7 @@ except ImportError:  # pragma: no cover - platform dependent
     readline = None
 
 
-__version__ = "0.8.0"
+__version__ = "0.8.1"
 SIDELOAD_PACKAGE_DIR = "vendor-py"
 RUNTIME_CONFIG_FILE = "nova-shell-runtime.json"
 
@@ -663,6 +663,13 @@ class SystemEngine:
                 data=payload,
                 data_type=PipelineType.TEXT,
             )
+        if parts and parts[0] == "sleep":
+            seconds = 0.0
+            if len(parts) > 1:
+                with contextlib.suppress(Exception):
+                    seconds = max(0.0, float(parts[1]))
+            time.sleep(seconds)
+            return CommandResult(output="", data="", data_type=PipelineType.TEXT)
 
         proc = subprocess.run(
             command,
@@ -2940,7 +2947,7 @@ class NovaAIProviderRuntime:
 
     def _http_json(self, url: str, *, method: str = "GET", payload: Any = None, headers: dict[str, str] | None = None, timeout: int = 30) -> Any:
         body = None
-        merged_headers = {"User-Agent": "nova-shell/0.8.0"}
+        merged_headers = {"User-Agent": f"nova-shell/{__version__}"}
         if headers:
             merged_headers.update(headers)
         if payload is not None:
@@ -5241,6 +5248,18 @@ class NovaShell:
                     return CommandResult(output="", error="atheria sensor not found")
                 except Exception as exc:
                     return CommandResult(output="", error=f"sensor run failed: {exc}")
+                resonance_query = event_payload["summary"] + "\n\n" + json.dumps(event_payload.get("features", {}), ensure_ascii=False)
+                atheria_hits = self.atheria.search_training(resonance_query, limit=3)
+                memory_hits = self._memory_context_hits(resonance_query, limit=3)
+                top_atheria = float(atheria_hits[0]["score"]) if atheria_hits else 0.0
+                top_memory = float(memory_hits[0]["score"]) if memory_hits else 0.0
+                event_payload["score"] = round(max(top_atheria, top_memory), 6)
+                event_payload["resonance"] = {
+                    "atheria_hits": atheria_hits,
+                    "memory_hits": memory_hits,
+                    "top_source": "atheria" if top_atheria >= top_memory else "memory",
+                    "top_category": str(atheria_hits[0]["category"]) if atheria_hits else "",
+                }
                 if train:
                     text = event_payload["summary"] + "\n\n" + json.dumps(event_payload, ensure_ascii=False, indent=2)
                     memory_entry = self.memory.embed(

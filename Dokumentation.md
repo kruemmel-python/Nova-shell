@@ -1,6 +1,6 @@
 # Nova-shell Dokumentation
 
-Diese Datei ist die vollstaendige Command-Referenz fuer Nova-shell 0.8.0. Sie listet die verfuegbaren Kommandos, ihre Subcommands, eine kurze Erklaerung und jeweils mindestens ein Beispiel.
+Diese Datei ist die vollstaendige Command-Referenz fuer Nova-shell 0.8.1. Sie listet die verfuegbaren Kommandos, ihre Subcommands, eine kurze Erklaerung und jeweils mindestens ein Beispiel.
 
 ## Schreibweise und Grundprinzip
 

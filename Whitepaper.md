@@ -12,7 +12,7 @@ Der Kernnutzen liegt nicht in einer weiteren klassischen Kommandozeile, sondern 
 - Mesh- und Remote-Ausfuehrung fuer verteilte Systeme
 - Lineage-, Observability- und Guard-Mechanismen fuer Nachvollziehbarkeit und Kontrolle
 
-Mit Version 0.8.0 adressiert Nova-shell vor allem vier Anforderungen moderner Plattformen: geringere Integrationskosten zwischen Engines, reproduzierbare Daten- und Compute-Pipelines, kontrollierte Sicherheitsgrenzen und release-faehige Supply-Chain-Artefakte fuer Windows und Linux.
+Mit Version 0.8.1 adressiert Nova-shell vor allem vier Anforderungen moderner Plattformen: geringere Integrationskosten zwischen Engines, reproduzierbare Daten- und Compute-Pipelines, kontrollierte Sicherheitsgrenzen und release-faehige Supply-Chain-Artefakte fuer Windows und Linux.
 
 ## 1. Problemstellung
 
@@ -268,7 +268,7 @@ Diese Abgrenzung ist wichtig, um Nova-shell als belastbare Runtime und nicht als
 
 ## 12. Schlussfolgerung
 
-Nova-shell 0.8.0 ist eine Runtime fuer Teams, die polyglotte Compute-Pfade, Datenfluss, reaktive Workflows, Observability und Security in einem gemeinsamen operativen Modell zusammenfuehren wollen.
+Nova-shell 0.8.1 ist eine Runtime fuer Teams, die polyglotte Compute-Pfade, Datenfluss, reaktive Workflows, Observability und Security in einem gemeinsamen operativen Modell zusammenfuehren wollen.
 
 Der Mehrwert liegt in der Kombination:
 

@@ -2,6 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from nova_shell import __version__
 from release_packaging import (
     format_deb_description,
     load_release_metadata,
@@ -43,7 +44,7 @@ class ReleasePackagingTests(unittest.TestCase):
         metadata = load_release_metadata()
         manifests = render_winget_manifests(
             metadata,
-            "0.8.0",
+            __version__,
             "https://example.invalid/nova-shell.msi",
             "ABC123",
             "x64",
@@ -59,7 +60,7 @@ class ReleasePackagingTests(unittest.TestCase):
             nested.mkdir(parents=True)
             (bundle / "nova_shell.exe").write_text("exe", encoding="utf-8")
             (nested / "helper.dll").write_text("dll", encoding="utf-8")
-            wix = render_wix_source(metadata, "0.8.0", bundle, "nova_shell.exe")
+            wix = render_wix_source(metadata, __version__, bundle, "nova_shell.exe")
         self.assertIn("Package Name=", wix)
         self.assertIn("nova_shell.exe", wix)
         self.assertIn("helper.dll", wix)
@@ -72,7 +73,7 @@ class ReleasePackagingTests(unittest.TestCase):
             nested.mkdir(parents=True)
             (nested / "multiarray.pyd").write_text("bin", encoding="utf-8")
 
-            wix = render_wix_source(metadata, "0.8.0", bundle, "nova_shell.exe")
+            wix = render_wix_source(metadata, __version__, bundle, "nova_shell.exe")
 
         self.assertIn('Name="numpy"', wix)
         self.assertIn('Name="_core"', wix)

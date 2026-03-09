@@ -2,7 +2,7 @@
 
 ## Ziel dieses Tutorials
 
-Dieses Tutorial zeigt Schritt fuer Schritt, wie man in Nova-shell programmiert. Der Fokus liegt auf echten, copy-paste-faehigen Beispielen mit dem aktuellen Stand von Nova-shell 0.8.0.
+Dieses Tutorial zeigt Schritt fuer Schritt, wie man in Nova-shell programmiert. Der Fokus liegt auf echten, copy-paste-faehigen Beispielen mit dem aktuellen Stand von Nova-shell 0.8.1.
 
 Die Beispiele sind in erster Linie fuer die interaktive Nova-shell gedacht. Viele Kommandos bauen auf dem Zustand derselben Session auf, zum Beispiel Python-Variablen, Flow-State, Lens-Snapshots oder Zero-Handles.
 

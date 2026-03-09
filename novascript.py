@@ -2,7 +2,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import ast
+import json
 from pathlib import Path
+import shlex
+from types import SimpleNamespace
 from typing import Any
 import textwrap
 
@@ -49,7 +52,7 @@ class NovaParser:
 
     def parse(self, script: str) -> list[Node]:
         normalized = textwrap.dedent(script)
-        lines = [line.rstrip("\n") for line in normalized.splitlines() if line.strip()]
+        lines = [line.rstrip("\n") for line in normalized.splitlines() if line.strip() and not line.lstrip().startswith("#")]
         nodes, _ = self._parse_block(lines, 0, 0)
         return nodes
 
@@ -119,7 +122,7 @@ class NovaInterpreter:
 
     def __init__(self, shell: Any):
         self.shell = shell
-        self.variables: dict[str, str] = {}
+        self.variables: dict[str, Any] = {}
         self.watchers: dict[str, list[list[Node]]] = {}
 
     def execute(self, nodes: list[Node]) -> str:
@@ -162,6 +165,28 @@ class NovaInterpreter:
         self.variables[variable] = value
         return self._trigger_watch(variable)
 
+    def _result_value(self, result: Any) -> Any:
+        data = getattr(result, "data", None)
+        if data is not None:
+            return data
+        output = getattr(result, "output", "")
+        return output.strip() if isinstance(output, str) else output
+
+    def _to_eval_value(self, value: Any) -> Any:
+        if isinstance(value, dict):
+            return SimpleNamespace(**{key: self._to_eval_value(item) for key, item in value.items()})
+        if isinstance(value, list):
+            return [self._to_eval_value(item) for item in value]
+        return value
+
+    def _eval_locals(self) -> dict[str, Any]:
+        safe_locals: dict[str, Any] = {}
+        for key, value in self.variables.items():
+            safe_locals[key] = self._to_eval_value(value)
+            if isinstance(value, str):
+                safe_locals[f"{key}_lines"] = value.splitlines()
+        return safe_locals
+
     def run_node(self, node: Node) -> str:
         match node:
             case Assignment(name=name, command=command, declared_type=declared_type):
@@ -170,7 +195,7 @@ class NovaInterpreter:
                 if result.error:
                     raise RuntimeError(result.error)
                 self._validate_contract(declared_type, result, f"assignment {name}")
-                self.variables[name] = result.output
+                self.variables[name] = self._result_value(result)
                 hook_output = self._trigger_watch(name)
                 return result.output + hook_output
 
@@ -183,9 +208,16 @@ class NovaInterpreter:
                 return result.output
 
             case ForLoop(var=var, iterable=iterable, body=body):
-                iterable_value = self.variables.get(iterable, "")
+                iterable_value = self.variables.get(iterable)
+                if iterable_value is None:
+                    safe_builtins = {"len": len, "int": int, "float": float, "str": str, "range": range}
+                    iterable_value = eval(iterable, {"__builtins__": safe_builtins}, self._eval_locals())
                 aggregated: list[str] = []
-                for item in iterable_value.splitlines():
+                if isinstance(iterable_value, str):
+                    iterator = iterable_value.splitlines()
+                else:
+                    iterator = iterable_value
+                for item in iterator:
                     self.variables[var] = item
                     for subnode in body:
                         output = self.run_node(subnode)
@@ -213,17 +245,19 @@ class NovaInterpreter:
     def _inject_variables(self, command: str) -> str:
         is_python = command.startswith("py ") or command.startswith("python ")
         for name, value in self.variables.items():
-            replacement = repr(value.strip()) if is_python else value.strip()
+            if is_python:
+                replacement = repr(value)
+            else:
+                if isinstance(value, (dict, list)):
+                    replacement = shlex.quote(json.dumps(value, ensure_ascii=False))
+                else:
+                    replacement = shlex.quote(str(value).strip())
             command = command.replace(f"${name}", replacement)
         return command
 
     def _eval_condition(self, condition: str) -> bool:
-        safe_locals: dict[str, Any] = {}
-        for key, value in self.variables.items():
-            safe_locals[key] = value
-            safe_locals[f"{key}_lines"] = value.splitlines()
-
-        safe_builtins = {"len": len, "int": int, "float": float, "str": str}
+        safe_locals = self._eval_locals()
+        safe_builtins = {"len": len, "int": int, "float": float, "str": str, "range": range}
         return bool(eval(condition, {"__builtins__": safe_builtins}, safe_locals))
 
 

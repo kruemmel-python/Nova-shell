@@ -223,7 +223,7 @@ Direkter Installer-Build:
 ```bash
 python scripts/build_release.py --profile core --mode installers
 SOURCE_DATE_EPOCH=1700000000 python scripts/build_release.py --profile core --mode all --clean
-python scripts/build_release.py --profile core --mode all --base-download-url "https://github.com/<org>/<repo>/releases/download/v0.8.0"
+python scripts/build_release.py --profile core --mode all --base-download-url "https://github.com/<org>/<repo>/releases/download/v0.8.1"
 python scripts/generate_release_notes.py --root dist/release --output dist/release/release-notes.md
 python scripts/sign_release.py --root dist/release --verify
 ```

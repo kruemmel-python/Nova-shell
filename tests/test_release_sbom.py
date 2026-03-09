@@ -4,6 +4,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
+from nova_shell import __version__
 from release_sbom import SbomArtifact, build_cyclonedx_sbom, collect_environment_components, write_cyclonedx_sbom
 
 
@@ -18,7 +19,7 @@ class ReleaseSbomTests(unittest.TestCase):
     def test_build_cyclonedx_sbom_includes_release_artifact_properties(self) -> None:
         payload = build_cyclonedx_sbom(
             package_name="nova-shell",
-            version="0.8.0",
+            version=__version__,
             description="Unified compute runtime",
             license_id="LicenseRef-Proprietary",
             artifacts=[
@@ -58,7 +59,7 @@ class ReleaseSbomTests(unittest.TestCase):
             result = write_cyclonedx_sbom(
                 output_path,
                 package_name="nova-shell",
-                version="0.8.0",
+                version=__version__,
                 description="Unified compute runtime",
                 license_id="LicenseRef-Proprietary",
                 artifact_paths=[

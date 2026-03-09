@@ -3,6 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from nova_shell import __version__
 from release_notes import load_manifests, render_release_notes
 from release_signing import find_artifacts_for_gpg, find_artifacts_for_windows_signing, is_windows_signable
 
@@ -36,7 +37,7 @@ class ReleaseAutomationTests(unittest.TestCase):
             root = Path(tmp)
             manifest = {
                 "name": "nova-shell",
-                "version": "0.8.0",
+                "version": __version__,
                 "profile": "core",
                 "platform": {"system": "Windows", "machine": "AMD64", "platform": "Windows-11"},
                 "built_at_utc": "2026-03-07T00:00:00+00:00",
@@ -45,11 +46,11 @@ class ReleaseAutomationTests(unittest.TestCase):
                     {"kind": "installer", "path": "dist/release/windows/core/nova-shell.msi", "size": 2048, "sha256": "abc123"},
                 ],
             }
-            (root / "nova-shell-0.8.0-core-manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+            (root / f"nova-shell-{__version__}-core-manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
             manifests = load_manifests(root)
             notes = render_release_notes(manifests)
         self.assertEqual(len(manifests), 1)
-        self.assertIn("# nova-shell 0.8.0", notes)
+        self.assertIn(f"# nova-shell {__version__}", notes)
         self.assertIn("dist/release/windows/core/nova-shell.msi", notes)
 
 
