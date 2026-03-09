@@ -8,6 +8,7 @@ Diese Datei ist die vollstaendige Command-Referenz fuer Nova-shell 0.8.1. Sie li
 - `parallel <command>`: Pipeline-Modifier, der dieselbe Stage auf mehrere Eingaben anwendet.
 - Relative Pfade beziehen sich auf das aktuelle Nova-shell-Arbeitsverzeichnis, also auf `pwd` / `cd`.
 - Unbekannte Kommandos fallen auf die System-Shell zurueck. Fuer explizite Shell-Aufrufe ist `sys` die klarere Variante.
+- PowerShell-Umgebungsvariablen wie `$env:NAME="wert"` werden ausserhalb von Nova-shell gesetzt. Innerhalb der Nova-shell-REPL setzt du sie mit `py import os` und `py os.environ["NAME"] = "wert"`.
 
 ## Schnelluebersicht
 
@@ -172,6 +173,7 @@ cpp.sandbox 'int main(){ return 0; }'
 - `atheria sensor show <name>`: Zeigt Konfiguration und Metadaten eines Sensor-Plugins. Beispiel: `atheria sensor show ops_sensor`
 - `atheria sensor map <name> <mapping.json|yaml|json>`: Aktualisiert das JSON-Key-Mapping eines Sensors. Beispiel: `atheria sensor map ops_sensor mapping.json`
 - `atheria sensor run <name> [--input json] [--file payload.json] [--train]`: Fuehrt einen Sensor aus und erzeugt ein standardisiertes Atheria-Event. Beispiel: `atheria sensor run ops_sensor --input '{"system":{"cpu_usage":0.91,"latency":18}}' --train`
+- `atheria sensor run <name>` erzeugt zusaetzlich `score` und `resonance`, damit NovaScript auf `current_scan.score` reagieren kann. Beispiel: `atheria sensor run "BigPlayerWatcher"`
 - `atheria train qa --question <text> --answer <text> [--category name]`: Trainiert Atheria mit einem Q/A-Paar. Beispiel: `atheria train qa --question "What is Nova-shell?" --answer "A unified runtime." --category product`
 - `atheria train json <file>`: Uebernimmt Trainingsdaten aus einer JSON-Datei mit `questions`. Beispiel: `atheria train json model_with_qa.json`
 - `atheria train csv <file>`: Uebernimmt Trainingsdaten aus einer CSV-Datei. Beispiel: `atheria train csv faq.csv`
@@ -241,6 +243,27 @@ ai prompt "Explain Nova-shell in one paragraph"
 agent create storyteller "Tell a concise story about {{input}}" --provider atheria --model atheria-core
 agent run storyteller "Nova-shell and Atheria"
 ```
+
+9. Sensor-Workflow mit der mitgelieferten Vorlage testen:
+
+```text
+cd D:\Nova-shell
+py import os
+py os.environ["INDUSTRY_SCAN_FILE"] = r"D:\Nova-shell\sample_news.json"
+atheria sensor load "industry_scanner.py" --name "BigPlayerWatcher"
+atheria sensor run "BigPlayerWatcher"
+ns.run watch_the_big_players_test.ns
+```
+
+Fuer die Langlaufvariante koennen diese Umgebungsvariablen genutzt werden:
+
+- `INDUSTRY_SCAN_FILE`
+- `INDUSTRY_FEEDS`
+- `NEWSAPI_KEY`
+- `INDUSTRY_NEWS_QUERY`
+- `NOVA_RESONANCE_THRESHOLD`
+- `NOVA_SCAN_INTERVAL_SECONDS`
+- `NOVA_SCAN_ITERATIONS`
 
 ### `agent`
 
@@ -460,6 +483,8 @@ agent run storyteller "Nova-shell and Atheria"
 ### `ns.run`
 
 - `ns.run <script.ns>`: Fuehrt eine NovaScript-Datei aus. Beispiel: `ns.run sample.ns`
+- Beispiel fuer den schnellen Sensor-Test: `ns.run watch_the_big_players_test.ns`
+- Beispiel fuer die Langlaufvariante: `ns.run watch_the_big_players.ns`
 
 ### `ns.emit`
 
@@ -468,6 +493,41 @@ agent run storyteller "Nova-shell and Atheria"
 ### `ns.check`
 
 - `ns.check <script_file.ns>`: Fuehrt eine statische Strukturpruefung fuer ein NovaScript aus. Beispiel: `ns.check sample.ns`
+- Beispiel fuer die Monitoring-Vorlage: `ns.check watch_the_big_players.ns`
+
+## Monitoring-Vorlagen
+
+### `watch_the_big_players_test.ns`
+
+- Zweck: schnelle Sichtprobe fuer Sensor, Atheria-Training und Event-Pfad.
+- Erwartung: gibt `SCAN RESULT` und `TEST ALARM` direkt aus.
+- Typischer Ablauf:
+
+```text
+cd D:\Nova-shell
+py import os
+py os.environ["INDUSTRY_SCAN_FILE"] = r"D:\Nova-shell\sample_news.json"
+ns.run watch_the_big_players_test.ns
+```
+
+### `watch_the_big_players.ns`
+
+- Zweck: Langlauf-Skript fuer periodisches Architektur-/Resonanz-Monitoring.
+- Eingebaute Konfigurationsvariablen:
+  - `NOVA_RESONANCE_THRESHOLD` Standard `0.85`
+  - `NOVA_SCAN_INTERVAL_SECONDS` Standard `3600`
+  - `NOVA_SCAN_ITERATIONS` Standard `100`
+- Typischer Testlauf:
+
+```text
+cd D:\Nova-shell
+py import os
+py os.environ["INDUSTRY_SCAN_FILE"] = r"D:\Nova-shell\sample_news.json"
+py os.environ["NOVA_RESONANCE_THRESHOLD"] = "0.45"
+py os.environ["NOVA_SCAN_INTERVAL_SECONDS"] = "1"
+py os.environ["NOVA_SCAN_ITERATIONS"] = "1"
+ns.run watch_the_big_players.ns
+```
 
 ## Pipeline-Modifier und Nuetzliches im Alltag
 

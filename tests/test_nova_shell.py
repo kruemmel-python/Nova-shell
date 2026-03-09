@@ -72,6 +72,12 @@ class NovaShellTests(unittest.TestCase):
         self.assertIsNone(result.error)
         self.assertEqual(result.output.strip(), "15")
 
+    def test_python_context_preloads_os_module(self) -> None:
+        result = self.shell.route('py os.environ["NOVA_TEST_FLAG"] = "1"')
+        self.assertIsNone(result.error)
+        self.assertEqual(os.environ.get("NOVA_TEST_FLAG"), "1")
+        os.environ.pop("NOVA_TEST_FLAG", None)
+
     def test_pipeline_to_python(self) -> None:
         result = self.shell.route("echo hello | py _.strip().upper()")
         self.assertIsNone(result.error)

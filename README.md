@@ -130,6 +130,33 @@ nova-shell -c "ai use atheria atheria-core"
 nova-shell -c "ai prompt \"Explain Nova-shell in one paragraph\""
 ```
 
+Atheria-Sensoren und NovaScript-Monitoring lokal testen:
+
+```powershell
+$env:INDUSTRY_SCAN_FILE="D:\Nova-shell\sample_news.json"
+$env:NOVA_RESONANCE_THRESHOLD="0.45"
+$env:NOVA_SCAN_INTERVAL_SECONDS="1"
+$env:NOVA_SCAN_ITERATIONS="1"
+nova-shell
+```
+
+Dann in der Nova-shell-REPL:
+
+```text
+cd D:\Nova-shell
+atheria sensor load "industry_scanner.py" --name "BigPlayerWatcher"
+atheria sensor run "BigPlayerWatcher"
+ns.run watch_the_big_players_test.ns
+ns.run watch_the_big_players.ns
+```
+
+Wichtig:
+
+- PowerShell-Syntax wie `$env:INDUSTRY_SCAN_FILE=...` funktioniert nicht innerhalb der Nova-shell-REPL.
+- Innerhalb von Nova-shell setzt du Umgebungsvariablen stattdessen mit `py import os` und `py os.environ["NAME"] = "wert"`.
+- `watch_the_big_players_test.ns` ist die schnelle Sichtprobe.
+- `watch_the_big_players.ns` ist die Langlaufvariante und nutzt standardmaessig `0.85`, `3600` Sekunden und `100` Iterationen.
+
 Vector Memory, Tool Schemas, Planner, Agent Graphs und Mesh-Worker:
 
 ```bash

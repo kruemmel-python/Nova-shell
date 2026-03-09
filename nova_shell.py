@@ -440,7 +440,7 @@ class PythonEngine:
     """Execute Python snippets with optional pipeline input and persistent globals."""
 
     def __init__(self) -> None:
-        self.globals: dict[str, Any] = {}
+        self.globals: dict[str, Any] = {"os": os}
         self._execution_lock = threading.RLock()
 
     @contextlib.contextmanager

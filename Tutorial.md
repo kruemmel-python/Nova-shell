@@ -548,6 +548,64 @@ nova> atheria search "Nova-shell runtime"
 nova> atheria chat "What is Nova-shell?"
 ```
 
+### 16.1 Atheria-Sensoren und Monitoring-Skripte
+
+Nova-shell bringt jetzt einen praktischen Sensor-/Monitoring-Pfad fuer Atheria mit:
+
+- [industry_scanner.py](industry_scanner.py)
+- [sample_news.json](sample_news.json)
+- [watch_the_big_players_test.ns](watch_the_big_players_test.ns)
+- [watch_the_big_players.ns](watch_the_big_players.ns)
+
+Wichtig:
+
+- PowerShell-Syntax wie `$env:INDUSTRY_SCAN_FILE="..."` funktioniert nur vor dem Start von Nova-shell in einer echten PowerShell.
+- Innerhalb der Nova-shell-REPL setzt du Umgebungsvariablen mit Python:
+
+```text
+nova> py import os
+nova> py os.environ["INDUSTRY_SCAN_FILE"] = r"D:\Nova-shell\sample_news.json"
+```
+
+Sensor direkt pruefen:
+
+```text
+nova> cd D:\Nova-shell
+nova> py import os
+nova> py os.environ["INDUSTRY_SCAN_FILE"] = r"D:\Nova-shell\sample_news.json"
+nova> atheria sensor load "industry_scanner.py" --name "BigPlayerWatcher"
+nova> atheria sensor run "BigPlayerWatcher"
+```
+
+Schnelle Testvorlage ausfuehren:
+
+```text
+nova> ns.run watch_the_big_players_test.ns
+```
+
+Die Datei gibt sofort `SCAN RESULT` und `TEST ALARM` aus und ist fuer Sichttests gedacht.
+
+Langlaufvorlage mit steuerbarer Konfiguration:
+
+```text
+nova> py os.environ["NOVA_RESONANCE_THRESHOLD"] = "0.45"
+nova> py os.environ["NOVA_SCAN_INTERVAL_SECONDS"] = "1"
+nova> py os.environ["NOVA_SCAN_ITERATIONS"] = "1"
+nova> ns.run watch_the_big_players.ns
+```
+
+Die Langlaufdatei nutzt standardmaessig:
+
+- Schwellwert `0.85`
+- Intervall `3600` Sekunden
+- `100` Iterationen
+
+Der Sensor akzeptiert diese Datenquellen:
+
+- `INDUSTRY_SCAN_FILE` fuer eine lokale JSON-/RSS-/Text-Datei
+- `INDUSTRY_FEEDS` fuer RSS-/Atom-Feeds
+- `NEWSAPI_KEY` plus optional `INDUSTRY_NEWS_QUERY` fuer NewsAPI
+
 Wenn du Atheria als aktiven Provider fuer `ai` und `agent` verwenden willst:
 
 ```text

@@ -6,6 +6,10 @@ include use_atheria.md
 include Multi-Agenten-Clusters.md
 include Was_waere_wenn.md
 include Whitepaper.md
+include industry_scanner.py
+include sample_news.json
+include watch_the_big_players.ns
+include watch_the_big_players_test.ns
 include pyproject.toml
 include nova_shell.py
 include novascript.py
