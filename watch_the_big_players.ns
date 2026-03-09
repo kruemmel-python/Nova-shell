@@ -4,6 +4,10 @@ atheria train file "Whitepaper.md" --category "core_architecture"
 atheria train file "Dokumentation.md" --category "command_logic"
 memory namespace "watch_big_players"
 memory project "architectural_resonance"
+threshold = py __import__("os").environ.get("NOVA_RESONANCE_THRESHOLD", "0.85")
+sleep_seconds = py __import__("os").environ.get("NOVA_SCAN_INTERVAL_SECONDS", "3600")
+iterations = py __import__("os").environ.get("NOVA_SCAN_ITERATIONS", "100")
+py print("WATCH CONFIG:", {"threshold": float($threshold), "sleep_seconds": float($sleep_seconds), "iterations": int($iterations)})
 
 # Sensor-Setup
 atheria sensor load "industry_scanner.py" --name "BigPlayerWatcher"
@@ -16,9 +20,9 @@ watch resonance_detected:
     event emit "ARCH_RESONANCE_FOUND" $analysis
 
 # Monitoring-Schleife
-for i in range(100):
+for i in range(int(iterations)):
     current_scan = atheria sensor run "BigPlayerWatcher"
-    if float(current_scan.score) > 0.85:
+    if float(current_scan.score) > float(threshold):
         flow state set "last_match" $current_scan
         ns.emit resonance_detected "TRUE"
-    sys sleep 3600
+    sys sleep $sleep_seconds

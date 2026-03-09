@@ -1,0 +1,20 @@
+[
+  {
+    "title": "Large platform vendor presents a hyperbolic agent runtime with shared memory data plane",
+    "summary": "The architecture combines hyperbolic planning, agent graphs, zero-copy shared memory, Arrow-based exchange, mesh orchestration and a planner driven workflow runtime.",
+    "source": "sample-news",
+    "url": "https://example.invalid/news/hyperbolic-agent-runtime"
+  },
+  {
+    "title": "Research note on zero-copy orchestration and resonance-aware tool graphs",
+    "summary": "The team describes zero-copy pipelines, resonance invariants, distributed workers, tool graphs, reviewers and scheduler driven execution in a single runtime.",
+    "source": "sample-news",
+    "url": "https://example.invalid/news/zero-copy-orchestration"
+  },
+  {
+    "title": "Enterprise cluster stack adds planner, reviewer swarm and Poincare inspired embeddings",
+    "summary": "The release mentions Poincare geometry, planner agents, reviewer workflows, shared memory, Arrow transport, mesh execution and runtime level orchestration.",
+    "source": "sample-news",
+    "url": "https://example.invalid/news/poincare-cluster"
+  }
+]
