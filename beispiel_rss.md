@@ -1,16 +1,18 @@
-# Beispiel: RSS-Feeds mit `watch_the_big_players.ns` ueberwachen und Ergebnisse nach TXT + HTML exportieren
+# Beispiel: RSS-Feeds mit zwei Sensoren ueberwachen und Ergebnisse nach TXT + HTML exportieren
 
 Diese Anleitung zeigt einen vollstaendig kopierbaren Ablauf mit dem vorhandenen Nova-shell-Setup:
 
 - RSS-Feeds ueber `py os.environ["INDUSTRY_FEEDS"] = "..."` setzen
-- den vorhandenen Watcher [watch_the_big_players.ns](/d:/Nova-shell/watch_the_big_players.ns) starten
-- den letzten Resonanz-Treffer aus `flow.state`
-- direkt als Textdatei und HTML-Datei speichern
+- Sensor 1: den vorhandenen Watcher [watch_the_big_players.ns](/d:/Nova-shell/watch_the_big_players.ns) starten
+- Sensor 2: den lernenden Trend-Sensor [trend_rss_sensor.py](/d:/Nova-shell/trend_rss_sensor.py) direkt laden und mehrfach ausfuehren
+- die Ergebnisse aus `flow.state` oder direkt aus dem Sensor-Output lesen
+- alles direkt als Textdatei und HTML-Datei speichern
 
 Die Beispiele basieren auf:
 
 - [watch_the_big_players.ns](/d:/Nova-shell/watch_the_big_players.ns)
 - [industry_scanner.py](/d:/Nova-shell/industry_scanner.py)
+- [trend_rss_sensor.py](/d:/Nova-shell/trend_rss_sensor.py)
 - [Whitepaper.md](/d:/Nova-shell/Whitepaper.md)
 - [Dokumentation.md](/d:/Nova-shell/Dokumentation.md)
 
@@ -20,11 +22,14 @@ Am Ende hast du lokal zum Beispiel diese Dateien:
 
 - `reports/rss_resonance_report.txt`
 - `reports/rss_resonance_report.html`
+- `reports/rss_trend_report.txt`
+- `reports/rss_trend_report.html`
 
 Die Dateien enthalten:
 
-- den letzten erkannten Treffer
-- Score und Zusammenfassung
+- beim ersten Sensor den letzten erkannten Resonanz-Treffer
+- beim zweiten Sensor den gelernten Trend-Forecast
+- Score, Zusammenfassung und Richtung
 - Titel, Quelle und URL der gefundenen RSS-Meldungen
 
 ## Voraussetzungen
@@ -235,3 +240,205 @@ Mit diesem Ablauf nutzt du Nova-shell so:
 - Danach schreibst du denselben Treffer ohne Zusatztooling direkt aus Nova-shell nach TXT und HTML.
 
 Das ist der einfachste produktive Pfad, um aus dem vorhandenen RSS-/Atheria-/NovaScript-Stack einen realen Monitoring-Report zu erzeugen.
+
+## 10. Zweiter RSS-Sensor: `TrendRadar`
+
+Der erste Sensor ist ein Resonanz-/Fruehwarnpfad fuer "passt das strukturell zu Nova-shell?".
+
+Der zweite Sensor [trend_rss_sensor.py](/d:/Nova-shell/trend_rss_sensor.py) ist anders:
+
+- er speichert eine lokale Historie
+- er lernt eine Baseline
+- er berechnet Deltas gegen fruehere Runs
+- er erzeugt einen Forecast
+
+Wichtige Felder aus dem zweiten Sensor:
+
+- `metadata.forecast_direction`
+- `metadata.forecast_score`
+- `metadata.confidence`
+- `metadata.history_length`
+- `metadata.baseline`
+- `metadata.deltas`
+
+## 11. Umgebungsvariablen fuer den zweiten Sensor setzen
+
+Der zweite Sensor nutzt dieselben RSS-Feeds, bekommt aber zusaetzlich einen persistenten State:
+
+```text
+cd D:\Nova-shell
+py os.environ["INDUSTRY_FEEDS"] = "https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml,https://feeds.feedburner.com/TechCrunch/,https://news.google.com/rss/search?q=AI+infrastructure+agent+runtime"
+py os.environ["INDUSTRY_TREND_STATE"] = r"D:\Nova-shell\trend_state.json"
+```
+
+Erklaerung:
+
+- `INDUSTRY_FEEDS` liefert die RSS-/Atom-Quellen
+- `INDUSTRY_TREND_STATE` speichert den Lernzustand des Trend-Sensors zwischen mehreren Runs
+
+## 12. Zweiten Sensor laden
+
+Der Trend-Sensor wird als normales Atheria-Plugin geladen:
+
+```text
+atheria sensor load "trend_rss_sensor.py" --name "TrendRadar"
+```
+
+Danach kannst du die Registrierung pruefen:
+
+```text
+atheria sensor list
+atheria sensor show "TrendRadar"
+```
+
+## 13. Ersten Lernlauf ausfuehren
+
+Beim ersten Lauf baut der Sensor seine Ausgangsbasis auf:
+
+```text
+atheria sensor run "TrendRadar"
+```
+
+Beim ersten Lauf ist die Richtung typischerweise:
+
+```text
+warming_baseline
+```
+
+Das ist korrekt. Der Sensor kennt zu diesem Zeitpunkt noch keine Historie ausser dem ersten Snapshot.
+
+## 14. Zweiten Lern-/Forecast-Lauf ausfuehren
+
+Fuehre den Sensor danach noch einmal aus:
+
+```text
+atheria sensor run "TrendRadar"
+```
+
+Jetzt beginnt die echte Trendbewertung. Typische Richtungen sind:
+
+- `emerging_uptrend`
+- `stable_watch`
+- `cooling`
+
+Wenn du die Entwicklung ueber mehrere Beobachtungen sehen willst, fuehre ihn mehrmals aus:
+
+```text
+atheria sensor run "TrendRadar"
+atheria sensor run "TrendRadar"
+atheria sensor run "TrendRadar"
+```
+
+## 15. Forecast direkt im Python-Kontext inspizieren
+
+Der sauberste direkte Weg in Nova-shell ist die Pipeline. `atheria sensor run` liefert ein Objekt, und `py` bekommt dieses Objekt als `_`.
+
+Den letzten Lauf in eine Python-Variable uebernehmen:
+
+```text
+atheria sensor run "TrendRadar" | py result = _
+```
+
+Danach kannst du den Inhalt bequem lesen:
+
+```text
+py result["metadata"]["forecast_direction"]
+py result["metadata"]["forecast_score"]
+py result["metadata"]["confidence"]
+```
+
+Wenn du nur die Richtung schnell sehen willst:
+
+```text
+atheria sensor run "TrendRadar" | py _["metadata"]["forecast_direction"]
+```
+
+## 16. Trend-Ergebnis als TXT-Datei speichern
+
+Mit dem zweiten Sensor erzeugst du einen Trendbericht als Text:
+
+```text
+py import pathlib
+atheria sensor run "TrendRadar" | py result = _
+py items = result.get("metadata", {}).get("items", [])
+py pathlib.Path("reports").mkdir(parents=True, exist_ok=True)
+py lines = ["Nova-shell RSS Trend Report", "", f"Direction: {result.get('metadata', {}).get('forecast_direction', '')}", f"Forecast score: {result.get('metadata', {}).get('forecast_score', '')}", f"Confidence: {result.get('metadata', {}).get('confidence', '')}", f"Summary: {result.get('summary', '')}", ""]
+py lines.extend([f"- {item.get('title', '')} | {item.get('source', '')} | {item.get('url', '')}" for item in items])
+py pathlib.Path("reports/rss_trend_report.txt").write_text("\n".join(lines), encoding="utf-8")
+```
+
+Datei:
+
+```text
+reports/rss_trend_report.txt
+```
+
+## 17. Trend-Ergebnis als HTML-Datei speichern
+
+Jetzt dieselbe Information als HTML:
+
+```text
+py import html
+py html_rows = "".join([f"<li><a href='{html.escape(item.get('url', ''))}'>{html.escape(item.get('title', ''))}</a><br><small>{html.escape(item.get('source', ''))}</small></li>" for item in items])
+py html_doc = f"<html><head><meta charset='utf-8'><title>Nova-shell RSS Trend Report</title></head><body><h1>Nova-shell RSS Trend Report</h1><p><strong>Direction:</strong> {html.escape(str(result.get('metadata', {}).get('forecast_direction', '')))}</p><p><strong>Forecast score:</strong> {html.escape(str(result.get('metadata', {}).get('forecast_score', '')))}</p><p><strong>Confidence:</strong> {html.escape(str(result.get('metadata', {}).get('confidence', '')))}</p><p><strong>Summary:</strong> {html.escape(str(result.get('summary', '')))}</p><h2>Items</h2><ul>{html_rows}</ul></body></html>"
+py pathlib.Path("reports/rss_trend_report.html").write_text(html_doc, encoding="utf-8")
+```
+
+Datei:
+
+```text
+reports/rss_trend_report.html
+```
+
+## 18. Vollstaendiger Copy-Paste Ablauf fuer Sensor 2
+
+Wenn du den Trend-Sensor direkt komplett durchlaufen lassen willst:
+
+```text
+cd D:\Nova-shell
+py os.environ["INDUSTRY_FEEDS"] = "https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml,https://feeds.feedburner.com/TechCrunch/,https://news.google.com/rss/search?q=AI+infrastructure+agent+runtime"
+py os.environ["INDUSTRY_TREND_STATE"] = r"D:\Nova-shell\trend_state.json"
+atheria sensor load "trend_rss_sensor.py" --name "TrendRadar"
+atheria sensor run "TrendRadar"
+atheria sensor run "TrendRadar" | py result = _
+py import pathlib
+py import html
+py items = result.get("metadata", {}).get("items", [])
+py pathlib.Path("reports").mkdir(parents=True, exist_ok=True)
+py lines = ["Nova-shell RSS Trend Report", "", f"Direction: {result.get('metadata', {}).get('forecast_direction', '')}", f"Forecast score: {result.get('metadata', {}).get('forecast_score', '')}", f"Confidence: {result.get('metadata', {}).get('confidence', '')}", f"Summary: {result.get('summary', '')}", ""]
+py lines.extend([f"- {item.get('title', '')} | {item.get('source', '')} | {item.get('url', '')}" for item in items])
+py pathlib.Path("reports/rss_trend_report.txt").write_text("\n".join(lines), encoding="utf-8")
+py html_rows = "".join([f"<li><a href='{html.escape(item.get('url', ''))}'>{html.escape(item.get('title', ''))}</a><br><small>{html.escape(item.get('source', ''))}</small></li>" for item in items])
+py html_doc = f"<html><head><meta charset='utf-8'><title>Nova-shell RSS Trend Report</title></head><body><h1>Nova-shell RSS Trend Report</h1><p><strong>Direction:</strong> {html.escape(str(result.get('metadata', {}).get('forecast_direction', '')))}</p><p><strong>Forecast score:</strong> {html.escape(str(result.get('metadata', {}).get('forecast_score', '')))}</p><p><strong>Confidence:</strong> {html.escape(str(result.get('metadata', {}).get('confidence', '')))}</p><p><strong>Summary:</strong> {html.escape(str(result.get('summary', '')))}</p><h2>Items</h2><ul>{html_rows}</ul></body></html>"
+py pathlib.Path("reports/rss_trend_report.html").write_text(html_doc, encoding="utf-8")
+```
+
+## 19. Unterschied zwischen Sensor 1 und Sensor 2
+
+`BigPlayerWatcher` aus [industry_scanner.py](/d:/Nova-shell/industry_scanner.py):
+
+- gut fuer Resonanz- und Architektur-Treffer
+- gut fuer den NovaScript-Watch-Pfad
+- schreibt relevante Treffer nach `flow.state`
+
+`TrendRadar` aus [trend_rss_sensor.py](/d:/Nova-shell/trend_rss_sensor.py):
+
+- gut fuer wiederholte Beobachtung
+- lernt ueber mehrere Runs
+- liefert Richtung, Forecast und Confidence
+- ist besser fuer Technologie-Radar und Trendbeobachtung
+
+## 20. Praktische Empfehlung
+
+Wenn du beide Sensoren zusammen einsetzen willst:
+
+1. Nutze `watch_the_big_players.ns`, um starke Resonanz-Treffer sofort zu erkennen.
+2. Nutze `TrendRadar`, um ueber mehrere Runs einen aufbauenden Trend zu erkennen.
+3. Speichere beide Reports:
+   - `rss_resonance_report.txt/html`
+   - `rss_trend_report.txt/html`
+
+So bekommst du gleichzeitig:
+
+- ein strukturelles Resonanzsignal
+- und ein lernendes Trend-/Forecast-Signal

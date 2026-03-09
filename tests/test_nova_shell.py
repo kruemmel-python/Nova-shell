@@ -1430,6 +1430,70 @@ if len(files_lines) == 2:
         self.assertEqual(payload["trained_records"], 1)
         self.assertTrue(payload["memory_id"].startswith("mem_") or payload["memory_id"])
 
+    def test_atheria_trend_rss_sensor_learns_baseline_and_forecast(self) -> None:
+        sensor_path = (Path.cwd() / "trend_rss_sensor.py").resolve()
+        with tempfile.TemporaryDirectory() as tmp, patch.dict(os.environ, {"INDUSTRY_TREND_STATE": str(Path(tmp) / "trend_state.json")}, clear=False):
+            load = self.shell.route(f"atheria sensor load {sensor_path} --name trend_radar")
+            self.assertIsNone(load.error)
+
+            first_payload = json.dumps(
+                [
+                    {
+                        "title": "AI runtime update",
+                        "summary": "new agent workflow runtime release",
+                        "source": "feed-a",
+                        "url": "https://a",
+                    },
+                    {
+                        "title": "Inference benchmark",
+                        "summary": "research benchmark for model inference",
+                        "source": "feed-b",
+                        "url": "https://b",
+                    },
+                ]
+            )
+            first = self.shell.route(f"atheria sensor run trend_radar --input '{first_payload}'")
+            self.assertIsNone(first.error)
+            first_result = json.loads(first.output)
+            self.assertEqual(first_result["metadata"]["history_length"], 1)
+            self.assertEqual(first_result["metadata"]["forecast_direction"], "warming_baseline")
+
+            second_payload = json.dumps(
+                [
+                    {
+                        "title": "AI data center boom",
+                        "summary": "massive gpu cluster power cooling expansion",
+                        "source": "feed-a",
+                        "url": "https://1",
+                    },
+                    {
+                        "title": "GPU shortage risk",
+                        "summary": "chip capacity bottleneck export control risk",
+                        "source": "feed-b",
+                        "url": "https://2",
+                    },
+                    {
+                        "title": "Agent runtime funding",
+                        "summary": "workflow planner runtime startup raises billion investment",
+                        "source": "feed-c",
+                        "url": "https://3",
+                    },
+                    {
+                        "title": "Cloud latency pressure",
+                        "summary": "deployment scale latency network region constraints",
+                        "source": "feed-d",
+                        "url": "https://4",
+                    },
+                ]
+            )
+            second = self.shell.route(f"atheria sensor run trend_radar --input '{second_payload}'")
+            self.assertIsNone(second.error)
+            second_result = json.loads(second.output)
+            self.assertEqual(second_result["metadata"]["history_length"], 2)
+            self.assertEqual(second_result["metadata"]["forecast_direction"], "emerging_uptrend")
+            self.assertGreater(float(second_result["metadata"]["forecast_score"]), 0.7)
+            self.assertEqual(len(second_result["metadata"]["items"]), 4)
+
     def test_mesh_heartbeat_and_intelligent_run_no_worker(self) -> None:
         add = self.shell.route("mesh add http://127.0.0.1:9998 cpu")
         self.assertIsNone(add.error)
