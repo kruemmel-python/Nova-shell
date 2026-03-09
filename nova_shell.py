@@ -375,6 +375,42 @@ class AgentGraphDefinition:
 
 
 @dataclass
+class AtheriaSensorPluginSpec:
+    name: str
+    path: str
+    mapping: dict[str, str] = field(default_factory=dict)
+    description: str = ""
+    created_at: float = field(default_factory=time.time)
+
+
+@dataclass
+class LensForkArtifact:
+    fork_id: str
+    snapshot_id: str
+    inject_payload: dict[str, Any]
+    diff: list[dict[str, Any]] = field(default_factory=list)
+    simulation: dict[str, Any] = field(default_factory=dict)
+    namespace: str = "default"
+    project: str = "default"
+    created_at: float = field(default_factory=time.time)
+
+
+@dataclass
+class AutoRAGWatcherSpec:
+    watcher_id: str
+    pattern: str
+    namespace: str
+    project: str
+    chunk_size: int
+    chunk_overlap: int
+    publish_topic: str
+    summarize: bool = True
+    train_atheria: bool = True
+    reactive_trigger_id: str = ""
+    created_at: float = field(default_factory=time.time)
+
+
+@dataclass
 class LocalManagedWorker:
     worker_id: str
     url: str
@@ -1080,6 +1116,22 @@ class NovaLensStore:
             )
             """
         )
+        self.conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS forks (
+                id TEXT PRIMARY KEY,
+                snapshot_id TEXT NOT NULL,
+                ts REAL NOT NULL,
+                namespace TEXT NOT NULL,
+                project TEXT NOT NULL,
+                inject_json TEXT NOT NULL,
+                diff_hash TEXT,
+                simulation_hash TEXT,
+                fork_output_hash TEXT,
+                fork_data_hash TEXT
+            )
+            """
+        )
         self.conn.commit()
 
     def _store_blob(self, value: str) -> str:
@@ -1166,8 +1218,323 @@ class NovaLensStore:
             return CommandResult(output="", error="snapshot not found")
         return CommandResult(output=data.get("output", ""), data=data, data_type=PipelineType.OBJECT)
 
+    def record_fork(
+        self,
+        *,
+        snapshot_id: str,
+        namespace: str,
+        project: str,
+        inject_payload: dict[str, Any],
+        diff: list[dict[str, Any]],
+        simulation: dict[str, Any],
+        fork_output: str,
+        fork_data_preview: str,
+    ) -> LensForkArtifact:
+        fork_id = "fork_" + uuid.uuid4().hex[:10]
+        diff_hash = self._store_blob(json.dumps(diff, ensure_ascii=False, indent=2))
+        simulation_hash = self._store_blob(json.dumps(simulation, ensure_ascii=False, indent=2))
+        fork_output_hash = self._store_blob(fork_output or "")
+        fork_data_hash = self._store_blob(fork_data_preview or "")
+        payload = LensForkArtifact(
+            fork_id=fork_id,
+            snapshot_id=snapshot_id,
+            inject_payload=dict(inject_payload),
+            diff=list(diff),
+            simulation=dict(simulation),
+            namespace=namespace,
+            project=project,
+        )
+        self.conn.execute(
+            """
+            INSERT INTO forks(id, snapshot_id, ts, namespace, project, inject_json, diff_hash, simulation_hash, fork_output_hash, fork_data_hash)
+            VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                payload.fork_id,
+                snapshot_id,
+                payload.created_at,
+                namespace,
+                project,
+                json.dumps(inject_payload, ensure_ascii=False),
+                diff_hash,
+                simulation_hash,
+                fork_output_hash,
+                fork_data_hash,
+            ),
+        )
+        self.conn.commit()
+        return payload
+
+    def list_forks(self, limit: int = 10) -> list[dict[str, Any]]:
+        cur = self.conn.execute(
+            """
+            SELECT id, snapshot_id, ts, namespace, project, inject_json
+            FROM forks
+            ORDER BY ts DESC
+            LIMIT ?
+            """,
+            (max(1, int(limit)),),
+        )
+        rows = cur.fetchall()
+        return [
+            {
+                "id": row[0],
+                "snapshot_id": row[1],
+                "ts": row[2],
+                "namespace": row[3],
+                "project": row[4],
+                "inject": json.loads(str(row[5])),
+            }
+            for row in rows
+        ]
+
+    def get_fork(self, fork_id: str) -> dict[str, Any] | None:
+        cur = self.conn.execute(
+            """
+            SELECT id, snapshot_id, ts, namespace, project, inject_json, diff_hash, simulation_hash, fork_output_hash, fork_data_hash
+            FROM forks
+            WHERE id = ?
+            """,
+            (fork_id,),
+        )
+        row = cur.fetchone()
+        if row is None:
+            return None
+        diff_text = self._load_blob(row[6])
+        simulation_text = self._load_blob(row[7])
+        return {
+            "id": row[0],
+            "snapshot_id": row[1],
+            "ts": row[2],
+            "namespace": row[3],
+            "project": row[4],
+            "inject": json.loads(str(row[5])),
+            "diff": json.loads(diff_text) if diff_text else [],
+            "simulation": json.loads(simulation_text) if simulation_text else {},
+            "fork_output": self._load_blob(row[8]),
+            "fork_data_preview": self._load_blob(row[9]),
+        }
+
     def close(self) -> None:
         self.conn.close()
+
+
+class BaseAtheriaSensorPlugin:
+    """Base contract for dynamically loaded Atheria sensors."""
+
+    def analyze(self, payload: Any) -> dict[str, Any]:
+        raise NotImplementedError
+
+
+class AtheriaSensorRegistry:
+    """Dynamic sensor registry for Atheria-compatible structured events."""
+
+    FEATURE_KEYS = [
+        "trauma_pressure",
+        "signal_strength",
+        "system_temperature",
+        "resource_pressure",
+        "entropic_index",
+        "structural_tension",
+        "guardian_score",
+        "holographic_energy",
+        "cpu_usage",
+        "memory_usage",
+        "network_latency",
+        "error_rate",
+        "queue_depth",
+        "anomaly_score",
+    ]
+
+    def __init__(self, storage_root: Path) -> None:
+        self.storage_root = storage_root
+        self.storage_root.mkdir(parents=True, exist_ok=True)
+        self.registry_path = self.storage_root / "atheria_sensors.json"
+        self.plugins: dict[str, AtheriaSensorPluginSpec] = {}
+        self._loaded_plugins: dict[str, Any] = {}
+        self._load_registry()
+
+    def _load_registry(self) -> None:
+        if not self.registry_path.exists():
+            return
+        try:
+            payload = json.loads(self.registry_path.read_text(encoding="utf-8"))
+        except Exception:
+            return
+        if not isinstance(payload, list):
+            return
+        for item in payload:
+            if not isinstance(item, dict):
+                continue
+            spec = AtheriaSensorPluginSpec(
+                name=str(item.get("name") or ""),
+                path=str(item.get("path") or ""),
+                mapping={str(key): str(value) for key, value in dict(item.get("mapping") or {}).items()},
+                description=str(item.get("description") or ""),
+                created_at=float(item.get("created_at") or time.time()),
+            )
+            if spec.name and spec.path:
+                self.plugins[spec.name] = spec
+
+    def _save_registry(self) -> None:
+        rows = [
+            {
+                "name": spec.name,
+                "path": spec.path,
+                "mapping": spec.mapping,
+                "description": spec.description,
+                "created_at": spec.created_at,
+            }
+            for spec in sorted(self.plugins.values(), key=lambda item: item.name)
+        ]
+        self.registry_path.write_text(json.dumps(rows, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    def register(self, path: Path, *, name: str | None = None, mapping: dict[str, str] | None = None) -> AtheriaSensorPluginSpec:
+        resolved = path.resolve()
+        if not resolved.exists() or not resolved.is_file():
+            raise FileNotFoundError(f"sensor plugin not found: {path}")
+        chosen_name = (name or resolved.stem).strip()
+        if not chosen_name:
+            raise ValueError("sensor plugin name must not be empty")
+        description = ""
+        with contextlib.suppress(Exception):
+            module = self._load_plugin_from_path(chosen_name, resolved)
+            description = str(getattr(module, "__doc__", "") or "").strip().splitlines()[0] if getattr(module, "__doc__", None) else ""
+        spec = AtheriaSensorPluginSpec(
+            name=chosen_name,
+            path=str(resolved),
+            mapping=dict(mapping or {}),
+            description=description,
+        )
+        self.plugins[chosen_name] = spec
+        self._save_registry()
+        return spec
+
+    def set_mapping(self, name: str, mapping: dict[str, str]) -> AtheriaSensorPluginSpec:
+        spec = self.plugins.get(name)
+        if spec is None:
+            raise KeyError(name)
+        spec.mapping = {str(key): str(value) for key, value in mapping.items()}
+        self._save_registry()
+        return spec
+
+    def list_plugins(self) -> list[dict[str, Any]]:
+        return [
+            {
+                "name": spec.name,
+                "path": spec.path,
+                "mapping": spec.mapping,
+                "description": spec.description,
+                "created_at": spec.created_at,
+            }
+            for spec in sorted(self.plugins.values(), key=lambda item: item.name)
+        ]
+
+    def _load_plugin_from_path(self, name: str, path: Path) -> Any:
+        cache_key = str(path.resolve())
+        if cache_key in self._loaded_plugins:
+            return self._loaded_plugins[cache_key]
+        module_name = f"nova_atheria_sensor_{name}_{hashlib.sha1(cache_key.encode('utf-8')).hexdigest()[:10]}"
+        spec = importlib.util.spec_from_file_location(module_name, str(path))
+        if spec is None or spec.loader is None:
+            raise ImportError(f"failed to load sensor plugin: {path}")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        self._loaded_plugins[cache_key] = module
+        return module
+
+    def _resolve_analyzer(self, name: str) -> tuple[AtheriaSensorPluginSpec, Callable[[Any], dict[str, Any]]]:
+        plugin = self.plugins.get(name)
+        if plugin is None:
+            raise KeyError(name)
+        module = self._load_plugin_from_path(name, Path(plugin.path))
+        sensor_obj = getattr(module, "sensor", None)
+        if sensor_obj is not None and hasattr(sensor_obj, "analyze"):
+            return plugin, sensor_obj.analyze
+        for member_name in dir(module):
+            candidate = getattr(module, member_name)
+            if inspect.isclass(candidate) and issubclass(candidate, BaseAtheriaSensorPlugin) and candidate is not BaseAtheriaSensorPlugin:
+                instance = candidate()
+                return plugin, instance.analyze
+        analyze_fn = getattr(module, "analyze", None)
+        if callable(analyze_fn):
+            return plugin, analyze_fn
+        raise ValueError("sensor plugin must expose analyze(payload) or a BaseAtheriaSensorPlugin subclass")
+
+    def _extract_json_path(self, payload: Any, path_text: str) -> Any:
+        normalized = str(path_text).strip()
+        if normalized.startswith("$."):
+            normalized = normalized[2:]
+        if normalized.startswith("$"):
+            normalized = normalized[1:]
+        if not normalized:
+            return payload
+        current = payload
+        for token in [item for item in normalized.split(".") if item]:
+            if isinstance(current, dict):
+                current = current.get(token)
+                continue
+            if isinstance(current, list):
+                with contextlib.suppress(Exception):
+                    current = current[int(token)]
+                    continue
+            return None
+        return current
+
+    def _coerce_float(self, value: Any) -> float | None:
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return None
+
+    def run(self, name: str, payload: Any) -> dict[str, Any]:
+        plugin, analyze = self._resolve_analyzer(name)
+        raw = analyze(payload)
+        if not isinstance(raw, dict):
+            raise ValueError("sensor analyze(payload) must return an object")
+        features = {key: 0.0 for key in self.FEATURE_KEYS}
+        for key in self.FEATURE_KEYS:
+            value = raw.get(key)
+            coerced = self._coerce_float(value)
+            if coerced is not None:
+                features[key] = coerced
+        feature_map = raw.get("features")
+        if isinstance(feature_map, dict):
+            for key, value in feature_map.items():
+                if key in features:
+                    coerced = self._coerce_float(value)
+                    if coerced is not None:
+                        features[key] = coerced
+        if plugin.mapping and payload is not None:
+            for key, path_text in plugin.mapping.items():
+                if key not in features:
+                    continue
+                extracted = self._extract_json_path(payload, path_text)
+                coerced = self._coerce_float(extracted)
+                if coerced is not None:
+                    features[key] = coerced
+        vector_payload = raw.get("vector")
+        if isinstance(vector_payload, list) and len(vector_payload) == len(self.FEATURE_KEYS):
+            vector = [float(item) for item in vector_payload]
+            features = {key: vector[index] for index, key in enumerate(self.FEATURE_KEYS)}
+        else:
+            vector = [float(features[key]) for key in self.FEATURE_KEYS]
+        metadata = dict(raw.get("metadata") or {})
+        metadata.setdefault("plugin", name)
+        metadata.setdefault("source_path", plugin.path)
+        summary = str(raw.get("summary") or f"sensor {name} produced {len(self.FEATURE_KEYS)} features").strip()
+        return {
+            "name": name,
+            "event_id": str(raw.get("event_id") or f"{name}_{uuid.uuid4().hex[:8]}"),
+            "timestamp": float(raw.get("timestamp") or time.time()),
+            "dimensions": len(vector),
+            "feature_keys": list(self.FEATURE_KEYS),
+            "features": {key: round(float(features[key]), 6) for key in self.FEATURE_KEYS},
+            "vector": [round(float(item), 6) for item in vector],
+            "metadata": metadata,
+            "summary": summary,
+            "mapping": plugin.mapping,
+        }
 
 
 class NovaComputeJIT:
@@ -1360,7 +1727,10 @@ class ReactiveFlowEngine:
                         if path in seen:
                             continue
                         seen.add(path)
-                        command = trigger.pipeline.replace("_", shlex.quote(path))
+                        if "{{path}}" in trigger.pipeline:
+                            command = trigger.pipeline.replace("{{path}}", shlex.quote(path))
+                        else:
+                            command = trigger.pipeline.replace("_", shlex.quote(path))
                         self.shell.route(command)
                         if trigger.once:
                             trigger.active = False
@@ -2929,6 +3299,7 @@ class NovaShell:
         self.synth = NovaSynth(self)
         self.memory = NovaVectorMemory()
         self.atheria = NovaAtheriaRuntime(self.runtime_config, self.cwd)
+        self.atheria_sensors = AtheriaSensorRegistry(self.atheria.storage_root)
         self.ai_runtime = NovaAIProviderRuntime(self.runtime_config, self.cwd, atheria_runtime=self.atheria)
         self.guard_store = GuardPolicyStore()
         self.fabric_remote = FabricRemoteBridge()
@@ -2954,6 +3325,7 @@ class NovaShell:
         self.current_memory_namespace = str(self.runtime_config.get("memory_namespace") or "default")
         self.current_memory_project = str(self.runtime_config.get("memory_project") or "default")
         self.local_mesh_workers: dict[str, LocalManagedWorker] = {}
+        self.rag_watchers: dict[str, AutoRAGWatcherSpec] = {}
         self.mesh_log_dir = Path(tempfile.gettempdir()) / "nova-shell-mesh-workers"
         self.mesh_log_dir.mkdir(parents=True, exist_ok=True)
 
@@ -2978,6 +3350,7 @@ class NovaShell:
             "tool.call": lambda args, pipeline_input, pipeline_data: self._run_tool(f"call {args}".strip(), pipeline_input, pipeline_data),
             "tool.list": lambda args, pipeline_input, pipeline_data: self._run_tool(f"list {args}".strip(), pipeline_input, pipeline_data),
             "tool.show": lambda args, pipeline_input, pipeline_data: self._run_tool(f"show {args}".strip(), pipeline_input, pipeline_data),
+            "rag": self._run_rag,
             "vision": self._run_vision,
             "pulse": self._run_pulse,
             "fabric": self._run_fabric,
@@ -3858,6 +4231,461 @@ class NovaShell:
         for worker_id in list(self.local_mesh_workers.keys()):
             self._stop_local_mesh_worker(worker_id)
 
+    def _shell_quote(self, value: str) -> str:
+        return shlex.quote(str(value))
+
+    def _infer_swarm_caps(self, name: str, prompt_template: str, provider: str, model: str, system_prompt: str) -> set[str]:
+        lowered = " ".join([name, prompt_template, provider, model, system_prompt]).lower()
+        caps = {"cpu", "py", "ai"}
+        if any(token in lowered for token in ["gpu", "cuda", "torch", "vision", "embedding", "transformer"]):
+            caps.add("gpu")
+        if any(token in lowered for token in ["cpp", "native", "compile"]):
+            caps.add("cpu")
+        if provider == "atheria":
+            caps.add("ai")
+        return caps
+
+    def _assign_swarm_worker(self, required_caps: set[str], *, data_handle: str | None = None) -> dict[str, Any] | None:
+        if not self.mesh.workers:
+            return None
+        preferred = "gpu" if "gpu" in required_caps else "ai" if "ai" in required_caps else "py"
+        worker = self.mesh.intelligent_select(preferred, data_handle)
+        if worker is None and "cpu" in required_caps:
+            worker = self.mesh.intelligent_select("cpu", data_handle)
+        if worker is None:
+            return None
+        worker_caps = set(worker.get("caps", []))
+        if required_caps.intersection({"gpu", "ai"}) and not required_caps.issubset(worker_caps.union({"cpu", "py"})):
+            worker["load"] = max(worker.get("load", 1) - 1, 0)
+            return None
+        return worker
+
+    def _remote_agent_create_command(
+        self,
+        remote_name: str,
+        *,
+        prompt_template: str,
+        provider: str,
+        model: str,
+        system_prompt: str,
+    ) -> str:
+        parts = [
+            "agent create",
+            self._shell_quote(remote_name),
+            self._shell_quote(prompt_template),
+            "--provider",
+            self._shell_quote(provider),
+            "--model",
+            self._shell_quote(model),
+        ]
+        if system_prompt:
+            parts.extend(["--system", self._shell_quote(system_prompt)])
+        return " ".join(parts)
+
+    def _remote_agent_run_command(self, remote_name: str, input_text: str) -> str:
+        return " ".join(["agent run", self._shell_quote(remote_name), self._shell_quote(input_text)])
+
+    def _run_agent_handle_swarm(
+        self,
+        name: str,
+        input_text: str,
+        *,
+        execution_id: str,
+        step_kind: str,
+        step_index: int,
+    ) -> tuple[CommandResult, dict[str, Any]]:
+        instance, definition = self._resolve_agent_handle(name)
+        if instance is None and definition is None:
+            result = CommandResult(output="", error=f"agent not found: {name}")
+            return result, {"node": name, "mode": "missing", "error": result.error}
+        prompt_template = instance.prompt_template if instance is not None else str(definition.prompt_template)
+        provider = instance.provider if instance is not None else str(definition.provider)
+        model = instance.model if instance is not None else str(definition.model)
+        system_prompt = instance.system_prompt if instance is not None else str(definition.system_prompt)
+        required_caps = self._infer_swarm_caps(name, prompt_template, provider, model, system_prompt)
+        worker = self._assign_swarm_worker(required_caps)
+        if worker is None:
+            result = self._run_agent_handle(name, input_text)
+            assignment = {
+                "node": name,
+                "mode": "local",
+                "required_caps": sorted(required_caps),
+                "worker": "local",
+                "step_kind": step_kind,
+                "step_index": step_index,
+                "output": result.output.strip(),
+                "error": result.error or "",
+            }
+            return result, assignment
+        worker_url = str(worker["url"])
+        remote_name = f"__swarm_{execution_id}_{step_index}_{re.sub(r'[^A-Za-z0-9_]+', '_', name)[:24]}".strip("_")
+        create_command = self._remote_agent_create_command(
+            remote_name,
+            prompt_template=prompt_template,
+            provider=provider,
+            model=model,
+            system_prompt=system_prompt,
+        )
+        create_result = self.remote.execute(worker_url, create_command)
+        if create_result.error:
+            worker["load"] = max(worker.get("load", 1) - 1, 0)
+            fallback = self._run_agent_handle(name, input_text)
+            assignment = {
+                "node": name,
+                "mode": "local-fallback",
+                "required_caps": sorted(required_caps),
+                "worker": "local",
+                "remote_worker": worker_url,
+                "step_kind": step_kind,
+                "step_index": step_index,
+                "remote_error": create_result.error,
+                "output": fallback.output.strip(),
+                "error": fallback.error or "",
+            }
+            return fallback, assignment
+        run_result = self.remote.execute(worker_url, self._remote_agent_run_command(remote_name, input_text))
+        worker["load"] = max(worker.get("load", 1) - 1, 0)
+        assignment = {
+            "node": name,
+            "mode": "mesh",
+            "required_caps": sorted(required_caps),
+            "worker": worker_url,
+            "step_kind": step_kind,
+            "step_index": step_index,
+            "output": run_result.output.strip(),
+            "error": run_result.error or "",
+        }
+        with contextlib.suppress(Exception):
+            event_payload = json.dumps(
+                {
+                    "execution_id": execution_id,
+                    "node": name,
+                    "worker": worker_url,
+                    "step_kind": step_kind,
+                    "step_index": step_index,
+                    "output": run_result.output.strip(),
+                    "error": run_result.error or "",
+                },
+                ensure_ascii=False,
+            )
+            self._publish_event("swarm.agent.completed", event_payload, broadcast=True)
+        return run_result, assignment
+
+    def _load_structured_payload(self, raw: str) -> Any:
+        text = str(raw).strip()
+        if not text:
+            return {}
+        try:
+            return json.loads(text)
+        except Exception:
+            try:
+                import yaml  # type: ignore
+
+                return yaml.safe_load(text)
+            except Exception as exc:
+                raise ValueError(f"invalid structured payload: {exc}") from exc
+
+    def _deep_merge_payload(self, base: Any, patch: Any) -> Any:
+        if isinstance(base, dict) and isinstance(patch, dict):
+            merged = dict(base)
+            for key, value in patch.items():
+                merged[key] = self._deep_merge_payload(merged.get(key), value)
+            return merged
+        if isinstance(base, list) and isinstance(patch, list):
+            result = list(base)
+            for index, value in enumerate(patch):
+                if index < len(result):
+                    result[index] = self._deep_merge_payload(result[index], value)
+                else:
+                    result.append(value)
+            return result
+        return copy.deepcopy(patch)
+
+    def _collect_diff_rows(self, before: Any, after: Any, path: str = "$") -> list[dict[str, Any]]:
+        if isinstance(before, dict) and isinstance(after, dict):
+            keys = sorted(set(before.keys()).union(after.keys()))
+            rows: list[dict[str, Any]] = []
+            for key in keys:
+                child_path = f"{path}.{key}"
+                if key not in before:
+                    rows.append({"path": child_path, "before": None, "after": after[key], "change": "added"})
+                    continue
+                if key not in after:
+                    rows.append({"path": child_path, "before": before[key], "after": None, "change": "removed"})
+                    continue
+                rows.extend(self._collect_diff_rows(before[key], after[key], child_path))
+            return rows
+        if isinstance(before, list) and isinstance(after, list):
+            rows = []
+            length = max(len(before), len(after))
+            for index in range(length):
+                child_path = f"{path}[{index}]"
+                if index >= len(before):
+                    rows.append({"path": child_path, "before": None, "after": after[index], "change": "added"})
+                    continue
+                if index >= len(after):
+                    rows.append({"path": child_path, "before": before[index], "after": None, "change": "removed"})
+                    continue
+                rows.extend(self._collect_diff_rows(before[index], after[index], child_path))
+            return rows
+        if before != after:
+            return [{"path": path, "before": before, "after": after, "change": "modified"}]
+        return []
+
+    def _extract_numeric_features(self, payload: Any) -> list[float]:
+        values: list[float] = []
+
+        def visit(node: Any) -> None:
+            if len(values) >= 14:
+                return
+            if isinstance(node, dict):
+                for key in sorted(node.keys()):
+                    visit(node[key])
+                    if len(values) >= 14:
+                        return
+                return
+            if isinstance(node, list):
+                for item in node:
+                    visit(item)
+                    if len(values) >= 14:
+                        return
+                return
+            with contextlib.suppress(Exception):
+                values.append(float(node))
+
+        visit(payload)
+        if not values:
+            text = json.dumps(payload, ensure_ascii=False) if isinstance(payload, (dict, list)) else str(payload)
+            digest = hashlib.sha256(text.encode("utf-8")).digest()
+            for index in range(14):
+                values.append(((digest[index] / 255.0) * 2.0) - 1.0)
+        while len(values) < 14:
+            values.append(0.0)
+        return values[:14]
+
+    def _simulate_fork_payload(self, snapshot_id: str, forked_payload: Any) -> dict[str, Any]:
+        simulation: dict[str, Any] = {
+            "mode": "heuristic",
+            "original_snapshot_id": snapshot_id,
+            "numeric_features": [round(float(item), 6) for item in self._extract_numeric_features(forked_payload)],
+        }
+        if not self.atheria.is_available():
+            return simulation
+        source_dir = self.atheria._discover_source_dir()
+        if source_dir is None:
+            return simulation
+        source_text = str(source_dir)
+        if source_text not in sys.path:
+            sys.path.insert(0, source_text)
+        try:
+            info_module = importlib.import_module("atheria_information_einstein_like")
+            market_module = importlib.import_module("atheria_market_future_projection")
+        except Exception as exc:
+            simulation["error"] = f"atheria simulation modules unavailable: {exc}"
+            return simulation
+        base_events = []
+        snapshots = list(reversed(self.lens.list(limit=8)))
+        for index, row in enumerate(snapshots):
+            snapshot = self.lens.get(str(row["id"]))
+            if snapshot is None:
+                continue
+            parsed = self._coerce_snapshot_payload(snapshot.get("data_preview", ""), snapshot.get("output", ""))
+            vector = self._extract_numeric_features(parsed)
+            base_events.append(
+                info_module.InformationEvent(
+                    event_id=str(snapshot["id"]),
+                    timestamp=float(snapshot["ts"]),
+                    vector=vector,
+                    metadata={"stage": snapshot.get("stage", "")},
+                )
+            )
+        if forked_payload is not None:
+            base_events.append(
+                info_module.InformationEvent(
+                    event_id=f"{snapshot_id}_fork",
+                    timestamp=time.time(),
+                    vector=self._extract_numeric_features(forked_payload),
+                    metadata={"stage": "lens.fork"},
+                )
+            )
+        if len(base_events) >= 4:
+            try:
+                reconstruction = info_module.InformationEinsteinLikeSimulator().reconstruct(base_events)
+                simulation["einstein_like"] = {
+                    "field_summary": reconstruction.field_summary,
+                    "quality": reconstruction.quality,
+                    "attractors": reconstruction.attractors[:5],
+                }
+                simulation["mode"] = "atheria_einstein_like"
+            except Exception as exc:
+                simulation["einstein_like_error"] = str(exc)
+        if len(base_events) >= 1:
+            try:
+                market_events = [
+                    market_module.MarketEvent(
+                        event_id=str(event.event_id),
+                        timestamp=float(event.timestamp),
+                        features=list(event.vector),
+                        signal=float(sum(event.vector[:4]) / max(1, min(4, len(event.vector)))),
+                        metadata=dict(event.metadata or {}),
+                    )
+                    for event in base_events
+                ]
+                projection = market_module.MarketLandscapeFutureProjector().run(market_events)
+                simulation["projection"] = {
+                    "forecast": list(projection.get("forecast", []))[:4],
+                    "top_drivers": list(projection.get("top_drivers", []))[:5],
+                    "statement": projection.get("statement", ""),
+                    "proof_verdict": projection.get("proof_verdict", ""),
+                }
+                simulation["mode"] = "atheria_projected"
+            except Exception as exc:
+                simulation["projection_error"] = str(exc)
+        return simulation
+
+    def _coerce_snapshot_payload(self, data_preview: str, output_text: str) -> Any:
+        for candidate in [data_preview, output_text]:
+            text = str(candidate or "").strip()
+            if not text:
+                continue
+            with contextlib.suppress(Exception):
+                return json.loads(text)
+        return {"data_preview": data_preview, "output": output_text}
+
+    def _load_rag_file_text(self, file_path: Path) -> str:
+        suffix = file_path.suffix.lower()
+        if suffix == ".csv":
+            return file_path.read_text(encoding="utf-8")
+        if suffix == ".json":
+            payload = json.loads(file_path.read_text(encoding="utf-8"))
+            return json.dumps(payload, ensure_ascii=False, indent=2)
+        if suffix == ".pdf":
+            try:
+                from pypdf import PdfReader  # type: ignore
+            except Exception as exc:
+                raise RuntimeError(f"pdf ingestion requires pypdf: {exc}") from exc
+            reader = PdfReader(str(file_path))
+            pages = [page.extract_text() or "" for page in reader.pages]
+            return "\n\n".join(page.strip() for page in pages if page.strip())
+        return file_path.read_text(encoding="utf-8", errors="replace")
+
+    def _chunk_rag_text(self, text: str, *, chunk_size: int, chunk_overlap: int) -> list[str]:
+        paragraphs = [item.strip() for item in re.split(r"\n\s*\n", text) if item.strip()]
+        if not paragraphs:
+            cleaned = text.strip()
+            return [cleaned] if cleaned else []
+        chunks: list[str] = []
+        current = ""
+        for paragraph in paragraphs:
+            candidate = paragraph if not current else current + "\n\n" + paragraph
+            if len(candidate) <= chunk_size:
+                current = candidate
+                continue
+            if current:
+                chunks.append(current)
+            if len(paragraph) <= chunk_size:
+                current = paragraph
+                continue
+            start = 0
+            while start < len(paragraph):
+                end = min(len(paragraph), start + chunk_size)
+                piece = paragraph[start:end].strip()
+                if piece:
+                    chunks.append(piece)
+                if end >= len(paragraph):
+                    break
+                start = max(end - max(0, chunk_overlap), start + 1)
+            current = ""
+        if current:
+            chunks.append(current)
+        return chunks
+
+    def _summarize_rag_document(self, text: str, source_file: Path) -> str:
+        active_provider = self.ai_runtime.get_active_provider()
+        if active_provider:
+            prompt = "\n".join(
+                [
+                    "Summarize this document for Nova-shell auto-ingest in 4 bullet-free sentences.",
+                    f"Source: {source_file.name}",
+                    "",
+                    text[:6000],
+                ]
+            )
+            result = self.ai_runtime.complete_prompt(prompt)
+            if result.error is None and result.output.strip():
+                return result.output.strip()
+        sentence_parts = re.split(r"(?<=[.!?])\s+", text.strip())
+        summary = " ".join(part for part in sentence_parts[:3] if part).strip()
+        if summary:
+            return summary[:800]
+        return text.strip()[:800]
+
+    def _ingest_rag_file(
+        self,
+        file_path: Path,
+        *,
+        namespace: str,
+        project: str,
+        chunk_size: int,
+        chunk_overlap: int,
+        publish_topic: str,
+        train_atheria: bool,
+        summarize: bool,
+    ) -> dict[str, Any]:
+        text = self._load_rag_file_text(file_path)
+        if not text.strip():
+            raise ValueError("rag source file is empty")
+        summary = self._summarize_rag_document(text, file_path) if summarize else ""
+        chunks = self._chunk_rag_text(text, chunk_size=chunk_size, chunk_overlap=chunk_overlap)
+        if not chunks:
+            chunks = [text.strip()]
+        zero_handle = ""
+        if len(text.encode("utf-8")) >= 4096:
+            zero_result = self.zero.put_text(text)
+            if zero_result.error is None and isinstance(zero_result.data, dict):
+                zero_handle = str(zero_result.data.get("handle") or "")
+        chunk_ids: list[str] = []
+        for index, chunk in enumerate(chunks, start=1):
+            entry = self.memory.embed(
+                chunk,
+                entry_id=f"rag_{file_path.stem}_{index}_{uuid.uuid4().hex[:6]}",
+                metadata={
+                    "source_file": str(file_path),
+                    "chunk_index": index,
+                    "chunk_count": len(chunks),
+                    "summary": summary,
+                    "zero_handle": zero_handle,
+                    "ingest_mode": "auto-rag",
+                },
+                namespace=namespace,
+                project=project,
+            )
+            chunk_ids.append(entry.entry_id)
+        trained = 0
+        if train_atheria:
+            trained = self.atheria.train_text_file(file_path, category=project or file_path.stem or "auto_rag")
+        event_payload = {
+            "source_file": str(file_path),
+            "namespace": namespace,
+            "project": project,
+            "chunk_ids": chunk_ids,
+            "summary": summary,
+            "trained_records": trained,
+            "zero_handle": zero_handle,
+        }
+        self._publish_event(publish_topic, json.dumps(event_payload, ensure_ascii=False), broadcast=True)
+        return {
+            "file": str(file_path),
+            "namespace": namespace,
+            "project": project,
+            "chunks": len(chunk_ids),
+            "chunk_ids": chunk_ids,
+            "summary": summary,
+            "trained_records": trained,
+            "publish_topic": publish_topic,
+            "zero_handle": zero_handle,
+        }
+
     def _planner_tool_candidates(self, prompt: str) -> list[ToolSchemaDefinition]:
         lowered = prompt.lower()
         candidates: list[tuple[int, ToolSchemaDefinition]] = []
@@ -4263,7 +5091,7 @@ class NovaShell:
     def _run_atheria(self, args: str, pipeline_input: str, pipeline_data: Any) -> CommandResult:
         parts = split_command(args)
         if not parts:
-            return CommandResult(output="", error="usage: atheria status|init|train|search|chat ...")
+            return CommandResult(output="", error="usage: atheria status|init|sensor|train|search|chat ...")
 
         action = parts[0]
 
@@ -4280,6 +5108,160 @@ class NovaShell:
                 return CommandResult(output="", error=f"atheria init failed: {exc}")
             payload = self.atheria.status_payload()
             return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+
+        if action == "sensor":
+            if len(parts) < 2:
+                return CommandResult(output="", error="usage: atheria sensor load|map|list|show|run ...")
+            sensor_action = parts[1]
+            if sensor_action == "list":
+                payload = self.atheria_sensors.list_plugins()
+                return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+            if sensor_action == "show":
+                if len(parts) < 3:
+                    return CommandResult(output="", error="usage: atheria sensor show <name>")
+                spec = next((item for item in self.atheria_sensors.list_plugins() if item["name"] == parts[2]), None)
+                if spec is None:
+                    return CommandResult(output="", error="atheria sensor not found")
+                return CommandResult(output=json.dumps(spec, ensure_ascii=False) + "\n", data=spec, data_type=PipelineType.OBJECT)
+            if sensor_action == "load":
+                if len(parts) < 3:
+                    return CommandResult(output="", error="usage: atheria sensor load <file.py> [--name name] [--mapping json|file]")
+                path = self._resolve_path(parts[2])
+                name = ""
+                mapping: dict[str, str] = {}
+                i = 3
+                while i < len(parts):
+                    token = parts[i]
+                    if token == "--name" and i + 1 < len(parts):
+                        name = parts[i + 1]
+                        i += 2
+                        continue
+                    if token == "--mapping" and i + 1 < len(parts):
+                        mapping_source = parts[i + 1]
+                        candidate = self._resolve_path(mapping_source)
+                        try:
+                            loaded = self._load_structured_payload(candidate.read_text(encoding="utf-8")) if candidate.exists() else self._load_structured_payload(mapping_source)
+                        except Exception as exc:
+                            return CommandResult(output="", error=f"invalid sensor mapping: {exc}")
+                        if not isinstance(loaded, dict):
+                            return CommandResult(output="", error="sensor mapping must be an object")
+                        mapping = {str(key): str(value) for key, value in loaded.items()}
+                        i += 2
+                        continue
+                    i += 1
+                try:
+                    spec = self.atheria_sensors.register(path, name=name or None, mapping=mapping or None)
+                except Exception as exc:
+                    return CommandResult(output="", error=str(exc))
+                payload = {
+                    "name": spec.name,
+                    "path": spec.path,
+                    "mapping": spec.mapping,
+                    "description": spec.description,
+                }
+                return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+            if sensor_action == "map":
+                if len(parts) < 4:
+                    return CommandResult(output="", error="usage: atheria sensor map <name> <mapping.json|yaml|json>")
+                name = parts[2]
+                mapping_source = parts[3]
+                candidate = self._resolve_path(mapping_source)
+                try:
+                    loaded = self._load_structured_payload(candidate.read_text(encoding="utf-8")) if candidate.exists() else self._load_structured_payload(mapping_source)
+                except Exception as exc:
+                    return CommandResult(output="", error=f"invalid sensor mapping: {exc}")
+                if not isinstance(loaded, dict):
+                    return CommandResult(output="", error="sensor mapping must be an object")
+                try:
+                    spec = self.atheria_sensors.set_mapping(name, {str(key): str(value) for key, value in loaded.items()})
+                except KeyError:
+                    return CommandResult(output="", error="atheria sensor not found")
+                payload = {"name": spec.name, "mapping": spec.mapping}
+                return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+            if sensor_action == "run":
+                if len(parts) < 3:
+                    return CommandResult(output="", error="usage: atheria sensor run <name> [--input json] [--file payload.json] [--train] [--namespace n] [--project p] [--category name]")
+                name = parts[2]
+                input_json = ""
+                file_path_text = ""
+                namespace = self.current_memory_namespace
+                project = self.current_memory_project
+                category = ""
+                train = False
+                i = 3
+                while i < len(parts):
+                    token = parts[i]
+                    if token == "--input" and i + 1 < len(parts):
+                        input_json = parts[i + 1]
+                        i += 2
+                        continue
+                    if token == "--file" and i + 1 < len(parts):
+                        file_path_text = parts[i + 1]
+                        i += 2
+                        continue
+                    if token == "--namespace" and i + 1 < len(parts):
+                        namespace = parts[i + 1]
+                        i += 2
+                        continue
+                    if token == "--project" and i + 1 < len(parts):
+                        project = parts[i + 1]
+                        i += 2
+                        continue
+                    if token == "--category" and i + 1 < len(parts):
+                        category = parts[i + 1]
+                        i += 2
+                        continue
+                    if token == "--train":
+                        train = True
+                        i += 1
+                        continue
+                    i += 1
+                payload_source: Any = pipeline_data
+                if file_path_text:
+                    payload_file = self._resolve_path(file_path_text)
+                    if not payload_file.exists() or not payload_file.is_file():
+                        return CommandResult(output="", error=f"sensor payload file not found: {file_path_text}")
+                    try:
+                        payload_source = self._load_structured_payload(payload_file.read_text(encoding="utf-8"))
+                    except Exception as exc:
+                        return CommandResult(output="", error=f"failed to parse sensor payload file: {exc}")
+                elif input_json:
+                    try:
+                        payload_source = self._load_structured_payload(input_json)
+                    except Exception as exc:
+                        return CommandResult(output="", error=str(exc))
+                elif payload_source is None and pipeline_input.strip():
+                    with contextlib.suppress(Exception):
+                        payload_source = self._load_structured_payload(pipeline_input)
+                if payload_source is None:
+                    payload_source = {}
+                try:
+                    event_payload = self.atheria_sensors.run(name, payload_source)
+                except KeyError:
+                    return CommandResult(output="", error="atheria sensor not found")
+                except Exception as exc:
+                    return CommandResult(output="", error=f"sensor run failed: {exc}")
+                if train:
+                    text = event_payload["summary"] + "\n\n" + json.dumps(event_payload, ensure_ascii=False, indent=2)
+                    memory_entry = self.memory.embed(
+                        text,
+                        metadata={"sensor_name": name, "sensor_event_id": event_payload["event_id"]},
+                        namespace=namespace,
+                        project=project,
+                    )
+                    inserted = self.atheria.train_rows(
+                        [
+                            (
+                                f"{name} sensor event {event_payload['event_id']}",
+                                category or f"sensor:{name}",
+                                text,
+                            )
+                        ]
+                    )
+                    event_payload["memory_id"] = memory_entry.entry_id
+                    event_payload["trained_records"] = inserted
+                return CommandResult(output=json.dumps(event_payload, ensure_ascii=False) + "\n", data=event_payload, data_type=PipelineType.OBJECT)
+            return CommandResult(output="", error="usage: atheria sensor load|map|list|show|run ...")
 
         if action == "search":
             query = " ".join(parts[1:]).strip()
@@ -4452,7 +5434,7 @@ class NovaShell:
                 system_prompt=system_prompt,
             )
 
-        return CommandResult(output="", error="usage: atheria status|init|train|search|chat ...")
+        return CommandResult(output="", error="usage: atheria status|init|sensor|train|search|chat ...")
 
     def _run_tool(self, args: str, pipeline_input: str, pipeline_data: Any) -> CommandResult:
         parts = split_command(args)
@@ -5014,15 +5996,20 @@ class NovaShell:
                 return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
             if graph_action == "run":
                 if len(parts) < 3:
-                    return CommandResult(output="", error="usage: agent graph run <name> [--file path] [--memory id]... --input text")
+                    return CommandResult(output="", error="usage: agent graph run <name> [--swarm] [--file path] [--memory id]... --input text")
                 graph = self.agent_graphs.get(parts[2])
                 if graph is None:
                     return CommandResult(output="", error="agent graph not found")
                 input_text = ""
+                swarm = False
                 context_options, graph_tokens = self._parse_agent_context_args(parts, start_index=3)
                 i = 0
                 while i < len(graph_tokens):
                     token = graph_tokens[i]
+                    if token == "--swarm":
+                        swarm = True
+                        i += 1
+                        continue
                     if token == "--input" and i + 1 < len(graph_tokens):
                         input_text = graph_tokens[i + 1]
                         i += 2
@@ -5043,10 +6030,22 @@ class NovaShell:
                     inbound[right].append(left)
                 node_outputs: dict[str, str] = {}
                 steps: list[dict[str, Any]] = []
-                for node in ordered:
+                assignments: list[dict[str, Any]] = []
+                execution_id = uuid.uuid4().hex[:10]
+                for index, node in enumerate(ordered):
                     incoming = inbound.get(node, [])
                     node_input = enriched_input if not incoming else "\n\n".join(node_outputs[source] for source in incoming if source in node_outputs)
-                    result = self._run_agent_handle(node, node_input)
+                    if swarm:
+                        result, assignment = self._run_agent_handle_swarm(
+                            node,
+                            node_input,
+                            execution_id=execution_id,
+                            step_kind="agent-graph",
+                            step_index=index,
+                        )
+                        assignments.append(assignment)
+                    else:
+                        result = self._run_agent_handle(node, node_input)
                     if result.error:
                         return result
                     output_text = result.output.strip()
@@ -5054,7 +6053,16 @@ class NovaShell:
                     steps.append({"node": node, "input": node_input, "output": output_text})
                 sinks = [node for node in graph.nodes if all(left != node for left, _ in graph.edges)]
                 final_output = "\n\n".join(node_outputs.get(node, "") for node in sinks if node_outputs.get(node, ""))
-                payload = {"name": graph.name, "nodes": graph.nodes, "edges": graph.edges, "steps": steps, "final_output": final_output}
+                payload = {
+                    "name": graph.name,
+                    "nodes": graph.nodes,
+                    "edges": graph.edges,
+                    "steps": steps,
+                    "final_output": final_output,
+                    "swarm": swarm,
+                    "execution_id": execution_id,
+                    "assignments": assignments,
+                }
                 return CommandResult(output=(final_output + "\n") if final_output else "", data=payload, data_type=PipelineType.OBJECT)
             return CommandResult(output="", error="usage: agent graph create|show|list|run ...")
 
@@ -5245,10 +6253,15 @@ class NovaShell:
         if action == "workflow":
             names: list[str] = []
             input_text = ""
+            swarm = False
             context_options, workflow_tokens = self._parse_agent_context_args(parts, start_index=1)
             i = 0
             while i < len(workflow_tokens):
                 token = workflow_tokens[i]
+                if token == "--swarm":
+                    swarm = True
+                    i += 1
+                    continue
                 if token == "--agents" and i + 1 < len(workflow_tokens):
                     names.extend([name.strip() for name in workflow_tokens[i + 1].split(",") if name.strip()])
                     i += 2
@@ -5273,20 +6286,40 @@ class NovaShell:
                 return error
             current_text = enriched_input
             steps: list[dict[str, Any]] = []
-            for name in names:
-                if name in self.agent_instances:
-                    result = self._run_agent_instance_message(self.agent_instances[name], current_text)
+            assignments: list[dict[str, Any]] = []
+            execution_id = uuid.uuid4().hex[:10]
+            for index, name in enumerate(names):
+                if swarm:
+                    result, assignment = self._run_agent_handle_swarm(
+                        name,
+                        current_text,
+                        execution_id=execution_id,
+                        step_kind="agent-workflow",
+                        step_index=index,
+                    )
+                    assignments.append(assignment)
                 else:
-                    definition = self.agents.get(name)
-                    if definition is None:
-                        return CommandResult(output="", error=f"agent not found in workflow: {name}")
-                    result = self._run_agent_once(definition, current_text)
+                    if name in self.agent_instances:
+                        result = self._run_agent_instance_message(self.agent_instances[name], current_text)
+                    else:
+                        definition = self.agents.get(name)
+                        if definition is None:
+                            return CommandResult(output="", error=f"agent not found in workflow: {name}")
+                        result = self._run_agent_once(definition, current_text)
                 if result.error:
                     return result
                 output_text = result.output.strip()
                 steps.append({"agent": name, "input": current_text, "output": output_text})
                 current_text = output_text
-            payload = {"agents": names, "input": input_text, "steps": steps, "final_output": current_text}
+            payload = {
+                "agents": names,
+                "input": input_text,
+                "steps": steps,
+                "final_output": current_text,
+                "swarm": swarm,
+                "execution_id": execution_id,
+                "assignments": assignments,
+            }
             return CommandResult(output=(current_text + "\n") if current_text else "", data=payload, data_type=PipelineType.OBJECT)
 
         return CommandResult(output="", error="usage: agent create|run|show|list|spawn|message|workflow|graph ...")
@@ -5734,6 +6767,162 @@ class NovaShell:
 
         return CommandResult(output="", error="usage: reactive on-file|on-sync|list|stop|clear ...")
 
+    def _run_rag(self, args: str, pipeline_input: str, pipeline_data: Any) -> CommandResult:
+        parts = split_command(args)
+        if not parts:
+            return CommandResult(output="", error="usage: rag ingest|watch|list|stop ...")
+        action = parts[0]
+        if action == "list":
+            payload = []
+            for watcher in self.rag_watchers.values():
+                trigger = self.reactive.triggers.get(watcher.reactive_trigger_id)
+                payload.append(
+                    {
+                        "id": watcher.watcher_id,
+                        "pattern": watcher.pattern,
+                        "namespace": watcher.namespace,
+                        "project": watcher.project,
+                        "chunk_size": watcher.chunk_size,
+                        "chunk_overlap": watcher.chunk_overlap,
+                        "publish_topic": watcher.publish_topic,
+                        "summarize": watcher.summarize,
+                        "train_atheria": watcher.train_atheria,
+                        "reactive_trigger_id": watcher.reactive_trigger_id,
+                        "active": bool(trigger.active) if trigger is not None else False,
+                    }
+                )
+            return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+        if action == "stop":
+            if len(parts) < 2:
+                return CommandResult(output="", error="usage: rag stop <id>")
+            watcher = self.rag_watchers.pop(parts[1], None)
+            if watcher is None:
+                return CommandResult(output="", error="rag watcher not found")
+            self.reactive.stop(watcher.reactive_trigger_id)
+            return CommandResult(output="stopped\n")
+        if action not in {"ingest", "watch"}:
+            return CommandResult(output="", error="usage: rag ingest|watch|list|stop ...")
+
+        file_path_text = ""
+        pattern = ""
+        namespace = self.current_memory_namespace
+        project = self.current_memory_project
+        chunk_size = 1200
+        chunk_overlap = 160
+        publish_topic = "knowledge_updated"
+        summarize = True
+        train_atheria = True
+        positional: list[str] = []
+        i = 1
+        while i < len(parts):
+            token = parts[i]
+            if token == "--file" and i + 1 < len(parts):
+                file_path_text = parts[i + 1]
+                i += 2
+                continue
+            if token == "--namespace" and i + 1 < len(parts):
+                namespace = parts[i + 1]
+                i += 2
+                continue
+            if token == "--project" and i + 1 < len(parts):
+                project = parts[i + 1]
+                i += 2
+                continue
+            if token == "--chunk-size" and i + 1 < len(parts):
+                with contextlib.suppress(Exception):
+                    chunk_size = max(200, int(parts[i + 1]))
+                i += 2
+                continue
+            if token == "--chunk-overlap" and i + 1 < len(parts):
+                with contextlib.suppress(Exception):
+                    chunk_overlap = max(0, int(parts[i + 1]))
+                i += 2
+                continue
+            if token == "--publish" and i + 1 < len(parts):
+                publish_topic = parts[i + 1]
+                i += 2
+                continue
+            if token == "--no-summary":
+                summarize = False
+                i += 1
+                continue
+            if token == "--no-atheria":
+                train_atheria = False
+                i += 1
+                continue
+            positional.append(token)
+            i += 1
+
+        if action == "ingest":
+            if not file_path_text and positional:
+                file_path_text = positional[0]
+            if not file_path_text and pipeline_input.strip():
+                file_path_text = pipeline_input.strip()
+            if not file_path_text:
+                return CommandResult(output="", error="usage: rag ingest --file <path> [--namespace n] [--project p] [--chunk-size n] [--chunk-overlap n] [--publish topic] [--no-summary] [--no-atheria]")
+            file_path = self._resolve_path(file_path_text)
+            if not file_path.exists() or not file_path.is_file():
+                return CommandResult(output="", error=f"rag file not found: {file_path_text}")
+            try:
+                payload = self._ingest_rag_file(
+                    file_path,
+                    namespace=namespace,
+                    project=project,
+                    chunk_size=chunk_size,
+                    chunk_overlap=chunk_overlap,
+                    publish_topic=publish_topic,
+                    train_atheria=train_atheria,
+                    summarize=summarize,
+                )
+            except Exception as exc:
+                return CommandResult(output="", error=f"rag ingest failed: {exc}")
+            return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+
+        if positional:
+            pattern = positional[0]
+        if not pattern:
+            return CommandResult(output="", error="usage: rag watch <glob> [--namespace n] [--project p] [--chunk-size n] [--chunk-overlap n] [--publish topic] [--no-summary] [--no-atheria]")
+        command = " ".join(
+            [
+                "rag ingest --file {{path}}",
+                "--namespace",
+                self._shell_quote(namespace),
+                "--project",
+                self._shell_quote(project),
+                "--chunk-size",
+                str(chunk_size),
+                "--chunk-overlap",
+                str(chunk_overlap),
+                "--publish",
+                self._shell_quote(publish_topic),
+            ]
+            + ([] if summarize else ["--no-summary"])
+            + ([] if train_atheria else ["--no-atheria"])
+        )
+        trigger = self.reactive.register_file_trigger(pattern, command, once=False)
+        watcher = AutoRAGWatcherSpec(
+            watcher_id="rag_" + uuid.uuid4().hex[:8],
+            pattern=pattern,
+            namespace=namespace,
+            project=project,
+            chunk_size=chunk_size,
+            chunk_overlap=chunk_overlap,
+            publish_topic=publish_topic,
+            summarize=summarize,
+            train_atheria=train_atheria,
+            reactive_trigger_id=trigger.trigger_id,
+        )
+        self.rag_watchers[watcher.watcher_id] = watcher
+        payload = {
+            "id": watcher.watcher_id,
+            "pattern": watcher.pattern,
+            "namespace": watcher.namespace,
+            "project": watcher.project,
+            "reactive_trigger_id": watcher.reactive_trigger_id,
+            "publish_topic": watcher.publish_topic,
+        }
+        return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+
     def _run_zero(self, args: str, _: str, __: Any) -> CommandResult:
         parts = split_command(args)
         if not parts:
@@ -5880,7 +7069,7 @@ class NovaShell:
     def _run_lens(self, args: str, _: str, __: Any) -> CommandResult:
         parts = split_command(args)
         if not parts:
-            return CommandResult(output="", error="usage: lens list [n] | lens last | lens show <id> | lens replay <id>")
+            return CommandResult(output="", error="usage: lens list [n] | lens last | lens show <id> | lens replay <id> | lens fork <id> --inject json | lens forks [n] | lens diff <fork_id>")
         action = parts[0]
         if action == "list":
             limit = int(parts[1]) if len(parts) > 1 else 10
@@ -5902,7 +7091,74 @@ class NovaShell:
             if len(parts) < 2:
                 return CommandResult(output="", error="usage: lens replay <id>")
             return self.lens.replay(parts[1])
-        return CommandResult(output="", error="usage: lens list [n] | lens last | lens show <id> | lens replay <id>")
+        if action == "fork":
+            if len(parts) < 2:
+                return CommandResult(output="", error="usage: lens fork <snapshot_id> --inject json")
+            snapshot = self.lens.get(parts[1])
+            if snapshot is None:
+                return CommandResult(output="", error="snapshot not found")
+            inject_payload: dict[str, Any] = {}
+            i = 2
+            while i < len(parts):
+                token = parts[i]
+                if token == "--inject" and i + 1 < len(parts):
+                    try:
+                        loaded = self._load_structured_payload(parts[i + 1])
+                    except Exception as exc:
+                        return CommandResult(output="", error=str(exc))
+                    if not isinstance(loaded, dict):
+                        return CommandResult(output="", error="lens fork injection must be an object")
+                    inject_payload = loaded
+                    i += 2
+                    continue
+                i += 1
+            base_payload = self._coerce_snapshot_payload(snapshot.get("data_preview", ""), snapshot.get("output", ""))
+            forked_payload = self._deep_merge_payload(base_payload, inject_payload)
+            diff = self._collect_diff_rows(base_payload, forked_payload)
+            namespace = f"{self.current_memory_namespace}.fork.{parts[1][:6]}"
+            project = f"{self.current_memory_project}.fork"
+            simulation = self._simulate_fork_payload(parts[1], forked_payload)
+            fork_output = json.dumps(forked_payload, ensure_ascii=False, indent=2)
+            artifact = self.lens.record_fork(
+                snapshot_id=parts[1],
+                namespace=namespace,
+                project=project,
+                inject_payload=inject_payload,
+                diff=diff,
+                simulation=simulation,
+                fork_output=fork_output,
+                fork_data_preview=fork_output,
+            )
+            payload = {
+                "id": artifact.fork_id,
+                "snapshot_id": artifact.snapshot_id,
+                "namespace": namespace,
+                "project": project,
+                "inject": inject_payload,
+                "diff": diff,
+                "simulation": simulation,
+                "fork_output": forked_payload,
+            }
+            return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+        if action == "forks":
+            limit = int(parts[1]) if len(parts) > 1 else 10
+            payload = self.lens.list_forks(limit)
+            return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+        if action == "diff":
+            if len(parts) < 2:
+                return CommandResult(output="", error="usage: lens diff <fork_id>")
+            payload = self.lens.get_fork(parts[1])
+            if payload is None:
+                return CommandResult(output="", error="fork not found")
+            diff_payload = {
+                "id": payload["id"],
+                "snapshot_id": payload["snapshot_id"],
+                "inject": payload["inject"],
+                "diff": payload["diff"],
+                "simulation": payload["simulation"],
+            }
+            return CommandResult(output=json.dumps(diff_payload, ensure_ascii=False) + "\n", data=diff_payload, data_type=PipelineType.OBJECT)
+        return CommandResult(output="", error="usage: lens list [n] | lens last | lens show <id> | lens replay <id> | lens fork <id> --inject json | lens forks [n] | lens diff <fork_id>")
 
     def _run_on(self, args: str, _: str, __: Any) -> CommandResult:
         parts = split_command(args)

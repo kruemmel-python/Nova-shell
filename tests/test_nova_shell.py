@@ -1090,6 +1090,33 @@ if len(files_lines) == 2:
         self.assertEqual(run.data["steps"][1]["input"], "analysis:Analyze quarterly report")
         self.assertEqual([call["model"] for call in calls], ["analyst-model", "reviewer-model"])
 
+    def test_agent_graph_swarm_routes_steps_over_mesh(self) -> None:
+        remote_calls: list[tuple[str, str]] = []
+
+        def fake_remote(worker_url: str, command: str) -> CommandResult:
+            remote_calls.append((worker_url, command))
+            if command.startswith("agent create"):
+                return CommandResult(output="created\n", data={"ok": True}, data_type=PipelineType.OBJECT)
+            if "quarterly report" in command:
+                return CommandResult(output="analysis\n", data={"text": "analysis"}, data_type=PipelineType.OBJECT)
+            return CommandResult(output="reviewed analysis\n", data={"text": "reviewed analysis"}, data_type=PipelineType.OBJECT)
+
+        self.assertIsNone(self.shell.route('agent create analyst "Analyze {{input}}" --provider lmstudio --model analyst-model').error)
+        self.assertIsNone(self.shell.route('agent create reviewer "Review {{input}}" --provider lmstudio --model reviewer-model').error)
+        self.assertIsNone(self.shell.route("agent graph create review_chain --nodes analyst,reviewer").error)
+        self.shell.mesh.add_worker("http://worker-a", {"cpu", "py", "ai"})
+
+        with patch.object(self.shell.remote, "execute", side_effect=fake_remote):
+            run = self.shell.route('agent graph run review_chain --swarm --input "quarterly report"')
+
+        self.assertIsNone(run.error)
+        self.assertEqual(run.output.strip(), "reviewed analysis")
+        self.assertTrue(run.data["swarm"])
+        self.assertEqual(len(run.data["assignments"]), 2)
+        self.assertTrue(all(item["mode"] == "mesh" for item in run.data["assignments"]))
+        self.assertTrue(any(command.startswith("agent create") for _, command in remote_calls))
+        self.assertTrue(any(command.startswith("agent run") for _, command in remote_calls))
+
     def test_agent_run_lmstudio_timeout_returns_local_provider_hint(self) -> None:
         with patch("nova_shell.urllib.request.urlopen", side_effect=TimeoutError("timed out")):
             create = self.shell.route('agent create helper "Summarize {{input}}" --provider lmstudio --model local-model')
@@ -1161,6 +1188,50 @@ if len(files_lines) == 2:
             self.assertTrue(any(item["id"] == trigger["id"] for item in entries))
             stop = self.shell.route(f"reactive stop {trigger['id']}")
             self.assertIsNone(stop.error)
+
+    def test_rag_ingest_embeds_chunks_into_memory(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            doc = Path(tmp) / "notes.md"
+            doc.write_text(
+                "Nova-shell coordinates tools and agents.\n\n"
+                "Auto-RAG should watch incoming knowledge and index it immediately.\n",
+                encoding="utf-8",
+            )
+            ingest = self.shell.route(
+                f"rag ingest --file {doc} --namespace docs --project ingest --no-summary --no-atheria"
+            )
+            self.assertIsNone(ingest.error)
+            payload = json.loads(ingest.output)
+            self.assertGreaterEqual(payload["chunks"], 1)
+
+            search = self.shell.route("memory search --namespace docs --project ingest incoming knowledge")
+            self.assertIsNone(search.error)
+            hits = json.loads(search.output)
+            self.assertTrue(any("Auto-RAG" in hit["text"] for hit in hits))
+
+    def test_rag_watch_ingests_new_files(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            watch = self.shell.route(
+                f"rag watch '{tmp}/*.md' --namespace incoming --project watcher --no-summary --no-atheria"
+            )
+            self.assertIsNone(watch.error)
+            watch_payload = json.loads(watch.output)
+            try:
+                doc = Path(tmp) / "new.md"
+                doc.write_text("Watcher ingests fresh markdown into Nova-shell memory.\n", encoding="utf-8")
+                deadline = time.time() + 2.0
+                found = False
+                while time.time() < deadline:
+                    search = self.shell.route("memory search --namespace incoming --project watcher fresh markdown")
+                    hits = json.loads(search.output) if search.error is None else []
+                    if hits:
+                        found = True
+                        break
+                    time.sleep(0.1)
+                self.assertTrue(found)
+            finally:
+                stop = self.shell.route(f"rag stop {watch_payload['id']}")
+                self.assertIsNone(stop.error)
 
     def test_guard_ebpf_status(self) -> None:
         result = self.shell.route("guard ebpf-status")
@@ -1240,6 +1311,52 @@ if len(files_lines) == 2:
         snapshot = json.loads(last.output)
         replay = self.shell.route(f"lens replay {snapshot['id']}")
         self.assertIsNone(replay.error)
+
+    def test_lens_fork_creates_diff_and_simulation(self) -> None:
+        self.assertIsNone(self.shell.route('py {"trauma_pressure": 0.9, "network_latency": 12.0}').error)
+        snapshot = json.loads(self.shell.route("lens last").output)
+        with patch.object(self.shell, "_simulate_fork_payload", return_value={"mode": "mock-sim", "delta": 1}):
+            fork = self.shell.route(f'lens fork {snapshot["id"]} --inject \'{{"trauma_pressure": 0.1}}\'')
+        self.assertIsNone(fork.error)
+        payload = json.loads(fork.output)
+        self.assertEqual(payload["simulation"]["mode"], "mock-sim")
+        self.assertTrue(any(row["path"] == "$.trauma_pressure" for row in payload["diff"]))
+
+        diff = self.shell.route(f'lens diff {payload["id"]}')
+        self.assertIsNone(diff.error)
+        diff_payload = json.loads(diff.output)
+        self.assertEqual(diff_payload["id"], payload["id"])
+        self.assertTrue(any(row["path"] == "$.trauma_pressure" for row in diff_payload["diff"]))
+
+    def test_atheria_sensor_load_run_and_train(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp, patch.object(self.shell.atheria, "train_rows", return_value=1):
+            plugin = Path(tmp) / "ops_sensor.py"
+            plugin.write_text(
+                "def analyze(payload):\n"
+                "    return {\n"
+                "        'summary': 'ops event',\n"
+                "        'features': {'system_temperature': 0.7},\n"
+                "        'metadata': {'origin': 'test'}\n"
+                "    }\n",
+                encoding="utf-8",
+            )
+            mapping = Path(tmp) / "mapping.json"
+            mapping.write_text(json.dumps({"cpu_usage": "$.system.cpu_usage", "network_latency": "$.system.latency"}), encoding="utf-8")
+
+            load = self.shell.route(f"atheria sensor load {plugin} --name ops_sensor --mapping {mapping}")
+            self.assertIsNone(load.error)
+
+            run = self.shell.route(
+                'atheria sensor run ops_sensor --input \'{"system":{"cpu_usage":0.91,"latency":18}}\' --train --namespace sensors --project ops'
+            )
+
+        self.assertIsNone(run.error)
+        payload = json.loads(run.output)
+        self.assertEqual(payload["name"], "ops_sensor")
+        self.assertEqual(payload["features"]["cpu_usage"], 0.91)
+        self.assertEqual(payload["features"]["network_latency"], 18.0)
+        self.assertEqual(payload["trained_records"], 1)
+        self.assertTrue(payload["memory_id"].startswith("mem_") or payload["memory_id"])
 
     def test_mesh_heartbeat_and_intelligent_run_no_worker(self) -> None:
         add = self.shell.route("mesh add http://127.0.0.1:9998 cpu")

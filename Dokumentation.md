@@ -15,7 +15,7 @@ Diese Datei ist die vollstaendige Command-Referenz fuer Nova-shell 0.8.0. Sie li
 - Ausfuehrungs-Engines: `py`, `python`, `cpp`, `cpp.sandbox`, `cpp.expr`, `cpp.expr_chain`, `gpu`, `wasm`, `jit_wasm`
 - Daten und Handles: `data`, `data.load`, `zero`, `fabric`
 - AI und Agenten: `ai`, `atheria`, `agent`, `memory`, `tool`
-- Events und Workflow: `event`, `events`, `flow`, `sync`, `reactive`, `dflow`, `watch`, `observe`, `pulse`, `lens`
+- Events und Workflow: `event`, `events`, `flow`, `sync`, `reactive`, `dflow`, `watch`, `observe`, `pulse`, `lens`, `rag`
 - Optimierung und Graphen: `opt`, `synth`, `graph`, `studio`
 - Runtime und Deployment: `mesh`, `remote`, `vision`, `pack`
 - Sicherheit: `guard`, `secure`
@@ -167,6 +167,11 @@ cpp.sandbox 'int main(){ return 0; }'
 
 - `atheria status`: Zeigt Status, Quelle und Trainingsumfang der lokalen Atheria-Runtime. Beispiel: `atheria status`
 - `atheria init`: Initialisiert AtheriaCore und den lokalen Runtime-Zustand. Beispiel: `atheria init`
+- `atheria sensor list`: Listet geladene Sensor-Plugins. Beispiel: `atheria sensor list`
+- `atheria sensor load <file.py> [--name name] [--mapping json|file]`: Laedt ein Sensor-Plugin dynamisch und haengt optional ein Mapping an. Beispiel: `atheria sensor load ops_sensor.py --name ops_sensor --mapping mapping.json`
+- `atheria sensor show <name>`: Zeigt Konfiguration und Metadaten eines Sensor-Plugins. Beispiel: `atheria sensor show ops_sensor`
+- `atheria sensor map <name> <mapping.json|yaml|json>`: Aktualisiert das JSON-Key-Mapping eines Sensors. Beispiel: `atheria sensor map ops_sensor mapping.json`
+- `atheria sensor run <name> [--input json] [--file payload.json] [--train]`: Fuehrt einen Sensor aus und erzeugt ein standardisiertes Atheria-Event. Beispiel: `atheria sensor run ops_sensor --input '{"system":{"cpu_usage":0.91,"latency":18}}' --train`
 - `atheria train qa --question <text> --answer <text> [--category name]`: Trainiert Atheria mit einem Q/A-Paar. Beispiel: `atheria train qa --question "What is Nova-shell?" --answer "A unified runtime." --category product`
 - `atheria train json <file>`: Uebernimmt Trainingsdaten aus einer JSON-Datei mit `questions`. Beispiel: `atheria train json model_with_qa.json`
 - `atheria train csv <file>`: Uebernimmt Trainingsdaten aus einer CSV-Datei. Beispiel: `atheria train csv faq.csv`
@@ -253,6 +258,7 @@ agent run storyteller "Nova-shell and Atheria"
 - `agent workflow --agents a,b[,c] --input text`: Fuehrt mehrere Agenten nacheinander aus. Beispiel: `agent workflow --agents analyst,reviewer --input "quarterly report"`
 - `agent workflow --agents a,b --file <pfad> --input text`: Workflow mit Dateikontext. Beispiel: `agent workflow --agents analyst,reviewer --file Whitepaper.md --input "summarize the architecture"`
 - `agent workflow --agents a,b --memory <id> --input text`: Workflow mit Memory-Kontext. Beispiel: `agent workflow --agents analyst,reviewer --memory final_transcript --input "check wording"`
+- `agent workflow --swarm --agents a,b[,c] --input text`: Verteilt die Workflow-Schritte als Agent-Swarm ueber Mesh-Worker. Beispiel: `agent workflow --swarm --agents planner,analyst,reviewer --input "quarterly report"`
 
 ### `agent graph`
 
@@ -262,6 +268,7 @@ agent run storyteller "Nova-shell and Atheria"
 - `agent graph run <name> --input text`: Fuehrt einen Agent-Graphen aus. Beispiel: `agent graph run review_chain --input "quarterly report"`
 - `agent graph run <name> --file <pfad> --input text`: Fuehrt einen Graphen mit Dateikontext aus. Beispiel: `agent graph run review_chain --file Whitepaper.md --input "review this"`
 - `agent graph run <name> --memory <id> --input text`: Fuehrt einen Graphen mit Memory-Kontext aus. Beispiel: `agent graph run review_chain --memory final_transcript --input "check consistency"`
+- `agent graph run <name> --swarm --input text`: Orchestriert einen Agent-Graphen dynamisch ueber das Mesh. Beispiel: `agent graph run review_chain --swarm --input "Create a release memo"`
 
 ### `memory`
 
@@ -362,6 +369,17 @@ agent run storyteller "Nova-shell and Atheria"
 - `lens last`: Zeigt den letzten Snapshot. Beispiel: `lens last`
 - `lens show <id>`: Zeigt einen Snapshot im Detail. Beispiel: `lens show 7fd9c0f2b5d1`
 - `lens replay <id>`: Replayed den Snapshot-Kontext. Beispiel: `lens replay 7fd9c0f2b5d1`
+- `lens fork <snapshot_id> --inject json`: Forkt einen Snapshot, injiziert Werte und erzeugt Diff plus Simulation. Beispiel: `lens fork 7fd9c0f2b5d1 --inject '{"trauma_pressure":0.1}'`
+- `lens forks [n]`: Listet Snapshot-Forks. Beispiel: `lens forks 5`
+- `lens diff <fork_id>`: Zeigt Diff und Simulationsdaten eines Forks. Beispiel: `lens diff fork_ab12cd34`
+
+### `rag`
+
+- `rag ingest --file <pfad> [--namespace n] [--project p]`: Fuehrt einen Auto-RAG-Ingest fuer ein Dokument aus. Beispiel: `rag ingest --file Whitepaper.md --namespace docs --project research`
+- `rag ingest --file <pfad> --no-summary --no-atheria`: Fuehrt nur Chunking und Memory-Embedding aus. Beispiel: `rag ingest --file notes.md --no-summary --no-atheria`
+- `rag watch <glob> [--namespace n] [--project p]`: Ueberwacht ein Verzeichnis und ingestiert neue Dokumente automatisch. Beispiel: `rag watch './docs_incoming/*.*' --namespace auto_ingest --project podcast`
+- `rag list`: Listet aktive Auto-RAG-Watcher. Beispiel: `rag list`
+- `rag stop <id>`: Stoppt einen Auto-RAG-Watcher. Beispiel: `rag stop rag_ab12cd34`
 
 ### `studio`
 
