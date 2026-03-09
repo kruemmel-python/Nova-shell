@@ -72,6 +72,14 @@ PROFILE_NUITKA_NOFOLLOW = {
     "arrow": ["pyarrow.tests", "pyarrow.vendored"],
 }
 LOCAL_RUNTIME_DIRS = ["Atheria"]
+LOCAL_RUNTIME_FILES = [
+    "industry_scanner.py",
+    "trend_rss_sensor.py",
+    "watch_the_big_players.ns",
+    "watch_the_big_players_test.ns",
+    "sample_news.json",
+    "beispiel_rss.md",
+]
 HEAVY_SIDELOAD_DISTRIBUTIONS = {"torch"}
 HEARTBEAT_SECONDS = 30
 TRACE_FILE_ENV = "NOVA_BUILD_TRACE_FILE"
@@ -233,6 +241,15 @@ def collect_local_runtime_directories() -> list[Path]:
         if candidate.exists() and candidate.is_dir():
             directories.append(candidate)
     return directories
+
+
+def collect_local_runtime_files() -> list[Path]:
+    files: list[Path] = []
+    for relative_name in LOCAL_RUNTIME_FILES:
+        candidate = (ROOT / relative_name).resolve()
+        if candidate.exists() and candidate.is_file():
+            files.append(candidate)
+    return files
 
 
 def collect_nuitka_deployment_flags(profile: str) -> list[str]:
@@ -451,6 +468,13 @@ def normalize_tree_timestamps(root: Path, source_date_epoch: int | None) -> None
             os.utime(path, (source_date_epoch, source_date_epoch), follow_symlinks=False)
     with contextlib.suppress(FileNotFoundError):
         os.utime(root, (source_date_epoch, source_date_epoch), follow_symlinks=False)
+
+
+def normalize_file_timestamp(path: Path, source_date_epoch: int | None) -> None:
+    if source_date_epoch is None:
+        return
+    with contextlib.suppress(FileNotFoundError, NotImplementedError):
+        os.utime(path, (source_date_epoch, source_date_epoch), follow_symlinks=False)
 
 
 def archive_bundle(bundle_dir: Path, archive_base: Path, *, source_date_epoch: int | None) -> Path:
@@ -797,13 +821,18 @@ def stage_sideload_packages(bundle_dir: Path, profile: str, *, build_context: Bu
 
 def stage_local_runtime_directories(bundle_dir: Path, *, build_context: BuildContext) -> None:
     runtime_dirs = collect_local_runtime_directories()
-    if not runtime_dirs:
+    runtime_files = collect_local_runtime_files()
+    if not runtime_dirs and not runtime_files:
         return
     step("Staging local runtime directories")
     for source_dir in runtime_dirs:
         target_dir = bundle_dir / source_dir.name
         copytree_filtered(source_dir, target_dir)
         normalize_tree_timestamps(target_dir, build_context.source_date_epoch)
+    for source_file in runtime_files:
+        target_file = bundle_dir / source_file.name
+        copy_file_filtered(source_file, target_file)
+        normalize_file_timestamp(target_file, build_context.source_date_epoch)
 
 
 def write_runtime_config(bundle_dir: Path, profile: str) -> None:

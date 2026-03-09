@@ -258,6 +258,32 @@ class BuildReleaseTests(unittest.TestCase):
             self.assertTrue((bundle_dir / "Atheria" / "atheria_core.py").exists())
             self.assertFalse((bundle_dir / "Atheria" / "__pycache__").exists())
 
+    def test_stage_local_runtime_directories_copies_runtime_files(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            runtime_file = root / "trend_rss_sensor.py"
+            runtime_file.write_text("VALUE = 1\n", encoding="utf-8")
+
+            bundle_dir = root / "bundle"
+            bundle_dir.mkdir()
+
+            with (
+                patch.object(build_release, "collect_local_runtime_directories", return_value=[]),
+                patch.object(build_release, "collect_local_runtime_files", return_value=[runtime_file]),
+            ):
+                build_release.stage_local_runtime_directories(
+                    bundle_dir,
+                    build_context=build_release.BuildContext(
+                        source_date_epoch=1700000000,
+                        timestamp_utc="2026-03-08T00:00:00+00:00",
+                        env={},
+                    ),
+                )
+
+            target = bundle_dir / "trend_rss_sensor.py"
+            self.assertTrue(target.exists())
+            self.assertEqual(target.read_text(encoding="utf-8"), "VALUE = 1\n")
+
     def test_safe_platform_helpers_avoid_windows_wmi_path(self) -> None:
         with (
             patch.object(build_release.os, "name", "nt"),
