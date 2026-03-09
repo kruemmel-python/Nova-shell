@@ -78,6 +78,13 @@ class NovaShellTests(unittest.TestCase):
         self.assertEqual(os.environ.get("NOVA_TEST_FLAG"), "1")
         os.environ.pop("NOVA_TEST_FLAG", None)
 
+    def test_python_context_exposes_flow_state_proxy(self) -> None:
+        payload = {"metadata": {"items": [{"title": "Example headline"}]}}
+        self.shell.flow_state.set("last_match", json.dumps(payload, ensure_ascii=False))
+        result = self.shell.route('py flow.state.get("last_match")["metadata"]["items"][0]["title"]')
+        self.assertIsNone(result.error)
+        self.assertEqual(result.output.strip(), "Example headline")
+
     def test_pipeline_to_python(self) -> None:
         result = self.shell.route("echo hello | py _.strip().upper()")
         self.assertIsNone(result.error)

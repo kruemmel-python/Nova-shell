@@ -1604,6 +1604,39 @@ class RemoteEngine:
             return CommandResult(output="", error=str(exc))
 
 
+class PythonFlowStateProxy:
+    """Expose flow state helpers inside the persistent Python context."""
+
+    def __init__(self, store: "FlowStateStore") -> None:
+        self._store = store
+
+    def get(self, key: str) -> Any:
+        value = self._store.get(key)
+        if value is None:
+            return None
+        try:
+            return json.loads(value)
+        except json.JSONDecodeError:
+            return value
+
+    def set(self, key: str, value: Any) -> None:
+        if isinstance(value, (dict, list)):
+            encoded = json.dumps(value, ensure_ascii=False)
+        else:
+            encoded = str(value)
+        self._store.set(key, encoded)
+
+    def count_last(self, seconds: float, pattern: str = "*") -> int:
+        return self._store.count_last(seconds, pattern)
+
+
+class PythonFlowProxy:
+    """Namespace object for flow helpers inside Python snippets."""
+
+    def __init__(self, store: "FlowStateStore") -> None:
+        self.state = PythonFlowStateProxy(store)
+
+
 class WasmEngine:
     """Execute WebAssembly modules via wasmtime when available."""
 
@@ -3301,6 +3334,7 @@ class NovaShell:
         self.policy = PolicyEngine()
         self.mesh = MeshScheduler()
         self.flow_state = FlowStateStore()
+        self.python.globals["flow"] = PythonFlowProxy(self.flow_state)
         self.jit = NovaComputeJIT()
         self.optimizer = NovaOptimizer(self)
         self.synth = NovaSynth(self)
