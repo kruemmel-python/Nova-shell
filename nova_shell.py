@@ -44,6 +44,7 @@ from pathlib import Path
 from typing import Any, Callable, Iterable
 
 from novascript import Assignment as NSAssignment, Command as NSCommand, NovaInterpreter, NovaJITCompiler, NovaParser, WatchHook as NSWatchHook
+from mycelia_runtime import MyceliaRuntime
 
 try:
     import readline
@@ -51,7 +52,7 @@ except ImportError:  # pragma: no cover - platform dependent
     readline = None
 
 
-__version__ = "0.8.5"
+__version__ = "0.8.6"
 SIDELOAD_PACKAGE_DIR = "vendor-py"
 RUNTIME_CONFIG_FILE = "nova-shell-runtime.json"
 
@@ -4349,6 +4350,7 @@ class NovaShell:
         self.memory = NovaVectorMemory()
         self.atheria = NovaAtheriaRuntime(self.runtime_config, self.cwd)
         self.atheria_sensors = AtheriaSensorRegistry(self.atheria.storage_root)
+        self.mycelia = MyceliaRuntime(self.atheria.storage_root)
         self.ai_runtime = NovaAIProviderRuntime(self.runtime_config, self.cwd, atheria_runtime=self.atheria)
         self.guard_store = GuardPolicyStore()
         self.fabric_remote = FabricRemoteBridge()
@@ -4392,6 +4394,7 @@ class NovaShell:
             "remote": self._run_remote,
             "ai": self._run_ai,
             "atheria": self._run_atheria,
+            "mycelia": self._run_mycelia,
             "agent": self._run_agent,
             "memory": self._run_memory,
             "tool": self._run_tool,
@@ -7203,6 +7206,481 @@ class NovaShell:
         enriched_parts.extend(context_blocks)
         return "\n\n".join(enriched_parts), None
 
+    def _mycelia_tool_rows(self) -> list[dict[str, Any]]:
+        return [
+            {
+                "name": tool.name,
+                "description": tool.description,
+                "schema": tool.schema,
+                "pipeline_template": tool.pipeline_template,
+                "builtin": tool.builtin,
+            }
+            for tool in self.tools.values()
+        ]
+
+    def _mycelia_sensor_rows(self) -> list[dict[str, Any]]:
+        return self.atheria_sensors.list_plugins()
+
+    def _mycelia_mesh_caps(self) -> set[str]:
+        caps: set[str] = set()
+        for worker in self.mesh.workers:
+            for cap in worker.get("caps", []) or []:
+                caps.add(str(cap))
+        return caps
+
+    def _run_mycelia_member(self, member_id: str, input_text: str, *, execution_id: str, step_index: int, swarm: bool) -> tuple[CommandResult, dict[str, Any]]:
+        definition_payload = self.mycelia.build_agent_definition(member_id)
+        agent = AIAgentDefinition(
+            name=str(definition_payload["name"]),
+            prompt_template=str(definition_payload["prompt_template"]),
+            provider=str(definition_payload["provider"]),
+            model=str(definition_payload["model"]),
+            system_prompt=str(definition_payload.get("system_prompt") or ""),
+        )
+        member = self.mycelia.get_member(member_id)
+        use_swarm = bool(swarm and member is not None and bool(member.assigned_modules.get("use_swarm")))
+        if use_swarm:
+            temporary_name = f"__mycelia_{member_id}"
+            self.agents[temporary_name] = agent
+            try:
+                return self._run_agent_handle_swarm(
+                    temporary_name,
+                    input_text,
+                    execution_id=execution_id,
+                    step_kind="mycelia",
+                    step_index=step_index,
+                )
+            finally:
+                self.agents.pop(temporary_name, None)
+        result = self._run_agent_once(agent, input_text)
+        return result, {"node": member_id, "mode": "local", "worker": "", "caps": list(member.genome.preferred_caps) if member is not None else []}
+
+    def _run_mycelia_population_cycles(
+        self,
+        population_name: str,
+        *,
+        input_text: str,
+        cycles: int,
+        swarm: bool,
+        file_path_text: str = "",
+        memory_ids: list[str] | None = None,
+    ) -> CommandResult:
+        population = self.mycelia.get_population(population_name)
+        if population is None:
+            return CommandResult(output="", error="mycelia population not found")
+        if population.status != "active":
+            return CommandResult(output="", error="mycelia population is stopped")
+        enriched_input, context_error = self._build_agent_input_with_context(
+            input_text,
+            file_path_text=file_path_text,
+            memory_ids=memory_ids or [],
+        )
+        if context_error is not None:
+            return context_error
+        cycle_payloads: list[dict[str, Any]] = []
+        last_summary = ""
+        for cycle_index in range(max(1, cycles)):
+            tool_rows = self._mycelia_tool_rows()
+            sensor_rows = self._mycelia_sensor_rows()
+            mesh_caps = self._mycelia_mesh_caps()
+            memory_scope = {"namespace": population.namespace, "project": population.project}
+            evaluations: list[dict[str, Any]] = []
+            assignments: list[dict[str, Any]] = []
+            execution_id = uuid.uuid4().hex[:10]
+            active_members = self.mycelia.members_for_population(population_name, active_only=True)
+            if not active_members:
+                return CommandResult(output="", error="mycelia population has no active members")
+            for index, member in enumerate(active_members):
+                module_plan = self.mycelia.organize_modules(
+                    population_name,
+                    member.member_id,
+                    available_tools=tool_rows,
+                    available_sensors=sensor_rows,
+                    mesh_caps=mesh_caps,
+                    memory_scope=memory_scope,
+                )
+                memory_hits = self.memory.search(
+                    " ".join([population.goal, enriched_input]),
+                    limit=3,
+                    namespace=population.namespace,
+                    project=population.project,
+                )
+                member_input = self.mycelia.compose_member_input(
+                    population_name,
+                    member.member_id,
+                    task_input=enriched_input,
+                    memory_hits=memory_hits,
+                    sensor_rows=sensor_rows,
+                )
+                result, assignment = self._run_mycelia_member(
+                    member.member_id,
+                    member_input,
+                    execution_id=execution_id,
+                    step_index=index,
+                    swarm=swarm,
+                )
+                assignments.append({**assignment, "member_id": member.member_id, "modules": module_plan})
+                output_text = result.output.strip()
+                atheria_hits = self.atheria.search_training(" ".join([population.goal, output_text]), limit=3)
+                score_payload = self.mycelia.score_execution(
+                    population_name,
+                    member.member_id,
+                    task_input=enriched_input,
+                    output_text=output_text,
+                    error_text=result.error or "",
+                    memory_hits=memory_hits,
+                    atheria_hits=atheria_hits,
+                )
+                self.mycelia.record_evaluation(
+                    population_name,
+                    member.member_id,
+                    output_text=output_text,
+                    error_text=result.error or "",
+                    score_payload=score_payload,
+                    summary=output_text[:240] or (result.error or ""),
+                )
+                evaluations.append(
+                    {
+                        "member_id": member.member_id,
+                        "role_name": member.role_name,
+                        "species_id": member.species_id,
+                        "fitness": score_payload["fitness"],
+                        "metrics": score_payload["metrics"],
+                        "error": result.error or "",
+                        "output": output_text,
+                        "modules": module_plan,
+                    }
+                )
+            evaluations.sort(key=lambda item: float(item["fitness"]), reverse=True)
+            offspring_payload = {"created": [], "species": self.mycelia.list_species(population_name)}
+            active_count = len(self.mycelia.members_for_population(population_name, active_only=True))
+            desired_growth = max(0, population.target_size - active_count)
+            if desired_growth > 0:
+                offspring_payload = self.mycelia.breed(
+                    population_name,
+                    count=desired_growth,
+                    available_tools=tool_rows,
+                    available_sensors=sensor_rows,
+                    reason="population_tick_fill_target",
+                )
+            elif evaluations and float(evaluations[0]["fitness"]) >= 0.72:
+                offspring_payload = self.mycelia.breed(
+                    population_name,
+                    count=1,
+                    available_tools=tool_rows,
+                    available_sensors=sensor_rows,
+                    reason="population_tick_high_fitness",
+                )
+            selection_payload = self.mycelia.select(population_name, keep=population.target_size, reason="population_tick")
+            fitness_table = self.mycelia.summarize_fitness(population_name)
+            best = fitness_table[0] if fitness_table else {}
+            last_summary = f"best_member={best.get('member_id', '')} fitness={best.get('average_fitness', 0.0)} active={len(self.mycelia.members_for_population(population_name, active_only=True))}"
+            population_row = self.mycelia.mark_population_tick(population_name, input_text=enriched_input, summary=last_summary)
+            cycle_payloads.append(
+                {
+                    "cycle": cycle_index + 1,
+                    "population": population_row,
+                    "evaluations": evaluations,
+                    "offspring": offspring_payload["created"],
+                    "selection": selection_payload,
+                    "species": self.mycelia.list_species(population_name),
+                    "fitness": fitness_table,
+                    "assignments": assignments,
+                }
+            )
+            self.flow_state.set("mycelia.last_tick", json.dumps(cycle_payloads[-1], ensure_ascii=False))
+            self._publish_event("mycelia.population.tick", json.dumps({"population": population_name, "cycle": cycle_index + 1, "summary": last_summary}, ensure_ascii=False), broadcast=False)
+        payload = {
+            "population": population_name,
+            "cycles": cycle_payloads,
+            "lineage_tail": self.mycelia.lineage(population_name, limit=12),
+            "snapshot": self.mycelia.population_snapshot(population_name),
+        }
+        return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+
+    def _run_mycelia(self, args: str, pipeline_input: str, pipeline_data: Any) -> CommandResult:
+        parts = split_command(args)
+        if not parts:
+            return CommandResult(output="", error="usage: mycelia population|breed|fitness|select|lineage|species|ecology ...")
+        action = parts[0]
+        if action == "list":
+            payload = self.mycelia.list_populations()
+            return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+        if action == "population":
+            if len(parts) < 2:
+                return CommandResult(output="", error="usage: mycelia population create|list|show|tick|stop ...")
+            population_action = parts[1]
+            if population_action == "list":
+                payload = self.mycelia.list_populations()
+                return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+            if population_action == "show":
+                if len(parts) < 3:
+                    return CommandResult(output="", error="usage: mycelia population show <name>")
+                try:
+                    payload = self.mycelia.population_snapshot(parts[2])
+                except KeyError:
+                    return CommandResult(output="", error="mycelia population not found")
+                return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+            if population_action == "stop":
+                if len(parts) < 3:
+                    return CommandResult(output="", error="usage: mycelia population stop <name>")
+                try:
+                    payload = self.mycelia.stop_population(parts[2])
+                except KeyError:
+                    return CommandResult(output="", error="mycelia population not found")
+                return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+            if population_action == "create":
+                if len(parts) < 3:
+                    return CommandResult(output="", error="usage: mycelia population create <name> --goal text [--seed a,b|--graph name] [--target-size n] [--mutation-rate x] [--selection-pressure x]")
+                name = parts[2]
+                goal = ""
+                seed_names: list[str] = []
+                graph_name = ""
+                target_size = 4
+                mutation_rate = 0.18
+                selection_pressure = 0.55
+                namespace = self.current_memory_namespace
+                project = self.current_memory_project
+                auto_tick = True
+                allow_swarm = True
+                i = 3
+                while i < len(parts):
+                    token = parts[i]
+                    if token == "--goal" and i + 1 < len(parts):
+                        goal = parts[i + 1]
+                        i += 2
+                        continue
+                    if token == "--seed" and i + 1 < len(parts):
+                        seed_names.extend([item.strip() for item in parts[i + 1].split(",") if item.strip()])
+                        i += 2
+                        continue
+                    if token == "--graph" and i + 1 < len(parts):
+                        graph_name = parts[i + 1]
+                        i += 2
+                        continue
+                    if token == "--target-size" and i + 1 < len(parts):
+                        with contextlib.suppress(Exception):
+                            target_size = max(2, int(parts[i + 1]))
+                        i += 2
+                        continue
+                    if token == "--mutation-rate" and i + 1 < len(parts):
+                        with contextlib.suppress(Exception):
+                            mutation_rate = max(0.0, min(1.0, float(parts[i + 1])))
+                        i += 2
+                        continue
+                    if token == "--selection-pressure" and i + 1 < len(parts):
+                        with contextlib.suppress(Exception):
+                            selection_pressure = max(0.0, min(1.0, float(parts[i + 1])))
+                        i += 2
+                        continue
+                    if token == "--namespace" and i + 1 < len(parts):
+                        namespace = parts[i + 1]
+                        i += 2
+                        continue
+                    if token == "--project" and i + 1 < len(parts):
+                        project = parts[i + 1]
+                        i += 2
+                        continue
+                    if token == "--auto-tick" and i + 1 < len(parts):
+                        auto_tick = str(parts[i + 1]).strip().lower() not in {"0", "false", "off", "no"}
+                        i += 2
+                        continue
+                    if token == "--allow-swarm" and i + 1 < len(parts):
+                        allow_swarm = str(parts[i + 1]).strip().lower() not in {"0", "false", "off", "no"}
+                        i += 2
+                        continue
+                    i += 1
+                if graph_name:
+                    graph = self.agent_graphs.get(graph_name)
+                    if graph is None:
+                        return CommandResult(output="", error="agent graph not found")
+                    seed_names.extend(graph.nodes)
+                seed_names = list(dict.fromkeys(seed_names))
+                seed_agents: list[dict[str, Any]] = []
+                missing_agents: list[str] = []
+                for seed_name in seed_names:
+                    agent = self.agents.get(seed_name)
+                    if agent is None:
+                        missing_agents.append(seed_name)
+                        continue
+                    seed_agents.append(
+                        {
+                            "name": agent.name,
+                            "prompt_template": agent.prompt_template,
+                            "provider": agent.provider,
+                            "model": agent.model,
+                            "system_prompt": agent.system_prompt,
+                        }
+                    )
+                if missing_agents:
+                    return CommandResult(output="", error=f"mycelia seed agents not found: {', '.join(missing_agents)}")
+                try:
+                    payload = self.mycelia.create_population(
+                        name,
+                        goal=goal,
+                        seed_agents=seed_agents,
+                        target_size=target_size,
+                        mutation_rate=mutation_rate,
+                        selection_pressure=selection_pressure,
+                        namespace=namespace,
+                        project=project,
+                        auto_tick=auto_tick,
+                        allow_swarm=allow_swarm,
+                    )
+                except Exception as exc:
+                    return CommandResult(output="", error=str(exc))
+                return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+            if population_action == "tick":
+                if len(parts) < 3:
+                    return CommandResult(output="", error="usage: mycelia population tick <name> [--input text] [--cycles n] [--swarm] [--file path] [--memory id]...")
+                population_name = parts[2]
+                context_options, tick_tokens = self._parse_agent_context_args(parts, start_index=3)
+                input_text = ""
+                cycles = 1
+                swarm = False
+                i = 0
+                while i < len(tick_tokens):
+                    token = tick_tokens[i]
+                    if token == "--input" and i + 1 < len(tick_tokens):
+                        input_text = tick_tokens[i + 1]
+                        i += 2
+                        continue
+                    if token == "--cycles" and i + 1 < len(tick_tokens):
+                        with contextlib.suppress(Exception):
+                            cycles = max(1, int(tick_tokens[i + 1]))
+                        i += 2
+                        continue
+                    if token == "--swarm":
+                        swarm = True
+                        i += 1
+                        continue
+                    i += 1
+                population = self.mycelia.get_population(population_name)
+                if population is None:
+                    return CommandResult(output="", error="mycelia population not found")
+                input_text = input_text or (pipeline_input.strip() if pipeline_input.strip() else population.goal)
+                return self._run_mycelia_population_cycles(
+                    population_name,
+                    input_text=input_text,
+                    cycles=cycles,
+                    swarm=swarm,
+                    file_path_text=str(context_options["file_path_text"] or ""),
+                    memory_ids=list(context_options["memory_ids"] or []),
+                )
+            return CommandResult(output="", error="usage: mycelia population create|list|show|tick|stop ...")
+        if action == "breed":
+            if len(parts) < 2:
+                return CommandResult(output="", error="usage: mycelia breed <population> [--count n]")
+            population_name = parts[1]
+            count = 1
+            if "--count" in parts[2:]:
+                idx = parts.index("--count")
+                if idx + 1 < len(parts):
+                    with contextlib.suppress(Exception):
+                        count = max(1, int(parts[idx + 1]))
+            try:
+                payload = self.mycelia.breed(
+                    population_name,
+                    count=count,
+                    available_tools=self._mycelia_tool_rows(),
+                    available_sensors=self._mycelia_sensor_rows(),
+                    reason="manual_breed",
+                )
+            except KeyError:
+                return CommandResult(output="", error="mycelia population not found")
+            except Exception as exc:
+                return CommandResult(output="", error=str(exc))
+            return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+        if action == "fitness":
+            if len(parts) < 2:
+                return CommandResult(output="", error="usage: mycelia fitness <population>")
+            try:
+                payload = self.mycelia.summarize_fitness(parts[1])
+            except KeyError:
+                return CommandResult(output="", error="mycelia population not found")
+            return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+        if action == "select":
+            if len(parts) < 2:
+                return CommandResult(output="", error="usage: mycelia select <population> [--keep n]")
+            keep = None
+            if "--keep" in parts[2:]:
+                idx = parts.index("--keep")
+                if idx + 1 < len(parts):
+                    with contextlib.suppress(Exception):
+                        keep = max(1, int(parts[idx + 1]))
+            try:
+                payload = self.mycelia.select(parts[1], keep=keep, reason="manual_select")
+            except KeyError:
+                return CommandResult(output="", error="mycelia population not found")
+            return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+        if action == "lineage":
+            if len(parts) < 2:
+                return CommandResult(output="", error="usage: mycelia lineage <population> [--member id] [--limit n]")
+            population_name = parts[1]
+            member_id = ""
+            limit = 50
+            i = 2
+            while i < len(parts):
+                token = parts[i]
+                if token == "--member" and i + 1 < len(parts):
+                    member_id = parts[i + 1]
+                    i += 2
+                    continue
+                if token == "--limit" and i + 1 < len(parts):
+                    with contextlib.suppress(Exception):
+                        limit = max(1, int(parts[i + 1]))
+                    i += 2
+                    continue
+                i += 1
+            payload = self.mycelia.lineage(population_name, member_id=member_id, limit=limit)
+            return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+        if action == "species":
+            if len(parts) < 2:
+                return CommandResult(output="", error="usage: mycelia species <population>")
+            try:
+                payload = self.mycelia.list_species(parts[1])
+            except KeyError:
+                return CommandResult(output="", error="mycelia population not found")
+            return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+        if action == "ecology":
+            if len(parts) < 3 or parts[1] != "run":
+                return CommandResult(output="", error="usage: mycelia ecology run <population> [--input text] [--cycles n] [--swarm] [--file path] [--memory id]...")
+            population_name = parts[2]
+            context_options, ecology_tokens = self._parse_agent_context_args(parts, start_index=3)
+            input_text = ""
+            cycles = 3
+            swarm = False
+            i = 0
+            while i < len(ecology_tokens):
+                token = ecology_tokens[i]
+                if token == "--input" and i + 1 < len(ecology_tokens):
+                    input_text = ecology_tokens[i + 1]
+                    i += 2
+                    continue
+                if token == "--cycles" and i + 1 < len(ecology_tokens):
+                    with contextlib.suppress(Exception):
+                        cycles = max(1, int(ecology_tokens[i + 1]))
+                    i += 2
+                    continue
+                if token == "--swarm":
+                    swarm = True
+                    i += 1
+                    continue
+                i += 1
+            population = self.mycelia.get_population(population_name)
+            if population is None:
+                return CommandResult(output="", error="mycelia population not found")
+            input_text = input_text or (pipeline_input.strip() if pipeline_input.strip() else population.goal)
+            return self._run_mycelia_population_cycles(
+                population_name,
+                input_text=input_text,
+                cycles=cycles,
+                swarm=swarm,
+                file_path_text=str(context_options["file_path_text"] or ""),
+                memory_ids=list(context_options["memory_ids"] or []),
+            )
+        return CommandResult(output="", error="usage: mycelia population|breed|fitness|select|lineage|species|ecology ...")
+
     def _run_ai(self, args: str, pipeline_input: str, pipeline_data: Any) -> CommandResult:
         parts = split_command(args)
         if not parts:
@@ -9069,7 +9547,7 @@ class NovaShell:
     def repl(self) -> None:
         print(f"NovaShell {__version__} Compute Runtime")
         print(
-            "Commands: py | cpp | gpu | wasm | jit_wasm | data | data.load | remote | mesh | ai | agent | memory | tool | event | vision | fabric | guard | secure | flow | sync | lens | studio | on | pack | observe | watch | parallel | events | ns.exec | ns.run | sys | cd | pwd | clear | cls | doctor | help | exit"
+            "Commands: py | cpp | gpu | wasm | jit_wasm | data | data.load | remote | mesh | ai | atheria | mycelia | agent | memory | tool | event | vision | fabric | guard | secure | flow | sync | lens | studio | on | pack | observe | watch | parallel | events | ns.exec | ns.run | sys | cd | pwd | clear | cls | doctor | help | exit"
         )
         print("Pipelines: cmd | watch file | parallel py ...\n")
 

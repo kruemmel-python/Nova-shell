@@ -11,6 +11,7 @@ Neu in der Runtime-Schicht:
 - `agent`-Kommandos fuer wiederverwendbare AI-Agenten
 - persistente Vector-Memory-Scopes ueber `memory namespace` und `memory project`
 - `agent graph` fuer gerichtete Multi-Agent-Topologien
+- `mycelia` als bounded ALife-Layer fuer Populationen, Reproduktion, Selektion und Lineage
 - lokale `mesh`-Worker, die echte Worker-Prozesse auf dem Host starten koennen
 - `gpu graph` als erster GPU-Task-Graph-Pfad
 
@@ -67,6 +68,7 @@ Neu in der Runtime-Schicht:
 - Engines: `py/python`, `cpp`, `gpu`, `wasm`, `remote`, `sys`.
 - AI Runtime: `ai providers|models|use|config|env reload|prompt|plan` plus `atheria status|init|guardian|sensor|train|search|chat|evolve`
 - AI Agents: `agent create|run|show|list|spawn|message|workflow|graph`
+- ALife Runtime: `mycelia population|breed|fitness|select|lineage|species|ecology`
 - Event Runtime: `event on|emit|list|history`
 - GPU Task Graphs: `gpu graph plan|run|show`
 - NovaGraph AOT (`graph aot|run|show`) inkl. C++-Expr-Fusion.
@@ -182,6 +184,10 @@ nova-shell -c "ai plan --run \"calculate average price in items.csv\""
 nova-shell -c "ai plan --run --retries 2 \"calculate average price in items.csv\""
 nova-shell -c "agent graph create review_chain --nodes analyst,reviewer"
 nova-shell -c "agent graph run review_chain --input \"quarterly report\""
+nova-shell -c "mycelia population create colony --goal \"review incoming platform signals\" --seed analyst,reviewer --target-size 4"
+nova-shell -c "mycelia population tick colony --input \"edge ai trend report\" --cycles 2"
+nova-shell -c "mycelia fitness colony"
+nova-shell -c "mycelia lineage colony --limit 10"
 nova-shell -c "agent spawn analyst_rt --from analyst"
 nova-shell -c "agent message analyst_rt \"quarterly report\""
 nova-shell -c "agent run analyst --file podcastVideoTranscript_publish_safe.md \"Gib mir die Einleitung von Sprecher 1\""
@@ -261,7 +267,7 @@ Direkter Installer-Build:
 ```bash
 python scripts/build_release.py --profile core --mode installers
 SOURCE_DATE_EPOCH=1700000000 python scripts/build_release.py --profile core --mode all --clean
-python scripts/build_release.py --profile core --mode all --base-download-url "https://github.com/<org>/<repo>/releases/download/v0.8.5"
+python scripts/build_release.py --profile core --mode all --base-download-url "https://github.com/<org>/<repo>/releases/download/v0.8.6"
 python scripts/generate_release_notes.py --root dist/release --output dist/release/release-notes.md
 python scripts/sign_release.py --root dist/release --verify
 ```

@@ -1,6 +1,6 @@
 # Nova-shell Dokumentation
 
-Diese Datei ist die vollstaendige Command-Referenz fuer Nova-shell 0.8.1. Sie listet die verfuegbaren Kommandos, ihre Subcommands, eine kurze Erklaerung und jeweils mindestens ein Beispiel.
+Diese Datei ist die vollstaendige Command-Referenz fuer Nova-shell 0.8.6. Sie listet die verfuegbaren Kommandos, ihre Subcommands, eine kurze Erklaerung und jeweils mindestens ein Beispiel.
 
 ## Schreibweise und Grundprinzip
 
@@ -15,7 +15,7 @@ Diese Datei ist die vollstaendige Command-Referenz fuer Nova-shell 0.8.1. Sie li
 - Basis und REPL: `help`, `doctor`, `pwd`, `cd`, `clear`, `cls`, `exit`
 - Ausfuehrungs-Engines: `py`, `python`, `cpp`, `cpp.sandbox`, `cpp.expr`, `cpp.expr_chain`, `gpu`, `wasm`, `jit_wasm`
 - Daten und Handles: `data`, `data.load`, `zero`, `fabric`
-- AI und Agenten: `ai`, `atheria`, `agent`, `memory`, `tool`
+- AI und Agenten: `ai`, `atheria`, `agent`, `mycelia`, `memory`, `tool`
 - Events und Workflow: `event`, `events`, `flow`, `sync`, `reactive`, `dflow`, `watch`, `observe`, `pulse`, `lens`, `rag`
 - Optimierung und Graphen: `opt`, `synth`, `graph`, `studio`
 - Runtime und Deployment: `mesh`, `remote`, `vision`, `pack`
@@ -169,7 +169,12 @@ cpp.sandbox 'int main(){ return 0; }'
 - `atheria status`: Zeigt Status, Quelle und Trainingsumfang der lokalen Atheria-Runtime. Beispiel: `atheria status`
 - `atheria init`: Initialisiert AtheriaCore und den lokalen Runtime-Zustand. Beispiel: `atheria init`
 - `atheria guardian status`: Zeigt die Sensor-Population, Kategorien, Spawn-Empfehlungen und Prune-Kandidaten. Beispiel: `atheria guardian status`
+- `atheria guardian recommend [--file report.txt|json] [--memory id] [--flow key] [--limit n]`: Leitet Spawn-Empfehlungen aus dem letzten oder einem expliziten Trend-/Evolve-Signal ab. Beispiel: `atheria guardian recommend --file reports/rss_trend_report.txt --limit 3`
+- `atheria guardian spawn-recommended [--file report.txt|json] [--memory id] [--flow key] [--limit n] [--dry-run]`: Startet empfohlene Sensor-Organellen automatisch oder simuliert dies nur. Beispiel: `atheria guardian spawn-recommended --file reports/rss_trend_report.txt --dry-run`
 - `atheria guardian prune [--dry-run]`: Entfernt oder simuliert das Entfernen von Sensoren mit wiederholten Fehlschlaegen oder schlechtem Nutzen/Kosten-Profil. Beispiel: `atheria guardian prune --dry-run`
+- `atheria guardian policy list`: Listet category-spezifische Guardian-Policies. Beispiel: `atheria guardian policy list`
+- `atheria guardian policy show <category>`: Zeigt die Policy fuer eine Kategorie. Beispiel: `atheria guardian policy show edge_ai`
+- `atheria guardian policy set <category> <json>`: Setzt Schwellwerte und Spawn-/Prune-Verhalten fuer eine Kategorie. Beispiel: `atheria guardian policy set edge_ai {"min_signal":0.35,"spawn_limit":2}`
 - `atheria sensor gallery`: Listet die mitgelieferten Sensor-Templates fuer schnelle Modul-Erzeugung. Beispiel: `atheria sensor gallery`
 - `atheria sensor spawn <category> --template <name> [--name name] [--anchor cpu|gpu] [--from sensor]`: Erzeugt ein neues Sensor-Organell aus einer Template-Gallery. Beispiel: `atheria sensor spawn quantencomputing --template RSS_Base --name quantum_watch`
 - `atheria sensor list`: Listet geladene Sensor-Plugins. Beispiel: `atheria sensor list`
@@ -326,6 +331,28 @@ Fuer die Langlaufvariante koennen diese Umgebungsvariablen genutzt werden:
 - `agent graph run <name> --file <pfad> --input text`: Fuehrt einen Graphen mit Dateikontext aus. Beispiel: `agent graph run review_chain --file Whitepaper.md --input "review this"`
 - `agent graph run <name> --memory <id> --input text`: Fuehrt einen Graphen mit Memory-Kontext aus. Beispiel: `agent graph run review_chain --memory final_transcript --input "check consistency"`
 - `agent graph run <name> --swarm --input text`: Orchestriert einen Agent-Graphen dynamisch ueber das Mesh. Beispiel: `agent graph run review_chain --swarm --input "Create a release memo"`
+
+### `mycelia`
+
+- `mycelia list`: Kurzform fuer die Populationenuebersicht. Beispiel: `mycelia list`
+- `mycelia population list`: Listet alle registrierten Populationen mit Ziel, Groesse und Status. Beispiel: `mycelia population list`
+- `mycelia population create <name> --goal <text> [--seed a,b|--graph graph] [--target-size n] [--mutation-rate x] [--selection-pressure x] [--namespace n] [--project p] [--auto-tick on|off] [--allow-swarm on|off]`: Erstellt eine bounded Population aus vorhandenen Agenten oder einem Agent-Graphen. Beispiel: `mycelia population create colony --goal "review infrastructure signals" --seed analyst,reviewer --target-size 4 --mutation-rate 0.2`
+- `mycelia population show <name>`: Zeigt Snapshot, Mitglieder, Fitness und Konfiguration einer Population. Beispiel: `mycelia population show colony`
+- `mycelia population tick <name> [--input text] [--cycles n] [--swarm] [--file path] [--memory id]...`: Fuehrt einen oder mehrere Evolutionszyklen aus, bewertet Mitglieder und kann neue Nachkommen erzeugen. Beispiel: `mycelia population tick colony --input "edge ai trend report" --cycles 2`
+- `mycelia population stop <name>`: Stoppt eine Population, sodass keine weiteren Ticks mehr laufen. Beispiel: `mycelia population stop colony`
+- `mycelia breed <population> [--count n]`: Erzwingt zusaetzliche digitale Reproduktion mit bounded Mutation. Beispiel: `mycelia breed colony --count 2`
+- `mycelia fitness <population>`: Zeigt die aktuelle Fitness-Tabelle aller Mitglieder. Beispiel: `mycelia fitness colony`
+- `mycelia select <population> [--keep n]`: Fuehrt Selektion aus, behaelt Eliten und Spezies-Champions und archiviert Verlierer. Beispiel: `mycelia select colony --keep 4`
+- `mycelia lineage <population> [--member id] [--limit n]`: Zeigt die reproduktive Abstammung und Archiv-/Tick-Ereignisse. Beispiel: `mycelia lineage colony --limit 10`
+- `mycelia species <population>`: Gruppiert Mitglieder nach Spezies-Signaturen und zeigt Verteilung, Champion und Population pro Spezies. Beispiel: `mycelia species colony`
+- `mycelia ecology run <population> [--input text] [--cycles n] [--swarm] [--file path] [--memory id]...`: Alias fuer einen populationsweiten Evolutionslauf mit Kontext. Beispiel: `mycelia ecology run colony --memory final_transcript --cycles 3`
+
+Hinweise:
+
+- `mycelia` arbeitet bewusst bounded: Mutation, Reproduktion und Modul-Autowiring sind begrenzt und auditierbar.
+- Populationen nutzen vorhandene Agent-Definitionen als Genome-Basis, keine unsicheren freien Selbstmodifikationen.
+- Mit `--swarm` duerfen Mitglieder auf Mesh-Worker ausgelagert werden, wenn Population und Mitglied dafuer geeignet sind.
+- Nach jedem Tick schreibt Nova-shell einen kompakten Zustand in `flow state get mycelia.last_tick` und publiziert ein `mycelia.population.tick`-Event.
 
 ### `memory`
 
@@ -590,7 +617,7 @@ ns.run watch_the_big_players.ns
 5. `ai`, `atheria`, `memory`, `tool`, `agent`
 6. `graph`, `synth`, `opt`, `gpu graph`
 7. `mesh`, `remote`, `vision`
-8. `guard`, `secure`, `pack`, `ns.*`
+8. `mycelia`, dann `guard`, `secure`, `pack`, `ns.*`
 
 ## Weiterfuehrende Dateien
 

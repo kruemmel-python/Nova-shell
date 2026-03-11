@@ -1277,6 +1277,133 @@ if len(files_lines) == 2:
         self.assertTrue(any(command.startswith("agent create") for _, command in remote_calls))
         self.assertTrue(any(command.startswith("agent run") for _, command in remote_calls))
 
+    def test_mycelia_population_create_tick_and_fitness(self) -> None:
+        def fake_complete(prompt: str, *, provider: str | None = None, model: str | None = None, system_prompt: str = "") -> CommandResult:
+            if "Review" in prompt:
+                return CommandResult(output="edge ai review with evidence\n", data={"text": "review"}, data_type=PipelineType.OBJECT)
+            return CommandResult(output="edge ai analysis with evidence\n", data={"text": "analysis"}, data_type=PipelineType.OBJECT)
+
+        with patch.object(self.shell.ai_runtime, "complete_prompt", side_effect=fake_complete):
+            self.assertIsNone(self.shell.route('agent create analyst "Analyze {{input}}" --provider lmstudio --model local-model').error)
+            self.assertIsNone(self.shell.route('agent create reviewer "Review {{input}}" --provider lmstudio --model local-model').error)
+            self.assertIsNone(
+                self.shell.route(
+                    'tool register edge_report --description "edge ai report summarizer" --schema \'{"type":"object"}\' --pipeline \'py "ok"\''
+                ).error
+            )
+            self.assertIsNone(self.shell.route('atheria sensor spawn edge_ai --template RSS_Base --name edge_watch').error)
+
+            created = self.shell.route('mycelia population create colony --goal "edge ai operations report" --seed analyst,reviewer --target-size 3')
+            tick = self.shell.route('mycelia population tick colony --input "edge ai trend shift" --cycles 1')
+            fitness = self.shell.route("mycelia fitness colony")
+
+        self.assertIsNone(created.error)
+        created_payload = json.loads(created.output)
+        self.assertEqual(created_payload["population"]["name"], "colony")
+        self.assertEqual(len(created_payload["seeded_members"]), 2)
+
+        self.assertIsNone(tick.error)
+        tick_payload = json.loads(tick.output)
+        self.assertEqual(tick_payload["population"], "colony")
+        cycle = tick_payload["cycles"][0]
+        self.assertGreaterEqual(len(cycle["fitness"]), 3)
+        self.assertTrue(any(item["modules"]["tools"] for item in cycle["evaluations"]))
+        self.assertTrue(any(item["modules"]["sensors"] for item in cycle["evaluations"]))
+        self.assertGreaterEqual(cycle["population"]["species_count"], 1)
+
+        self.assertIsNone(fitness.error)
+        fitness_payload = json.loads(fitness.output)
+        self.assertGreaterEqual(len(fitness_payload), 3)
+        self.assertIn("average_fitness", fitness_payload[0])
+
+    def test_mycelia_select_and_lineage_preserve_species_champions(self) -> None:
+        def fake_complete(prompt: str, *, provider: str | None = None, model: str | None = None, system_prompt: str = "") -> CommandResult:
+            if "Review" in prompt:
+                return CommandResult(output="review with evidence\n", data={"text": "review"}, data_type=PipelineType.OBJECT)
+            return CommandResult(output="analysis with evidence\n", data={"text": "analysis"}, data_type=PipelineType.OBJECT)
+
+        with patch.object(self.shell.ai_runtime, "complete_prompt", side_effect=fake_complete):
+            self.assertIsNone(self.shell.route('agent create analyst "Analyze {{input}}" --provider lmstudio --model local-model').error)
+            self.assertIsNone(self.shell.route('agent create reviewer "Review {{input}}" --provider lmstudio --model local-model').error)
+            self.assertIsNone(self.shell.route('mycelia population create colony --goal "edge ai operations" --seed analyst,reviewer --target-size 2').error)
+            self.assertIsNone(self.shell.route('mycelia population tick colony --input "edge ai trend shift" --cycles 2').error)
+            self.assertIsNone(self.shell.route("mycelia breed colony --count 1").error)
+            select = self.shell.route("mycelia select colony --keep 1")
+            lineage = self.shell.route("mycelia lineage colony --limit 12")
+            species = self.shell.route("mycelia species colony")
+
+        self.assertIsNone(select.error)
+        select_payload = json.loads(select.output)
+        self.assertTrue(select_payload["kept"])
+        self.assertGreaterEqual(len(select_payload["kept"]), 1)
+
+        self.assertIsNone(lineage.error)
+        lineage_payload = json.loads(lineage.output)
+        self.assertTrue(any(item["action"] == "member_bred" for item in lineage_payload))
+        self.assertTrue(any(item["action"] in {"member_archived", "population_tick"} for item in lineage_payload))
+
+        self.assertIsNone(species.error)
+        species_payload = json.loads(species.output)
+        self.assertTrue(species_payload)
+        self.assertTrue(any(item["active_members"] >= 1 for item in species_payload))
+
+    def test_mycelia_population_tick_swarm_routes_member_over_mesh(self) -> None:
+        remote_calls: list[tuple[str, str]] = []
+
+        def fake_remote(worker_url: str, command: str) -> CommandResult:
+            remote_calls.append((worker_url, command))
+            if command.startswith("agent create"):
+                return CommandResult(output="created\n", data={"ok": True}, data_type=PipelineType.OBJECT)
+            return CommandResult(output="swarm-analysis\n", data={"text": "swarm-analysis"}, data_type=PipelineType.OBJECT)
+
+        self.assertIsNone(self.shell.route('agent create analyst "Analyze {{input}}" --provider lmstudio --model analyst-model').error)
+        self.assertIsNone(self.shell.route('mycelia population create colony --goal "gpu transformer edge ai" --seed analyst --target-size 2').error)
+        self.shell.mesh.add_worker("http://worker-a", {"cpu", "py", "ai", "gpu"})
+        with patch.object(self.shell.remote, "execute", side_effect=fake_remote):
+            member = self.shell.mycelia.members_for_population("colony", active_only=True)[0]
+            member.genome.traits["swarm_affinity"] = 0.95
+            self.shell.mycelia._save_state()
+            tick = self.shell.route('mycelia population tick colony --input "gpu transformer edge ai" --cycles 1 --swarm')
+
+        self.assertIsNone(tick.error)
+        payload = json.loads(tick.output)
+        assignments = payload["cycles"][0]["assignments"]
+        self.assertTrue(remote_calls)
+        self.assertTrue(any(item["mode"] == "mesh" for item in assignments))
+
+    def test_mycelia_population_persists_across_shell_sessions(self) -> None:
+        first_shell: NovaShell | None = None
+        second_shell: NovaShell | None = None
+        try:
+            first_shell = NovaShell()
+            with patch.object(
+                first_shell.ai_runtime,
+                "complete_prompt",
+                return_value=CommandResult(output="analysis\n", data={"text": "analysis"}, data_type=PipelineType.OBJECT),
+            ):
+                self.assertIsNone(first_shell.route('agent create analyst "Analyze {{input}}" --provider lmstudio --model local-model').error)
+                self.assertIsNone(first_shell.route('mycelia population create colony --goal "persistent edge ai colony" --seed analyst --target-size 2').error)
+                self.assertIsNone(first_shell.route('mycelia population tick colony --input "persistent edge ai signal" --cycles 1').error)
+        finally:
+            if first_shell is not None:
+                first_shell._close_loop()
+
+        try:
+            second_shell = NovaShell()
+            listing = second_shell.route("mycelia population list")
+            snapshot = second_shell.route("mycelia population show colony")
+        finally:
+            if second_shell is not None:
+                second_shell._close_loop()
+
+        self.assertIsNone(listing.error)
+        listing_payload = json.loads(listing.output)
+        self.assertTrue(any(item["name"] == "colony" for item in listing_payload))
+        self.assertIsNone(snapshot.error)
+        snapshot_payload = json.loads(snapshot.output)
+        self.assertEqual(snapshot_payload["population"]["name"], "colony")
+        self.assertTrue(snapshot_payload["members"])
+
     def test_agent_run_lmstudio_timeout_returns_local_provider_hint(self) -> None:
         with patch("nova_shell.urllib.request.urlopen", side_effect=TimeoutError("timed out")):
             create = self.shell.route('agent create helper "Summarize {{input}}" --provider lmstudio --model local-model')

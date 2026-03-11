@@ -2,7 +2,7 @@
 
 ## Ziel dieses Tutorials
 
-Dieses Tutorial zeigt Schritt fuer Schritt, wie man in Nova-shell programmiert. Der Fokus liegt auf echten, copy-paste-faehigen Beispielen mit dem aktuellen Stand von Nova-shell 0.8.1.
+Dieses Tutorial zeigt Schritt fuer Schritt, wie man in Nova-shell programmiert. Der Fokus liegt auf echten, copy-paste-faehigen Beispielen mit dem aktuellen Stand von Nova-shell 0.8.6.
 
 Die Beispiele sind in erster Linie fuer die interaktive Nova-shell gedacht. Viele Kommandos bauen auf dem Zustand derselben Session auf, zum Beispiel Python-Variablen, Flow-State, Lens-Snapshots oder Zero-Handles.
 
@@ -715,6 +715,65 @@ nova> agent workflow --agents analyst,reviewer --input "quarterly report"
 nova> agent graph create review_chain --nodes analyst,reviewer
 nova> agent graph run review_chain --input "quarterly report"
 ```
+
+### 16.2 Mycelia: bounded ALife fuer Agentenpopulationen
+
+`mycelia` ist die Schicht fuer reproduzierbare, nachvollziehbare Agentenpopulationen. Sie baut nicht auf freien Selbstmodifikationen auf, sondern auf:
+
+- vorhandenen Agent-Definitionen als Startgenome
+- bounded Mutation
+- Fitness-Bewertung pro Zyklus
+- Selektion mit Spezies-Champions
+- auditierbarer Lineage
+
+Zuerst zwei Basis-Agenten definieren:
+
+```text
+nova> agent create analyst "Analyze {{input}}" --provider atheria --model atheria-core
+nova> agent create reviewer "Review {{input}}" --provider atheria --model atheria-core
+```
+
+Dann eine Population anlegen:
+
+```text
+nova> mycelia population create colony --goal "review infrastructure trend signals" --seed analyst,reviewer --target-size 4 --mutation-rate 0.18 --selection-pressure 0.55
+```
+
+Die Population einmal oder mehrfach ticken:
+
+```text
+nova> mycelia population tick colony --input "edge ai trend report" --cycles 2
+```
+
+Wenn passende Mesh-Worker laufen, kann derselbe Tick als Swarm ausgefuehrt werden:
+
+```text
+nova> mesh start-worker --caps cpu,py,ai
+nova> mycelia population tick colony --input "edge ai trend report" --cycles 1 --swarm
+```
+
+Fitness, Spezies und Abstammung ansehen:
+
+```text
+nova> mycelia fitness colony
+nova> mycelia species colony
+nova> mycelia lineage colony --limit 10
+```
+
+Gezielt neue Nachkommen erzeugen und danach selektieren:
+
+```text
+nova> mycelia breed colony --count 2
+nova> mycelia select colony --keep 4
+nova> mycelia population show colony
+```
+
+Wichtig:
+
+- `mycelia` ist bewusst begrenzt und sicherheitsorientiert.
+- Es entstehen keine unkontrollierten freien Prompt-Mutationen.
+- Populationen speichern ihren Zustand persistent und koennen spaeter wieder geladen werden.
+- Nach jedem Tick steht ein kompakter Snapshot in `flow state get mycelia.last_tick`.
 
 Lokalen Mesh-Worker starten und fuer Remote-Ausfuehrung nutzen:
 

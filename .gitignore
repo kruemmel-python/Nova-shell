@@ -13,3 +13,12 @@ build/
 dist/
 release-artifacts/
 nuitka-crash-report.xml
+reports/
+trend_state.json
+*.jsonl
+industry_analysis_report.json
+industry_discovery.txt
+rss_powershell_log.md
+Tutorial_nova_Shell_log.txt
+Windows PowerShell.txt
+Windows PowerShell.md
