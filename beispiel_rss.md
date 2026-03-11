@@ -556,3 +556,42 @@ Damit bekommst du in einem einzigen Arbeitsgang:
 - Trendreport
 - Guardian-Empfehlungen fuer neue Sensoren
 - einen simulierten Evolutionsplan fuer Atheria
+
+## 24. Morning Briefing als Ein-Befehl-Workflow
+
+Wenn du den gesamten RSS-/Trend-/Guardian-Pfad nicht mehr manuell zusammensetzen willst, kannst du direkt [morning_briefing.ns](/d:/Nova-shell/morning_briefing.ns) verwenden.
+
+Der produktive Minimalablauf in Nova-shell ist:
+
+```text
+cd D:\Nova-shell
+py os.environ["INDUSTRY_FEEDS"] = "https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml,https://feeds.feedburner.com/TechCrunch/,https://news.google.com/rss/search?q=AI+infrastructure+agent+runtime"
+py os.environ["NOVA_BRIEFING_REPORT_DIR"] = r"D:\Nova-shell\reports\morning"
+ns.run morning_briefing.ns
+```
+
+Dieser Weg erzeugt automatisch:
+
+- `D:\Nova-shell\reports\morning\rss_resonance_report.txt`
+- `D:\Nova-shell\reports\morning\rss_resonance_report.html`
+- `D:\Nova-shell\reports\morning\rss_trend_report.txt`
+- `D:\Nova-shell\reports\morning\rss_trend_report.html`
+- `D:\Nova-shell\reports\morning\rss_morning_briefing.txt`
+- `D:\Nova-shell\reports\morning\rss_morning_briefing.html`
+
+Wenn du statt Live-RSS zuerst lokal mit Beispieldaten testen willst:
+
+```text
+cd D:\Nova-shell
+py os.environ["INDUSTRY_SCAN_FILE"] = r"D:\Nova-shell\sample_news.json"
+py os.environ["NOVA_BRIEFING_REPORT_DIR"] = r"D:\Nova-shell\reports\morning"
+py os.environ["INDUSTRY_TREND_STATE"] = r"D:\Nova-shell\reports\morning\trend_state.json"
+py os.environ["NOVA_RESONANCE_THRESHOLD"] = "0.35"
+ns.run morning_briefing.ns
+```
+
+Hinweise:
+
+- `morning_briefing.ns` initialisiert `Atheria`, schreibt Whitepaper und Dokumentation ins Memory und fuehrt `BigPlayerWatcher`, `TrendRadar` und `atheria guardian recommend` in einem Lauf aus.
+- Die HTML-Dateien enthalten den Guardian-Output zusaetzlich als HTML-Kommentar.
+- Fuer `0.8.5` ist das der schnellste produktive Weg, um morgens direkt HTML- und TXT-Berichte zu erzeugen.
