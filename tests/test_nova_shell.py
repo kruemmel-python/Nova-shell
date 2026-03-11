@@ -1,10 +1,14 @@
 import io
 import json
 import os
+import re
+import socket
 import tempfile
 import threading
 import time
 import unittest
+import urllib.parse
+import urllib.request
 import zipfile
 from contextlib import redirect_stderr, redirect_stdout, suppress
 from pathlib import Path
@@ -332,6 +336,82 @@ class NovaShellTests(unittest.TestCase):
         stop = self.shell.route("vision stop")
         self.assertIsNone(stop.error)
 
+    def test_vision_briefing_ui_runs_reports_and_serves_downloads(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        sample_news = (root / "sample_news.json").resolve()
+        with tempfile.TemporaryDirectory() as tmp:
+            report_dir = Path(tmp).resolve()
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+                sock.bind(("127.0.0.1", 0))
+                port = sock.getsockname()[1]
+
+            self.shell.route(f"cd {root}")
+            with patch.dict(
+                os.environ,
+                {
+                    "INDUSTRY_SCAN_FILE": str(sample_news),
+                    "NOVA_RESONANCE_THRESHOLD": "0.35",
+                },
+                clear=False,
+            ):
+                start = self.shell.route(f"vision start {port}")
+                self.assertIsNone(start.error)
+                try:
+                    with urllib.request.urlopen(f"http://127.0.0.1:{port}/briefing", timeout=20) as response:
+                        page = response.read().decode("utf-8")
+                    self.assertIn("Trendanalyse per Web-Oberfl", page)
+
+                    form_data = urllib.parse.urlencode(
+                        {
+                            "topic": "AI infrastructure agent runtime",
+                            "report_dir": str(report_dir),
+                            "threshold": "0.35",
+                        }
+                    ).encode("utf-8")
+                    request = urllib.request.Request(
+                        f"http://127.0.0.1:{port}/briefing/run",
+                        data=form_data,
+                        headers={"Content-Type": "application/x-www-form-urlencoded"},
+                        method="POST",
+                    )
+                    with urllib.request.urlopen(request, timeout=90) as response:
+                        result_page = response.read().decode("utf-8")
+
+                    self.assertIn("Morning Briefing abgeschlossen", result_page)
+                    self.assertIn("rss_morning_briefing.html", result_page)
+                    match = re.search(r"run_id=([a-f0-9]+)&amp;file=morning_txt", result_page)
+                    self.assertIsNotNone(match)
+                    run_id = match.group(1)
+
+                    with urllib.request.urlopen(
+                        f"http://127.0.0.1:{port}/briefing/download?run_id={run_id}&file=morning_txt",
+                        timeout=20,
+                    ) as response:
+                        downloaded_text = response.read().decode("utf-8")
+                        disposition = response.headers.get("Content-Disposition", "")
+                    self.assertIn("attachment", disposition)
+                    self.assertTrue(downloaded_text.strip())
+
+                    with urllib.request.urlopen(
+                        f"http://127.0.0.1:{port}/briefing/view?run_id={run_id}&file=morning_html",
+                        timeout=20,
+                    ) as response:
+                        html_report = response.read().decode("utf-8")
+                    self.assertIn("Nova-shell Morning Briefing", html_report)
+
+                    for filename in (
+                        "rss_resonance_report.txt",
+                        "rss_resonance_report.html",
+                        "rss_trend_report.txt",
+                        "rss_trend_report.html",
+                        "rss_morning_briefing.txt",
+                        "rss_morning_briefing.html",
+                    ):
+                        self.assertTrue((report_dir / filename).exists(), filename)
+                finally:
+                    stop = self.shell.route("vision stop")
+                    self.assertIsNone(stop.error)
+
     def test_remote_command_usage_error(self) -> None:
         result = self.shell.route("remote")
         self.assertIsNotNone(result.error)
@@ -545,6 +625,7 @@ if len(files_lines) == 2:
             self.assertTrue((report_dir / "rss_resonance_report.html").exists())
             self.assertTrue((report_dir / "rss_trend_report.html").exists())
             self.assertTrue((report_dir / "rss_morning_briefing.html").exists())
+            self.assertTrue((report_dir / "rss_morning_briefing.txt").read_text(encoding="utf-8").strip())
 
 
     def test_mesh_add_and_list(self) -> None:

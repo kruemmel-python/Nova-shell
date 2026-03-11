@@ -2,7 +2,7 @@
 
 ## Ziel dieses Tutorials
 
-Dieses Tutorial zeigt Schritt fuer Schritt, wie man in Nova-shell programmiert. Der Fokus liegt auf echten, copy-paste-faehigen Beispielen mit dem aktuellen Stand von Nova-shell 0.8.6.
+Dieses Tutorial zeigt Schritt fuer Schritt, wie man in Nova-shell programmiert. Der Fokus liegt auf echten, copy-paste-faehigen Beispielen mit dem aktuellen Stand von Nova-shell 0.8.7.
 
 Die Beispiele sind in erster Linie fuer die interaktive Nova-shell gedacht. Viele Kommandos bauen auf dem Zustand derselben Session auf, zum Beispiel Python-Variablen, Flow-State, Lens-Snapshots oder Zero-Handles.
 
@@ -616,6 +616,34 @@ Der Sensor akzeptiert diese Datenquellen:
 - `INDUSTRY_SCAN_FILE` fuer eine lokale JSON-/RSS-/Text-Datei
 - `INDUSTRY_FEEDS` fuer RSS-/Atom-Feeds
 - `NEWSAPI_KEY` plus optional `INDUSTRY_NEWS_QUERY` fuer NewsAPI
+
+Morning-Briefing als lokale Web-Oberflaeche:
+
+```text
+nova> vision start 8765
+```
+
+Dann im Browser:
+
+```text
+http://127.0.0.1:8765/briefing
+```
+
+In der Web-Oberflaeche gibst du das Thema der Trendanalyse ein. Nova-shell fuehrt danach intern `morning_briefing.ns` aus, erzeugt die Report-Dateien und zeigt sie direkt im Browser an. Gleichzeitig stehen Download-Links fuer diese Dateien bereit:
+
+- `rss_resonance_report.txt`
+- `rss_resonance_report.html`
+- `rss_trend_report.txt`
+- `rss_trend_report.html`
+- `rss_morning_briefing.txt`
+- `rss_morning_briefing.html`
+
+Fuer einen Offline-Test kannst du davor in derselben Session eine lokale Eingabedatei setzen:
+
+```text
+nova> py os.environ["INDUSTRY_SCAN_FILE"] = r"D:\Nova-shell\sample_news.json"
+nova> vision start 8765
+```
 
 Wenn du Atheria als aktiven Provider fuer `ai` und `agent` verwenden willst:
 

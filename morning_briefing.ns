@@ -29,7 +29,7 @@ flow state set "morning_briefing.trend" $trend_result
 guardian = atheria guardian recommend --input $trend_result
 flow state set "morning_briefing.guardian" $guardian
 
-briefing_summary = py recs = $guardian.get("spawn_recommendations", []); cats = list(dict.fromkeys([item.get("category", "") for item in recs if item.get("category")]))[:3]; acc = float($trend_result.get("metadata", {}).get("trend_acceleration", 0.0)); direction = str($trend_result.get("metadata", {}).get("forecast_direction", "unknown")); score = float($trend_result.get("metadata", {}).get("forecast_score", 0.0)); count = len(recs); ("Heute empfehle ich " + str(count) + " neue Sensoren im Bereich " + (", ".join(cats) if cats else "keinem neuen Schwerpunkt") + ", da die Trend-Acceleration bei " + f"{acc:+.2f}" + " liegt und der Forecast '" + direction + "' mit Score " + f"{score:.2f}" + " meldet.") if count else ("Heute gibt es keine neuen Sensor-Empfehlungen. Trend-Acceleration: " + f"{acc:+.2f}" + ", Forecast: " + direction + " (" + f"{score:.2f}" + ").")
+briefing_summary = py render_morning_briefing_summary($guardian, $trend_result)
 flow state set "morning_briefing.summary" $briefing_summary
 event emit "MORNING_BRIEFING_READY" $briefing_summary
 

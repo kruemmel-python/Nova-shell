@@ -1,6 +1,6 @@
 # Nova-shell Dokumentation
 
-Diese Datei ist die vollstaendige Command-Referenz fuer Nova-shell 0.8.6. Sie listet die verfuegbaren Kommandos, ihre Subcommands, eine kurze Erklaerung und jeweils mindestens ein Beispiel.
+Diese Datei ist die vollstaendige Command-Referenz fuer Nova-shell 0.8.7. Sie listet die verfuegbaren Kommandos, ihre Subcommands, eine kurze Erklaerung und jeweils mindestens ein Beispiel.
 
 ## Schreibweise und Grundprinzip
 
@@ -510,6 +510,41 @@ Hinweise:
 - `vision start [port]`: Startet den Vision-HTTP-Server. Beispiel: `vision start 8877`
 - `vision stop`: Stoppt den Vision-Server. Beispiel: `vision stop`
 - `vision status`: Zeigt den Vision-Server-Status. Beispiel: `vision status`
+
+Wenn der Vision-Server laeuft, stellt er neben JSON-Endpunkten auch eine lokale Briefing-Weboberflaeche bereit:
+
+- `GET /` und `GET /briefing`: Formular fuer ein Atheria-Morning-Briefing im Browser
+- `POST /briefing/run`: Fuehrt den Morning-Briefing-Workflow mit dem angegebenen Thema aus
+- `GET /briefing/result?run_id=<id>`: Zeigt eine aufbereitete Ergebnisseite
+- `GET /briefing/view?run_id=<id>&file=<key>`: Zeigt einen erzeugten Report inline an
+- `GET /briefing/download?run_id=<id>&file=<key>`: Laedt einen erzeugten Report herunter
+
+Die Briefing-Weboberflaeche erzeugt ueber `morning_briefing.ns` automatisch:
+
+- `rss_resonance_report.txt`
+- `rss_resonance_report.html`
+- `rss_trend_report.txt`
+- `rss_trend_report.html`
+- `rss_morning_briefing.txt`
+- `rss_morning_briefing.html`
+
+Beispiel:
+
+```text
+vision start 8765
+```
+
+Dann im Browser:
+
+```text
+http://127.0.0.1:8765/briefing
+```
+
+Praxis-Hinweis:
+
+- Die Web-UI nutzt dieselbe Atheria-/NovaScript-Logik wie `ns.run morning_briefing.ns`.
+- Fuer Offline-Tests kannst du vor dem Start `INDUSTRY_SCAN_FILE` auf `sample_news.json` setzen.
+- Den Zielordner fuer Reports kannst du im Formular direkt angeben.
 
 ### `pack`
 

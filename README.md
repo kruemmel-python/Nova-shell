@@ -170,6 +170,34 @@ Wichtig:
 - `watch_the_big_players.ns` ist die Langlaufvariante und nutzt standardmaessig `0.85`, `3600` Sekunden und `100` Iterationen.
 - `morning_briefing.ns` ist die kompakte Tagesroutine und erzeugt Resonanz-, Trend- und Guardian-Reports in `reports/`.
 
+Lokale Web-Oberflaeche fuer RSS-Trendanalyse und Morning Briefings:
+
+```text
+vision start 8765
+```
+
+Dann im Browser:
+
+```text
+http://127.0.0.1:8765/briefing
+```
+
+Die Web-UI kann:
+
+- ein Thema der Trendanalyse entgegennehmen
+- daraus die Feed-Kombination fuer `morning_briefing.ns` ableiten
+- automatisch diese Dateien erzeugen:
+  - `rss_resonance_report.txt`
+  - `rss_resonance_report.html`
+  - `rss_trend_report.txt`
+  - `rss_trend_report.html`
+  - `rss_morning_briefing.txt`
+  - `rss_morning_briefing.html`
+- die Inhalte direkt im Browser anzeigen
+- alle erzeugten Reports als Dateien zum Download anbieten
+
+Fuer einen offline-faehigen Test kannst du vor dem Start von `vision` auch `INDUSTRY_SCAN_FILE` auf `sample_news.json` setzen.
+
 Vector Memory, Tool Schemas, Planner, Agent Graphs und Mesh-Worker:
 
 ```bash
@@ -267,7 +295,7 @@ Direkter Installer-Build:
 ```bash
 python scripts/build_release.py --profile core --mode installers
 SOURCE_DATE_EPOCH=1700000000 python scripts/build_release.py --profile core --mode all --clean
-python scripts/build_release.py --profile core --mode all --base-download-url "https://github.com/<org>/<repo>/releases/download/v0.8.6"
+python scripts/build_release.py --profile core --mode all --base-download-url "https://github.com/<org>/<repo>/releases/download/v0.8.7"
 python scripts/generate_release_notes.py --root dist/release --output dist/release/release-notes.md
 python scripts/sign_release.py --root dist/release --verify
 ```

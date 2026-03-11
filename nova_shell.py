@@ -52,9 +52,17 @@ except ImportError:  # pragma: no cover - platform dependent
     readline = None
 
 
-__version__ = "0.8.6"
+__version__ = "0.8.7"
 SIDELOAD_PACKAGE_DIR = "vendor-py"
 RUNTIME_CONFIG_FILE = "nova-shell-runtime.json"
+BRIEFING_REPORT_FILES: tuple[tuple[str, str, str], ...] = (
+    ("resonance_txt", "rss_resonance_report.txt", "text/plain; charset=utf-8"),
+    ("resonance_html", "rss_resonance_report.html", "text/html; charset=utf-8"),
+    ("trend_txt", "rss_trend_report.txt", "text/plain; charset=utf-8"),
+    ("trend_html", "rss_trend_report.html", "text/html; charset=utf-8"),
+    ("morning_txt", "rss_morning_briefing.txt", "text/plain; charset=utf-8"),
+    ("morning_html", "rss_morning_briefing.html", "text/html; charset=utf-8"),
+)
 
 
 def _is_windows_runtime() -> bool:
@@ -101,6 +109,44 @@ def safe_platform_string() -> str:
     if sys.platform == "darwin":
         return f"Darwin-{safe_machine_name()}"
     return platform.platform()
+
+
+def render_morning_briefing_summary(guardian_payload: Any, trend_payload: Any) -> str:
+    guardian = guardian_payload if isinstance(guardian_payload, dict) else {}
+    trend = trend_payload if isinstance(trend_payload, dict) else {}
+    recommendations = guardian.get("spawn_recommendations", [])
+    if not isinstance(recommendations, list):
+        recommendations = []
+    categories = list(
+        dict.fromkeys(
+            [
+                str(item.get("category", "")).strip()
+                for item in recommendations
+                if isinstance(item, dict) and str(item.get("category", "")).strip()
+            ]
+        )
+    )[:3]
+    metadata = trend.get("metadata", {}) if isinstance(trend.get("metadata", {}), dict) else {}
+    try:
+        acceleration = float(metadata.get("trend_acceleration", 0.0) or 0.0)
+    except Exception:
+        acceleration = 0.0
+    try:
+        score = float(metadata.get("forecast_score", 0.0) or 0.0)
+    except Exception:
+        score = 0.0
+    direction = str(metadata.get("forecast_direction", "unknown") or "unknown")
+    if recommendations:
+        focus = ", ".join(categories) if categories else "keinem neuen Schwerpunkt"
+        return (
+            f"Heute empfehle ich {len(recommendations)} neue Sensoren im Bereich {focus}, "
+            f"da die Trend-Acceleration bei {acceleration:+.2f} liegt und der Forecast "
+            f"'{direction}' mit Score {score:.2f} meldet."
+        )
+    return (
+        "Heute gibt es keine neuen Sensor-Empfehlungen. "
+        f"Trend-Acceleration: {acceleration:+.2f}, Forecast: {direction} ({score:.2f})."
+    )
 
 
 def configure_sideload_paths() -> None:
@@ -4121,12 +4167,390 @@ class VisionServer:
         self.shell = shell
         self._server: http.server.ThreadingHTTPServer | None = None
         self._thread: threading.Thread | None = None
+        self._host = "127.0.0.1"
+        self._port = 8765
+        self._briefing_lock = threading.Lock()
+        self._briefing_runs: dict[str, dict[str, Any]] = {}
+
+    def _briefing_form_html(self, defaults: dict[str, str] | None = None, error: str = "") -> str:
+        values = defaults or {}
+        topic = html.escape(values.get("topic", "AI infrastructure agent runtime"))
+        feeds = html.escape(values.get("feeds", ""))
+        threshold = html.escape(values.get("threshold", "0.35"))
+        report_dir = html.escape(values.get("report_dir", str(self.shell._resource_root() / "reports" / "morning")))
+        error_block = ""
+        if error:
+            error_block = f"<p class='error'>{html.escape(error)}</p>"
+        return f"""<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Nova-shell Atheria Briefing</title>
+  <style>
+    :root {{
+      --bg: #f3efe3;
+      --panel: #fffaf0;
+      --ink: #1f2a2e;
+      --muted: #6b756f;
+      --accent: #006b5f;
+      --accent-soft: #d4efe8;
+      --line: #d6d0c2;
+      --danger: #9f2f2f;
+      --shadow: 0 18px 40px rgba(36, 42, 39, 0.14);
+    }}
+    * {{ box-sizing: border-box; }}
+    body {{
+      margin: 0;
+      font-family: "Segoe UI", "Trebuchet MS", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, #fff8e8 0, transparent 30%),
+        linear-gradient(135deg, #ebe3cf 0%, #f8f4ea 45%, #ece7dc 100%);
+      min-height: 100vh;
+    }}
+    main {{
+      max-width: 1040px;
+      margin: 0 auto;
+      padding: 40px 20px 60px;
+    }}
+    .hero, .panel {{
+      background: rgba(255, 250, 240, 0.92);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      border-radius: 24px;
+    }}
+    .hero {{
+      padding: 28px;
+      margin-bottom: 24px;
+    }}
+    .eyebrow {{
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      font-size: 12px;
+      color: var(--accent);
+      margin: 0 0 8px;
+    }}
+    h1, h2, h3 {{ margin: 0 0 12px; }}
+    p {{ line-height: 1.55; }}
+    form {{ display: grid; gap: 16px; }}
+    label {{
+      display: grid;
+      gap: 6px;
+      font-weight: 600;
+    }}
+    input, textarea {{
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--ink);
+      font: inherit;
+    }}
+    textarea {{ min-height: 120px; resize: vertical; }}
+    .actions {{
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+    }}
+    button {{
+      border: 0;
+      border-radius: 999px;
+      padding: 12px 18px;
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
+      cursor: pointer;
+    }}
+    .hint {{
+      color: var(--muted);
+      font-size: 14px;
+      margin: 0;
+    }}
+    .error {{
+      margin: 0 0 16px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: #fdeaea;
+      color: var(--danger);
+      border: 1px solid #efc1c1;
+      font-weight: 600;
+    }}
+    details {{
+      border: 1px dashed var(--line);
+      border-radius: 16px;
+      padding: 12px 14px;
+      background: rgba(255,255,255,0.6);
+    }}
+    summary {{
+      cursor: pointer;
+      font-weight: 700;
+    }}
+    .panel {{
+      padding: 24px;
+    }}
+    code {{
+      padding: 2px 6px;
+      border-radius: 8px;
+      background: var(--accent-soft);
+    }}
+  </style>
+</head>
+<body>
+  <main>
+    <section class="hero">
+      <p class="eyebrow">Atheria Briefing UI</p>
+      <h1>Trendanalyse per Web-Oberfläche</h1>
+      <p>Gib ein Thema ein. Nova-shell kombiniert Atheria, RSS-Sensoren, TrendRadar und Guardian, erstellt die Morning-Briefing-Reports und bereitet die Ergebnisse direkt im Browser auf.</p>
+      <p class="hint">Die Standard-Feeds kombinieren NYT Technology, TechCrunch und eine Google-News-RSS-Suche zum angegebenen Thema.</p>
+    </section>
+    <section class="panel">
+      {error_block}
+      <form method="post" action="/briefing/run">
+        <label>
+          Thema der Trendanalyse
+          <input type="text" name="topic" value="{topic}" placeholder="z. B. Edge AI, Agent Runtime, AI Infrastructure" required>
+        </label>
+        <div class="actions">
+          <label style="flex:1 1 220px;">
+            Report-Zielordner
+            <input type="text" name="report_dir" value="{report_dir}">
+          </label>
+          <label style="flex:0 1 220px;">
+            Resonance Threshold
+            <input type="text" name="threshold" value="{threshold}">
+          </label>
+        </div>
+        <details>
+          <summary>Erweiterte Feed-Konfiguration</summary>
+          <label style="margin-top:12px;">
+            Eigene Feed-Liste
+            <textarea name="feeds" placeholder="Optional: kommaseparierte RSS-Feeds">{feeds}</textarea>
+          </label>
+          <p class="hint">Leer lassen, um die Standard-Feed-Kombination aus dem Thema zu erzeugen.</p>
+        </details>
+        <div class="actions">
+          <button type="submit">Morning Briefing ausführen</button>
+          <a href="/commands">JSON Commands</a>
+          <a href="/events">JSON Events</a>
+        </div>
+      </form>
+    </section>
+  </main>
+</body>
+</html>
+"""
+
+    def _briefing_result_html(self, run: dict[str, Any]) -> str:
+        topic = html.escape(str(run.get("topic", "")))
+        run_id = html.escape(str(run.get("run_id", "")))
+        report_dir = html.escape(str(run.get("report_dir", "")))
+        summary = html.escape(str(run.get("summary", "")))
+        created_at = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(float(run.get("generated_at", time.time()))))
+        cards: list[str] = []
+        previews: list[str] = []
+        files = run.get("files", {})
+        for key, filename, _content_type in BRIEFING_REPORT_FILES:
+            payload = files.get(key)
+            if not isinstance(payload, dict):
+                continue
+            label = html.escape(payload.get("name", filename))
+            download_path = html.escape(payload.get("download_path", ""))
+            view_path = html.escape(payload.get("view_path", ""))
+            cards.append(
+                "<article class='card'>"
+                f"<h3>{label}</h3>"
+                f"<p><a href='{download_path}'>Download</a> · <a href='{view_path}' target='_blank' rel='noopener'>Ansehen</a></p>"
+                "</article>"
+            )
+            preview = str(payload.get("preview", ""))
+            if key.endswith("_txt"):
+                previews.append(
+                    "<section class='preview'>"
+                    f"<h3>{label}</h3>"
+                    f"<pre>{html.escape(preview)}</pre>"
+                    "</section>"
+                )
+        html_views = []
+        for key in ("morning_html", "resonance_html", "trend_html"):
+            payload = files.get(key)
+            if not isinstance(payload, dict):
+                continue
+            label = html.escape(payload.get("name", ""))
+            view_path = html.escape(payload.get("view_path", ""))
+            html_views.append(
+                "<section class='preview frame'>"
+                f"<div class='frame-head'><h3>{label}</h3><a href='{view_path}' target='_blank' rel='noopener'>HTML separat öffnen</a></div>"
+                f"<iframe src='{view_path}' loading='lazy' title='{label}'></iframe>"
+                "</section>"
+            )
+        return f"""<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Nova-shell Morning Briefing Ergebnis</title>
+  <style>
+    :root {{
+      --bg: #f4f0e6;
+      --panel: #fffdf8;
+      --ink: #1e282c;
+      --muted: #617072;
+      --accent: #005c68;
+      --accent-soft: #d8eef0;
+      --line: #d8d0c0;
+      --shadow: 0 18px 40px rgba(29, 34, 36, 0.13);
+    }}
+    * {{ box-sizing: border-box; }}
+    body {{
+      margin: 0;
+      font-family: "Segoe UI", "Trebuchet MS", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top right, #fff5de 0, transparent 28%),
+        linear-gradient(180deg, #ede6d7 0%, #f9f6ef 100%);
+    }}
+    main {{
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 32px 20px 60px;
+    }}
+    .hero, .panel {{
+      background: rgba(255, 253, 248, 0.94);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+    }}
+    .hero {{ padding: 28px; margin-bottom: 22px; }}
+    .meta {{
+      display: grid;
+      gap: 8px;
+      color: var(--muted);
+      margin-top: 12px;
+    }}
+    .summary {{
+      margin-top: 18px;
+      padding: 16px 18px;
+      background: var(--accent-soft);
+      border-radius: 18px;
+      font-weight: 600;
+    }}
+    .cards {{
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 14px;
+      margin-bottom: 22px;
+    }}
+    .card, .preview {{
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      background: #fff;
+      padding: 18px;
+    }}
+    .panel {{ padding: 24px; margin-bottom: 22px; }}
+    .preview-grid {{
+      display: grid;
+      gap: 18px;
+    }}
+    .frame-head {{
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 12px;
+    }}
+    pre {{
+      white-space: pre-wrap;
+      word-break: break-word;
+      margin: 0;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 13px;
+      line-height: 1.5;
+    }}
+    iframe {{
+      width: 100%;
+      min-height: 420px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fff;
+    }}
+    a {{
+      color: var(--accent);
+      font-weight: 600;
+      text-decoration: none;
+    }}
+    a:hover {{ text-decoration: underline; }}
+    .toolbar {{
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-top: 18px;
+    }}
+    code {{
+      padding: 2px 6px;
+      border-radius: 8px;
+      background: var(--accent-soft);
+    }}
+  </style>
+</head>
+<body>
+  <main>
+    <section class="hero">
+      <p style="text-transform:uppercase;letter-spacing:.12em;color:var(--accent);font-size:12px;margin:0 0 8px;">Atheria Report Run</p>
+      <h1>Morning Briefing abgeschlossen</h1>
+      <div class="meta">
+        <div><strong>Thema:</strong> {topic}</div>
+        <div><strong>Run ID:</strong> <code>{run_id}</code></div>
+        <div><strong>Report-Ordner:</strong> <code>{report_dir}</code></div>
+        <div><strong>Zeit:</strong> {html.escape(created_at)}</div>
+      </div>
+      <div class="summary">{summary}</div>
+      <div class="toolbar">
+        <a href="/briefing">Neuen Run starten</a>
+        <a href="/briefing/result?run_id={urllib.parse.quote(str(run.get("run_id", "")))}">Diese Seite neu laden</a>
+      </div>
+    </section>
+    <section class="panel">
+      <h2>Dateien</h2>
+      <div class="cards">{''.join(cards)}</div>
+    </section>
+    <section class="panel">
+      <h2>Text-Reports</h2>
+      <div class="preview-grid">{''.join(previews)}</div>
+    </section>
+    <section class="panel">
+      <h2>HTML-Reports</h2>
+      <div class="preview-grid">{''.join(html_views)}</div>
+    </section>
+  </main>
+</body>
+</html>
+"""
+
+    def _read_report_file(self, run_id: str, file_key: str) -> tuple[Path, str] | None:
+        run = self._briefing_runs.get(run_id)
+        if not isinstance(run, dict):
+            return None
+        payload = run.get("files", {}).get(file_key)
+        if not isinstance(payload, dict):
+            return None
+        path_text = str(payload.get("path", ""))
+        content_type = str(payload.get("content_type", "application/octet-stream"))
+        if not path_text:
+            return None
+        path = Path(path_text)
+        if not path.is_file():
+            return None
+        return path, content_type
 
     def start(self, host: str = "127.0.0.1", port: int = 8765) -> CommandResult:
         if self._server is not None:
             return CommandResult(output=f"vision already running on http://{host}:{port}\n")
 
         shell = self.shell
+        vision = self
 
         class Handler(http.server.BaseHTTPRequestHandler):
             def _write_json(self, payload: Any, status: int = 200) -> None:
@@ -4137,8 +4561,60 @@ class VisionServer:
                 self.end_headers()
                 self.wfile.write(body)
 
+            def _write_html(self, text: str, status: int = 200) -> None:
+                body = text.encode("utf-8")
+                self.send_response(status)
+                self.send_header("Content-Type", "text/html; charset=utf-8")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+
+            def _read_form_data(self, body: bytes) -> dict[str, str]:
+                content_type = self.headers.get("Content-Type", "")
+                if "application/json" in content_type:
+                    try:
+                        payload = json.loads(body.decode("utf-8")) if body else {}
+                    except Exception:
+                        payload = {}
+                    return {str(key): str(value) for key, value in payload.items()}
+                parsed = urllib.parse.parse_qs(body.decode("utf-8"), keep_blank_values=True)
+                return {key: values[0] if values else "" for key, values in parsed.items()}
+
             def do_GET(self) -> None:  # noqa: N802
                 parsed = urllib.parse.urlparse(self.path)
+                if parsed.path == "/":
+                    self._write_html(vision._briefing_form_html())
+                    return
+                if parsed.path in {"/briefing", "/atheria/briefing"}:
+                    self._write_html(vision._briefing_form_html())
+                    return
+                if parsed.path in {"/briefing/result", "/atheria/briefing/result"}:
+                    run_id = urllib.parse.parse_qs(parsed.query).get("run_id", [""])[0]
+                    run = vision._briefing_runs.get(run_id)
+                    if not isinstance(run, dict):
+                        self._write_html(vision._briefing_form_html(error="Der angeforderte Run wurde nicht gefunden."), status=404)
+                        return
+                    self._write_html(vision._briefing_result_html(run))
+                    return
+                if parsed.path in {"/briefing/download", "/atheria/briefing/download", "/briefing/view", "/atheria/briefing/view"}:
+                    query = urllib.parse.parse_qs(parsed.query)
+                    run_id = query.get("run_id", [""])[0]
+                    file_key = query.get("file", [""])[0]
+                    resolved = vision._read_report_file(run_id, file_key)
+                    if resolved is None:
+                        self.send_response(404)
+                        self.end_headers()
+                        return
+                    path, content_type = resolved
+                    data = path.read_bytes()
+                    self.send_response(200)
+                    self.send_header("Content-Type", content_type)
+                    if parsed.path.endswith("/download"):
+                        self.send_header("Content-Disposition", f'attachment; filename="{path.name}"')
+                    self.send_header("Content-Length", str(len(data)))
+                    self.end_headers()
+                    self.wfile.write(data)
+                    return
                 if parsed.path == "/events":
                     self._write_json(shell.events.events)
                     return
@@ -4200,6 +4676,22 @@ class VisionServer:
                 length = int(self.headers.get("Content-Length", "0"))
                 body = self.rfile.read(length) if length > 0 else b""
 
+                if parsed.path in {"/briefing/run", "/atheria/briefing/run"}:
+                    fields = self._read_form_data(body)
+                    try:
+                        with vision._briefing_lock:
+                            run = shell._run_morning_briefing_job(
+                                topic=fields.get("topic", ""),
+                                report_dir_text=fields.get("report_dir", ""),
+                                feeds_text=fields.get("feeds", ""),
+                                resonance_threshold=fields.get("threshold", ""),
+                            )
+                        vision._briefing_runs[str(run["run_id"])] = run
+                        self._write_html(vision._briefing_result_html(run))
+                    except Exception as exc:
+                        self._write_html(vision._briefing_form_html(defaults=fields, error=str(exc)), status=500)
+                    return
+
                 if parsed.path == "/fabric/put":
                     try:
                         payload = json.loads(body.decode("utf-8")) if body else {}
@@ -4243,6 +4735,8 @@ class VisionServer:
             self._server = http.server.ThreadingHTTPServer((host, port), Handler)
             self._thread = threading.Thread(target=self._server.serve_forever, daemon=True)
             self._thread.start()
+            self._host = host
+            self._port = port
             return CommandResult(output=f"vision started on http://{host}:{port}\n")
         except Exception as exc:
             self._server = None
@@ -4256,6 +4750,7 @@ class VisionServer:
         self._server.server_close()
         self._server = None
         self._thread = None
+        self._briefing_runs.clear()
         return CommandResult(output="vision stopped\n")
 
 
@@ -4344,6 +4839,7 @@ class NovaShell:
         self.mesh = MeshScheduler()
         self.flow_state = FlowStateStore()
         self.python.globals["flow"] = PythonFlowProxy(self.flow_state)
+        self.python.globals["render_morning_briefing_summary"] = render_morning_briefing_summary
         self.jit = NovaComputeJIT()
         self.optimizer = NovaOptimizer(self)
         self.synth = NovaSynth(self)
@@ -4538,6 +5034,111 @@ class NovaShell:
         if not target.is_absolute():
             target = self.cwd / target
         return target.resolve(strict=False)
+
+    def _resource_root(self) -> Path:
+        candidates = [
+            Path(sys.executable).resolve().parent,
+            Path(__file__).resolve().parent,
+            self.cwd,
+        ]
+        seen: set[str] = set()
+        for candidate in candidates:
+            candidate = candidate.resolve(strict=False)
+            candidate_text = str(candidate)
+            if candidate_text in seen:
+                continue
+            seen.add(candidate_text)
+            if (candidate / "morning_briefing.ns").is_file():
+                return candidate
+        return Path(__file__).resolve().parent
+
+    def _default_briefing_feeds(self, topic: str) -> str:
+        normalized = topic.strip() or "AI infrastructure agent runtime"
+        query = urllib.parse.quote_plus(normalized)
+        feeds = [
+            "https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml",
+            "https://feeds.feedburner.com/TechCrunch/",
+            f"https://news.google.com/rss/search?q={query}",
+        ]
+        return ",".join(feeds)
+
+    def _run_morning_briefing_job(
+        self,
+        *,
+        topic: str,
+        report_dir_text: str = "",
+        feeds_text: str = "",
+        resonance_threshold: str = "",
+    ) -> dict[str, Any]:
+        resource_root = self._resource_root()
+        script_path = resource_root / "morning_briefing.ns"
+        if not script_path.is_file():
+            raise RuntimeError(f"morning briefing script not found: {script_path}")
+
+        previous_cwd = self.cwd
+        report_dir = (
+            self._resolve_path(report_dir_text.strip())
+            if report_dir_text.strip()
+            else (resource_root / "reports" / "morning").resolve(strict=False)
+        )
+        report_dir.mkdir(parents=True, exist_ok=True)
+        env_updates = {
+            "INDUSTRY_FEEDS": feeds_text.strip() or self._default_briefing_feeds(topic),
+            "NOVA_BRIEFING_REPORT_DIR": str(report_dir),
+            "INDUSTRY_TREND_STATE": str(report_dir / "trend_state.json"),
+        }
+        if resonance_threshold.strip():
+            env_updates["NOVA_RESONANCE_THRESHOLD"] = resonance_threshold.strip()
+        previous_env = {key: os.environ.get(key) for key in env_updates}
+        run_id = uuid.uuid4().hex[:12]
+        try:
+            for key, value in env_updates.items():
+                os.environ[key] = value
+            self.cwd = resource_root
+            self.atheria.cwd = resource_root
+            self.ai_runtime.cwd = resource_root
+            result = self._route_internal(f'ns.run "{script_path}"')
+        finally:
+            self.cwd = previous_cwd
+            self.atheria.cwd = previous_cwd
+            self.ai_runtime.cwd = previous_cwd
+            for key, value in previous_env.items():
+                if value is None:
+                    os.environ.pop(key, None)
+                else:
+                    os.environ[key] = value
+
+        if result.error:
+            raise RuntimeError(result.error)
+
+        files: dict[str, dict[str, Any]] = {}
+        for key, filename, content_type in BRIEFING_REPORT_FILES:
+            path = report_dir / filename
+            if not path.is_file():
+                raise RuntimeError(f"briefing output missing: {path}")
+            preview = ""
+            if filename.endswith(".txt"):
+                preview = path.read_text(encoding="utf-8", errors="replace")
+            files[key] = {
+                "name": filename,
+                "path": str(path),
+                "content_type": content_type,
+                "download_path": f"/briefing/download?run_id={run_id}&file={key}",
+                "view_path": f"/briefing/view?run_id={run_id}&file={key}",
+                "preview": preview,
+            }
+
+        summary_path = report_dir / "rss_morning_briefing.txt"
+        summary = summary_path.read_text(encoding="utf-8", errors="replace").strip()
+        return {
+            "run_id": run_id,
+            "topic": topic.strip() or "AI infrastructure agent runtime",
+            "report_dir": str(report_dir),
+            "summary": summary or result.output.strip(),
+            "generated_at": time.time(),
+            "output": result.output,
+            "files": files,
+        }
 
     def _cd(self, path_arg: str, _: str, __: Any) -> CommandResult:
         parts = split_command(path_arg)
