@@ -11,6 +11,7 @@ import inspect
 import importlib
 import importlib.util
 import io
+import html
 import http.server
 import threading
 import time
@@ -380,6 +381,19 @@ class AtheriaSensorPluginSpec:
     path: str
     mapping: dict[str, str] = field(default_factory=dict)
     description: str = ""
+    category: str = "general"
+    template: str = "custom"
+    hardware_anchor: str = "cpu"
+    fold_signature: str = ""
+    lineage_parent: str = ""
+    tags: list[str] = field(default_factory=list)
+    success_count: int = 0
+    failure_count: int = 0
+    average_score: float = 0.0
+    resource_pressure: float = 0.0
+    last_score: float = 0.0
+    last_summary: str = ""
+    last_run_at: float = 0.0
     created_at: float = field(default_factory=time.time)
 
 
@@ -1352,14 +1366,154 @@ class AtheriaSensorRegistry:
         "queue_depth",
         "anomaly_score",
     ]
+    GALLERY_TEMPLATES: dict[str, dict[str, Any]] = {
+        "RSS_Base": {
+            "path": "industry_scanner.py",
+            "description": "RSS/news intake sensor for broad industry scanning.",
+            "category": "rss",
+            "hardware_anchor": "cpu",
+            "tags": ["rss", "news", "watcher"],
+        },
+        "TrendRadar": {
+            "path": "trend_rss_sensor.py",
+            "description": "Self-learning RSS trend forecaster for market and infrastructure shifts.",
+            "category": "trend",
+            "hardware_anchor": "cpu",
+            "tags": ["rss", "trend", "forecast"],
+        },
+    }
 
     def __init__(self, storage_root: Path) -> None:
         self.storage_root = storage_root
         self.storage_root.mkdir(parents=True, exist_ok=True)
         self.registry_path = self.storage_root / "atheria_sensors.json"
+        self.policy_path = self.storage_root / "atheria_sensor_policies.json"
         self.plugins: dict[str, AtheriaSensorPluginSpec] = {}
         self._loaded_plugins: dict[str, Any] = {}
+        self.guardian_policies = self._default_guardian_policies()
         self._load_registry()
+        self._load_policies()
+
+    def _default_guardian_policies(self) -> dict[str, dict[str, Any]]:
+        return {
+            "default": {
+                "desired_count": 1,
+                "auto_spawn": False,
+                "template": "RSS_Base",
+                "hardware_anchor": "cpu",
+                "min_success_ratio": 0.2,
+                "max_resource_pressure": 0.85,
+                "min_average_score": 0.3,
+                "proximity_threshold": 0.55,
+            },
+            "rss": {
+                "desired_count": 1,
+                "auto_spawn": True,
+                "template": "RSS_Base",
+                "hardware_anchor": "cpu",
+            },
+            "trend": {
+                "desired_count": 1,
+                "auto_spawn": True,
+                "template": "TrendRadar",
+                "hardware_anchor": "cpu",
+            },
+            "edge_ai": {
+                "desired_count": 1,
+                "auto_spawn": True,
+                "template": "RSS_Base",
+                "hardware_anchor": "cpu",
+                "proximity_threshold": 0.52,
+            },
+            "local_inference": {
+                "desired_count": 1,
+                "auto_spawn": True,
+                "template": "RSS_Base",
+                "hardware_anchor": "cpu",
+                "proximity_threshold": 0.52,
+            },
+            "gpu_runtime": {
+                "desired_count": 1,
+                "auto_spawn": True,
+                "template": "TrendRadar",
+                "hardware_anchor": "gpu",
+                "proximity_threshold": 0.5,
+            },
+            "datacenter_scale": {
+                "desired_count": 1,
+                "auto_spawn": True,
+                "template": "TrendRadar",
+                "hardware_anchor": "cpu",
+                "proximity_threshold": 0.5,
+            },
+            "regulation_resilience": {
+                "desired_count": 1,
+                "auto_spawn": True,
+                "template": "RSS_Base",
+                "hardware_anchor": "cpu",
+            },
+            "research_depth": {
+                "desired_count": 1,
+                "auto_spawn": True,
+                "template": "RSS_Base",
+                "hardware_anchor": "cpu",
+            },
+            "sensor_density": {
+                "desired_count": 2,
+                "auto_spawn": True,
+                "template": "RSS_Base",
+                "hardware_anchor": "cpu",
+            },
+        }
+
+    def _normalize_policy(self, category: str, payload: Any) -> dict[str, Any]:
+        base = dict(self.guardian_policies.get("default", {}))
+        if category in self.guardian_policies and category != "default":
+            base.update(self.guardian_policies.get(category, {}))
+        if not isinstance(payload, dict):
+            return base
+        normalized = dict(base)
+        if "desired_count" in payload:
+            with contextlib.suppress(Exception):
+                normalized["desired_count"] = max(0, int(payload["desired_count"]))
+        if "auto_spawn" in payload:
+            normalized["auto_spawn"] = bool(payload["auto_spawn"])
+        for key in ["template", "hardware_anchor"]:
+            if key in payload:
+                normalized[key] = str(payload[key] or normalized.get(key, "")).strip() or normalized.get(key, "")
+        for key in ["min_success_ratio", "max_resource_pressure", "min_average_score", "proximity_threshold"]:
+            if key in payload:
+                with contextlib.suppress(Exception):
+                    normalized[key] = self._coerce_float(payload[key])
+        for key in ["min_success_ratio", "max_resource_pressure", "min_average_score", "proximity_threshold"]:
+            if normalized.get(key) is None:
+                normalized[key] = base.get(key, 0.0)
+            normalized[key] = max(0.0, min(1.0, float(normalized[key])))
+        return normalized
+
+    def _load_policies(self) -> None:
+        if not self.policy_path.exists():
+            return
+        try:
+            payload = json.loads(self.policy_path.read_text(encoding="utf-8"))
+        except Exception:
+            return
+        if not isinstance(payload, dict):
+            return
+        merged = self._default_guardian_policies()
+        for category, definition in payload.items():
+            merged[str(category)] = self._normalize_policy(str(category), definition)
+        self.guardian_policies = merged
+
+    def _save_policies(self) -> None:
+        self.policy_path.write_text(json.dumps(self.guardian_policies, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    def _policy_for_category(self, category: str) -> dict[str, Any]:
+        category_key = str(category or "default").strip().lower() or "default"
+        base = dict(self.guardian_policies.get("default", {}))
+        if category_key in self.guardian_policies:
+            base.update(self.guardian_policies[category_key])
+        return base
 
     def _load_registry(self) -> None:
         if not self.registry_path.exists():
@@ -1378,25 +1532,94 @@ class AtheriaSensorRegistry:
                 path=str(item.get("path") or ""),
                 mapping={str(key): str(value) for key, value in dict(item.get("mapping") or {}).items()},
                 description=str(item.get("description") or ""),
+                category=str(item.get("category") or "general"),
+                template=str(item.get("template") or "custom"),
+                hardware_anchor=str(item.get("hardware_anchor") or "cpu"),
+                fold_signature=str(item.get("fold_signature") or ""),
+                lineage_parent=str(item.get("lineage_parent") or ""),
+                tags=[str(tag) for tag in list(item.get("tags") or []) if str(tag).strip()],
+                success_count=int(item.get("success_count") or 0),
+                failure_count=int(item.get("failure_count") or 0),
+                average_score=float(item.get("average_score") or 0.0),
+                resource_pressure=float(item.get("resource_pressure") or 0.0),
+                last_score=float(item.get("last_score") or 0.0),
+                last_summary=str(item.get("last_summary") or ""),
+                last_run_at=float(item.get("last_run_at") or 0.0),
                 created_at=float(item.get("created_at") or time.time()),
             )
             if spec.name and spec.path:
+                if not spec.fold_signature:
+                    spec.fold_signature = self._build_fold_signature(
+                        name=spec.name,
+                        path=spec.path,
+                        category=spec.category,
+                        template=spec.template,
+                        tags=spec.tags,
+                    )
                 self.plugins[spec.name] = spec
 
+    def _normalize_tags(self, values: Iterable[str]) -> list[str]:
+        tags: list[str] = []
+        seen: set[str] = set()
+        for value in values:
+            tag = str(value).strip().lower().replace(" ", "_")
+            if not tag or tag in seen:
+                continue
+            seen.add(tag)
+            tags.append(tag)
+        return tags
+
+    def _build_fold_signature(self, *, name: str, path: str, category: str, template: str, tags: Iterable[str]) -> str:
+        basis = "|".join(
+            [
+                str(name).strip().lower(),
+                str(path).strip().lower(),
+                str(category).strip().lower(),
+                str(template).strip().lower(),
+                ",".join(self._normalize_tags(tags)),
+            ]
+        )
+        digest = hashlib.sha256(basis.encode("utf-8")).hexdigest()
+        return f"fold_{digest[:16]}"
+
+    def _spec_row(self, spec: AtheriaSensorPluginSpec) -> dict[str, Any]:
+        return {
+            "name": spec.name,
+            "path": spec.path,
+            "mapping": spec.mapping,
+            "description": spec.description,
+            "category": spec.category,
+            "template": spec.template,
+            "hardware_anchor": spec.hardware_anchor,
+            "fold_signature": spec.fold_signature,
+            "lineage_parent": spec.lineage_parent,
+            "tags": spec.tags,
+            "success_count": spec.success_count,
+            "failure_count": spec.failure_count,
+            "average_score": round(float(spec.average_score), 6),
+            "resource_pressure": round(float(spec.resource_pressure), 6),
+            "last_score": round(float(spec.last_score), 6),
+            "last_summary": spec.last_summary,
+            "last_run_at": spec.last_run_at,
+            "created_at": spec.created_at,
+        }
+
     def _save_registry(self) -> None:
-        rows = [
-            {
-                "name": spec.name,
-                "path": spec.path,
-                "mapping": spec.mapping,
-                "description": spec.description,
-                "created_at": spec.created_at,
-            }
-            for spec in sorted(self.plugins.values(), key=lambda item: item.name)
-        ]
+        rows = [self._spec_row(spec) for spec in sorted(self.plugins.values(), key=lambda item: item.name)]
         self.registry_path.write_text(json.dumps(rows, ensure_ascii=False, indent=2), encoding="utf-8")
 
-    def register(self, path: Path, *, name: str | None = None, mapping: dict[str, str] | None = None) -> AtheriaSensorPluginSpec:
+    def register(
+        self,
+        path: Path,
+        *,
+        name: str | None = None,
+        mapping: dict[str, str] | None = None,
+        category: str | None = None,
+        template: str | None = None,
+        hardware_anchor: str | None = None,
+        tags: Iterable[str] | None = None,
+        lineage_parent: str | None = None,
+    ) -> AtheriaSensorPluginSpec:
         resolved = path.resolve()
         if not resolved.exists() or not resolved.is_file():
             raise FileNotFoundError(f"sensor plugin not found: {path}")
@@ -1407,15 +1630,122 @@ class AtheriaSensorRegistry:
         with contextlib.suppress(Exception):
             module = self._load_plugin_from_path(chosen_name, resolved)
             description = str(getattr(module, "__doc__", "") or "").strip().splitlines()[0] if getattr(module, "__doc__", None) else ""
+        resolved_category = str(category or resolved.stem or "general").strip().lower() or "general"
+        resolved_template = str(template or "custom").strip() or "custom"
+        resolved_tags = self._normalize_tags([resolved_category, resolved_template, *(tags or [])])
         spec = AtheriaSensorPluginSpec(
             name=chosen_name,
             path=str(resolved),
             mapping=dict(mapping or {}),
             description=description,
+            category=resolved_category,
+            template=resolved_template,
+            hardware_anchor=str(hardware_anchor or "cpu").strip().lower() or "cpu",
+            fold_signature=self._build_fold_signature(
+                name=chosen_name,
+                path=str(resolved),
+                category=resolved_category,
+                template=resolved_template,
+                tags=resolved_tags,
+            ),
+            lineage_parent=str(lineage_parent or "").strip(),
+            tags=resolved_tags,
         )
         self.plugins[chosen_name] = spec
         self._save_registry()
         return spec
+
+    def gallery(self) -> list[dict[str, Any]]:
+        rows: list[dict[str, Any]] = []
+        for name, definition in sorted(self.GALLERY_TEMPLATES.items()):
+            rows.append(
+                {
+                    "template": name,
+                    "path": str((Path(__file__).resolve().parent / str(definition["path"])).resolve(strict=False)),
+                    "description": str(definition.get("description") or ""),
+                    "category": str(definition.get("category") or "general"),
+                    "hardware_anchor": str(definition.get("hardware_anchor") or "cpu"),
+                    "tags": list(definition.get("tags") or []),
+                }
+            )
+        return rows
+
+    def list_guardian_policies(self) -> list[dict[str, Any]]:
+        return [{"category": category, **self._policy_for_category(category)} for category in sorted(self.guardian_policies.keys())]
+
+    def get_guardian_policy(self, category: str) -> dict[str, Any]:
+        category_key = str(category or "default").strip().lower() or "default"
+        return {"category": category_key, **self._policy_for_category(category_key)}
+
+    def set_guardian_policy(self, category: str, payload: dict[str, Any]) -> dict[str, Any]:
+        category_key = str(category or "default").strip().lower() or "default"
+        self.guardian_policies[category_key] = self._normalize_policy(category_key, payload)
+        self._save_policies()
+        return self.get_guardian_policy(category_key)
+
+    def _signature_vector(self, text: str, *, dims: int = 10) -> list[float]:
+        accum = [0.0] * dims
+        basis = str(text or "").strip().lower()
+        if not basis:
+            return accum
+        for token in re.findall(r"[a-z0-9_\-]+", basis):
+            digest = hashlib.sha256(token.encode("utf-8")).digest()
+            for index in range(dims):
+                accum[index] += ((digest[index] / 255.0) * 2.0) - 1.0
+        norm = math.sqrt(sum(item * item for item in accum))
+        if norm <= 1e-8:
+            return [0.0] * dims
+        return [item / norm for item in accum]
+
+    def _cosine_similarity(self, left: list[float], right: list[float]) -> float:
+        if not left or not right:
+            return 0.0
+        return max(-1.0, min(1.0, sum(a * b for a, b in zip(left, right))))
+
+    def _spec_signature_text(self, spec: AtheriaSensorPluginSpec) -> str:
+        return " ".join([spec.name, spec.category, spec.template, spec.hardware_anchor, spec.fold_signature, *spec.tags]).strip()
+
+    def _event_signature_text(self, event_payload: dict[str, Any]) -> str:
+        features = event_payload.get("features") if isinstance(event_payload.get("features"), dict) else {}
+        resonance = event_payload.get("resonance") if isinstance(event_payload.get("resonance"), dict) else {}
+        parts = [
+            str(event_payload.get("name") or ""),
+            str(event_payload.get("summary") or ""),
+            " ".join(str(item.get("category") or "") for item in resonance.get("atheria_hits", []) if isinstance(item, dict)),
+            " ".join(str(item.get("id") or "") for item in resonance.get("memory_hits", []) if isinstance(item, dict)),
+            " ".join(str(key) for key, value in features.items() if float(value or 0.0) >= 0.4),
+        ]
+        return " ".join(part for part in parts if part).strip()
+
+    def spawn_template(
+        self,
+        category: str,
+        *,
+        template: str,
+        name: str | None = None,
+        hardware_anchor: str | None = None,
+        lineage_parent: str | None = None,
+        mapping: dict[str, str] | None = None,
+    ) -> AtheriaSensorPluginSpec:
+        definition = self.GALLERY_TEMPLATES.get(template)
+        if definition is None:
+            raise KeyError(template)
+        target_path = (Path(__file__).resolve().parent / str(definition["path"])).resolve(strict=False)
+        if not target_path.exists() or not target_path.is_file():
+            raise FileNotFoundError(f"sensor template file not found: {target_path}")
+        normalized_category = str(category or definition.get("category") or "general").strip().lower() or "general"
+        chosen_name = (name or f"{normalized_category}_{template.lower()}_{uuid.uuid4().hex[:6]}").strip()
+        inherited_tags = list(definition.get("tags") or [])
+        return self.register(
+            target_path,
+            name=chosen_name,
+            mapping=mapping,
+            category=normalized_category,
+            template=template,
+            hardware_anchor=hardware_anchor or str(definition.get("hardware_anchor") or "cpu"),
+            tags=[*inherited_tags, normalized_category],
+            lineage_parent=lineage_parent,
+        )
 
     def set_mapping(self, name: str, mapping: dict[str, str]) -> AtheriaSensorPluginSpec:
         spec = self.plugins.get(name)
@@ -1426,16 +1756,208 @@ class AtheriaSensorRegistry:
         return spec
 
     def list_plugins(self) -> list[dict[str, Any]]:
-        return [
-            {
-                "name": spec.name,
-                "path": spec.path,
-                "mapping": spec.mapping,
-                "description": spec.description,
-                "created_at": spec.created_at,
-            }
-            for spec in sorted(self.plugins.values(), key=lambda item: item.name)
-        ]
+        return [self._spec_row(spec) for spec in sorted(self.plugins.values(), key=lambda item: item.name)]
+
+    def delete(self, name: str) -> AtheriaSensorPluginSpec:
+        spec = self.plugins.pop(name, None)
+        if spec is None:
+            raise KeyError(name)
+        self._save_registry()
+        return spec
+
+    def record_run_result(self, name: str, *, success: bool, score: float, resource_pressure: float, summary: str = "") -> AtheriaSensorPluginSpec:
+        spec = self.plugins.get(name)
+        if spec is None:
+            raise KeyError(name)
+        if success:
+            spec.success_count += 1
+            total_runs = spec.success_count
+            spec.average_score = ((spec.average_score * max(0, total_runs - 1)) + float(score)) / max(1, total_runs)
+            spec.last_score = float(score)
+            spec.resource_pressure = float(resource_pressure)
+            spec.last_summary = str(summary or "").strip()
+            spec.last_run_at = time.time()
+        else:
+            spec.failure_count += 1
+            spec.last_run_at = time.time()
+        self._save_registry()
+        return spec
+
+    def _theme_to_policy_category(self, theme: str) -> str:
+        mapping = {
+            "edge_ai": "edge_ai",
+            "local_inference": "local_inference",
+            "gpu_runtime": "gpu_runtime",
+            "datacenter_scale": "datacenter_scale",
+            "regulation_resilience": "regulation_resilience",
+            "research_depth": "research_depth",
+            "sensor_density": "rss",
+        }
+        return mapping.get(str(theme or "").strip().lower(), str(theme or "general").strip().lower() or "general")
+
+    def _spawn_recommendations_from_plan(self, evolution_plan: dict[str, Any] | None) -> list[dict[str, Any]]:
+        if not isinstance(evolution_plan, dict):
+            return []
+        bounded_policy = evolution_plan.get("bounded_policy")
+        if not isinstance(bounded_policy, dict):
+            return []
+        category_counts: dict[str, int] = {}
+        for spec in self.plugins.values():
+            category_counts[spec.category] = category_counts.get(spec.category, 0) + 1
+        recommendations: list[dict[str, Any]] = []
+        seen: set[tuple[str, str]] = set()
+        for theme, weight in sorted(bounded_policy.items(), key=lambda item: float(item[1]), reverse=True):
+            if float(weight) < 0.6:
+                continue
+            category = self._theme_to_policy_category(theme)
+            policy = self._policy_for_category(category)
+            if not bool(policy.get("auto_spawn")):
+                continue
+            desired_count = int(policy.get("desired_count", 1) or 0)
+            adaptive_scale_out = 0
+            if float(weight) >= 0.85:
+                adaptive_scale_out = 2
+            elif float(weight) >= 0.65:
+                adaptive_scale_out = 1
+            effective_desired_count = desired_count + adaptive_scale_out
+            current_count = category_counts.get(category, 0)
+            if current_count >= effective_desired_count:
+                continue
+            template_name = str(policy.get("template") or "RSS_Base")
+            key = (category, template_name)
+            if key in seen:
+                continue
+            seen.add(key)
+            recommendations.append(
+                {
+                    "category": category,
+                    "template": template_name,
+                    "hardware_anchor": str(policy.get("hardware_anchor") or "cpu"),
+                    "desired_count": desired_count,
+                    "effective_desired_count": effective_desired_count,
+                    "current_count": current_count,
+                    "weight": round(float(weight), 6),
+                    "reason": f"evolution focus '{theme}' is elevated and category '{category}' is below its adaptive sensor count",
+                }
+            )
+        return recommendations
+
+    def guardian_status(self, *, evolution_plan: dict[str, Any] | None = None) -> dict[str, Any]:
+        sensors = sorted(self.plugins.values(), key=lambda item: item.name)
+        category_counts: dict[str, int] = {}
+        template_counts: dict[str, int] = {}
+        prune_candidates: list[dict[str, Any]] = []
+        spawn_recommendations: list[dict[str, Any]] = self._spawn_recommendations_from_plan(evolution_plan)
+        for spec in sensors:
+            category_counts[spec.category] = category_counts.get(spec.category, 0) + 1
+            template_counts[spec.template] = template_counts.get(spec.template, 0) + 1
+            policy = self._policy_for_category(spec.category)
+            total_attempts = spec.success_count + spec.failure_count
+            success_ratio = (float(spec.success_count) / float(total_attempts)) if total_attempts > 0 else 1.0
+            if spec.failure_count >= 3 and spec.success_count == 0:
+                prune_candidates.append({"name": spec.name, "reason": "repeated failures without successful output"})
+            elif total_attempts >= 3 and success_ratio < float(policy.get("min_success_ratio", 0.2)):
+                prune_candidates.append({"name": spec.name, "reason": "success ratio fell below the guardian policy threshold"})
+            elif spec.resource_pressure >= float(policy.get("max_resource_pressure", 0.85)) and spec.average_score <= float(policy.get("min_average_score", 0.3)) and spec.success_count >= 2:
+                prune_candidates.append({"name": spec.name, "reason": "high resource pressure with low score under the guardian policy"})
+        for template_name, definition in self.GALLERY_TEMPLATES.items():
+            category = str(definition.get("category") or "general").strip().lower()
+            if category_counts.get(category, 0) == 0 and not any(item.get("category") == category for item in spawn_recommendations):
+                spawn_recommendations.append(
+                    {
+                        "template": template_name,
+                        "category": category,
+                        "reason": f"no active sensor organell exists for category '{category}'",
+                        "hardware_anchor": str(definition.get("hardware_anchor") or "cpu"),
+                    }
+                )
+        return {
+            "sensor_count": len(sensors),
+            "categories": category_counts,
+            "templates": template_counts,
+            "guardian_policies": self.list_guardian_policies(),
+            "prune_candidates": prune_candidates,
+            "spawn_recommendations": spawn_recommendations,
+            "sensors": [self._spec_row(spec) for spec in sensors],
+        }
+
+    def guardian_prune(self, *, dry_run: bool = False) -> dict[str, Any]:
+        status = self.guardian_status()
+        candidates = [item["name"] for item in status["prune_candidates"] if isinstance(item, dict) and item.get("name")]
+        pruned: list[str] = []
+        if not dry_run:
+            for name in candidates:
+                with contextlib.suppress(KeyError):
+                    self.delete(name)
+                    pruned.append(name)
+            status = self.guardian_status()
+        return {
+            "dry_run": dry_run,
+            "candidates": candidates,
+            "pruned": pruned,
+            "remaining": status["sensor_count"],
+        }
+
+    def guardian_spawn_recommended(self, evolution_plan: dict[str, Any] | None = None, *, limit: int | None = None, dry_run: bool = False) -> dict[str, Any]:
+        recommendations = self._spawn_recommendations_from_plan(evolution_plan)
+        if limit is not None:
+            recommendations = recommendations[: max(0, int(limit))]
+        spawned: list[dict[str, Any]] = []
+        if not dry_run:
+            for item in recommendations:
+                with contextlib.suppress(Exception):
+                    spec = self.spawn_template(
+                        str(item["category"]),
+                        template=str(item["template"]),
+                        hardware_anchor=str(item.get("hardware_anchor") or "cpu"),
+                        lineage_parent="guardian.auto",
+                    )
+                    spawned.append(self._spec_row(spec))
+        return {
+            "dry_run": dry_run,
+            "recommendations": recommendations,
+            "spawned": spawned,
+        }
+
+    def proximity_routes(self, source_name: str, event_payload: dict[str, Any], *, limit: int = 4) -> list[dict[str, Any]]:
+        source = self.plugins.get(source_name)
+        if source is None:
+            raise KeyError(source_name)
+        source_vector = self._signature_vector(self._spec_signature_text(source))
+        event_vector = self._signature_vector(self._event_signature_text(event_payload))
+        routes: list[dict[str, Any]] = []
+        summary_text = str(event_payload.get("summary") or "").lower()
+        for target in self.plugins.values():
+            if target.name == source_name:
+                continue
+            target_vector = self._signature_vector(self._spec_signature_text(target))
+            spec_similarity = (self._cosine_similarity(source_vector, target_vector) + 1.0) / 2.0
+            event_similarity = (self._cosine_similarity(event_vector, target_vector) + 1.0) / 2.0
+            tag_overlap = len(set(source.tags).intersection(target.tags))
+            category_boost = 0.12 if target.category == source.category else 0.0
+            summary_boost = 0.08 if target.category and target.category in summary_text else 0.0
+            score = min(1.0, 0.55 * spec_similarity + 0.3 * event_similarity + 0.05 * tag_overlap + category_boost + summary_boost)
+            threshold = float(self._policy_for_category(target.category).get("proximity_threshold", 0.55))
+            if score < threshold:
+                continue
+            route_type = "diffuse"
+            if target.category == source.category:
+                route_type = "resonant"
+            elif target.hardware_anchor != source.hardware_anchor:
+                route_type = "cross-anchor"
+            routes.append(
+                {
+                    "target": target.name,
+                    "category": target.category,
+                    "template": target.template,
+                    "hardware_anchor": target.hardware_anchor,
+                    "score": round(score, 6),
+                    "route_type": route_type,
+                    "fold_signature": target.fold_signature,
+                }
+            )
+        routes.sort(key=lambda item: float(item["score"]), reverse=True)
+        return routes[: max(1, limit)]
 
     def _load_plugin_from_path(self, name: str, path: Path) -> Any:
         cache_key = str(path.resolve())
@@ -2222,10 +2744,12 @@ class NovaAtheriaRuntime:
         self.storage_root = (Path.home() / ".nova_shell_memory").resolve()
         self.storage_root.mkdir(parents=True, exist_ok=True)
         self.training_store_path = self.storage_root / "atheria_training.json"
+        self.evolution_state_path = self.storage_root / "atheria_evolution_state.json"
         self._module: Any = None
         self._core: Any = None
         self._embedding_model = "atheria-poincare-memory-v1"
         self._loaded_training: list[dict[str, Any]] = self._load_training_rows()
+        self._evolution_state = self._load_evolution_state()
 
     def _discover_source_dir(self) -> Path | None:
         candidates = [
@@ -2586,6 +3110,477 @@ class NovaAtheriaRuntime:
             rows.append((question, effective_category, chunk))
         return self.train_rows(rows)
 
+    def _default_evolution_state(self) -> dict[str, Any]:
+        return {
+            "active_policy": {
+                "edge_ai": 0.5,
+                "local_inference": 0.5,
+                "gpu_runtime": 0.5,
+                "datacenter_scale": 0.5,
+                "regulation_resilience": 0.5,
+                "research_depth": 0.5,
+                "sensor_density": 0.5,
+            },
+            "components": {
+                "architectural_stability": 0.72,
+                "execution_success": 0.66,
+                "market_alignment": 0.5,
+                "operator_feedback": 0.62,
+            },
+            "reproduction_quality": 0.625,
+            "bounds": {
+                "policy_min": 0.15,
+                "policy_max": 0.95,
+                "max_policy_step": 0.18,
+            },
+            "last_plan": {},
+            "last_applied_at": 0.0,
+            "last_source_summary": "",
+            "history": [],
+        }
+
+    def _clamp_unit(self, value: Any, *, lower: float = 0.0, upper: float = 1.0) -> float:
+        with contextlib.suppress(Exception):
+            return max(lower, min(upper, float(value)))
+        return max(lower, min(upper, 0.0))
+
+    def _normalize_evolution_state(self, payload: Any) -> dict[str, Any]:
+        state = self._default_evolution_state()
+        if not isinstance(payload, dict):
+            return state
+        active_policy = payload.get("active_policy")
+        if isinstance(active_policy, dict):
+            for key in state["active_policy"]:
+                state["active_policy"][key] = self._clamp_unit(active_policy.get(key, state["active_policy"][key]))
+        components = payload.get("components")
+        if isinstance(components, dict):
+            for key in state["components"]:
+                state["components"][key] = self._clamp_unit(components.get(key, state["components"][key]))
+        bounds = payload.get("bounds")
+        if isinstance(bounds, dict):
+            state["bounds"]["policy_min"] = self._clamp_unit(bounds.get("policy_min", state["bounds"]["policy_min"]))
+            state["bounds"]["policy_max"] = self._clamp_unit(bounds.get("policy_max", state["bounds"]["policy_max"]))
+            state["bounds"]["max_policy_step"] = self._clamp_unit(bounds.get("max_policy_step", state["bounds"]["max_policy_step"]), lower=0.01, upper=0.5)
+        state["reproduction_quality"] = self._clamp_unit(payload.get("reproduction_quality", state["reproduction_quality"]))
+        state["last_plan"] = payload.get("last_plan") if isinstance(payload.get("last_plan"), dict) else {}
+        with contextlib.suppress(Exception):
+            state["last_applied_at"] = float(payload.get("last_applied_at") or 0.0)
+        state["last_source_summary"] = str(payload.get("last_source_summary") or "")
+        history = payload.get("history")
+        if isinstance(history, list):
+            state["history"] = [item for item in history if isinstance(item, dict)][-20:]
+        return state
+
+    def _load_evolution_state(self) -> dict[str, Any]:
+        if not self.evolution_state_path.exists():
+            return self._default_evolution_state()
+        try:
+            payload = json.loads(self.evolution_state_path.read_text(encoding="utf-8"))
+        except Exception:
+            return self._default_evolution_state()
+        return self._normalize_evolution_state(payload)
+
+    def _save_evolution_state(self) -> None:
+        self.evolution_state_path.write_text(
+            json.dumps(self._evolution_state, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+
+    def _html_to_text(self, raw: str) -> str:
+        text = re.sub(r"<script\b[^>]*>.*?</script>", " ", raw, flags=re.IGNORECASE | re.DOTALL)
+        text = re.sub(r"<style\b[^>]*>.*?</style>", " ", text, flags=re.IGNORECASE | re.DOTALL)
+        text = re.sub(r"<[^>]+>", " ", text)
+        return html.unescape(re.sub(r"\s+", " ", text)).strip()
+
+    def _parse_text_trend_report(self, raw: str) -> dict[str, Any]:
+        text = raw.strip()
+        if "<html" in text.lower():
+            text = self._html_to_text(text)
+        direction_match = re.search(r"Direction:\s*([A-Za-z0-9_\-]+)", text, flags=re.IGNORECASE)
+        forecast_match = re.search(r"Forecast score:\s*([0-9.]+)", text, flags=re.IGNORECASE)
+        confidence_match = re.search(r"Confidence:\s*([0-9.]+)", text, flags=re.IGNORECASE)
+        summary_match = re.search(r"Summary:\s*(.+)", text, flags=re.IGNORECASE)
+        titles: list[str] = []
+        for line in raw.splitlines():
+            stripped = line.strip()
+            if stripped.startswith("- "):
+                titles.append(stripped[2:].split(" | ")[0].strip())
+        return {
+            "kind": "text_report",
+            "direction": (direction_match.group(1) if direction_match else "stable_watch").strip(),
+            "forecast_score": self._clamp_unit(forecast_match.group(1) if forecast_match else 0.5),
+            "confidence": self._clamp_unit(confidence_match.group(1) if confidence_match else 0.1),
+            "item_count": len(titles),
+            "summary": (summary_match.group(1).strip() if summary_match else text[:400]),
+            "titles": titles,
+            "corpus": " ".join([text, *titles]).strip(),
+            "features": {},
+        }
+
+    def _normalize_trend_report(self, source: Any) -> dict[str, Any]:
+        if isinstance(source, str):
+            stripped = source.strip()
+            if not stripped:
+                return self._parse_text_trend_report("")
+            with contextlib.suppress(Exception):
+                parsed = json.loads(stripped)
+                return self._normalize_trend_report(parsed)
+            return self._parse_text_trend_report(stripped)
+
+        if isinstance(source, list):
+            items = [item for item in source if isinstance(item, dict)]
+            titles = [str(item.get("title") or "").strip() for item in items if str(item.get("title") or "").strip()]
+            summaries = [str(item.get("summary") or "").strip() for item in items if str(item.get("summary") or "").strip()]
+            corpus = " ".join([*titles, *summaries]).strip()
+            return {
+                "kind": "items",
+                "direction": "stable_watch",
+                "forecast_score": 0.5,
+                "confidence": 0.1,
+                "item_count": len(items),
+                "summary": summaries[0] if summaries else corpus[:280],
+                "titles": titles,
+                "corpus": corpus,
+                "features": {},
+            }
+
+        if not isinstance(source, dict):
+            return self._parse_text_trend_report(str(source))
+
+        metadata = source.get("metadata") if isinstance(source.get("metadata"), dict) else {}
+        features = source.get("features") if isinstance(source.get("features"), dict) else {}
+        items = metadata.get("items") if isinstance(metadata.get("items"), list) else source.get("items")
+        if not isinstance(items, list):
+            items = []
+        normalized_items = [item for item in items if isinstance(item, dict)]
+        titles = [str(item.get("title") or "").strip() for item in normalized_items if str(item.get("title") or "").strip()]
+        summaries = [str(item.get("summary") or "").strip() for item in normalized_items if str(item.get("summary") or "").strip()]
+        summary = str(source.get("summary") or metadata.get("summary") or "").strip()
+        if not summary and summaries:
+            summary = summaries[0]
+        direction = str(
+            source.get("direction")
+            or metadata.get("forecast_direction")
+            or metadata.get("direction")
+            or "stable_watch"
+        ).strip() or "stable_watch"
+        forecast_score = self._clamp_unit(
+            source.get("forecast_score")
+            or metadata.get("forecast_score")
+            or source.get("score")
+            or 0.5
+        )
+        confidence = self._clamp_unit(metadata.get("confidence") or source.get("confidence") or 0.1)
+        item_count = 0
+        with contextlib.suppress(Exception):
+            item_count = int(metadata.get("item_count") or source.get("item_count") or len(normalized_items))
+        corpus_parts = [summary, *titles, *summaries]
+        resonance = source.get("resonance") if isinstance(source.get("resonance"), dict) else {}
+        for hit_group in [resonance.get("atheria_hits"), resonance.get("memory_hits")]:
+            if isinstance(hit_group, list):
+                for item in hit_group[:4]:
+                    if isinstance(item, dict):
+                        corpus_parts.append(str(item.get("question") or ""))
+                        corpus_parts.append(str(item.get("answer") or ""))
+                        corpus_parts.append(str(item.get("category") or ""))
+        return {
+            "kind": "sensor_event",
+            "direction": direction,
+            "forecast_score": forecast_score,
+            "confidence": confidence,
+            "item_count": item_count,
+            "summary": summary,
+            "titles": titles,
+            "corpus": " ".join(part for part in corpus_parts if part).strip(),
+            "features": {str(key): self._clamp_unit(value) for key, value in features.items()},
+        }
+
+    def _theme_hits(self, corpus: str) -> dict[str, float]:
+        lowered = corpus.lower()
+        keyword_map = {
+            "edge_ai": [
+                "edge ai",
+                "edge inference",
+                "on-device",
+                "on device",
+                "embedded",
+                "edge deployment",
+                "tinyml",
+                "mobile inference",
+            ],
+            "local_inference": [
+                "local model",
+                "local inference",
+                "offline ai",
+                "private ai",
+                "desktop inference",
+                "lm studio",
+                "ollama",
+                "client-side",
+            ],
+            "gpu_runtime": [
+                "gpu",
+                "cuda",
+                "accelerator",
+                "chip",
+                "nvidia",
+                "latency",
+                "inference runtime",
+                "training cluster",
+            ],
+            "datacenter_scale": [
+                "data center",
+                "datacenter",
+                "power",
+                "cooling",
+                "grid",
+                "land",
+                "hyperscale",
+                "cloud region",
+                "cluster",
+            ],
+            "regulation_resilience": [
+                "regulation",
+                "compliance",
+                "export control",
+                "supply chain",
+                "risk",
+                "policy",
+                "defense",
+                "pentagon",
+                "government",
+                "security",
+            ],
+            "research_depth": [
+                "research",
+                "paper",
+                "benchmark",
+                "planner",
+                "agent runtime",
+                "workflow",
+                "orchestration",
+                "evaluation",
+                "reasoning",
+            ],
+        }
+        hits: dict[str, float] = {}
+        for theme, keywords in keyword_map.items():
+            total = 0.0
+            for keyword in keywords:
+                total += float(lowered.count(keyword))
+            hits[theme] = total
+        token_count = max(1, len(self._tokenize(corpus)))
+        hits["sensor_density"] = min(1.0, token_count / 180.0)
+        return hits
+
+    def _direction_factor(self, direction: str) -> float:
+        lowered = direction.lower()
+        if any(token in lowered for token in ["uptrend", "breakout", "surge", "heating", "expansion"]):
+            return 1.0
+        if any(token in lowered for token in ["watch", "warming", "monitor", "baseline"]):
+            return 0.65
+        if any(token in lowered for token in ["downtrend", "cool", "decline"]):
+            return 0.3
+        return 0.55
+
+    def _build_evolution_plan(self, trend_report: Any, *, source_label: str = "", persist: bool) -> dict[str, Any]:
+        report = self._normalize_trend_report(trend_report)
+        state = self._evolution_state
+        current_policy = dict(state["active_policy"])
+        features = report.get("features") if isinstance(report.get("features"), dict) else {}
+        signal_strength = self._clamp_unit(features.get("signal_strength", report["forecast_score"]))
+        resource_pressure = self._clamp_unit(features.get("resource_pressure", report["forecast_score"]))
+        entropic_index = self._clamp_unit(features.get("entropic_index", 0.2))
+        anomaly_score = self._clamp_unit(features.get("anomaly_score", 0.15))
+        queue_depth = self._clamp_unit(features.get("queue_depth", min(1.0, float(report["item_count"]) / 20.0)))
+        direction_factor = self._direction_factor(report["direction"])
+        trend_heat = self._clamp_unit(
+            0.34 * report["forecast_score"]
+            + 0.21 * report["confidence"]
+            + 0.18 * signal_strength
+            + 0.15 * resource_pressure
+            + 0.12 * direction_factor
+        )
+        theme_hits = self._theme_hits(str(report.get("corpus") or report.get("summary") or ""))
+        item_scale = self._clamp_unit(float(report["item_count"]) / 12.0)
+        proposed_policy: dict[str, float] = {}
+        rationales: list[str] = []
+        theme_labels = {
+            "edge_ai": "edge and on-device deployment",
+            "local_inference": "local and private inference",
+            "gpu_runtime": "GPU/runtime execution pressure",
+            "datacenter_scale": "data-center and infrastructure scale",
+            "regulation_resilience": "regulation and supply-chain resilience",
+            "research_depth": "research and orchestration depth",
+            "sensor_density": "sensor and monitoring density",
+        }
+        for theme, current_value in current_policy.items():
+            raw_hit = float(theme_hits.get(theme, 0.0))
+            if theme == "sensor_density":
+                theme_intensity = self._clamp_unit(0.45 * item_scale + 0.55 * raw_hit)
+            else:
+                theme_intensity = self._clamp_unit((raw_hit / max(2.0, float(report["item_count"]) or 2.0)) + 0.12 * item_scale)
+            base_target = self._clamp_unit(0.26 + 0.42 * trend_heat + 0.32 * theme_intensity)
+            if theme in {"gpu_runtime", "datacenter_scale"}:
+                base_target = self._clamp_unit(base_target + 0.12 * resource_pressure)
+            if theme in {"regulation_resilience"}:
+                base_target = self._clamp_unit(base_target + 0.08 * entropic_index)
+            if theme in {"edge_ai", "local_inference"}:
+                base_target = self._clamp_unit(base_target + 0.06 * signal_strength)
+            proposed_policy[theme] = base_target
+        bounds = state["bounds"]
+        bounded_policy: dict[str, float] = {}
+        policy_diff: dict[str, float] = {}
+        max_step = float(bounds["max_policy_step"])
+        for theme, target in proposed_policy.items():
+            current_value = float(current_policy[theme])
+            delta = max(-max_step, min(max_step, target - current_value))
+            bounded_value = self._clamp_unit(current_value + delta, lower=float(bounds["policy_min"]), upper=float(bounds["policy_max"]))
+            bounded_policy[theme] = round(bounded_value, 6)
+            policy_diff[theme] = round(bounded_value - current_value, 6)
+        sorted_focus = sorted(bounded_policy.items(), key=lambda item: item[1], reverse=True)
+        for theme, value in sorted_focus[:3]:
+            if value >= 0.58:
+                rationales.append(f"Increase {theme_labels.get(theme, theme)} because the trend report clusters signals around this axis.")
+        if not rationales:
+            rationales.append("Keep the policy conservative because the trend signal is present but not yet strong enough for aggressive adaptation.")
+        architectural_stability = self._clamp_unit(0.78 - 0.16 * max(0.0, trend_heat - 0.6) - 0.08 * anomaly_score + 0.06 * report["confidence"])
+        execution_success = self._clamp_unit(0.58 + 0.18 * report["confidence"] + 0.14 * (1.0 - anomaly_score) + 0.1 * (1.0 - entropic_index))
+        market_alignment = self._clamp_unit(0.32 + 0.44 * trend_heat + 0.24 * (sum(bounded_policy.values()) / max(1.0, float(len(bounded_policy)))))
+        operator_feedback = self._clamp_unit(state["components"].get("operator_feedback", 0.62))
+        reproduction_quality = self._clamp_unit(
+            0.4 * architectural_stability
+            + 0.3 * execution_success
+            + 0.2 * market_alignment
+            + 0.1 * operator_feedback
+        )
+        gating = {
+            "safe_to_apply": bool(report["confidence"] >= 0.2 and report["item_count"] >= 2),
+            "requires_review": bool(report["confidence"] < 0.35 or max(abs(value) for value in policy_diff.values()) >= max_step * 0.95),
+            "reason": "",
+        }
+        if not gating["safe_to_apply"]:
+            gating["reason"] = "signal confidence is too low or the trend sample is too small"
+        elif gating["requires_review"]:
+            gating["reason"] = "apply is allowed but human review is recommended because the policy shift is near the configured boundary"
+        else:
+            gating["reason"] = "signal quality is sufficient for bounded adaptation"
+        plan = {
+            "kind": "atheria_evolution_plan",
+            "generated_at": time.time(),
+            "source": {
+                "label": source_label or report["kind"],
+                "kind": report["kind"],
+                "direction": report["direction"],
+                "summary": report["summary"],
+                "item_count": report["item_count"],
+            },
+            "signals": {
+                "forecast_score": round(float(report["forecast_score"]), 6),
+                "confidence": round(float(report["confidence"]), 6),
+                "direction_factor": round(direction_factor, 6),
+                "trend_heat": round(trend_heat, 6),
+                "signal_strength": round(signal_strength, 6),
+                "resource_pressure": round(resource_pressure, 6),
+                "entropic_index": round(entropic_index, 6),
+                "queue_depth": round(queue_depth, 6),
+                "anomaly_score": round(anomaly_score, 6),
+            },
+            "policy": {key: round(value, 6) for key, value in proposed_policy.items()},
+            "bounded_policy": bounded_policy,
+            "policy_diff": policy_diff,
+            "focus": [theme for theme, _value in sorted_focus[:3]],
+            "proposed_state": {
+                "components": {
+                    "architectural_stability": round(architectural_stability, 6),
+                    "execution_success": round(execution_success, 6),
+                    "market_alignment": round(market_alignment, 6),
+                    "operator_feedback": round(operator_feedback, 6),
+                },
+                "reproduction_quality": round(reproduction_quality, 6),
+            },
+            "bounds": dict(bounds),
+            "gating": gating,
+            "rationale": rationales,
+        }
+        if persist:
+            self._evolution_state["last_plan"] = plan
+            self._save_evolution_state()
+        return plan
+
+    def evolution_status(self) -> dict[str, Any]:
+        state = self._normalize_evolution_state(self._evolution_state)
+        focus = sorted(state["active_policy"].items(), key=lambda item: item[1], reverse=True)
+        return {
+            "active_policy": state["active_policy"],
+            "focus": [theme for theme, _value in focus[:3]],
+            "components": state["components"],
+            "reproduction_quality": state["reproduction_quality"],
+            "bounds": state["bounds"],
+            "last_plan": state["last_plan"],
+            "last_applied_at": state["last_applied_at"],
+            "last_source_summary": state["last_source_summary"],
+            "history": state["history"][-8:],
+        }
+
+    def plan_evolution(self, trend_report: Any, *, source_label: str = "") -> dict[str, Any]:
+        return self._build_evolution_plan(trend_report, source_label=source_label, persist=True)
+
+    def simulate_evolution(self, trend_report: Any, *, source_label: str = "") -> dict[str, Any]:
+        plan = self._build_evolution_plan(trend_report, source_label=source_label, persist=False)
+        status = self.evolution_status()
+        return {
+            "mode": "simulate",
+            "current_state": {
+                "active_policy": status["active_policy"],
+                "reproduction_quality": status["reproduction_quality"],
+                "components": status["components"],
+            },
+            "plan": plan,
+            "projected_state": {
+                "active_policy": plan["bounded_policy"],
+                "reproduction_quality": plan["proposed_state"]["reproduction_quality"],
+                "components": plan["proposed_state"]["components"],
+            },
+        }
+
+    def apply_evolution(self, plan_or_report: Any, *, source_label: str = "", reason: str = "", force: bool = False) -> dict[str, Any]:
+        if isinstance(plan_or_report, dict) and plan_or_report.get("kind") == "atheria_evolution_plan":
+            plan = copy.deepcopy(plan_or_report)
+        else:
+            plan = self._build_evolution_plan(plan_or_report, source_label=source_label, persist=False)
+        gating = plan.get("gating") if isinstance(plan.get("gating"), dict) else {}
+        if not force and not bool(gating.get("safe_to_apply")):
+            raise ValueError(f"evolution plan blocked: {gating.get('reason') or 'unsafe to apply'} (use --force to override)")
+        self._evolution_state["active_policy"] = {key: float(value) for key, value in plan["bounded_policy"].items()}
+        self._evolution_state["components"] = {
+            key: float(value)
+            for key, value in plan["proposed_state"]["components"].items()
+        }
+        self._evolution_state["reproduction_quality"] = float(plan["proposed_state"]["reproduction_quality"])
+        self._evolution_state["last_plan"] = plan
+        self._evolution_state["last_applied_at"] = time.time()
+        self._evolution_state["last_source_summary"] = str(plan["source"].get("summary") or "")
+        self._evolution_state["history"].append(
+            {
+                "applied_at": self._evolution_state["last_applied_at"],
+                "source": dict(plan["source"]),
+                "focus": list(plan.get("focus") or []),
+                "reproduction_quality": self._evolution_state["reproduction_quality"],
+                "reason": reason.strip(),
+                "forced": bool(force),
+            }
+        )
+        self._evolution_state["history"] = self._evolution_state["history"][-20:]
+        self._save_evolution_state()
+        return {
+            "mode": "apply",
+            "applied_at": self._evolution_state["last_applied_at"],
+            "forced": bool(force),
+            "reason": reason.strip(),
+            "state": self.evolution_status(),
+        }
+
     def status_payload(self) -> dict[str, Any]:
         payload: dict[str, Any] = {
             "available": self.is_available(),
@@ -2596,6 +3591,11 @@ class NovaAtheriaRuntime:
             "memory_embedding_space": "poincare",
             "memory_embedding_dims": self._poincare_dims(),
             "memory_retrieval_mode": "poincare_hyperbolic",
+            "evolution": {
+                "reproduction_quality": self._evolution_state.get("reproduction_quality"),
+                "focus": [theme for theme, _value in sorted(self._evolution_state.get("active_policy", {}).items(), key=lambda item: item[1], reverse=True)[:3]],
+                "last_applied_at": self._evolution_state.get("last_applied_at", 0.0),
+            },
         }
         if self._core is not None:
             with contextlib.suppress(Exception):
@@ -3973,11 +4973,46 @@ class NovaShell:
             return str(value)
         return self._shell_literal(value)
 
+    def _repair_json_like_object_text(self, text: str) -> str | None:
+        candidate = text.strip()
+        if not (candidate.startswith("{") and candidate.endswith("}")):
+            return None
+
+        repaired = re.sub(
+            r'([{,]\s*)([A-Za-z_][A-Za-z0-9_\-]*)(\s*:)',
+            lambda match: f'{match.group(1)}"{match.group(2)}"{match.group(3)}',
+            candidate,
+        )
+
+        def _quote_bare_value(match: re.Match[str]) -> str:
+            prefix, raw_value, suffix = match.groups()
+            value = raw_value.strip()
+            if not value:
+                return match.group(0)
+            if value[0] in {'"', "{", "["}:
+                return match.group(0)
+            lowered = value.lower()
+            if lowered in {"true", "false", "null"}:
+                return f"{prefix}{lowered}{suffix}"
+            if re.fullmatch(r"-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?", value):
+                return f"{prefix}{value}{suffix}"
+            return f'{prefix}"{value}"{suffix}'
+
+        repaired = re.sub(r'(:\s*)([^,\{\}\[\]]+?)(\s*[,}])', _quote_bare_value, repaired)
+        return repaired
+
     def _parse_json_object_arg(self, text: str, *, field_name: str) -> tuple[dict[str, Any] | None, CommandResult | None]:
         try:
             value = json.loads(text)
         except Exception as exc:
-            return None, CommandResult(output="", error=f"invalid {field_name} json: {exc}")
+            repaired = self._repair_json_like_object_text(text)
+            if repaired is not None:
+                try:
+                    value = json.loads(repaired)
+                except Exception:
+                    return None, CommandResult(output="", error=f"invalid {field_name} json: {exc}")
+            else:
+                return None, CommandResult(output="", error=f"invalid {field_name} json: {exc}")
         if not isinstance(value, dict):
             return None, CommandResult(output="", error=f"{field_name} must be a json object")
         return value, None
@@ -4425,6 +5460,118 @@ class NovaShell:
                 return yaml.safe_load(text)
             except Exception as exc:
                 raise ValueError(f"invalid structured payload: {exc}") from exc
+
+    def _load_mixed_payload_from_path(self, path: Path) -> Any:
+        text = path.read_text(encoding="utf-8", errors="replace")
+        with contextlib.suppress(Exception):
+            return self._load_structured_payload(text)
+        return text
+
+    def _parse_atheria_evolve_request(
+        self,
+        parts: list[str],
+        *,
+        start_index: int,
+        pipeline_input: str,
+        pipeline_data: Any,
+    ) -> tuple[Any, str, dict[str, Any] | None, bool, str, CommandResult | None]:
+        source: Any = pipeline_data
+        source_label = "pipeline"
+        explicit_source = False
+        plan_payload: dict[str, Any] | None = None
+        force = False
+        reason = ""
+        i = start_index
+        while i < len(parts):
+            token = parts[i]
+            if token == "--input" and i + 1 < len(parts):
+                explicit_source = True
+                source_label = "inline"
+                source_text = parts[i + 1]
+                with contextlib.suppress(Exception):
+                    source = self._load_structured_payload(source_text)
+                if source is pipeline_data:
+                    source = source_text
+                i += 2
+                continue
+            if token == "--file" and i + 1 < len(parts):
+                explicit_source = True
+                candidate = self._resolve_path(parts[i + 1])
+                if not candidate.exists() or not candidate.is_file():
+                    return None, "", None, False, "", CommandResult(output="", error=f"evolution source file not found: {parts[i + 1]}")
+                source = self._load_mixed_payload_from_path(candidate)
+                source_label = str(candidate)
+                i += 2
+                continue
+            if token == "--memory" and i + 1 < len(parts):
+                explicit_source = True
+                entry = self.memory.get_entry(parts[i + 1])
+                if entry is None:
+                    return None, "", None, False, "", CommandResult(output="", error=f"memory entry not found: {parts[i + 1]}")
+                source = entry.text
+                source_label = f"memory:{entry.entry_id}"
+                source_file = str(entry.metadata.get("source_file") or "").strip()
+                if source_file:
+                    candidate = Path(source_file)
+                    if candidate.exists() and candidate.is_file():
+                        source = self._load_mixed_payload_from_path(candidate)
+                        source_label = str(candidate)
+                i += 2
+                continue
+            if token == "--flow" and i + 1 < len(parts):
+                explicit_source = True
+                key = parts[i + 1]
+                raw_value = self.flow_state.get(key)
+                if raw_value is None:
+                    return None, "", None, False, "", CommandResult(output="", error=f"flow state not found: {key}")
+                with contextlib.suppress(Exception):
+                    source = json.loads(raw_value)
+                if source is pipeline_data:
+                    source = raw_value
+                source_label = f"flow:{key}"
+                i += 2
+                continue
+            if token == "--plan-json" and i + 1 < len(parts):
+                parsed_plan, error = self._parse_json_object_arg(parts[i + 1], field_name="evolution plan")
+                if error is not None:
+                    return None, "", None, False, "", error
+                plan_payload = parsed_plan
+                i += 2
+                continue
+            if token == "--plan-file" and i + 1 < len(parts):
+                candidate = self._resolve_path(parts[i + 1])
+                if not candidate.exists() or not candidate.is_file():
+                    return None, "", None, False, "", CommandResult(output="", error=f"evolution plan file not found: {parts[i + 1]}")
+                parsed_plan, error = self._parse_json_object_arg(candidate.read_text(encoding="utf-8"), field_name="evolution plan")
+                if error is not None:
+                    return None, "", None, False, "", error
+                plan_payload = parsed_plan
+                i += 2
+                continue
+            if token == "--force":
+                force = True
+                i += 1
+                continue
+            if token == "--dry-run":
+                i += 1
+                continue
+            if token == "--limit" and i + 1 < len(parts):
+                i += 2
+                continue
+            if token == "--reason" and i + 1 < len(parts):
+                reason = parts[i + 1]
+                i += 2
+                continue
+            return None, "", None, False, "", CommandResult(output="", error=f"unknown atheria evolve option: {token}")
+        if plan_payload is None and not explicit_source:
+            if source is None and pipeline_input.strip():
+                with contextlib.suppress(Exception):
+                    source = self._load_structured_payload(pipeline_input)
+                if source is None:
+                    source = pipeline_input.strip()
+            if source is None:
+                source = pipeline_input.strip()
+        return source, source_label, plan_payload, force, reason, None
 
     def _deep_merge_payload(self, base: Any, patch: Any) -> Any:
         if isinstance(base, dict) and isinstance(patch, dict):
@@ -5132,7 +6279,7 @@ class NovaShell:
     def _run_atheria(self, args: str, pipeline_input: str, pipeline_data: Any) -> CommandResult:
         parts = split_command(args)
         if not parts:
-            return CommandResult(output="", error="usage: atheria status|init|sensor|train|search|chat ...")
+            return CommandResult(output="", error="usage: atheria status|init|sensor|guardian|train|search|chat|evolve ...")
 
         action = parts[0]
 
@@ -5150,10 +6297,53 @@ class NovaShell:
             payload = self.atheria.status_payload()
             return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
 
+        if action == "evolve":
+            if len(parts) < 2:
+                return CommandResult(output="", error="usage: atheria evolve status|plan|simulate|apply ...")
+            evolve_action = parts[1]
+            if evolve_action == "status":
+                payload = self.atheria.evolution_status()
+                return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+            if evolve_action in {"plan", "simulate", "apply"}:
+                source, source_label, plan_payload, force, reason, parse_error = self._parse_atheria_evolve_request(
+                    parts,
+                    start_index=2,
+                    pipeline_input=pipeline_input,
+                    pipeline_data=pipeline_data,
+                )
+                if parse_error is not None:
+                    return parse_error
+                try:
+                    if evolve_action == "plan":
+                        if source is None or (isinstance(source, str) and not source.strip()):
+                            return CommandResult(output="", error="usage: atheria evolve plan [--input json|text] [--file report.txt|json] [--memory id] [--flow key]")
+                        payload = self.atheria.plan_evolution(source, source_label=source_label)
+                    elif evolve_action == "simulate":
+                        if source is None or (isinstance(source, str) and not source.strip()):
+                            return CommandResult(output="", error="usage: atheria evolve simulate [--input json|text] [--file report.txt|json] [--memory id] [--flow key]")
+                        payload = self.atheria.simulate_evolution(source, source_label=source_label)
+                    else:
+                        if plan_payload is not None:
+                            payload = self.atheria.apply_evolution(plan_payload, source_label=source_label, reason=reason, force=force)
+                        elif source is not None and (not isinstance(source, str) or source.strip()):
+                            payload = self.atheria.apply_evolution(source, source_label=source_label, reason=reason, force=force)
+                        else:
+                            last_plan = self.atheria.evolution_status().get("last_plan") or {}
+                            if not isinstance(last_plan, dict) or not last_plan:
+                                return CommandResult(output="", error="usage: atheria evolve apply [--plan-json json|--plan-file file|--input json|text|--file report] [--force] [--reason text]")
+                            payload = self.atheria.apply_evolution(last_plan, source_label="last_plan", reason=reason, force=force)
+                except Exception as exc:
+                    return CommandResult(output="", error=str(exc))
+                return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+            return CommandResult(output="", error="usage: atheria evolve status|plan|simulate|apply ...")
+
         if action == "sensor":
             if len(parts) < 2:
-                return CommandResult(output="", error="usage: atheria sensor load|map|list|show|run ...")
+                return CommandResult(output="", error="usage: atheria sensor gallery|spawn|load|map|list|show|run ...")
             sensor_action = parts[1]
+            if sensor_action == "gallery":
+                payload = self.atheria_sensors.gallery()
+                return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
             if sensor_action == "list":
                 payload = self.atheria_sensors.list_plugins()
                 return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
@@ -5164,12 +6354,75 @@ class NovaShell:
                 if spec is None:
                     return CommandResult(output="", error="atheria sensor not found")
                 return CommandResult(output=json.dumps(spec, ensure_ascii=False) + "\n", data=spec, data_type=PipelineType.OBJECT)
+            if sensor_action == "spawn":
+                if len(parts) < 3:
+                    return CommandResult(output="", error="usage: atheria sensor spawn <category> --template <name> [--name name] [--anchor cpu|gpu] [--from sensor]")
+                category = parts[2]
+                template_name = ""
+                sensor_name = ""
+                hardware_anchor = ""
+                lineage_parent = ""
+                mapping: dict[str, str] = {}
+                i = 3
+                while i < len(parts):
+                    token = parts[i]
+                    if token == "--template" and i + 1 < len(parts):
+                        template_name = parts[i + 1]
+                        i += 2
+                        continue
+                    if token == "--name" and i + 1 < len(parts):
+                        sensor_name = parts[i + 1]
+                        i += 2
+                        continue
+                    if token == "--anchor" and i + 1 < len(parts):
+                        hardware_anchor = parts[i + 1]
+                        i += 2
+                        continue
+                    if token == "--from" and i + 1 < len(parts):
+                        lineage_parent = parts[i + 1]
+                        i += 2
+                        continue
+                    if token == "--mapping" and i + 1 < len(parts):
+                        mapping_source = parts[i + 1]
+                        candidate = self._resolve_path(mapping_source)
+                        try:
+                            loaded = self._load_structured_payload(candidate.read_text(encoding="utf-8")) if candidate.exists() else self._load_structured_payload(mapping_source)
+                        except Exception as exc:
+                            return CommandResult(output="", error=f"invalid sensor mapping: {exc}")
+                        if not isinstance(loaded, dict):
+                            return CommandResult(output="", error="sensor mapping must be an object")
+                        mapping = {str(key): str(value) for key, value in loaded.items()}
+                        i += 2
+                        continue
+                    return CommandResult(output="", error=f"unknown sensor spawn option: {token}")
+                if not template_name:
+                    return CommandResult(output="", error="usage: atheria sensor spawn <category> --template <name> [--name name] [--anchor cpu|gpu] [--from sensor]")
+                try:
+                    spec = self.atheria_sensors.spawn_template(
+                        category,
+                        template=template_name,
+                        name=sensor_name or None,
+                        hardware_anchor=hardware_anchor or None,
+                        lineage_parent=lineage_parent or None,
+                        mapping=mapping or None,
+                    )
+                except KeyError:
+                    return CommandResult(output="", error="sensor template not found")
+                except Exception as exc:
+                    return CommandResult(output="", error=str(exc))
+                payload = self.atheria_sensors._spec_row(spec)
+                return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
             if sensor_action == "load":
                 if len(parts) < 3:
-                    return CommandResult(output="", error="usage: atheria sensor load <file.py> [--name name] [--mapping json|file]")
+                    return CommandResult(output="", error="usage: atheria sensor load <file.py> [--name name] [--mapping json|file] [--category name] [--template name] [--anchor cpu|gpu] [--tags csv]")
                 path = self._resolve_path(parts[2])
                 name = ""
                 mapping: dict[str, str] = {}
+                category = ""
+                template_name = ""
+                hardware_anchor = ""
+                tags: list[str] = []
+                lineage_parent = ""
                 i = 3
                 while i < len(parts):
                     token = parts[i]
@@ -5189,17 +6442,41 @@ class NovaShell:
                         mapping = {str(key): str(value) for key, value in loaded.items()}
                         i += 2
                         continue
+                    if token == "--category" and i + 1 < len(parts):
+                        category = parts[i + 1]
+                        i += 2
+                        continue
+                    if token == "--template" and i + 1 < len(parts):
+                        template_name = parts[i + 1]
+                        i += 2
+                        continue
+                    if token == "--anchor" and i + 1 < len(parts):
+                        hardware_anchor = parts[i + 1]
+                        i += 2
+                        continue
+                    if token == "--tags" and i + 1 < len(parts):
+                        tags = [item.strip() for item in parts[i + 1].split(",") if item.strip()]
+                        i += 2
+                        continue
+                    if token == "--from" and i + 1 < len(parts):
+                        lineage_parent = parts[i + 1]
+                        i += 2
+                        continue
                     i += 1
                 try:
-                    spec = self.atheria_sensors.register(path, name=name or None, mapping=mapping or None)
+                    spec = self.atheria_sensors.register(
+                        path,
+                        name=name or None,
+                        mapping=mapping or None,
+                        category=category or None,
+                        template=template_name or None,
+                        hardware_anchor=hardware_anchor or None,
+                        tags=tags or None,
+                        lineage_parent=lineage_parent or None,
+                    )
                 except Exception as exc:
                     return CommandResult(output="", error=str(exc))
-                payload = {
-                    "name": spec.name,
-                    "path": spec.path,
-                    "mapping": spec.mapping,
-                    "description": spec.description,
-                }
+                payload = self.atheria_sensors._spec_row(spec)
                 return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
             if sensor_action == "map":
                 if len(parts) < 4:
@@ -5217,7 +6494,7 @@ class NovaShell:
                     spec = self.atheria_sensors.set_mapping(name, {str(key): str(value) for key, value in loaded.items()})
                 except KeyError:
                     return CommandResult(output="", error="atheria sensor not found")
-                payload = {"name": spec.name, "mapping": spec.mapping}
+                payload = self.atheria_sensors._spec_row(spec)
                 return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
             if sensor_action == "run":
                 if len(parts) < 3:
@@ -5294,6 +6571,26 @@ class NovaShell:
                     "top_source": "atheria" if top_atheria >= top_memory else "memory",
                     "top_category": str(atheria_hits[0]["category"]) if atheria_hits else "",
                 }
+                with contextlib.suppress(Exception):
+                    routes = self.atheria_sensors.proximity_routes(name, event_payload)
+                    event_payload["proximity_routes"] = routes
+                    if routes:
+                        route_payload = {
+                            "source_sensor": name,
+                            "event_id": event_payload["event_id"],
+                            "routes": routes,
+                            "summary": event_payload.get("summary", ""),
+                        }
+                        self.flow_state.set("atheria.last_proximity_routes", json.dumps(route_payload, ensure_ascii=False))
+                        self._publish_event("atheria.sensor.proximity", json.dumps(route_payload, ensure_ascii=False), broadcast=False)
+                with contextlib.suppress(Exception):
+                    self.atheria_sensors.record_run_result(
+                        name,
+                        success=True,
+                        score=float(event_payload["score"]),
+                        resource_pressure=float(event_payload.get("features", {}).get("resource_pressure", 0.0) or 0.0),
+                        summary=str(event_payload.get("summary") or ""),
+                    )
                 if train:
                     text = event_payload["summary"] + "\n\n" + json.dumps(event_payload, ensure_ascii=False, indent=2)
                     memory_entry = self.memory.embed(
@@ -5314,7 +6611,71 @@ class NovaShell:
                     event_payload["memory_id"] = memory_entry.entry_id
                     event_payload["trained_records"] = inserted
                 return CommandResult(output=json.dumps(event_payload, ensure_ascii=False) + "\n", data=event_payload, data_type=PipelineType.OBJECT)
-            return CommandResult(output="", error="usage: atheria sensor load|map|list|show|run ...")
+            return CommandResult(output="", error="usage: atheria sensor gallery|spawn|load|map|list|show|run ...")
+
+        if action == "guardian":
+            if len(parts) < 2:
+                return CommandResult(output="", error="usage: atheria guardian status|recommend|spawn-recommended|prune|policy ...")
+            guardian_action = parts[1]
+            if guardian_action == "status":
+                payload = self.atheria_sensors.guardian_status(evolution_plan=self.atheria.evolution_status().get("last_plan"))
+                return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+            if guardian_action in {"recommend", "spawn-recommended"}:
+                source, source_label, plan_payload, force, _reason, parse_error = self._parse_atheria_evolve_request(
+                    parts,
+                    start_index=2,
+                    pipeline_input=pipeline_input,
+                    pipeline_data=pipeline_data,
+                )
+                if parse_error is not None:
+                    return parse_error
+                dry_run = "--dry-run" in parts[2:]
+                limit: int | None = None
+                if "--limit" in parts[2:]:
+                    idx = parts.index("--limit")
+                    if idx + 1 < len(parts):
+                        with contextlib.suppress(Exception):
+                            limit = max(1, int(parts[idx + 1]))
+                evolution_plan = plan_payload
+                if evolution_plan is None:
+                    if source is not None and (not isinstance(source, str) or source.strip()):
+                        evolution_plan = self.atheria.simulate_evolution(source, source_label=source_label).get("plan")
+                    else:
+                        candidate = self.atheria.evolution_status().get("last_plan")
+                        evolution_plan = candidate if isinstance(candidate, dict) and candidate else None
+                if guardian_action == "recommend":
+                    payload = self.atheria_sensors.guardian_status(evolution_plan=evolution_plan)
+                    if limit is not None:
+                        payload["spawn_recommendations"] = payload["spawn_recommendations"][:limit]
+                    return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+                payload = self.atheria_sensors.guardian_spawn_recommended(evolution_plan=evolution_plan, limit=limit, dry_run=dry_run)
+                return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+            if guardian_action == "prune":
+                dry_run = "--dry-run" in parts[2:]
+                payload = self.atheria_sensors.guardian_prune(dry_run=dry_run)
+                return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+            if guardian_action == "policy":
+                if len(parts) < 3:
+                    return CommandResult(output="", error="usage: atheria guardian policy list|show <category>|set <category> <json>")
+                policy_action = parts[2]
+                if policy_action == "list":
+                    payload = self.atheria_sensors.list_guardian_policies()
+                    return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+                if policy_action == "show":
+                    if len(parts) < 4:
+                        return CommandResult(output="", error="usage: atheria guardian policy show <category>")
+                    payload = self.atheria_sensors.get_guardian_policy(parts[3])
+                    return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+                if policy_action == "set":
+                    if len(parts) < 5:
+                        return CommandResult(output="", error="usage: atheria guardian policy set <category> <json>")
+                    parsed_policy, error = self._parse_json_object_arg(" ".join(parts[4:]), field_name="guardian policy")
+                    if error is not None:
+                        return error
+                    payload = self.atheria_sensors.set_guardian_policy(parts[3], parsed_policy or {})
+                    return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+                return CommandResult(output="", error="usage: atheria guardian policy list|show <category>|set <category> <json>")
+            return CommandResult(output="", error="usage: atheria guardian status|recommend|spawn-recommended|prune|policy ...")
 
         if action == "search":
             query = " ".join(parts[1:]).strip()
@@ -5487,7 +6848,7 @@ class NovaShell:
                 system_prompt=system_prompt,
             )
 
-        return CommandResult(output="", error="usage: atheria status|init|sensor|train|search|chat ...")
+        return CommandResult(output="", error="usage: atheria status|init|sensor|guardian|train|search|chat|evolve ...")
 
     def _run_tool(self, args: str, pipeline_input: str, pipeline_data: Any) -> CommandResult:
         parts = split_command(args)

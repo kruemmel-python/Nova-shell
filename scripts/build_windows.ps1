@@ -300,10 +300,11 @@ if ($Sign) {
 
 Write-Step "Starting release build"
 $logDir = Join-Path $root "dist\release\logs"
-$stdoutLog = Join-Path $logDir "build-windows-$Profile.stdout.log"
-$stderrLog = Join-Path $logDir "build-windows-$Profile.stderr.log"
-$traceLog = Join-Path $logDir "build-windows-$Profile.trace.log"
-$faultLog = Join-Path $logDir "build-windows-$Profile.fault.log"
+$logRunId = "{0}-{1}" -f (Get-Date -Format "yyyyMMdd-HHmmss"), $PID
+$stdoutLog = Join-Path $logDir "build-windows-$Profile-$logRunId.stdout.log"
+$stderrLog = Join-Path $logDir "build-windows-$Profile-$logRunId.stderr.log"
+$traceLog = Join-Path $logDir "build-windows-$Profile-$logRunId.trace.log"
+$faultLog = Join-Path $logDir "build-windows-$Profile-$logRunId.fault.log"
 Write-Step "Streaming release logs from $stdoutLog"
 
 if (Test-Path $stdoutLog) {

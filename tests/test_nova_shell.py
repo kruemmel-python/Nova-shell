@@ -36,6 +36,9 @@ class FakeHTTPResponse:
 class NovaShellTests(unittest.TestCase):
     def setUp(self) -> None:
         self.original_cwd = Path.cwd()
+        self._temp_home = tempfile.TemporaryDirectory()
+        self._home_patcher = patch("nova_shell.Path.home", return_value=Path(self._temp_home.name))
+        self._home_patcher.start()
         self.shell = NovaShell()
 
     def tearDown(self) -> None:
@@ -44,6 +47,10 @@ class NovaShellTests(unittest.TestCase):
         finally:
             with suppress(Exception):
                 self.shell._close_loop()
+            with suppress(Exception):
+                self._home_patcher.stop()
+            with suppress(Exception):
+                self._temp_home.cleanup()
 
     def test_python_expression(self) -> None:
         result = self.shell.route("py 1 + 2")
@@ -804,6 +811,46 @@ if len(files_lines) == 2:
                 self.assertIn("hyperbolic_similarity", results[0])
                 self.assertIn("distance", results[0])
 
+    def test_atheria_runtime_evolution_plan_and_apply_persist_state(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            with patch("nova_shell.Path.home", return_value=tmp_path):
+                runtime = NovaAtheriaRuntime({}, tmp_path)
+                report = {
+                    "summary": "Edge AI and local inference demand rise while GPU supply chain pressure grows.",
+                    "metadata": {
+                        "forecast_direction": "emerging_uptrend",
+                        "forecast_score": 0.84,
+                        "confidence": 0.71,
+                        "items": [
+                            {"title": "Edge AI devices expand"},
+                            {"title": "GPU supply chain risk increases"},
+                            {"title": "Local inference adoption rises"},
+                        ],
+                    },
+                    "features": {
+                        "signal_strength": 0.81,
+                        "resource_pressure": 0.77,
+                        "entropic_index": 0.42,
+                        "queue_depth": 0.61,
+                        "anomaly_score": 0.22,
+                    },
+                }
+
+                plan = runtime.plan_evolution(report, source_label="unit-test")
+                self.assertEqual(plan["kind"], "atheria_evolution_plan")
+                self.assertTrue(plan["focus"])
+                self.assertIn("reproduction_quality", plan["proposed_state"])
+
+                applied = runtime.apply_evolution(plan, reason="unit-test")
+                self.assertEqual(applied["mode"], "apply")
+                self.assertTrue(runtime.evolution_state_path.exists())
+
+                persisted = json.loads(runtime.evolution_state_path.read_text(encoding="utf-8"))
+                self.assertIn("active_policy", persisted)
+                self.assertGreater(float(persisted["reproduction_quality"]), 0.0)
+                self.assertTrue(persisted["history"])
+
     def test_ai_use_atheria_and_prompt_routes_to_atheria_runtime(self) -> None:
         with patch.object(self.shell.atheria, "is_available", return_value=True), patch.object(
             self.shell.atheria,
@@ -1430,6 +1477,135 @@ if len(files_lines) == 2:
         self.assertEqual(payload["trained_records"], 1)
         self.assertTrue(payload["memory_id"].startswith("mem_") or payload["memory_id"])
 
+    def test_atheria_sensor_gallery_and_spawn_template(self) -> None:
+        gallery = self.shell.route("atheria sensor gallery")
+        self.assertIsNone(gallery.error)
+        templates = json.loads(gallery.output)
+        self.assertTrue(any(item["template"] == "RSS_Base" for item in templates))
+
+        spawned = self.shell.route("atheria sensor spawn quantencomputing --template RSS_Base --name quantum_watch --anchor cpu")
+        self.assertIsNone(spawned.error)
+        payload = json.loads(spawned.output)
+        self.assertEqual(payload["name"], "quantum_watch")
+        self.assertEqual(payload["template"], "RSS_Base")
+        self.assertEqual(payload["category"], "quantencomputing")
+        self.assertTrue(payload["fold_signature"].startswith("fold_"))
+
+        listed = self.shell.route("atheria sensor list")
+        self.assertIsNone(listed.error)
+        sensors = json.loads(listed.output)
+        match = next(item for item in sensors if item["name"] == "quantum_watch")
+        self.assertEqual(match["hardware_anchor"], "cpu")
+
+    def test_atheria_guardian_status_and_prune(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            plugin = Path(tmp) / "ops_sensor.py"
+            plugin.write_text(
+                "def analyze(payload):\n"
+                "    return {\n"
+                "        'summary': 'ops event',\n"
+                "        'features': {'resource_pressure': 0.2},\n"
+                "        'metadata': {'origin': 'test'}\n"
+                "    }\n",
+                encoding="utf-8",
+            )
+            loaded = self.shell.route(f"atheria sensor load {plugin} --name stale_sensor --category ops")
+            self.assertIsNone(loaded.error)
+            spec = self.shell.atheria_sensors.plugins["stale_sensor"]
+            spec.failure_count = 3
+            spec.success_count = 0
+            self.shell.atheria_sensors._save_registry()
+
+            status = self.shell.route("atheria guardian status")
+            dry_run = self.shell.route("atheria guardian prune --dry-run")
+            applied = self.shell.route("atheria guardian prune")
+
+        self.assertIsNone(status.error)
+        status_payload = json.loads(status.output)
+        self.assertTrue(any(item["name"] == "stale_sensor" for item in status_payload["prune_candidates"]))
+
+        self.assertIsNone(dry_run.error)
+        dry_run_payload = json.loads(dry_run.output)
+        self.assertIn("stale_sensor", dry_run_payload["candidates"])
+
+        self.assertIsNone(applied.error)
+        applied_payload = json.loads(applied.output)
+        self.assertIn("stale_sensor", applied_payload["pruned"])
+        self.assertNotIn("stale_sensor", self.shell.atheria_sensors.plugins)
+
+    def test_atheria_guardian_policy_set_and_list(self) -> None:
+        listed = self.shell.route("atheria guardian policy list")
+        self.assertIsNone(listed.error)
+        policies = json.loads(listed.output)
+        self.assertTrue(any(item["category"] == "default" for item in policies))
+
+        updated = self.shell.route('atheria guardian policy set edge_ai {"desired_count":2,"auto_spawn":true,"template":"RSS_Base","hardware_anchor":"cpu","proximity_threshold":0.61}')
+        self.assertIsNone(updated.error)
+        payload = json.loads(updated.output)
+        self.assertEqual(payload["category"], "edge_ai")
+        self.assertEqual(payload["desired_count"], 2)
+        self.assertAlmostEqual(float(payload["proximity_threshold"]), 0.61, places=2)
+
+    def test_atheria_guardian_recommend_and_spawn_recommended(self) -> None:
+        report_payload = json.dumps(
+            {
+                "summary": "Edge AI and local inference momentum are rising with infrastructure pressure.",
+                "metadata": {
+                    "forecast_direction": "emerging_uptrend",
+                    "forecast_score": 0.83,
+                    "confidence": 0.7,
+                    "items": [
+                        {"title": "Edge AI rollout expands"},
+                        {"title": "Local inference startup funding rises"},
+                        {"title": "Data center power demand increases"},
+                    ],
+                },
+                "features": {
+                    "signal_strength": 0.82,
+                    "resource_pressure": 0.76,
+                    "entropic_index": 0.41,
+                    "queue_depth": 0.58,
+                    "anomaly_score": 0.2,
+                },
+            },
+            ensure_ascii=False,
+        )
+        recommend = self.shell.route(f"atheria guardian recommend --input '{report_payload}'")
+        self.assertIsNone(recommend.error)
+        recommend_payload = json.loads(recommend.output)
+        self.assertTrue(any(item["category"] in {"edge_ai", "local_inference", "datacenter_scale"} for item in recommend_payload["spawn_recommendations"]))
+
+        spawned = self.shell.route(f"atheria guardian spawn-recommended --input '{report_payload}' --limit 2")
+        self.assertIsNone(spawned.error)
+        spawned_payload = json.loads(spawned.output)
+        self.assertLessEqual(len(spawned_payload["spawned"]), 2)
+        for item in spawned_payload["spawned"]:
+            self.assertTrue(item["lineage_parent"].startswith("guardian"))
+
+    def test_atheria_sensor_run_emits_proximity_routes(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            plugin = Path(tmp) / "ops_sensor.py"
+            plugin.write_text(
+                "def analyze(payload):\n"
+                "    return {\n"
+                "        'summary': 'edge inference latency increase',\n"
+                "        'features': {'signal_strength': 0.8, 'resource_pressure': 0.3},\n"
+                "        'metadata': {'origin': 'test'}\n"
+                "    }\n",
+                encoding="utf-8",
+            )
+            load_a = self.shell.route(f"atheria sensor load {plugin} --name edge_watch --category edge_ai --tags edge,inference")
+            load_b = self.shell.route(f"atheria sensor load {plugin} --name local_watch --category local_inference --tags inference,private")
+            self.assertIsNone(load_a.error)
+            self.assertIsNone(load_b.error)
+
+            result = self.shell.route("atheria sensor run edge_watch --input '{}'")
+
+        self.assertIsNone(result.error)
+        payload = json.loads(result.output)
+        self.assertIn("proximity_routes", payload)
+        self.assertTrue(any(item["target"] == "local_watch" for item in payload["proximity_routes"]))
+
     def test_atheria_trend_rss_sensor_learns_baseline_and_forecast(self) -> None:
         sensor_path = (Path.cwd() / "trend_rss_sensor.py").resolve()
         with tempfile.TemporaryDirectory() as tmp, patch.dict(os.environ, {"INDUSTRY_TREND_STATE": str(Path(tmp) / "trend_state.json")}, clear=False):
@@ -1493,6 +1669,75 @@ if len(files_lines) == 2:
             self.assertEqual(second_result["metadata"]["forecast_direction"], "emerging_uptrend")
             self.assertGreater(float(second_result["metadata"]["forecast_score"]), 0.7)
             self.assertEqual(len(second_result["metadata"]["items"]), 4)
+
+    def test_atheria_evolve_simulate_from_text_report_file(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp, patch("nova_shell.Path.home", return_value=Path(tmp)):
+            report = Path(tmp) / "trend_report.txt"
+            report.write_text(
+                "Direction: emerging_uptrend\n"
+                "Forecast score: 0.82\n"
+                "Confidence: 0.64\n"
+                "Summary: Edge AI, data center power and GPU runtime demand are all rising.\n"
+                "- AI data center boom | feed-a | https://a\n"
+                "- Edge AI devices expand | feed-b | https://b\n"
+                "- GPU runtime pressure increases | feed-c | https://c\n",
+                encoding="utf-8",
+            )
+            shell = NovaShell()
+            try:
+                result = shell.route(f"atheria evolve simulate --file {report}")
+            finally:
+                shell._close_loop()
+
+        self.assertIsNone(result.error)
+        payload = json.loads(result.output)
+        self.assertEqual(payload["mode"], "simulate")
+        self.assertEqual(payload["plan"]["source"]["kind"], "text_report")
+        self.assertGreater(float(payload["projected_state"]["active_policy"]["datacenter_scale"]), 0.5)
+
+    def test_atheria_evolve_plan_apply_and_status_commands(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp, patch("nova_shell.Path.home", return_value=Path(tmp)):
+            shell = NovaShell()
+            try:
+                report_payload = json.dumps(
+                    {
+                        "summary": "Edge AI and local inference momentum are rising with infrastructure pressure.",
+                        "metadata": {
+                            "forecast_direction": "emerging_uptrend",
+                            "forecast_score": 0.79,
+                            "confidence": 0.67,
+                            "items": [
+                                {"title": "Edge AI rollout expands"},
+                                {"title": "Local inference startup funding rises"},
+                                {"title": "Data center power demand increases"},
+                            ],
+                        },
+                        "features": {
+                            "signal_strength": 0.8,
+                            "resource_pressure": 0.74,
+                            "entropic_index": 0.38,
+                            "queue_depth": 0.57,
+                            "anomaly_score": 0.2,
+                        },
+                    },
+                    ensure_ascii=False,
+                )
+                planned = shell.route(f"atheria evolve plan --input '{report_payload}'")
+                applied = shell.route("atheria evolve apply --reason 'align to market trend'")
+                status = shell.route("atheria evolve status")
+            finally:
+                shell._close_loop()
+
+        self.assertIsNone(planned.error)
+        self.assertIsNone(applied.error)
+        self.assertIsNone(status.error)
+        planned_payload = json.loads(planned.output)
+        applied_payload = json.loads(applied.output)
+        status_payload = json.loads(status.output)
+        self.assertEqual(planned_payload["kind"], "atheria_evolution_plan")
+        self.assertEqual(applied_payload["mode"], "apply")
+        self.assertTrue(status_payload["history"])
+        self.assertEqual(status_payload["last_plan"]["kind"], "atheria_evolution_plan")
 
     def test_mesh_heartbeat_and_intelligent_run_no_worker(self) -> None:
         add = self.shell.route("mesh add http://127.0.0.1:9998 cpu")

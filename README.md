@@ -65,7 +65,7 @@ Neu in der Runtime-Schicht:
 ## Weitere Kernfeatures
 
 - Engines: `py/python`, `cpp`, `gpu`, `wasm`, `remote`, `sys`.
-- AI Runtime: `ai providers|models|use|config|env reload|prompt|plan` plus `atheria status|init|train|search|chat`
+- AI Runtime: `ai providers|models|use|config|env reload|prompt|plan` plus `atheria status|init|guardian|sensor|train|search|chat|evolve`
 - AI Agents: `agent create|run|show|list|spawn|message|workflow|graph`
 - Event Runtime: `event on|emit|list|history`
 - GPU Task Graphs: `gpu graph plan|run|show`
@@ -126,6 +126,12 @@ nova-shell -c "atheria train qa --question \"What is Nova-shell?\" --answer \"No
 nova-shell -c "atheria train file podcastVideoTranscript_publish_safe.md --category video"
 nova-shell -c "atheria search \"Nova-shell runtime\""
 nova-shell -c "atheria chat \"What is Nova-shell?\""
+nova-shell -c "atheria sensor gallery"
+nova-shell -c "atheria sensor spawn quantencomputing --template RSS_Base --name quantum_watch"
+nova-shell -c "atheria guardian status"
+nova-shell -c "atheria evolve plan --file reports/rss_trend_report.txt"
+nova-shell -c "atheria evolve simulate --file reports/rss_trend_report.txt"
+nova-shell -c "atheria evolve apply --reason \"align to infrastructure trend\""
 nova-shell -c "ai use atheria atheria-core"
 nova-shell -c "ai prompt \"Explain Nova-shell in one paragraph\""
 ```
@@ -146,6 +152,9 @@ Dann in der Nova-shell-REPL:
 cd D:\Nova-shell
 atheria sensor load "industry_scanner.py" --name "BigPlayerWatcher"
 atheria sensor run "BigPlayerWatcher"
+atheria sensor gallery
+atheria sensor spawn quantencomputing --template RSS_Base --name quantum_watch
+atheria guardian status
 ns.run watch_the_big_players_test.ns
 ns.run watch_the_big_players.ns
 ```

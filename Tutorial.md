@@ -577,6 +577,16 @@ nova> atheria sensor load "industry_scanner.py" --name "BigPlayerWatcher"
 nova> atheria sensor run "BigPlayerWatcher"
 ```
 
+Sensor-Organell aus der Gallery erzeugen:
+
+```text
+nova> atheria sensor gallery
+nova> atheria sensor spawn quantencomputing --template RSS_Base --name quantum_watch
+nova> atheria sensor show quantum_watch
+nova> atheria guardian status
+nova> atheria guardian prune --dry-run
+```
+
 Schnelle Testvorlage ausfuehren:
 
 ```text
@@ -613,6 +623,15 @@ nova> ai use atheria atheria-core
 nova> ai prompt "Explain Nova-shell in one paragraph"
 nova> agent create storyteller "Tell a concise story about {{input}}" --provider atheria --model atheria-core
 nova> agent run storyteller "Nova-shell and Atheria"
+```
+
+Kontrollierte Evolutionsphase aus einem Trend-Report:
+
+```text
+nova> atheria evolve plan --file reports/rss_trend_report.txt
+nova> atheria evolve simulate --file reports/rss_trend_report.txt
+nova> atheria evolve apply --reason "align to edge-ai and infrastructure trend"
+nova> atheria evolve status
 ```
 
 Ohne aktiven Provider bleibt `ai plan` der lokale Heuristikpfad:

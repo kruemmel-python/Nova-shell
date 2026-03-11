@@ -168,8 +168,12 @@ cpp.sandbox 'int main(){ return 0; }'
 
 - `atheria status`: Zeigt Status, Quelle und Trainingsumfang der lokalen Atheria-Runtime. Beispiel: `atheria status`
 - `atheria init`: Initialisiert AtheriaCore und den lokalen Runtime-Zustand. Beispiel: `atheria init`
+- `atheria guardian status`: Zeigt die Sensor-Population, Kategorien, Spawn-Empfehlungen und Prune-Kandidaten. Beispiel: `atheria guardian status`
+- `atheria guardian prune [--dry-run]`: Entfernt oder simuliert das Entfernen von Sensoren mit wiederholten Fehlschlaegen oder schlechtem Nutzen/Kosten-Profil. Beispiel: `atheria guardian prune --dry-run`
+- `atheria sensor gallery`: Listet die mitgelieferten Sensor-Templates fuer schnelle Modul-Erzeugung. Beispiel: `atheria sensor gallery`
+- `atheria sensor spawn <category> --template <name> [--name name] [--anchor cpu|gpu] [--from sensor]`: Erzeugt ein neues Sensor-Organell aus einer Template-Gallery. Beispiel: `atheria sensor spawn quantencomputing --template RSS_Base --name quantum_watch`
 - `atheria sensor list`: Listet geladene Sensor-Plugins. Beispiel: `atheria sensor list`
-- `atheria sensor load <file.py> [--name name] [--mapping json|file]`: Laedt ein Sensor-Plugin dynamisch und haengt optional ein Mapping an. Beispiel: `atheria sensor load ops_sensor.py --name ops_sensor --mapping mapping.json`
+- `atheria sensor load <file.py> [--name name] [--mapping json|file] [--category name] [--template name] [--anchor cpu|gpu] [--tags csv]`: Laedt ein Sensor-Plugin dynamisch und haengt optional ein Mapping und Organell-Metadaten an. Beispiel: `atheria sensor load ops_sensor.py --name ops_sensor --mapping mapping.json --category ops --anchor cpu --tags telemetry,latency`
 - `atheria sensor show <name>`: Zeigt Konfiguration und Metadaten eines Sensor-Plugins. Beispiel: `atheria sensor show ops_sensor`
 - `atheria sensor map <name> <mapping.json|yaml|json>`: Aktualisiert das JSON-Key-Mapping eines Sensors. Beispiel: `atheria sensor map ops_sensor mapping.json`
 - `atheria sensor run <name> [--input json] [--file payload.json] [--train]`: Fuehrt einen Sensor aus und erzeugt ein standardisiertes Atheria-Event. Beispiel: `atheria sensor run ops_sensor --input '{"system":{"cpu_usage":0.91,"latency":18}}' --train`
@@ -183,6 +187,10 @@ cpp.sandbox 'int main(){ return 0; }'
 - `atheria chat <prompt>`: Chattet direkt mit Atheria. Beispiel: `atheria chat "What is Nova-shell?"`
 - `atheria chat --file <pfad> <prompt>`: Chat mit Dateikontext. Beispiel: `atheria chat --file items.csv "Summarize this dataset"`
 - `atheria chat --system <text> <prompt>`: Chat mit Systemfokus. Beispiel: `atheria chat --system "Answer as an architect." "How should Nova-shell use Atheria?"`
+- `atheria evolve status`: Zeigt aktive Evolutionsgewichte, `reproduction_quality`, den letzten Plan und die Historie. Beispiel: `atheria evolve status`
+- `atheria evolve plan [--input json|text] [--file report.txt|json] [--memory id] [--flow key]`: Leitet aus einem Trend-Report eine begrenzte Evolutions-Policy ab. Beispiel: `atheria evolve plan --file reports/rss_trend_report.txt`
+- `atheria evolve simulate [--input json|text] [--file report.txt|json] [--memory id] [--flow key]`: Simuliert einen Evolutionsplan gegen den aktuellen Zustand, ohne ihn anzuwenden. Beispiel: `atheria evolve simulate --file reports/rss_trend_report.txt`
+- `atheria evolve apply [--plan-json json|--plan-file file|--input json|text|--file report] [--force] [--reason text]`: Wendet den letzten oder explizit uebergebenen Evolutionsplan kontrolliert an. Beispiel: `atheria evolve apply --reason "align to edge-ai trend"`
 
 ### `Atheria komplett`
 
@@ -253,6 +261,25 @@ py os.environ["INDUSTRY_SCAN_FILE"] = r"D:\Nova-shell\sample_news.json"
 atheria sensor load "industry_scanner.py" --name "BigPlayerWatcher"
 atheria sensor run "BigPlayerWatcher"
 ns.run watch_the_big_players_test.ns
+```
+
+10. Sensor-Organellen aus der Gallery erzeugen und durch den Guardian ueberwachen:
+
+```text
+atheria sensor gallery
+atheria sensor spawn quantencomputing --template RSS_Base --name quantum_watch
+atheria sensor show quantum_watch
+atheria guardian status
+atheria guardian prune --dry-run
+```
+
+11. Trend-Report erst planen, dann simulieren, dann kontrolliert anwenden:
+
+```text
+atheria evolve plan --file reports/rss_trend_report.txt
+atheria evolve simulate --file reports/rss_trend_report.txt
+atheria evolve apply --reason "adapt strategy to current infrastructure trend"
+atheria evolve status
 ```
 
 Fuer die Langlaufvariante koennen diese Umgebungsvariablen genutzt werden:
