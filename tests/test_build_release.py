@@ -284,6 +284,11 @@ class BuildReleaseTests(unittest.TestCase):
             self.assertTrue(target.exists())
             self.assertEqual(target.read_text(encoding="utf-8"), "VALUE = 1\n")
 
+    def test_collect_local_runtime_files_includes_morning_briefing_script(self) -> None:
+        files = build_release.collect_local_runtime_files()
+        names = {path.name for path in files}
+        self.assertIn("morning_briefing.ns", names)
+
     def test_safe_platform_helpers_avoid_windows_wmi_path(self) -> None:
         with (
             patch.object(build_release.os, "name", "nt"),

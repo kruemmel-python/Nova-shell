@@ -1,0 +1,45 @@
+# Morning Briefing fuer RSS-Resonanz, TrendRadar und Guardian
+
+atheria init
+memory namespace "morning_briefing"
+memory project "rss_monitoring"
+memory embed --id "briefing_whitepaper" --file "Whitepaper.md"
+memory embed --id "briefing_docs" --file "Dokumentation.md"
+
+report_dir = py os.environ.get("NOVA_BRIEFING_REPORT_DIR", "reports")
+trend_state = py os.environ.get("INDUSTRY_TREND_STATE", str(__import__("pathlib").Path($report_dir) / "trend_state.json"))
+py os.environ["INDUSTRY_TREND_STATE"] = $trend_state
+py os.environ["INDUSTRY_FEEDS"] = os.environ.get("INDUSTRY_FEEDS", "https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml,https://feeds.feedburner.com/TechCrunch/,https://news.google.com/rss/search?q=AI+infrastructure+agent+runtime")
+py os.environ["NOVA_RESONANCE_THRESHOLD"] = os.environ.get("NOVA_RESONANCE_THRESHOLD", "0.35")
+py import pathlib, html, json
+py pathlib.Path($report_dir).mkdir(parents=True, exist_ok=True)
+
+atheria sensor load "industry_scanner.py" --name "BigPlayerWatcher" --category rss --template RSS_Base --anchor cpu --tags rss,news,resonance,briefing
+atheria sensor spawn trend --template TrendRadar --name "TrendRadar" --anchor cpu
+
+resonance_scan = atheria sensor run "BigPlayerWatcher"
+flow state set "last_match" $resonance_scan
+flow state set "morning_briefing.resonance" $resonance_scan
+
+trend_result = atheria sensor run "TrendRadar"
+if int(trend_result.metadata.history_length) <= 1:
+    trend_result = atheria sensor run "TrendRadar"
+flow state set "morning_briefing.trend" $trend_result
+
+guardian = atheria guardian recommend --input $trend_result
+flow state set "morning_briefing.guardian" $guardian
+
+briefing_summary = py recs = $guardian.get("spawn_recommendations", []); cats = list(dict.fromkeys([item.get("category", "") for item in recs if item.get("category")]))[:3]; acc = float($trend_result.get("metadata", {}).get("trend_acceleration", 0.0)); direction = str($trend_result.get("metadata", {}).get("forecast_direction", "unknown")); score = float($trend_result.get("metadata", {}).get("forecast_score", 0.0)); count = len(recs); ("Heute empfehle ich " + str(count) + " neue Sensoren im Bereich " + (", ".join(cats) if cats else "keinem neuen Schwerpunkt") + ", da die Trend-Acceleration bei " + f"{acc:+.2f}" + " liegt und der Forecast '" + direction + "' mit Score " + f"{score:.2f}" + " meldet.") if count else ("Heute gibt es keine neuen Sensor-Empfehlungen. Trend-Acceleration: " + f"{acc:+.2f}" + ", Forecast: " + direction + " (" + f"{score:.2f}" + ").")
+flow state set "morning_briefing.summary" $briefing_summary
+event emit "MORNING_BRIEFING_READY" $briefing_summary
+
+py resonance = $resonance_scan; items = resonance.get("metadata", {}).get("items", []); lines = ["Nova-shell Morning Briefing: Resonance Report", "", f"Score: {resonance.get('score', '')}", f"Summary: {resonance.get('summary', '')}", f"Top source: {resonance.get('resonance', {}).get('top_source', '')}", f"Top category: {resonance.get('resonance', {}).get('top_category', '')}", ""]; lines.extend([f"- {item.get('title', '')} | {item.get('source', '')} | {item.get('url', '')}" for item in items]); pathlib.Path($report_dir, "rss_resonance_report.txt").write_text("\n".join(lines), encoding="utf-8")
+py trend = $trend_result; items = trend.get("metadata", {}).get("items", []); lines = ["Nova-shell Morning Briefing: Trend Report", "", f"Direction: {trend.get('metadata', {}).get('forecast_direction', '')}", f"Forecast score: {trend.get('metadata', {}).get('forecast_score', '')}", f"Confidence: {trend.get('metadata', {}).get('confidence', '')}", f"Trend acceleration: {trend.get('metadata', {}).get('trend_acceleration', '')}", f"Summary: {trend.get('summary', '')}", ""]; lines.extend([f"- {item.get('title', '')} | {item.get('source', '')} | {item.get('url', '')}" for item in items]); pathlib.Path($report_dir, "rss_trend_report.txt").write_text("\n".join(lines), encoding="utf-8")
+py pathlib.Path($report_dir, "rss_morning_briefing.txt").write_text($briefing_summary + "\n", encoding="utf-8")
+
+py resonance = $resonance_scan; guardian_payload = $guardian; items = resonance.get("metadata", {}).get("items", []); guardian_recs = guardian_payload.get("spawn_recommendations", []); guardian_comment = json.dumps(guardian_payload, ensure_ascii=False).replace("--", "- -"); item_rows = "".join([f"<li><a href='{html.escape(item.get('url', ''))}'>{html.escape(item.get('title', ''))}</a><br><small>{html.escape(item.get('source', ''))}</small></li>" for item in items]); guardian_rows = "".join([f"<li>{html.escape(str(item.get('category', '')))} | template={html.escape(str(item.get('template', '')))} | reason={html.escape(str(item.get('reason', '')))}</li>" for item in guardian_recs[:5]]); html_doc = f"<!doctype html><html><head><meta charset='utf-8'><title>Nova-shell RSS Resonance Report</title></head><body><!-- guardian_recommend {guardian_comment} --><h1>Nova-shell RSS Resonance Report</h1><p><strong>Score:</strong> {html.escape(str(resonance.get('score', '')))}</p><p><strong>Summary:</strong> {html.escape(str(resonance.get('summary', '')))}</p><p><strong>Top source:</strong> {html.escape(str(resonance.get('resonance', {}).get('top_source', '')))}</p><p><strong>Top category:</strong> {html.escape(str(resonance.get('resonance', {}).get('top_category', '')))}</p><h2>Guardian recommendations</h2><ul>{guardian_rows or '<li>No new sensor recommendations.</li>'}</ul><h2>Items</h2><ul>{item_rows}</ul></body></html>"; pathlib.Path($report_dir, "rss_resonance_report.html").write_text(html_doc, encoding="utf-8")
+py trend = $trend_result; guardian_payload = $guardian; items = trend.get("metadata", {}).get("items", []); guardian_recs = guardian_payload.get("spawn_recommendations", []); guardian_comment = json.dumps(guardian_payload, ensure_ascii=False).replace("--", "- -"); item_rows = "".join([f"<li><a href='{html.escape(item.get('url', ''))}'>{html.escape(item.get('title', ''))}</a><br><small>{html.escape(item.get('source', ''))}</small></li>" for item in items]); guardian_rows = "".join([f"<li>{html.escape(str(item.get('category', '')))} | template={html.escape(str(item.get('template', '')))} | reason={html.escape(str(item.get('reason', '')))}</li>" for item in guardian_recs[:5]]); html_doc = f"<!doctype html><html><head><meta charset='utf-8'><title>Nova-shell RSS Trend Report</title></head><body><!-- guardian_recommend {guardian_comment} --><h1>Nova-shell RSS Trend Report</h1><p><strong>Direction:</strong> {html.escape(str(trend.get('metadata', {}).get('forecast_direction', '')))}</p><p><strong>Forecast score:</strong> {html.escape(str(trend.get('metadata', {}).get('forecast_score', '')))}</p><p><strong>Confidence:</strong> {html.escape(str(trend.get('metadata', {}).get('confidence', '')))}</p><p><strong>Trend acceleration:</strong> {html.escape(str(trend.get('metadata', {}).get('trend_acceleration', '')))}</p><p><strong>Summary:</strong> {html.escape(str(trend.get('summary', '')))}</p><h2>Guardian recommendations</h2><ul>{guardian_rows or '<li>No new sensor recommendations.</li>'}</ul><h2>Items</h2><ul>{item_rows}</ul></body></html>"; pathlib.Path($report_dir, "rss_trend_report.html").write_text(html_doc, encoding="utf-8")
+py guardian_payload = $guardian; guardian_recs = guardian_payload.get("spawn_recommendations", []); guardian_comment = json.dumps(guardian_payload, ensure_ascii=False).replace("--", "- -"); guardian_rows = "".join([f"<li>{html.escape(str(item.get('category', '')))} | template={html.escape(str(item.get('template', '')))} | reason={html.escape(str(item.get('reason', '')))}</li>" for item in guardian_recs[:5]]); html_doc = f"<!doctype html><html><head><meta charset='utf-8'><title>Nova-shell Morning Briefing</title></head><body><!-- guardian_recommend {guardian_comment} --><h1>Nova-shell Morning Briefing</h1><p>{html.escape(str($briefing_summary))}</p><h2>Guardian recommendations</h2><ul>{guardian_rows or '<li>No new sensor recommendations.</li>'}</ul><p><a href='rss_resonance_report.html'>Resonance report</a></p><p><a href='rss_trend_report.html'>Trend report</a></p></body></html>"; pathlib.Path($report_dir, "rss_morning_briefing.html").write_text(html_doc, encoding="utf-8")
+
+py print($briefing_summary)
+py print("Morning briefing files:", {"txt": ["rss_resonance_report.txt", "rss_trend_report.txt", "rss_morning_briefing.txt"], "html": ["rss_resonance_report.html", "rss_trend_report.html", "rss_morning_briefing.html"], "report_dir": $report_dir})

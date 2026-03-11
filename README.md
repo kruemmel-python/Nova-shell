@@ -155,6 +155,7 @@ atheria sensor run "BigPlayerWatcher"
 atheria sensor gallery
 atheria sensor spawn quantencomputing --template RSS_Base --name quantum_watch
 atheria guardian status
+ns.run morning_briefing.ns
 ns.run watch_the_big_players_test.ns
 ns.run watch_the_big_players.ns
 ```
@@ -165,6 +166,7 @@ Wichtig:
 - Innerhalb von Nova-shell setzt du Umgebungsvariablen stattdessen mit `py import os` und `py os.environ["NAME"] = "wert"`.
 - `watch_the_big_players_test.ns` ist die schnelle Sichtprobe.
 - `watch_the_big_players.ns` ist die Langlaufvariante und nutzt standardmaessig `0.85`, `3600` Sekunden und `100` Iterationen.
+- `morning_briefing.ns` ist die kompakte Tagesroutine und erzeugt Resonanz-, Trend- und Guardian-Reports in `reports/`.
 
 Vector Memory, Tool Schemas, Planner, Agent Graphs und Mesh-Worker:
 
@@ -259,7 +261,7 @@ Direkter Installer-Build:
 ```bash
 python scripts/build_release.py --profile core --mode installers
 SOURCE_DATE_EPOCH=1700000000 python scripts/build_release.py --profile core --mode all --clean
-python scripts/build_release.py --profile core --mode all --base-download-url "https://github.com/<org>/<repo>/releases/download/v0.8.3"
+python scripts/build_release.py --profile core --mode all --base-download-url "https://github.com/<org>/<repo>/releases/download/v0.8.4"
 python scripts/generate_release_notes.py --root dist/release --output dist/release/release-notes.md
 python scripts/sign_release.py --root dist/release --verify
 ```

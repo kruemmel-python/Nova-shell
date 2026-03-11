@@ -273,7 +273,14 @@ atheria guardian status
 atheria guardian prune --dry-run
 ```
 
-11. Trend-Report erst planen, dann simulieren, dann kontrolliert anwenden:
+11. Morning Briefing in einem einzigen NovaScript-Lauf:
+
+```text
+py os.environ["INDUSTRY_FEEDS"] = "https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml,https://feeds.feedburner.com/TechCrunch/,https://news.google.com/rss/search?q=AI+infrastructure+agent+runtime"
+ns.run morning_briefing.ns
+```
+
+12. Trend-Report erst planen, dann simulieren, dann kontrolliert anwenden:
 
 ```text
 atheria evolve plan --file reports/rss_trend_report.txt

@@ -498,6 +498,14 @@ if len(files_lines) == 2:
             payload = json.loads(result.output)
             self.assertGreaterEqual(payload["contracts"], 1)
 
+    def test_ns_check_morning_briefing_script(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        self.shell.route(f"cd {root}")
+        result = self.shell.route("ns.check morning_briefing.ns")
+        self.assertIsNone(result.error)
+        payload = json.loads(result.output)
+        self.assertGreaterEqual(payload["commands"], 10)
+
 
     def test_mesh_add_and_list(self) -> None:
         add_result = self.shell.route("mesh add http://127.0.0.1:9999 gpu,cpu")

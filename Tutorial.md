@@ -585,6 +585,7 @@ nova> atheria sensor spawn quantencomputing --template RSS_Base --name quantum_w
 nova> atheria sensor show quantum_watch
 nova> atheria guardian status
 nova> atheria guardian prune --dry-run
+nova> ns.run morning_briefing.ns
 ```
 
 Schnelle Testvorlage ausfuehren:

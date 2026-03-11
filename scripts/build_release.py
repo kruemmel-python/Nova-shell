@@ -77,8 +77,10 @@ LOCAL_RUNTIME_FILES = [
     "trend_rss_sensor.py",
     "watch_the_big_players.ns",
     "watch_the_big_players_test.ns",
+    "morning_briefing.ns",
     "sample_news.json",
     "beispiel_rss.md",
+    "morning_briefing.md",
 ]
 HEAVY_SIDELOAD_DISTRIBUTIONS = {"torch"}
 HEARTBEAT_SECONDS = 30

@@ -1,12 +1,15 @@
 # Beispiel: RSS-Feeds mit zwei Sensoren ueberwachen und Ergebnisse nach TXT + HTML exportieren
 
-Diese Anleitung zeigt einen vollstaendig kopierbaren Ablauf mit dem vorhandenen Nova-shell-Setup:
+Diese Anleitung beschreibt den aktuellen produktiven Ablauf fuer Nova-shell `0.8.4`.
+
+Sie zeigt einen vollstaendig kopierbaren Ablauf mit dem vorhandenen Nova-shell-Setup:
 
 - RSS-Feeds ueber `py os.environ["INDUSTRY_FEEDS"] = "..."` setzen
 - Sensor 1: den vorhandenen Watcher [watch_the_big_players.ns](/d:/Nova-shell/watch_the_big_players.ns) starten
 - Sensor 2: den lernenden Trend-Sensor [trend_rss_sensor.py](/d:/Nova-shell/trend_rss_sensor.py) direkt laden und mehrfach ausfuehren
 - die Ergebnisse aus `flow.state` oder direkt aus dem Sensor-Output lesen
 - alles direkt als Textdatei und HTML-Datei speichern
+- danach die neuen Guardian-/Evolve-Pfade nutzen, um aus dem Trendbericht konkrete Sensor-Empfehlungen und Evolutionssignale abzuleiten
 
 Die Beispiele basieren auf:
 
@@ -284,6 +287,13 @@ Der Trend-Sensor wird als normales Atheria-Plugin geladen:
 atheria sensor load "trend_rss_sensor.py" --name "TrendRadar"
 ```
 
+Alternativ kannst du den Sensor jetzt auch ueber die Gallery erzeugen. Das ist der neue bevorzugte Pfad, wenn du mit Sensor-Organellen arbeiten willst:
+
+```text
+atheria sensor gallery
+atheria sensor spawn trend --template TrendRadar --name "TrendRadar"
+```
+
 Danach kannst du die Registrierung pruefen:
 
 ```text
@@ -442,3 +452,107 @@ So bekommst du gleichzeitig:
 
 - ein strukturelles Resonanzsignal
 - und ein lernendes Trend-/Forecast-Signal
+
+## 21. Neuer Schritt: Guardian auf den Trendbericht anwenden
+
+Mit den aktuellen Implementierungen endet der Ablauf nicht mehr beim Report. Du kannst den Trendbericht jetzt direkt an den Guardian geben.
+
+Zuerst den aktuellen Bestand pruefen:
+
+```text
+atheria guardian status
+```
+
+Dann Spawn-Empfehlungen aus dem Trendbericht ableiten:
+
+```text
+atheria guardian recommend --file reports/rss_trend_report.txt
+```
+
+Wenn du zunaechst nur simulieren willst, welche Sensoren empfohlen werden:
+
+```text
+atheria guardian spawn-recommended --file reports/rss_trend_report.txt --limit 2 --dry-run
+```
+
+Wenn du die empfohlenen Sensor-Organellen wirklich erzeugen willst:
+
+```text
+atheria guardian spawn-recommended --file reports/rss_trend_report.txt --limit 2
+atheria sensor list
+atheria guardian status
+```
+
+Typischer Nutzen:
+
+- `TrendRadar` erkennt Verschiebungen
+- `guardian recommend` uebersetzt das in konkrete Sensor-Empfehlungen
+- `guardian spawn-recommended` erzeugt daraus neue Beobachter im Mesh-/Sensor-Modell
+
+## 22. Neuer Schritt: Evolutionsplan aus dem Trendbericht ableiten
+
+Der zweite neue Pfad ist `atheria evolve`. Damit wird aus dem RSS-Trendbericht nicht nur ein Monitoring-Signal, sondern ein strategischer Eingabekanal fuer Atheria.
+
+Plan erzeugen:
+
+```text
+atheria evolve plan --file reports/rss_trend_report.txt
+```
+
+Simulation vor der Uebernahme:
+
+```text
+atheria evolve simulate --file reports/rss_trend_report.txt
+```
+
+Aktuellen Evolutionszustand ansehen:
+
+```text
+atheria evolve status
+```
+
+Wenn du den letzten Plan bewusst uebernehmen willst:
+
+```text
+atheria evolve apply --reason "align to rss technology trend"
+atheria evolve status
+```
+
+Das ist absichtlich kontrolliert:
+
+- `plan` erzeugt nur eine begrenzte Policy
+- `simulate` zeigt die Auswirkung vorab
+- `apply` uebernimmt den Plan explizit
+
+## 23. Empfohlener Gesamtablauf nach aktuellem Stand
+
+Fuer `0.8.4` ist dieser Ablauf der praktischste:
+
+```text
+cd D:\Nova-shell
+py os.environ["INDUSTRY_FEEDS"] = "https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml,https://feeds.feedburner.com/TechCrunch/,https://news.google.com/rss/search?q=AI+infrastructure+agent+runtime"
+py os.environ["INDUSTRY_TREND_STATE"] = r"D:\Nova-shell\trend_state.json"
+py os.environ["NOVA_RESONANCE_THRESHOLD"] = "0.20"
+py os.environ["NOVA_SCAN_INTERVAL_SECONDS"] = "1"
+py os.environ["NOVA_SCAN_ITERATIONS"] = "1"
+ns.run watch_the_big_players.ns
+atheria sensor spawn trend --template TrendRadar --name "TrendRadar"
+atheria sensor run "TrendRadar"
+atheria sensor run "TrendRadar" | py result = _
+py import pathlib
+py import html
+py items = result.get("metadata", {}).get("items", [])
+py pathlib.Path("reports").mkdir(parents=True, exist_ok=True)
+py lines = ["Nova-shell RSS Trend Report", "", f"Direction: {result.get('metadata', {}).get('forecast_direction', '')}", f"Forecast score: {result.get('metadata', {}).get('forecast_score', '')}", f"Confidence: {result.get('metadata', {}).get('confidence', '')}", f"Summary: {result.get('summary', '')}", ""]
+py lines.extend([f"- {item.get('title', '')} | {item.get('source', '')} | {item.get('url', '')}" for item in items])
+py pathlib.Path("reports/rss_trend_report.txt").write_text("\\n".join(lines), encoding="utf-8")
+atheria guardian recommend --file reports/rss_trend_report.txt
+atheria evolve simulate --file reports/rss_trend_report.txt
+```
+
+Damit bekommst du in einem einzigen Arbeitsgang:
+
+- Resonanzreport
+- Trendreport
+- Guardian-Empfehlungen fuer neue Sensoren
+- einen simulierten Evolutionsplan fuer Atheria
