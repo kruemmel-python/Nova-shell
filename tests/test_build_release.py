@@ -289,6 +289,20 @@ class BuildReleaseTests(unittest.TestCase):
         names = {path.name for path in files}
         self.assertIn("morning_briefing.ns", names)
 
+    def test_prune_bundle_runtime_state_removes_nova_lens_directory(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            bundle_dir = Path(tmp)
+            lens_dir = bundle_dir / ".nova_lens"
+            lens_dir.mkdir()
+            (lens_dir / "lineage.db").write_text("db", encoding="utf-8")
+            keep_file = bundle_dir / "nova_shell.exe"
+            keep_file.write_text("exe", encoding="utf-8")
+
+            build_release.prune_bundle_runtime_state(bundle_dir)
+
+            self.assertFalse(lens_dir.exists())
+            self.assertTrue(keep_file.exists())
+
     def test_safe_platform_helpers_avoid_windows_wmi_path(self) -> None:
         with (
             patch.object(build_release.os, "name", "nt"),

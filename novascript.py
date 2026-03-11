@@ -94,11 +94,7 @@ class NovaParser:
                 nodes.append(WatchHook(variable=variable, body=body))
                 continue
 
-            output_contract = None
-            if "->" in statement:
-                lhs, rhs = statement.rsplit("->", 1)
-                statement = lhs.strip()
-                output_contract = rhs.strip() or None
+            statement, output_contract = self._split_output_contract(statement)
 
             if "=" in statement and not statement.startswith(("py ", "sys ", "cpp ", "gpu ", "data ", "data.load")):
                 name, command = statement.split("=", 1)
@@ -115,6 +111,32 @@ class NovaParser:
             i += 1
 
         return nodes, i
+
+    def _split_output_contract(self, statement: str) -> tuple[str, str | None]:
+        in_single = False
+        in_double = False
+        escaped = False
+
+        for index, char in enumerate(statement):
+            if escaped:
+                escaped = False
+                continue
+            if char == "\\" and (in_single or in_double):
+                escaped = True
+                continue
+            if char == "'" and not in_double:
+                in_single = not in_single
+                continue
+            if char == '"' and not in_single:
+                in_double = not in_double
+                continue
+            if char == "-" and not in_single and not in_double and index + 1 < len(statement) and statement[index + 1] == ">":
+                left = statement[:index]
+                right = statement[index + 2 :]
+                if left.rstrip() != left or right.lstrip() != right:
+                    return left.strip(), right.strip() or None
+
+        return statement, None
 
 
 class NovaInterpreter:

@@ -1,6 +1,6 @@
 # Beispiel: RSS-Feeds mit zwei Sensoren ueberwachen und Ergebnisse nach TXT + HTML exportieren
 
-Diese Anleitung beschreibt den aktuellen produktiven Ablauf fuer Nova-shell `0.8.4`.
+Diese Anleitung beschreibt den aktuellen produktiven Ablauf fuer Nova-shell `0.8.5`.
 
 Sie zeigt einen vollstaendig kopierbaren Ablauf mit dem vorhandenen Nova-shell-Setup:
 
@@ -526,7 +526,7 @@ Das ist absichtlich kontrolliert:
 
 ## 23. Empfohlener Gesamtablauf nach aktuellem Stand
 
-Fuer `0.8.4` ist dieser Ablauf der praktischste:
+Fuer `0.8.5` ist dieser Ablauf der praktischste:
 
 ```text
 cd D:\Nova-shell

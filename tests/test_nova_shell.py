@@ -12,7 +12,7 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from nova_shell import CommandResult, CppEngine, NovaAtheriaRuntime, NovaShell, PipelineType, __version__, main
-from novascript import Assignment, ForLoop, IfBlock, NovaInterpreter, NovaParser
+from novascript import Assignment, Command, ForLoop, IfBlock, NovaInterpreter, NovaParser
 
 
 class FakeHTTPResponse:
@@ -101,6 +101,11 @@ class NovaShellTests(unittest.TestCase):
         result = self.shell.route('py "a|b"')
         self.assertIsNone(result.error)
         self.assertEqual(result.output.strip(), "a|b")
+
+    def test_pipeline_respects_escaped_quote_and_pipe_in_python_string(self) -> None:
+        result = self.shell.route(r"py print('it\'s | ok')")
+        self.assertIsNone(result.error)
+        self.assertEqual(result.output.strip(), "it's | ok")
 
     def test_system_fallback(self) -> None:
         result = self.shell.route("echo ok")
@@ -436,6 +441,18 @@ if len(files_lines) > 0:
         self.assertIsInstance(nodes[1], ForLoop)
         self.assertIsInstance(nodes[2], IfBlock)
 
+    def test_novascript_parser_treats_arrow_as_contract_only_when_separated(self) -> None:
+        parser = NovaParser()
+        nodes = parser.parse(
+            """
+py "<!-- guardian_recommend -->"
+py 1 + 1 -> text
+""".strip()
+        )
+        self.assertIsInstance(nodes[0], Command)
+        self.assertIsNone(nodes[0].output_contract)
+        self.assertEqual(nodes[1].output_contract, "text")
+
     def test_novascript_interpreter_executes_loop_and_if(self) -> None:
         parser = NovaParser()
         nodes = parser.parse(
@@ -505,6 +522,29 @@ if len(files_lines) == 2:
         self.assertIsNone(result.error)
         payload = json.loads(result.output)
         self.assertGreaterEqual(payload["commands"], 10)
+
+    def test_ns_run_morning_briefing_generates_html_reports(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        sample_news = (root / "sample_news.json").resolve()
+        with tempfile.TemporaryDirectory() as tmp:
+            report_dir = Path(tmp).resolve()
+            self.shell.route(f"cd {root}")
+            with patch.dict(
+                os.environ,
+                {
+                    "INDUSTRY_SCAN_FILE": str(sample_news),
+                    "NOVA_BRIEFING_REPORT_DIR": str(report_dir),
+                    "INDUSTRY_TREND_STATE": str(report_dir / "trend_state.json"),
+                    "NOVA_RESONANCE_THRESHOLD": "0.35",
+                },
+                clear=False,
+            ):
+                result = self.shell.route("ns.run morning_briefing.ns")
+
+            self.assertIsNone(result.error)
+            self.assertTrue((report_dir / "rss_resonance_report.html").exists())
+            self.assertTrue((report_dir / "rss_trend_report.html").exists())
+            self.assertTrue((report_dir / "rss_morning_briefing.html").exists())
 
 
     def test_mesh_add_and_list(self) -> None:

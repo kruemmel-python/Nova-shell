@@ -51,7 +51,7 @@ except ImportError:  # pragma: no cover - platform dependent
     readline = None
 
 
-__version__ = "0.8.4"
+__version__ = "0.8.5"
 SIDELOAD_PACKAGE_DIR = "vendor-py"
 RUNTIME_CONFIG_FILE = "nova-shell-runtime.json"
 
@@ -450,6 +450,16 @@ def split_command(text: str) -> list[str]:
     return list(lexer)
 
 
+def command_name(text: str) -> str:
+    stripped = text.lstrip()
+    if not stripped:
+        return ""
+    for index, char in enumerate(stripped):
+        if char.isspace():
+            return stripped[:index]
+    return stripped
+
+
 class PythonEngine:
     """Execute Python snippets with optional pipeline input and persistent globals."""
 
@@ -839,10 +849,9 @@ class PolicyEngine:
         if denied is None:
             return False, f"unknown policy: {policy}"
 
-        parts = split_command(stage)
-        if not parts:
+        cmd = command_name(stage)
+        if not cmd:
             return True, None
-        cmd = parts[0]
         if cmd in denied:
             return False, f"policy '{policy}' blocks command '{cmd}'"
         return True, None
@@ -2419,10 +2428,9 @@ class GuardPolicyStore:
 
         blocked_cmds = set(policy.get("block_commands", []))
         blocked_prefixes = [str(v) for v in policy.get("block_prefixes", [])]
-        parts = split_command(stage)
-        if not parts:
+        cmd = command_name(stage)
+        if not cmd:
             return True, None
-        cmd = parts[0]
         if cmd in blocked_cmds:
             return False, f"policy '{policy_name}' blocks command '{cmd}'"
         if any(stage.startswith(prefix) for prefix in blocked_prefixes):
@@ -8718,8 +8726,19 @@ class NovaShell:
         current: list[str] = []
         in_single = False
         in_double = False
+        escaped = False
 
         for char in command:
+            if escaped:
+                current.append(char)
+                escaped = False
+                continue
+
+            if char == "\\" and (in_single or in_double):
+                current.append(char)
+                escaped = True
+                continue
+
             if char == "'" and not in_double:
                 in_single = not in_single
             elif char == '"' and not in_single:
@@ -8757,11 +8776,9 @@ class NovaShell:
         return graph
 
     def _route_single(self, command: str, pipeline_input: str = "", pipeline_data: Any = None) -> CommandResult:
-        parts = split_command(command)
-        if not parts:
+        cmd = command_name(command)
+        if not cmd:
             return CommandResult(output="")
-
-        cmd = parts[0]
         rest = command[len(cmd) :].strip()
 
         match cmd:

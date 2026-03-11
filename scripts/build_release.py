@@ -606,6 +606,13 @@ def smoke_test_executable(python_exe: str, executable: Path, profile: str) -> No
     )
 
 
+def prune_bundle_runtime_state(bundle_dir: Path) -> None:
+    for relative in (".nova_lens",):
+        target = bundle_dir / relative
+        if target.exists():
+            remove_tree(target)
+
+
 def ensure_bundle(build_root: Path, python_exe: str, profile: str, *, rebuild: bool, build_context: BuildContext) -> tuple[Path, Path]:
     standalone_dir = build_root / "standalone"
     if rebuild or not standalone_dir.exists():
@@ -1125,6 +1132,7 @@ def main() -> int:
                 )
                 verify_windows_artifact(signable, signtool=signing_config["signtool"])
         smoke_test_executable(args.python, executable, args.profile)
+        prune_bundle_runtime_state(bundle_dir)
 
     if args.mode in {"standalone", "all"} and bundle_dir is not None:
         step("Archiving standalone bundle")
