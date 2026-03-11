@@ -64,7 +64,7 @@ def _mean(values: list[float]) -> float:
 
 
 def _http_text(url: str) -> str:
-    request = urllib.request.Request(url, headers={"User-Agent": "nova-shell-trend-sensor/0.8.2"})
+    request = urllib.request.Request(url, headers={"User-Agent": "nova-shell-trend-sensor/0.8.3"})
     with urllib.request.urlopen(request, timeout=20) as response:
         charset = response.headers.get_content_charset() or "utf-8"
         return response.read().decode(charset, errors="replace")
