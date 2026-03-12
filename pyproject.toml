@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=69", "wheel"]
+requires = ["setuptools>=77", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -8,9 +8,10 @@ dynamic = ["version"]
 description = "Unified compute and data orchestration runtime for polyglot pipelines."
 readme = "README.md"
 requires-python = ">=3.11"
-license = "LicenseRef-Proprietary"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
 authors = [
-  {name = "Nova-shell Team"}
+  {name = "Ralf Krümmel"}
 ]
 keywords = ["cli", "runtime", "orchestration", "compute", "distributed-systems"]
 classifiers = [
