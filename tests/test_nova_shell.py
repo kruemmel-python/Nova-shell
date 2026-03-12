@@ -412,6 +412,153 @@ class NovaShellTests(unittest.TestCase):
                     stop = self.shell.route("vision stop")
                     self.assertIsNone(stop.error)
 
+    def test_vision_briefing_ui_supports_auto_spawn(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        sample_news = (root / "sample_news.json").resolve()
+        spawned_payload = {
+            "dry_run": False,
+            "recommendations": [
+                {
+                    "category": "regulation_resilience",
+                    "template": "RSS_Base",
+                    "hardware_anchor": "cpu",
+                    "reason": "regulation trend rose",
+                }
+            ],
+            "spawned": [
+                {
+                    "name": "regulation_resilience_watch_01",
+                    "category": "regulation_resilience",
+                    "template": "RSS_Base",
+                    "hardware_anchor": "cpu",
+                }
+            ],
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            report_dir = Path(tmp).resolve()
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+                sock.bind(("127.0.0.1", 0))
+                port = sock.getsockname()[1]
+
+            self.shell.route(f"cd {root}")
+            with patch.dict(
+                os.environ,
+                {
+                    "INDUSTRY_SCAN_FILE": str(sample_news),
+                    "NOVA_RESONANCE_THRESHOLD": "0.35",
+                },
+                clear=False,
+            ), patch.object(self.shell, "_spawn_guardian_recommendations_from_source", return_value=spawned_payload) as spawn_mock:
+                start = self.shell.route(f"vision start {port}")
+                self.assertIsNone(start.error)
+                try:
+                    form_data = urllib.parse.urlencode(
+                        {
+                            "topic": "AI infrastructure agent runtime",
+                            "report_dir": str(report_dir),
+                            "threshold": "0.35",
+                            "auto_spawn": "on",
+                            "auto_train": "on",
+                        }
+                    ).encode("utf-8")
+                    request = urllib.request.Request(
+                        f"http://127.0.0.1:{port}/briefing/run",
+                        data=form_data,
+                        headers={"Content-Type": "application/x-www-form-urlencoded"},
+                        method="POST",
+                    )
+                    with urllib.request.urlopen(request, timeout=90) as response:
+                        result_page = response.read().decode("utf-8")
+
+                    self.assertIn("Auto-Spawn:</strong> aktiv", result_page)
+                    self.assertIn("Auto-Training:</strong> aktiv", result_page)
+                    self.assertIn("Erzeugte Sensoren", result_page)
+                    self.assertIn("Training", result_page)
+                    self.assertIn("Trainierte Records:", result_page)
+                    self.assertIn("regulation_resilience_watch_01", result_page)
+                    spawn_mock.assert_called_once()
+                finally:
+                    stop = self.shell.route("vision stop")
+                    self.assertIsNone(stop.error)
+
+    def test_vision_briefing_ui_can_spawn_recommendations_after_run(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        sample_news = (root / "sample_news.json").resolve()
+        spawned_payload = {
+            "dry_run": False,
+            "recommendations": [
+                {
+                    "category": "edge_ai",
+                    "template": "TrendRadar",
+                    "hardware_anchor": "cpu",
+                    "reason": "edge-ai trend rose",
+                }
+            ],
+            "spawned": [
+                {
+                    "name": "edge_ai_watch_01",
+                    "category": "edge_ai",
+                    "template": "TrendRadar",
+                    "hardware_anchor": "cpu",
+                }
+            ],
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            report_dir = Path(tmp).resolve()
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+                sock.bind(("127.0.0.1", 0))
+                port = sock.getsockname()[1]
+
+            self.shell.route(f"cd {root}")
+            with patch.dict(
+                os.environ,
+                {
+                    "INDUSTRY_SCAN_FILE": str(sample_news),
+                    "NOVA_RESONANCE_THRESHOLD": "0.35",
+                },
+                clear=False,
+            ), patch.object(self.shell, "_spawn_guardian_recommendations_from_source", return_value=spawned_payload) as spawn_mock:
+                start = self.shell.route(f"vision start {port}")
+                self.assertIsNone(start.error)
+                try:
+                    form_data = urllib.parse.urlencode(
+                        {
+                            "topic": "AI infrastructure agent runtime",
+                            "report_dir": str(report_dir),
+                            "threshold": "0.35",
+                        }
+                    ).encode("utf-8")
+                    request = urllib.request.Request(
+                        f"http://127.0.0.1:{port}/briefing/run",
+                        data=form_data,
+                        headers={"Content-Type": "application/x-www-form-urlencoded"},
+                        method="POST",
+                    )
+                    with urllib.request.urlopen(request, timeout=90) as response:
+                        result_page = response.read().decode("utf-8")
+
+                    self.assertIn("Empfohlene Sensoren jetzt erzeugen", result_page)
+                    match = re.search(r"name='run_id' value='([a-f0-9]+)'", result_page)
+                    self.assertIsNotNone(match)
+                    run_id = match.group(1)
+
+                    spawn_form = urllib.parse.urlencode({"run_id": run_id}).encode("utf-8")
+                    spawn_request = urllib.request.Request(
+                        f"http://127.0.0.1:{port}/briefing/spawn",
+                        data=spawn_form,
+                        headers={"Content-Type": "application/x-www-form-urlencoded"},
+                        method="POST",
+                    )
+                    with urllib.request.urlopen(spawn_request, timeout=90) as response:
+                        spawned_page = response.read().decode("utf-8")
+
+                    self.assertIn("Erzeugte Sensoren", spawned_page)
+                    self.assertIn("edge_ai_watch_01", spawned_page)
+                    spawn_mock.assert_called_once()
+                finally:
+                    stop = self.shell.route("vision stop")
+                    self.assertIsNone(stop.error)
+
     def test_remote_command_usage_error(self) -> None:
         result = self.shell.route("remote")
         self.assertIsNotNone(result.error)
@@ -626,6 +773,45 @@ if len(files_lines) == 2:
             self.assertTrue((report_dir / "rss_trend_report.html").exists())
             self.assertTrue((report_dir / "rss_morning_briefing.html").exists())
             self.assertTrue((report_dir / "rss_morning_briefing.txt").read_text(encoding="utf-8").strip())
+
+    def test_ns_run_morning_briefing_can_train_reports_into_memory_and_atheria(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        sample_news = (root / "sample_news.json").resolve()
+        with tempfile.TemporaryDirectory() as tmp:
+            report_dir = Path(tmp).resolve()
+            self.shell.route(f"cd {root}")
+            before_status = json.loads(self.shell.route("atheria status").output)
+            before_records = int(before_status.get("trained_records", 0))
+            with patch.dict(
+                os.environ,
+                {
+                    "INDUSTRY_SCAN_FILE": str(sample_news),
+                    "NOVA_BRIEFING_REPORT_DIR": str(report_dir),
+                    "INDUSTRY_TREND_STATE": str(report_dir / "trend_state.json"),
+                    "NOVA_RESONANCE_THRESHOLD": "0.35",
+                    "NOVA_BRIEFING_AUTO_TRAIN": "1",
+                },
+                clear=False,
+            ):
+                result = self.shell.route("ns.run morning_briefing.ns")
+
+            self.assertIsNone(result.error)
+            training_payload = json.loads(self.shell.flow_state.get("morning_briefing.training") or "{}")
+            self.assertTrue(training_payload.get("enabled"))
+            self.assertGreaterEqual(int(training_payload.get("trained_records", 0)), 3)
+            self.assertEqual(
+                set(training_payload.get("memory_ids", [])),
+                {"briefing_resonance_report", "briefing_trend_report", "briefing_morning_report"},
+            )
+
+            listing = self.shell.route("memory list --namespace morning_briefing --project rss_monitoring")
+            self.assertIsNone(listing.error)
+            memory_payload = json.loads(listing.output)
+            ids = {item["id"] for item in memory_payload}
+            self.assertTrue({"briefing_resonance_report", "briefing_trend_report", "briefing_morning_report"}.issubset(ids))
+
+            after_status = json.loads(self.shell.route("atheria status").output)
+            self.assertGreaterEqual(int(after_status.get("trained_records", 0)), before_records + 3)
 
 
     def test_mesh_add_and_list(self) -> None:

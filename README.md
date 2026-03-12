@@ -186,6 +186,8 @@ Die Web-UI kann:
 
 - ein Thema der Trendanalyse entgegennehmen
 - daraus die Feed-Kombination fuer `morning_briefing.ns` ableiten
+- optional empfohlene Sensoren direkt automatisch erzeugen
+- optional die erzeugten TXT-Reports direkt in Atheria und das Vector Memory trainieren
 - automatisch diese Dateien erzeugen:
   - `rss_resonance_report.txt`
   - `rss_resonance_report.html`
@@ -195,6 +197,8 @@ Die Web-UI kann:
   - `rss_morning_briefing.html`
 - die Inhalte direkt im Browser anzeigen
 - alle erzeugten Reports als Dateien zum Download anbieten
+- Guardian-Empfehlungen anzeigen und nach dem Lauf per Button in echte Sensoren umsetzen
+- den Trainingsstatus mit trainierten Records und Memory-Eintraegen anzeigen
 
 Fuer einen offline-faehigen Test kannst du vor dem Start von `vision` auch `INDUSTRY_SCAN_FILE` auf `sample_news.json` setzen.
 
@@ -295,7 +299,7 @@ Direkter Installer-Build:
 ```bash
 python scripts/build_release.py --profile core --mode installers
 SOURCE_DATE_EPOCH=1700000000 python scripts/build_release.py --profile core --mode all --clean
-python scripts/build_release.py --profile core --mode all --base-download-url "https://github.com/<org>/<repo>/releases/download/v0.8.7"
+python scripts/build_release.py --profile core --mode all --base-download-url "https://github.com/<org>/<repo>/releases/download/v0.8.9"
 python scripts/generate_release_notes.py --root dist/release --output dist/release/release-notes.md
 python scripts/sign_release.py --root dist/release --verify
 ```

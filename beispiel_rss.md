@@ -579,6 +579,81 @@ Dieser Weg erzeugt automatisch:
 - `D:\Nova-shell\reports\morning\rss_morning_briefing.txt`
 - `D:\Nova-shell\reports\morning\rss_morning_briefing.html`
 
+### 24.1 Morning Briefing per Web-UI
+
+Wenn du den Ablauf nicht per `ns.run`, sondern ueber eine lokale Web-Oberflaeche steuern willst, nutzt du den integrierten `vision`-Server.
+
+Start in Nova-shell:
+
+```text
+vision start 8765
+```
+
+Dann im Browser:
+
+```text
+http://127.0.0.1:8765/briefing
+```
+
+Der praktische Ablauf ist jetzt:
+
+1. Thema eingeben
+2. optional `Empfohlene Sensoren nach dem Briefing direkt erzeugen` aktivieren
+3. optional `Ergebnisse direkt in Atheria und das Vector Memory uebernehmen` aktivieren
+4. `Morning Briefing ausfuehren`
+5. Reports direkt im Browser lesen oder herunterladen
+6. wenn `Auto-Spawn` nicht aktiv war: per Button `Empfohlene Sensoren jetzt erzeugen` nachtraeglich spawnen
+
+### 24.2 Erweiterte Feed-Konfiguration in der Web-UI
+
+Im Bereich `Erweiterte Feed-Konfiguration` findest du das Feld `Eigene Feed-Liste`.
+
+Das Feld ist optional:
+
+- leer: Nova-shell erzeugt automatisch die Standard-Kombination aus NYT Technology, TechCrunch und Google-News-RSS passend zum Thema
+- befuellt: Nova-shell nutzt genau die von dir eingetragenen Feeds
+
+Wichtig:
+
+- mehrere Quellen werden kommasepariert eingetragen
+- RSS- und Atom-Feeds koennen gemischt werden
+- das Feld ueberschreibt die Standard-Feed-Kombination fuer genau diesen Briefing-Run
+
+Beispiel fuer `Eigene Feed-Liste`:
+
+```text
+https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml,https://feeds.feedburner.com/TechCrunch/,https://news.google.com/rss/search?q=edge+ai+inference
+```
+
+Beispiel fuer einen spezialisierten Infrastruktur-Run:
+
+```text
+https://news.google.com/rss/search?q=ai+infrastructure+agent+runtime,https://news.google.com/rss/search?q=edge+ai+deployment,https://feeds.feedburner.com/TechCrunch/
+```
+
+Praktisch bedeutet das:
+
+- im Feld `Thema der Trendanalyse` kannst du z. B. `Edge AI` eintragen
+- in `Eigene Feed-Liste` kannst du parallel eine sehr gezielte Feed-Auswahl fuer genau dieses Thema setzen
+- dadurch steuerst du, wie breit oder wie fokussiert das Morning Briefing scannt
+
+Die Web-UI erzeugt denselben Report-Satz wie `ns.run morning_briefing.ns`:
+
+- `rss_resonance_report.txt`
+- `rss_resonance_report.html`
+- `rss_trend_report.txt`
+- `rss_trend_report.html`
+- `rss_morning_briefing.txt`
+- `rss_morning_briefing.html`
+
+Zusaetzlich zeigt sie direkt:
+
+- die Morning-Briefing-Zusammenfassung
+- Guardian-Empfehlungen fuer neue Sensoren
+- erzeugte Sensoren nach Auto-Spawn oder nach manuellem Spawn
+- den Trainingsstatus inklusive trainierter Records und erzeugter Memory-Eintraege
+- Download-Links fuer alle TXT- und HTML-Dateien
+
 Wenn du statt Live-RSS zuerst lokal mit Beispieldaten testen willst:
 
 ```text
@@ -594,4 +669,6 @@ Hinweise:
 
 - `morning_briefing.ns` initialisiert `Atheria`, schreibt Whitepaper und Dokumentation ins Memory und fuehrt `BigPlayerWatcher`, `TrendRadar` und `atheria guardian recommend` in einem Lauf aus.
 - Die HTML-Dateien enthalten den Guardian-Output zusaetzlich als HTML-Kommentar.
-- Fuer `0.8.5` ist das der schnellste produktive Weg, um morgens direkt HTML- und TXT-Berichte zu erzeugen.
+- In der Briefing-Web-UI kannst du empfohlene Sensoren jetzt entweder direkt per Auto-Spawn erzeugen oder nach dem Run ueber den Button `Empfohlene Sensoren jetzt erzeugen` anlegen.
+- Wenn `Ergebnisse direkt in Atheria und das Vector Memory uebernehmen` aktiv ist, trainiert Nova-shell die drei erzeugten TXT-Reports direkt in Atheria und legt sie gleichzeitig als Memory-Eintraege ab.
+- Fuer `0.8.9` ist das der schnellste produktive Weg, um morgens direkt HTML- und TXT-Berichte zu erzeugen.

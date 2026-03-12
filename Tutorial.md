@@ -2,7 +2,7 @@
 
 ## Ziel dieses Tutorials
 
-Dieses Tutorial zeigt Schritt fuer Schritt, wie man in Nova-shell programmiert. Der Fokus liegt auf echten, copy-paste-faehigen Beispielen mit dem aktuellen Stand von Nova-shell 0.8.7.
+Dieses Tutorial zeigt Schritt fuer Schritt, wie man in Nova-shell programmiert. Der Fokus liegt auf echten, copy-paste-faehigen Beispielen mit dem aktuellen Stand von Nova-shell 0.8.9.
 
 Die Beispiele sind in erster Linie fuer die interaktive Nova-shell gedacht. Viele Kommandos bauen auf dem Zustand derselben Session auf, zum Beispiel Python-Variablen, Flow-State, Lens-Snapshots oder Zero-Handles.
 
@@ -637,6 +637,14 @@ In der Web-Oberflaeche gibst du das Thema der Trendanalyse ein. Nova-shell fuehr
 - `rss_trend_report.html`
 - `rss_morning_briefing.txt`
 - `rss_morning_briefing.html`
+
+Neu in der Web-UI:
+
+- Checkbox fuer Auto-Spawn direkt beim Start
+- Checkbox fuer Auto-Training direkt beim Start
+- Guardian-Empfehlungen nach dem Lauf sichtbar im Browser
+- Button, um empfohlene Sensoren nachtraeglich direkt aus dem Briefing heraus zu erzeugen
+- Trainingsstatus fuer die in Atheria und Memory uebernommenen Reports
 
 Fuer einen Offline-Test kannst du davor in derselben Session eine lokale Eingabedatei setzen:
 

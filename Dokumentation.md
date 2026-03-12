@@ -1,6 +1,6 @@
 # Nova-shell Dokumentation
 
-Diese Datei ist die vollstaendige Command-Referenz fuer Nova-shell 0.8.7. Sie listet die verfuegbaren Kommandos, ihre Subcommands, eine kurze Erklaerung und jeweils mindestens ein Beispiel.
+Diese Datei ist die vollstaendige Command-Referenz fuer Nova-shell 0.8.9. Sie listet die verfuegbaren Kommandos, ihre Subcommands, eine kurze Erklaerung und jeweils mindestens ein Beispiel.
 
 ## Schreibweise und Grundprinzip
 
@@ -515,6 +515,7 @@ Wenn der Vision-Server laeuft, stellt er neben JSON-Endpunkten auch eine lokale 
 
 - `GET /` und `GET /briefing`: Formular fuer ein Atheria-Morning-Briefing im Browser
 - `POST /briefing/run`: Fuehrt den Morning-Briefing-Workflow mit dem angegebenen Thema aus
+- `POST /briefing/spawn`: Erzeugt die fuer einen vorhandenen Briefing-Run empfohlenen Sensoren
 - `GET /briefing/result?run_id=<id>`: Zeigt eine aufbereitete Ergebnisseite
 - `GET /briefing/view?run_id=<id>&file=<key>`: Zeigt einen erzeugten Report inline an
 - `GET /briefing/download?run_id=<id>&file=<key>`: Laedt einen erzeugten Report herunter
@@ -527,6 +528,15 @@ Die Briefing-Weboberflaeche erzeugt ueber `morning_briefing.ns` automatisch:
 - `rss_trend_report.html`
 - `rss_morning_briefing.txt`
 - `rss_morning_briefing.html`
+
+Zusatzfunktionen der Briefing-Weboberflaeche:
+
+- Checkbox fuer Auto-Spawn direkt im Formular
+- Checkbox fuer Auto-Training direkt im Formular
+- Guardian-Empfehlungen als eigener Abschnitt auf der Ergebnisseite
+- Button `Empfohlene Sensoren jetzt erzeugen`, wenn du nicht sofort Auto-Spawn aktivieren willst
+- Anzeige der wirklich erzeugten Sensoren inklusive Kategorie, Template und Hardware-Anchor
+- Trainingsblock mit trainierten Records und den erzeugten Memory-IDs fuer die Briefing-Reports
 
 Beispiel:
 

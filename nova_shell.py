@@ -52,7 +52,7 @@ except ImportError:  # pragma: no cover - platform dependent
     readline = None
 
 
-__version__ = "0.8.7"
+__version__ = "0.8.9"
 SIDELOAD_PACKAGE_DIR = "vendor-py"
 RUNTIME_CONFIG_FILE = "nova-shell-runtime.json"
 BRIEFING_REPORT_FILES: tuple[tuple[str, str, str], ...] = (
@@ -4178,6 +4178,8 @@ class VisionServer:
         feeds = html.escape(values.get("feeds", ""))
         threshold = html.escape(values.get("threshold", "0.35"))
         report_dir = html.escape(values.get("report_dir", str(self.shell._resource_root() / "reports" / "morning")))
+        auto_spawn_checked = "checked" if str(values.get("auto_spawn", "")).strip().lower() in {"1", "true", "on", "yes"} else ""
+        auto_train_checked = "checked" if str(values.get("auto_train", "")).strip().lower() in {"1", "true", "on", "yes"} else ""
         error_block = ""
         if error:
             error_block = f"<p class='error'>{html.escape(error)}</p>"
@@ -4238,6 +4240,16 @@ class VisionServer:
       display: grid;
       gap: 6px;
       font-weight: 600;
+    }}
+    .checkbox {{
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      font-weight: 600;
+    }}
+    .checkbox input {{
+      width: auto;
+      margin: 0;
     }}
     input, textarea {{
       width: 100%;
@@ -4331,6 +4343,14 @@ class VisionServer:
           </label>
           <p class="hint">Leer lassen, um die Standard-Feed-Kombination aus dem Thema zu erzeugen.</p>
         </details>
+        <label class="checkbox">
+          <input type="checkbox" name="auto_spawn" value="on" {auto_spawn_checked}>
+          Empfohlene Sensoren nach dem Briefing direkt erzeugen
+        </label>
+        <label class="checkbox">
+          <input type="checkbox" name="auto_train" value="on" {auto_train_checked}>
+          Ergebnisse direkt in Atheria und das Vector Memory uebernehmen
+        </label>
         <div class="actions">
           <button type="submit">Morning Briefing ausführen</button>
           <a href="/commands">JSON Commands</a>
@@ -4349,6 +4369,21 @@ class VisionServer:
         report_dir = html.escape(str(run.get("report_dir", "")))
         summary = html.escape(str(run.get("summary", "")))
         created_at = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(float(run.get("generated_at", time.time()))))
+        auto_spawn = bool(run.get("auto_spawn"))
+        auto_train = bool(run.get("auto_train"))
+        guardian_payload = run.get("guardian_payload") if isinstance(run.get("guardian_payload"), dict) else {}
+        recommendations = guardian_payload.get("spawn_recommendations") if isinstance(guardian_payload, dict) else []
+        if not isinstance(recommendations, list):
+            recommendations = []
+        spawned_payload = run.get("spawned_payload") if isinstance(run.get("spawned_payload"), dict) else {}
+        spawned_items = spawned_payload.get("spawned") if isinstance(spawned_payload, dict) else []
+        if not isinstance(spawned_items, list):
+            spawned_items = []
+        training_payload = run.get("training_payload") if isinstance(run.get("training_payload"), dict) else {}
+        training_memory_ids = training_payload.get("memory_ids") if isinstance(training_payload, dict) else []
+        if not isinstance(training_memory_ids, list):
+            training_memory_ids = []
+        spawn_error = html.escape(str(run.get("spawn_error", "")))
         cards: list[str] = []
         previews: list[str] = []
         files = run.get("files", {})
@@ -4384,6 +4419,80 @@ class VisionServer:
                 "<section class='preview frame'>"
                 f"<div class='frame-head'><h3>{label}</h3><a href='{view_path}' target='_blank' rel='noopener'>HTML separat öffnen</a></div>"
                 f"<iframe src='{view_path}' loading='lazy' title='{label}'></iframe>"
+                "</section>"
+            )
+        guardian_items_html = "".join(
+            [
+                "<li>"
+                f"<strong>{html.escape(str(item.get('category', '')))}</strong> | "
+                f"template={html.escape(str(item.get('template', '')))} | "
+                f"anchor={html.escape(str(item.get('hardware_anchor', 'cpu')))}"
+                f"<br><small>{html.escape(str(item.get('reason', '')))}</small>"
+                "</li>"
+                for item in recommendations
+            ]
+        )
+        spawned_items_html = "".join(
+            [
+                "<li>"
+                f"<strong>{html.escape(str(item.get('name', '')))}</strong> | "
+                f"category={html.escape(str(item.get('category', '')))} | "
+                f"template={html.escape(str(item.get('template', '')))} | "
+                f"anchor={html.escape(str(item.get('hardware_anchor', 'cpu')))}"
+                "</li>"
+                for item in spawned_items
+            ]
+        )
+        training_items_html = "".join(
+            [f"<li><code>{html.escape(str(item))}</code></li>" for item in training_memory_ids if str(item).strip()]
+        )
+        run_id_query = urllib.parse.quote(str(run.get("run_id", "")))
+        recommendation_block = ""
+        if recommendations:
+            spawn_form = ""
+            if not spawned_items:
+                spawn_form = (
+                    "<form method='post' action='/briefing/spawn' style='margin-top:16px;'>"
+                    f"<input type='hidden' name='run_id' value='{run_id}'>"
+                    "<button type='submit'>Empfohlene Sensoren jetzt erzeugen</button>"
+                    "</form>"
+                )
+            recommendation_block = (
+                "<section class='panel'>"
+                "<h2>Guardian-Empfehlungen</h2>"
+                f"<p>{len(recommendations)} Empfehlungen wurden aus dem Trendsignal abgeleitet.</p>"
+                f"<ul>{guardian_items_html}</ul>"
+                f"{spawn_form}"
+                "</section>"
+            )
+        spawned_block = ""
+        if spawned_payload:
+            spawned_count = len(spawned_items)
+            mode_label = "automatisch erzeugt" if auto_spawn else "nachträglich erzeugt"
+            spawned_block = (
+                "<section class='panel'>"
+                "<h2>Erzeugte Sensoren</h2>"
+                f"<p>{spawned_count} Sensoren wurden {mode_label}.</p>"
+                f"<ul>{spawned_items_html or '<li>Es wurden keine Sensoren erzeugt.</li>'}</ul>"
+                "</section>"
+            )
+        error_block = ""
+        if spawn_error:
+            error_block = (
+                "<section class='panel'>"
+                "<h2>Spawn-Fehler</h2>"
+                f"<p>{spawn_error}</p>"
+                "</section>"
+            )
+        training_block = ""
+        if training_payload:
+            training_block = (
+                "<section class='panel'>"
+                "<h2>Training</h2>"
+                f"<p><strong>Auto-Training:</strong> {'aktiv' if auto_train else 'aus'}</p>"
+                f"<p><strong>Trainierte Records:</strong> {html.escape(str(training_payload.get('trained_records', 0)))}</p>"
+                f"<p><strong>Memory-Eintraege:</strong> {html.escape(str(len(training_memory_ids)))}</p>"
+                f"<ul>{training_items_html or '<li>Keine zusaetzlichen Memory-Eintraege fuer diesen Run.</li>'}</ul>"
                 "</section>"
             )
         return f"""<!doctype html>
@@ -4505,13 +4614,19 @@ class VisionServer:
         <div><strong>Run ID:</strong> <code>{run_id}</code></div>
         <div><strong>Report-Ordner:</strong> <code>{report_dir}</code></div>
         <div><strong>Zeit:</strong> {html.escape(created_at)}</div>
+        <div><strong>Auto-Spawn:</strong> {"aktiv" if auto_spawn else "aus"}</div>
+        <div><strong>Auto-Training:</strong> {"aktiv" if auto_train else "aus"}</div>
       </div>
       <div class="summary">{summary}</div>
       <div class="toolbar">
         <a href="/briefing">Neuen Run starten</a>
-        <a href="/briefing/result?run_id={urllib.parse.quote(str(run.get("run_id", "")))}">Diese Seite neu laden</a>
+        <a href="/briefing/result?run_id={run_id_query}">Diese Seite neu laden</a>
       </div>
     </section>
+    {recommendation_block}
+    {spawned_block}
+    {training_block}
+    {error_block}
     <section class="panel">
       <h2>Dateien</h2>
       <div class="cards">{''.join(cards)}</div>
@@ -4544,6 +4659,18 @@ class VisionServer:
         if not path.is_file():
             return None
         return path, content_type
+
+    def _spawn_recommended_for_run(self, run_id: str) -> dict[str, Any]:
+        run = self._briefing_runs.get(run_id)
+        if not isinstance(run, dict):
+            raise KeyError(run_id)
+        source = run.get("trend_payload")
+        if source is None:
+            raise ValueError("no trend payload is available for this run")
+        payload = self.shell._spawn_guardian_recommendations_from_source(source, source_label=f"briefing:{run_id}")
+        run["spawned_payload"] = payload
+        run.pop("spawn_error", None)
+        return payload
 
     def start(self, host: str = "127.0.0.1", port: int = 8765) -> CommandResult:
         if self._server is not None:
@@ -4685,11 +4812,36 @@ class VisionServer:
                                 report_dir_text=fields.get("report_dir", ""),
                                 feeds_text=fields.get("feeds", ""),
                                 resonance_threshold=fields.get("threshold", ""),
+                                auto_spawn=str(fields.get("auto_spawn", "")).strip().lower() in {"1", "true", "on", "yes"},
+                                auto_train=str(fields.get("auto_train", "")).strip().lower() in {"1", "true", "on", "yes"},
                             )
                         vision._briefing_runs[str(run["run_id"])] = run
                         self._write_html(vision._briefing_result_html(run))
                     except Exception as exc:
                         self._write_html(vision._briefing_form_html(defaults=fields, error=str(exc)), status=500)
+                    return
+                if parsed.path in {"/briefing/spawn", "/atheria/briefing/spawn"}:
+                    fields = self._read_form_data(body)
+                    run_id = fields.get("run_id", "").strip()
+                    if not run_id:
+                        self._write_html(vision._briefing_form_html(error="run_id fehlt für den Spawn-Vorgang."), status=400)
+                        return
+                    try:
+                        with vision._briefing_lock:
+                            vision._spawn_recommended_for_run(run_id)
+                        run = vision._briefing_runs.get(run_id)
+                        if not isinstance(run, dict):
+                            raise KeyError(run_id)
+                        self._write_html(vision._briefing_result_html(run))
+                    except KeyError:
+                        self._write_html(vision._briefing_form_html(error="Der angeforderte Run wurde nicht gefunden."), status=404)
+                    except Exception as exc:
+                        run = vision._briefing_runs.get(run_id)
+                        if isinstance(run, dict):
+                            run["spawn_error"] = str(exc)
+                            self._write_html(vision._briefing_result_html(run), status=500)
+                        else:
+                            self._write_html(vision._briefing_form_html(error=str(exc)), status=500)
                     return
 
                 if parsed.path == "/fabric/put":
@@ -5069,6 +5221,8 @@ class NovaShell:
         report_dir_text: str = "",
         feeds_text: str = "",
         resonance_threshold: str = "",
+        auto_spawn: bool = False,
+        auto_train: bool = False,
     ) -> dict[str, Any]:
         resource_root = self._resource_root()
         script_path = resource_root / "morning_briefing.ns"
@@ -5089,6 +5243,8 @@ class NovaShell:
         }
         if resonance_threshold.strip():
             env_updates["NOVA_RESONANCE_THRESHOLD"] = resonance_threshold.strip()
+        if auto_train:
+            env_updates["NOVA_BRIEFING_AUTO_TRAIN"] = "1"
         previous_env = {key: os.environ.get(key) for key in env_updates}
         run_id = uuid.uuid4().hex[:12]
         try:
@@ -5111,6 +5267,17 @@ class NovaShell:
         if result.error:
             raise RuntimeError(result.error)
 
+        resonance_payload = self._structured_flow_state_value("morning_briefing.resonance")
+        trend_payload = self._structured_flow_state_value("morning_briefing.trend")
+        guardian_payload = self._structured_flow_state_value("morning_briefing.guardian")
+        training_payload = self._structured_flow_state_value("morning_briefing.training")
+        if not isinstance(guardian_payload, dict) or not isinstance(guardian_payload.get("spawn_recommendations"), list):
+            with contextlib.suppress(Exception):
+                guardian_payload = self._guardian_recommendations_from_source(
+                    trend_payload,
+                    source_label=f"briefing:{run_id}",
+                )
+
         files: dict[str, dict[str, Any]] = {}
         for key, filename, content_type in BRIEFING_REPORT_FILES:
             path = report_dir / filename
@@ -5130,7 +5297,7 @@ class NovaShell:
 
         summary_path = report_dir / "rss_morning_briefing.txt"
         summary = summary_path.read_text(encoding="utf-8", errors="replace").strip()
-        return {
+        run = {
             "run_id": run_id,
             "topic": topic.strip() or "AI infrastructure agent runtime",
             "report_dir": str(report_dir),
@@ -5138,7 +5305,66 @@ class NovaShell:
             "generated_at": time.time(),
             "output": result.output,
             "files": files,
+            "resonance_payload": resonance_payload,
+            "trend_payload": trend_payload,
+            "guardian_payload": guardian_payload,
+            "auto_spawn": bool(auto_spawn),
+            "auto_train": bool(auto_train),
+            "training_payload": training_payload,
         }
+        if auto_spawn:
+            run["spawned_payload"] = self._spawn_guardian_recommendations_from_source(
+                trend_payload,
+                source_label=f"briefing:{run_id}",
+            )
+        return run
+
+    def _structured_flow_state_value(self, key: str) -> Any:
+        raw = self.flow_state.get(key)
+        if raw is None:
+            return {}
+        text = str(raw).strip()
+        if not text:
+            return {}
+        with contextlib.suppress(Exception):
+            return copy.deepcopy(self._load_structured_payload(text))
+        return copy.deepcopy(raw)
+
+    def _spawn_guardian_recommendations_from_source(
+        self,
+        source: Any,
+        *,
+        source_label: str = "",
+        limit: int | None = None,
+        dry_run: bool = False,
+    ) -> dict[str, Any]:
+        evolution_plan = self.atheria.simulate_evolution(source, source_label=source_label).get("plan")
+        if not isinstance(evolution_plan, dict) or not evolution_plan:
+            raise ValueError("unable to derive guardian recommendations from the provided trend source")
+        payload = self.atheria_sensors.guardian_spawn_recommended(
+            evolution_plan=evolution_plan,
+            limit=limit,
+            dry_run=dry_run,
+        )
+        self.flow_state.set("morning_briefing.spawned", json.dumps(payload, ensure_ascii=False))
+        if payload.get("spawned"):
+            self._publish_event("atheria.guardian.spawned", json.dumps(payload, ensure_ascii=False), broadcast=False)
+        return payload
+
+    def _guardian_recommendations_from_source(
+        self,
+        source: Any,
+        *,
+        source_label: str = "",
+        limit: int | None = None,
+    ) -> dict[str, Any]:
+        evolution_plan = self.atheria.simulate_evolution(source, source_label=source_label).get("plan")
+        if not isinstance(evolution_plan, dict) or not evolution_plan:
+            raise ValueError("unable to derive guardian recommendations from the provided trend source")
+        payload = self.atheria_sensors.guardian_status(evolution_plan=evolution_plan)
+        if limit is not None and isinstance(payload.get("spawn_recommendations"), list):
+            payload["spawn_recommendations"] = payload["spawn_recommendations"][: max(0, int(limit))]
+        return payload
 
     def _cd(self, path_arg: str, _: str, __: Any) -> CommandResult:
         parts = split_command(path_arg)
@@ -5261,10 +5487,10 @@ class NovaShell:
             return CommandResult(output=json.dumps(stats, ensure_ascii=False) + "\n", data=stats, data_type=PipelineType.OBJECT)
         return CommandResult(output="Usage: events last|clear|stats\n")
 
-    def _tail_follow(self, file_path: Path, follow_seconds: float) -> Iterable[str]:
-        initial_size = file_path.stat().st_size if file_path.exists() else 0
+    def _tail_follow(self, file_path: Path, follow_seconds: float, *, initial_size: int | None = None) -> Iterable[str]:
+        observed_size = initial_size if initial_size is not None else (file_path.stat().st_size if file_path.exists() else 0)
         with file_path.open("r", encoding="utf-8") as handle:
-            if initial_size > 0:
+            if observed_size > 0:
                 handle.seek(0, os.SEEK_END)
             else:
                 handle.seek(0)
@@ -5307,7 +5533,8 @@ class NovaShell:
             return CommandResult(output="", error=f"file not found: {file_path}")
 
         if follow_seconds > 0:
-            return CommandResult(output="", data=self._tail_follow(file_path, follow_seconds), data_type=PipelineType.GENERATOR)
+            initial_size = file_path.stat().st_size if file_path.exists() else 0
+            return CommandResult(output="", data=self._tail_follow(file_path, follow_seconds, initial_size=initial_size), data_type=PipelineType.GENERATOR)
 
         lines = file_path.read_text(encoding="utf-8").splitlines()
         selected = lines[-lines_count:]

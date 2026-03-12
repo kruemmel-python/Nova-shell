@@ -17,6 +17,8 @@ Der Ablauf macht automatisch:
 5. ruft `atheria guardian recommend` auf dem Trend-Signal auf
 6. schreibt drei Textdateien und drei HTML-Dateien
 7. gibt eine kompakte Zusammenfassung in der Nova-shell-REPL aus
+8. kann in der Web-UI empfohlene Sensoren direkt erzeugen oder per Auto-Spawn sofort anlegen
+9. kann die erzeugten TXT-Reports direkt in Atheria und das Vector Memory uebernehmen
 
 Erzeugte Dateien standardmaessig unter `reports/`:
 
@@ -28,6 +30,22 @@ Erzeugte Dateien standardmaessig unter `reports/`:
 - `rss_morning_briefing.html`
 
 Die HTML-Dateien enthalten den Guardian-Output zusaetzlich als HTML-Kommentar.
+
+## Web-UI mit optionalem Auto-Spawn und Auto-Training
+
+Die Briefing-Weboberflaeche unter `vision start 8765` bietet jetzt zwei Wege:
+
+- normaler Run: Reports erzeugen, Guardian-Empfehlungen anzeigen, danach per Button `Empfohlene Sensoren jetzt erzeugen`
+- Auto-Spawn: beim Start des Briefings direkt aktivieren, damit die empfohlenen Sensoren sofort angelegt werden
+- Auto-Training: beim Start `Ergebnisse direkt in Atheria und das Vector Memory uebernehmen` aktivieren, damit Resonanz-, Trend- und Briefing-Report sofort in den Wissensspeicher geschrieben werden
+
+Typischer Ablauf in der Web-UI:
+
+1. Thema eingeben
+2. optional `Empfohlene Sensoren nach dem Briefing direkt erzeugen` aktivieren
+3. optional `Ergebnisse direkt in Atheria und das Vector Memory uebernehmen` aktivieren
+4. Briefing starten
+5. Reports, Guardian-Empfehlungen, Trainingsstatus und erzeugte Sensoren direkt im Browser pruefen
 
 ## Typischer Start
 
