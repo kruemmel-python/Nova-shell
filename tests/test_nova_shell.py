@@ -15,7 +15,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from nova_shell import CommandResult, CppEngine, NovaAtheriaRuntime, NovaShell, PipelineType, __version__, main
+from nova_shell import CommandResult, CppEngine, NovaAtheriaRuntime, NovaShell, PipelineType, __version__, main, render_trend_explanation
 from novascript import Assignment, Command, ForLoop, IfBlock, NovaInterpreter, NovaParser
 
 
@@ -95,6 +95,38 @@ class NovaShellTests(unittest.TestCase):
         result = self.shell.route('py flow.state.get("last_match")["metadata"]["items"][0]["title"]')
         self.assertIsNone(result.error)
         self.assertEqual(result.output.strip(), "Example headline")
+
+    def test_render_trend_explanation_produces_written_outlook(self) -> None:
+        guardian_payload = {
+            "spawn_recommendations": [
+                {
+                    "category": "edge_ai",
+                    "template": "TrendRadar",
+                    "hardware_anchor": "cpu",
+                    "reason": "edge-ai trend rose",
+                }
+            ]
+        }
+        trend_payload = {
+            "metadata": {
+                "forecast_direction": "emerging_uptrend",
+                "forecast_score": 0.83,
+                "confidence": 0.71,
+                "trend_acceleration": 0.08,
+                "history_length": 6,
+                "items": [{"title": "Edge AI demand rises"}] * 4,
+                "deltas": {
+                    "signal_strength": 0.16,
+                    "resource_pressure": 0.11,
+                    "structural_tension": 0.09,
+                },
+            }
+        }
+        text = render_trend_explanation(guardian_payload, trend_payload)
+        self.assertIn("ist davon auszugehen", text)
+        self.assertIn("Edge-KI", text)
+        self.assertIn("Forecast-Score von 0.83", text)
+        self.assertIn("Guardian", text)
 
     def test_pipeline_to_python(self) -> None:
         result = self.shell.route("echo hello | py _.strip().upper()")
@@ -360,12 +392,17 @@ class NovaShellTests(unittest.TestCase):
                     with urllib.request.urlopen(f"http://127.0.0.1:{port}/briefing", timeout=20) as response:
                         page = response.read().decode("utf-8")
                     self.assertIn("Trendanalyse per Web-Oberfl", page)
+                    self.assertIn("Referenzkontext", page)
 
+                    reference_file = report_dir / "briefing_context.md"
+                    reference_file.write_text("Custom context for briefing.\n", encoding="utf-8")
                     form_data = urllib.parse.urlencode(
                         {
                             "topic": "AI infrastructure agent runtime",
                             "report_dir": str(report_dir),
                             "threshold": "0.35",
+                            "reference_files": str(reference_file),
+                            "include_default_context": "on",
                         }
                     ).encode("utf-8")
                     request = urllib.request.Request(
@@ -378,6 +415,8 @@ class NovaShellTests(unittest.TestCase):
                         result_page = response.read().decode("utf-8")
 
                     self.assertIn("Morning Briefing abgeschlossen", result_page)
+                    self.assertIn("Referenzkontext", result_page)
+                    self.assertIn("Ausfuehrliche Einordnung", result_page)
                     self.assertIn("rss_morning_briefing.html", result_page)
                     match = re.search(r"run_id=([a-f0-9]+)&amp;file=morning_txt", result_page)
                     self.assertIsNotNone(match)
@@ -772,7 +811,12 @@ if len(files_lines) == 2:
             self.assertTrue((report_dir / "rss_resonance_report.html").exists())
             self.assertTrue((report_dir / "rss_trend_report.html").exists())
             self.assertTrue((report_dir / "rss_morning_briefing.html").exists())
-            self.assertTrue((report_dir / "rss_morning_briefing.txt").read_text(encoding="utf-8").strip())
+            trend_text = (report_dir / "rss_trend_report.txt").read_text(encoding="utf-8")
+            morning_text = (report_dir / "rss_morning_briefing.txt").read_text(encoding="utf-8")
+            trend_html = (report_dir / "rss_trend_report.html").read_text(encoding="utf-8")
+            self.assertIn("Assessment:", trend_text)
+            self.assertIn("auszugehen", morning_text)
+            self.assertIn("Interpretation", trend_html)
 
     def test_ns_run_morning_briefing_can_train_reports_into_memory_and_atheria(self) -> None:
         root = Path(__file__).resolve().parents[1]
@@ -812,6 +856,39 @@ if len(files_lines) == 2:
 
             after_status = json.loads(self.shell.route("atheria status").output)
             self.assertGreaterEqual(int(after_status.get("trained_records", 0)), before_records + 3)
+
+    def test_run_morning_briefing_can_use_custom_reference_files_without_defaults(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        sample_news = (root / "sample_news.json").resolve()
+        with tempfile.TemporaryDirectory() as tmp:
+            report_dir = Path(tmp).resolve()
+            custom_reference = report_dir / "market_strategy.md"
+            custom_reference.write_text("# Strategy\nFocus on edge inference.\n", encoding="utf-8")
+            self.shell.route(f"cd {root}")
+            with patch.dict(
+                os.environ,
+                {
+                    "INDUSTRY_SCAN_FILE": str(sample_news),
+                    "NOVA_RESONANCE_THRESHOLD": "0.35",
+                },
+                clear=False,
+            ):
+                run = self.shell._run_morning_briefing_job(
+                    topic="AI infrastructure agent runtime",
+                    report_dir_text=str(report_dir),
+                    reference_files_text=str(custom_reference),
+                    include_default_context=False,
+                )
+            reference_payload = run.get("reference_payload", {})
+            embedded = reference_payload.get("embedded", [])
+            self.assertEqual(len(embedded), 1)
+            self.assertEqual(embedded[0]["path"], str(custom_reference))
+            self.assertFalse(reference_payload.get("include_default_context"))
+            listing = self.shell.route("memory list --namespace morning_briefing --project rss_monitoring")
+            self.assertIsNone(listing.error)
+            memory_payload = json.loads(listing.output)
+            paths = {str(item.get("metadata", {}).get("source_file", "")) for item in memory_payload}
+            self.assertIn(str(custom_reference), paths)
 
 
     def test_mesh_add_and_list(self) -> None:

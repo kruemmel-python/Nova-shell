@@ -52,7 +52,7 @@ except ImportError:  # pragma: no cover - platform dependent
     readline = None
 
 
-__version__ = "0.8.9"
+__version__ = "0.8.10"
 SIDELOAD_PACKAGE_DIR = "vendor-py"
 RUNTIME_CONFIG_FILE = "nova-shell-runtime.json"
 BRIEFING_REPORT_FILES: tuple[tuple[str, str, str], ...] = (
@@ -111,7 +111,56 @@ def safe_platform_string() -> str:
     return platform.platform()
 
 
-def render_morning_briefing_summary(guardian_payload: Any, trend_payload: Any) -> str:
+def _trend_focus_labels(categories: list[str]) -> str:
+    labels = {
+        "edge_ai": "Edge-KI",
+        "local_inference": "lokale Inferenz",
+        "gpu_runtime": "GPU-Laufzeiten",
+        "datacenter_scale": "skalierbare KI-Infrastruktur",
+        "regulation_resilience": "regulatorische Robustheit",
+        "research_depth": "angewandte KI-Forschung",
+        "sensor_density": "dichte Markt- und Signalsensorik",
+    }
+    resolved = [labels.get(item, item.replace("_", " ")) for item in categories if item]
+    if not resolved:
+        return "dem beobachteten Themenfeld"
+    if len(resolved) == 1:
+        return resolved[0]
+    if len(resolved) == 2:
+        return f"{resolved[0]} und {resolved[1]}"
+    return ", ".join(resolved[:-1]) + f" und {resolved[-1]}"
+
+
+def _trend_driver_text(metadata: dict[str, Any]) -> str:
+    deltas = metadata.get("deltas", {}) if isinstance(metadata.get("deltas", {}), dict) else {}
+    labels = {
+        "signal_strength": "Signalstaerke",
+        "resource_pressure": "Ressourcendruck",
+        "structural_tension": "strukturelle Spannung",
+        "entropic_index": "Entropie",
+        "system_temperature": "Systemtemperatur",
+        "guardian_score": "Guardian-Score",
+        "anomaly_score": "Anomaliegrad",
+    }
+    ranked: list[tuple[str, float]] = []
+    for key, value in deltas.items():
+        if key not in labels:
+            continue
+        with contextlib.suppress(Exception):
+            ranked.append((key, float(value or 0.0)))
+    ranked.sort(key=lambda item: abs(item[1]), reverse=True)
+    if not ranked:
+        return "keine dominanten Treiber"
+    selected = ranked[:3]
+    parts = [f"{labels[key]} ({value:+.2f})" for key, value in selected]
+    if len(parts) == 1:
+        return parts[0]
+    if len(parts) == 2:
+        return f"{parts[0]} und {parts[1]}"
+    return ", ".join(parts[:-1]) + f" und {parts[-1]}"
+
+
+def render_trend_explanation(guardian_payload: Any, trend_payload: Any) -> str:
     guardian = guardian_payload if isinstance(guardian_payload, dict) else {}
     trend = trend_payload if isinstance(trend_payload, dict) else {}
     recommendations = guardian.get("spawn_recommendations", [])
@@ -127,6 +176,75 @@ def render_morning_briefing_summary(guardian_payload: Any, trend_payload: Any) -
         )
     )[:3]
     metadata = trend.get("metadata", {}) if isinstance(trend.get("metadata", {}), dict) else {}
+    focus = _trend_focus_labels(categories)
+    direction = str(metadata.get("forecast_direction", "stable_watch") or "stable_watch").strip() or "stable_watch"
+    try:
+        score = float(metadata.get("forecast_score", 0.5) or 0.5)
+    except Exception:
+        score = 0.5
+    try:
+        confidence = float(metadata.get("confidence", 0.1) or 0.1)
+    except Exception:
+        confidence = 0.1
+    try:
+        acceleration = float(metadata.get("trend_acceleration", 0.0) or 0.0)
+    except Exception:
+        acceleration = 0.0
+    with contextlib.suppress(Exception):
+        score = max(0.0, min(1.0, score))
+        confidence = max(0.0, min(1.0, confidence))
+    history_length = 0
+    with contextlib.suppress(Exception):
+        history_length = int(metadata.get("history_length", 0) or 0)
+    items = metadata.get("items", [])
+    item_count = len(items) if isinstance(items, list) else 0
+    drivers = _trend_driver_text(metadata)
+
+    if direction == "emerging_uptrend":
+        lead = (
+            f"Anhand der analysierten RSS-Signale ist davon auszugehen, dass sich im Bereich {focus} "
+            "in den kommenden Beobachtungszyklen eine verstaerkte Aufwaertsbewegung und strategische Verdichtung bildet."
+        )
+    elif direction == "cooling":
+        lead = (
+            f"Anhand der analysierten RSS-Signale ist davon auszugehen, dass die Dynamik im Bereich {focus} "
+            "kurzfristig an Schub verliert und in eine Abkuehlungs- oder Konsolidierungsphase uebergeht."
+        )
+    elif direction == "warming_baseline":
+        lead = (
+            f"Die Datenbasis befindet sich fuer {focus} noch im Aufbau; erste Signale deuten jedoch darauf hin, "
+            "dass sich ein beobachtungswuerdiger Trend formiert."
+        )
+    else:
+        lead = (
+            f"Anhand der analysierten RSS-Signale ist derzeit eher von einer Beobachtungs- und Uebergangsphase im Bereich {focus} auszugehen, "
+            "noch ohne belastbare Trendexplosion."
+        )
+
+    evidence = (
+        f"Die Einschaetzung stuetzt sich vor allem auf {drivers}, einen Forecast-Score von {score:.2f}, "
+        f"eine Konfidenz von {confidence:.2f} und {max(item_count, history_length)} relevante Signalpunkte."
+    )
+    if recommendations:
+        action = (
+            f"Fuer Nova-shell spricht das dafuer, die Beobachtung in {focus} weiter auszubauen; "
+            f"der Guardian leitet daraus {len(recommendations)} konkrete Sensor-Empfehlungen ab."
+        )
+    else:
+        action = (
+            f"Fuer Nova-shell ergibt sich daraus vorerst kein unmittelbarer Spawn-Zwang, "
+            f"wohl aber ein weiter zu beobachtender Bewegungsimpuls mit Trend-Acceleration {acceleration:+.2f}."
+        )
+    return " ".join([lead, evidence, action])
+
+
+def render_morning_briefing_summary(guardian_payload: Any, trend_payload: Any) -> str:
+    guardian = guardian_payload if isinstance(guardian_payload, dict) else {}
+    trend = trend_payload if isinstance(trend_payload, dict) else {}
+    recommendations = guardian.get("spawn_recommendations", [])
+    if not isinstance(recommendations, list):
+        recommendations = []
+    metadata = trend.get("metadata", {}) if isinstance(trend.get("metadata", {}), dict) else {}
     try:
         acceleration = float(metadata.get("trend_acceleration", 0.0) or 0.0)
     except Exception:
@@ -136,16 +254,16 @@ def render_morning_briefing_summary(guardian_payload: Any, trend_payload: Any) -
     except Exception:
         score = 0.0
     direction = str(metadata.get("forecast_direction", "unknown") or "unknown")
+    explanation = render_trend_explanation(guardian_payload, trend_payload)
     if recommendations:
-        focus = ", ".join(categories) if categories else "keinem neuen Schwerpunkt"
         return (
-            f"Heute empfehle ich {len(recommendations)} neue Sensoren im Bereich {focus}, "
+            f"Heute empfehle ich {len(recommendations)} neue Sensoren, "
             f"da die Trend-Acceleration bei {acceleration:+.2f} liegt und der Forecast "
-            f"'{direction}' mit Score {score:.2f} meldet."
+            f"'{direction}' mit Score {score:.2f} meldet. {explanation}"
         )
     return (
         "Heute gibt es keine neuen Sensor-Empfehlungen. "
-        f"Trend-Acceleration: {acceleration:+.2f}, Forecast: {direction} ({score:.2f})."
+        f"Trend-Acceleration: {acceleration:+.2f}, Forecast: {direction} ({score:.2f}). {explanation}"
     )
 
 
@@ -4176,8 +4294,10 @@ class VisionServer:
         values = defaults or {}
         topic = html.escape(values.get("topic", "AI infrastructure agent runtime"))
         feeds = html.escape(values.get("feeds", ""))
+        reference_files = html.escape(values.get("reference_files", ""))
         threshold = html.escape(values.get("threshold", "0.35"))
         report_dir = html.escape(values.get("report_dir", str(self.shell._resource_root() / "reports" / "morning")))
+        include_default_context_checked = "checked" if str(values.get("include_default_context", "on")).strip().lower() in {"1", "true", "on", "yes"} else ""
         auto_spawn_checked = "checked" if str(values.get("auto_spawn", "")).strip().lower() in {"1", "true", "on", "yes"} else ""
         auto_train_checked = "checked" if str(values.get("auto_train", "")).strip().lower() in {"1", "true", "on", "yes"} else ""
         error_block = ""
@@ -4343,6 +4463,18 @@ class VisionServer:
           </label>
           <p class="hint">Leer lassen, um die Standard-Feed-Kombination aus dem Thema zu erzeugen.</p>
         </details>
+        <details>
+          <summary>Referenzkontext fuer die Interpretation</summary>
+          <label style="margin-top:12px;">
+            Eigene Referenzdateien
+            <textarea name="reference_files" placeholder="Optional: Pfade zu .md/.txt/.csv-Dateien, kommasepariert oder je Zeile eine Datei">{reference_files}</textarea>
+          </label>
+          <label class="checkbox">
+            <input type="checkbox" name="include_default_context" value="on" {include_default_context_checked}>
+            Nova-shell-Standardwissen (Whitepaper.md und Dokumentation.md) einbeziehen
+          </label>
+          <p class="hint">Diese Dateien werden ins Morning-Briefing-Memory geladen und beeinflussen die spaetere semantische Einordnung, nicht aber den eigentlichen Feed-Scan.</p>
+        </details>
         <label class="checkbox">
           <input type="checkbox" name="auto_spawn" value="on" {auto_spawn_checked}>
           Empfohlene Sensoren nach dem Briefing direkt erzeugen
@@ -4383,6 +4515,14 @@ class VisionServer:
         training_memory_ids = training_payload.get("memory_ids") if isinstance(training_payload, dict) else []
         if not isinstance(training_memory_ids, list):
             training_memory_ids = []
+        reference_payload = run.get("reference_payload") if isinstance(run.get("reference_payload"), dict) else {}
+        reference_items = reference_payload.get("embedded") if isinstance(reference_payload, dict) else []
+        if not isinstance(reference_items, list):
+            reference_items = []
+        reference_missing = reference_payload.get("missing") if isinstance(reference_payload, dict) else []
+        if not isinstance(reference_missing, list):
+            reference_missing = []
+        trend_explanation = html.escape(str(run.get("trend_explanation", "")))
         spawn_error = html.escape(str(run.get("spawn_error", "")))
         cards: list[str] = []
         previews: list[str] = []
@@ -4446,6 +4586,17 @@ class VisionServer:
         training_items_html = "".join(
             [f"<li><code>{html.escape(str(item))}</code></li>" for item in training_memory_ids if str(item).strip()]
         )
+        reference_items_html = "".join(
+            [
+                "<li>"
+                f"<code>{html.escape(str(item.get('id', '')))}</code> "
+                f"-> {html.escape(str(item.get('path', '')))}"
+                f"{' <small>(Default)</small>' if item.get('default_context') else ''}"
+                "</li>"
+                for item in reference_items
+            ]
+        )
+        reference_missing_html = "".join([f"<li>{html.escape(str(item))}</li>" for item in reference_missing if str(item).strip()])
         run_id_query = urllib.parse.quote(str(run.get("run_id", "")))
         recommendation_block = ""
         if recommendations:
@@ -4493,6 +4644,29 @@ class VisionServer:
                 f"<p><strong>Trainierte Records:</strong> {html.escape(str(training_payload.get('trained_records', 0)))}</p>"
                 f"<p><strong>Memory-Eintraege:</strong> {html.escape(str(len(training_memory_ids)))}</p>"
                 f"<ul>{training_items_html or '<li>Keine zusaetzlichen Memory-Eintraege fuer diesen Run.</li>'}</ul>"
+                "</section>"
+            )
+        reference_block = ""
+        if reference_payload:
+            reference_block = (
+                "<section class='panel'>"
+                "<h2>Referenzkontext</h2>"
+                f"<p><strong>Default-Kontext:</strong> {'aktiv' if reference_payload.get('include_default_context') else 'aus'}</p>"
+                f"<p><strong>Eingebettete Dateien:</strong> {len(reference_items)}</p>"
+                f"<ul>{reference_items_html or '<li>Keine Referenzdateien fuer diesen Run eingebettet.</li>'}</ul>"
+                + (
+                    f"<p><strong>Nicht gefunden:</strong></p><ul>{reference_missing_html}</ul>"
+                    if reference_missing_html
+                    else ""
+                )
+                + "</section>"
+            )
+        explanation_block = ""
+        if trend_explanation:
+            explanation_block = (
+                "<section class='panel'>"
+                "<h2>Ausfuehrliche Einordnung</h2>"
+                f"<p>{trend_explanation}</p>"
                 "</section>"
             )
         return f"""<!doctype html>
@@ -4623,10 +4797,12 @@ class VisionServer:
         <a href="/briefing/result?run_id={run_id_query}">Diese Seite neu laden</a>
       </div>
     </section>
-    {recommendation_block}
-    {spawned_block}
-    {training_block}
-    {error_block}
+      {recommendation_block}
+      {spawned_block}
+      {training_block}
+      {reference_block}
+      {explanation_block}
+      {error_block}
     <section class="panel">
       <h2>Dateien</h2>
       <div class="cards">{''.join(cards)}</div>
@@ -4811,7 +4987,9 @@ class VisionServer:
                                 topic=fields.get("topic", ""),
                                 report_dir_text=fields.get("report_dir", ""),
                                 feeds_text=fields.get("feeds", ""),
+                                reference_files_text=fields.get("reference_files", ""),
                                 resonance_threshold=fields.get("threshold", ""),
+                                include_default_context=str(fields.get("include_default_context", "on")).strip().lower() in {"1", "true", "on", "yes"},
                                 auto_spawn=str(fields.get("auto_spawn", "")).strip().lower() in {"1", "true", "on", "yes"},
                                 auto_train=str(fields.get("auto_train", "")).strip().lower() in {"1", "true", "on", "yes"},
                             )
@@ -4992,6 +5170,7 @@ class NovaShell:
         self.flow_state = FlowStateStore()
         self.python.globals["flow"] = PythonFlowProxy(self.flow_state)
         self.python.globals["render_morning_briefing_summary"] = render_morning_briefing_summary
+        self.python.globals["render_trend_explanation"] = render_trend_explanation
         self.jit = NovaComputeJIT()
         self.optimizer = NovaOptimizer(self)
         self.synth = NovaSynth(self)
@@ -5214,13 +5393,107 @@ class NovaShell:
         ]
         return ",".join(feeds)
 
+    def _default_briefing_reference_files(self, resource_root: Path) -> list[Path]:
+        defaults = [
+            resource_root / "Whitepaper.md",
+            resource_root / "Dokumentation.md",
+        ]
+        return [path.resolve(strict=False) for path in defaults if path.is_file()]
+
+    def _parse_briefing_reference_text(self, text: str) -> list[str]:
+        if not text.strip():
+            return []
+        parts = [item.strip() for item in re.split(r"[\r\n,;]+", text) if item.strip()]
+        return parts
+
+    def _resolve_briefing_reference_path(self, raw_path: str, *, base_cwd: Path, resource_root: Path) -> Path:
+        candidate = Path(raw_path.strip().strip('"').strip("'"))
+        if candidate.is_absolute():
+            return candidate.resolve(strict=False)
+        project_relative = (base_cwd / candidate).resolve(strict=False)
+        if project_relative.exists():
+            return project_relative
+        bundle_relative = (resource_root / candidate).resolve(strict=False)
+        if bundle_relative.exists():
+            return bundle_relative
+        return project_relative
+
+    def _embed_briefing_reference_files(
+        self,
+        *,
+        base_cwd: Path,
+        resource_root: Path,
+        reference_files_text: str = "",
+        include_default_context: bool = True,
+        namespace: str = "morning_briefing",
+        project: str = "rss_monitoring",
+    ) -> dict[str, Any]:
+        selected: list[tuple[Path, bool]] = []
+        seen: set[str] = set()
+
+        if include_default_context:
+            for path in self._default_briefing_reference_files(resource_root):
+                key = str(path.resolve(strict=False))
+                if key not in seen:
+                    seen.add(key)
+                    selected.append((path, True))
+
+        for raw_path in self._parse_briefing_reference_text(reference_files_text):
+            path = self._resolve_briefing_reference_path(raw_path, base_cwd=base_cwd, resource_root=resource_root)
+            key = str(path.resolve(strict=False))
+            if key not in seen:
+                seen.add(key)
+                selected.append((path, False))
+
+        embedded: list[dict[str, Any]] = []
+        missing: list[str] = []
+        for path, is_default in selected:
+            if not path.is_file():
+                missing.append(str(path))
+                continue
+            text = path.read_text(encoding="utf-8", errors="replace")
+            digest = hashlib.sha1(str(path).encode("utf-8")).hexdigest()[:8]
+            stem = re.sub(r"[^a-z0-9]+", "_", path.stem.lower()).strip("_") or "reference"
+            entry_id = f"briefing_ref_{stem}_{digest}"
+            entry = self.memory.embed(
+                text,
+                entry_id=entry_id,
+                metadata={
+                    "source_file": str(path),
+                    "source": "morning_briefing",
+                    "kind": "briefing_context",
+                    "default_context": bool(is_default),
+                },
+                namespace=namespace,
+                project=project,
+            )
+            embedded.append(
+                {
+                    "id": entry.entry_id,
+                    "path": str(path),
+                    "default_context": bool(is_default),
+                }
+            )
+
+        payload = {
+            "namespace": namespace,
+            "project": project,
+            "embedded": embedded,
+            "missing": missing,
+            "include_default_context": bool(include_default_context),
+        }
+        self.flow_state.set("morning_briefing.references", json.dumps(payload, ensure_ascii=False))
+        return payload
+
     def _run_morning_briefing_job(
         self,
         *,
         topic: str,
         report_dir_text: str = "",
         feeds_text: str = "",
+        reference_files_text: str = "",
         resonance_threshold: str = "",
+        include_default_context: bool = True,
         auto_spawn: bool = False,
         auto_train: bool = False,
     ) -> dict[str, Any]:
@@ -5247,12 +5520,19 @@ class NovaShell:
             env_updates["NOVA_BRIEFING_AUTO_TRAIN"] = "1"
         previous_env = {key: os.environ.get(key) for key in env_updates}
         run_id = uuid.uuid4().hex[:12]
+        reference_payload: dict[str, Any] = {}
         try:
             for key, value in env_updates.items():
                 os.environ[key] = value
             self.cwd = resource_root
             self.atheria.cwd = resource_root
             self.ai_runtime.cwd = resource_root
+            reference_payload = self._embed_briefing_reference_files(
+                base_cwd=previous_cwd,
+                resource_root=resource_root,
+                reference_files_text=reference_files_text,
+                include_default_context=include_default_context,
+            )
             result = self._route_internal(f'ns.run "{script_path}"')
         finally:
             self.cwd = previous_cwd
@@ -5270,7 +5550,9 @@ class NovaShell:
         resonance_payload = self._structured_flow_state_value("morning_briefing.resonance")
         trend_payload = self._structured_flow_state_value("morning_briefing.trend")
         guardian_payload = self._structured_flow_state_value("morning_briefing.guardian")
+        trend_explanation = str(self.flow_state.get("morning_briefing.explanation") or "").strip()
         training_payload = self._structured_flow_state_value("morning_briefing.training")
+        reference_payload = self._structured_flow_state_value("morning_briefing.references") or reference_payload
         if not isinstance(guardian_payload, dict) or not isinstance(guardian_payload.get("spawn_recommendations"), list):
             with contextlib.suppress(Exception):
                 guardian_payload = self._guardian_recommendations_from_source(
@@ -5308,6 +5590,8 @@ class NovaShell:
             "resonance_payload": resonance_payload,
             "trend_payload": trend_payload,
             "guardian_payload": guardian_payload,
+            "trend_explanation": trend_explanation,
+            "reference_payload": reference_payload,
             "auto_spawn": bool(auto_spawn),
             "auto_train": bool(auto_train),
             "training_payload": training_payload,

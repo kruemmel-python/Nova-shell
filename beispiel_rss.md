@@ -671,4 +671,4 @@ Hinweise:
 - Die HTML-Dateien enthalten den Guardian-Output zusaetzlich als HTML-Kommentar.
 - In der Briefing-Web-UI kannst du empfohlene Sensoren jetzt entweder direkt per Auto-Spawn erzeugen oder nach dem Run ueber den Button `Empfohlene Sensoren jetzt erzeugen` anlegen.
 - Wenn `Ergebnisse direkt in Atheria und das Vector Memory uebernehmen` aktiv ist, trainiert Nova-shell die drei erzeugten TXT-Reports direkt in Atheria und legt sie gleichzeitig als Memory-Eintraege ab.
-- Fuer `0.8.9` ist das der schnellste produktive Weg, um morgens direkt HTML- und TXT-Berichte zu erzeugen.
+- Fuer `0.8.10` ist das der schnellste produktive Weg, um morgens direkt HTML- und TXT-Berichte zu erzeugen.
