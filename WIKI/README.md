@@ -2,7 +2,6 @@
 
 Diese Wiki ist die eigenstaendige Projektdokumentation fuer Nova-shell.
 
-Sie beschreibt das Projekt aus sich selbst heraus und ist nicht als Verweissammlung auf andere Markdown-Texte aufgebaut.
 
 ## Startpunkte
 
