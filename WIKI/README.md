@@ -1,6 +1,6 @@
 # Nova-shell Wiki
 
-Diese lokale Wiki ist an der Struktur von `GermanLanguage` aus dem Python-Wiki orientiert und dient als deutschsprachiger Einstiegspunkt fuer Nova-shell.
+Diese lokale Wiki dient als deutschsprachiger Einstiegspunkt fuer Nova-shell.
 
 Startseite:
 
