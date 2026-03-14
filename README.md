@@ -77,6 +77,13 @@ Neu in der Runtime-Schicht:
 - NovaScript 2.0 Contracts + Reactive Hooks (`watch`, `ns.emit`, `ns.check`).
 - Fabric inkl. Remote/RDMA-orientierter Transferpfade.
 
+
+## Nova Language Dokumentation
+
+- Lehrdokumentation: `docs/Nova_Lernhandbuch.md`
+- Formale Sprachspezifikation: `docs/Nova_Language_Specification.md`
+- Architekturüberblick: `docs/NOVA_OS_ARCHITECTURE.md`
+
 ## Quickstart
 
 ```bash
