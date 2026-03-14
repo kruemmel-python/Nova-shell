@@ -4,7 +4,21 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from nova.ast import AgentDecl, DatasetDecl, EventDecl, FlowDecl, NovaProgram, SourceSpan, StateDecl, SystemDecl, ToolDecl
+from nova.ast import (
+    AgentDecl,
+    DatasetDecl,
+    EventDecl,
+    FlowDecl,
+    MemoryDecl,
+    MeshDecl,
+    NovaProgram,
+    SensorDecl,
+    SourceSpan,
+    StateDecl,
+    SystemDecl,
+    ToolDecl,
+)
+from nova.parser.lexer import NovaLexer, Token
 
 
 class NovaParseError(ValueError):
@@ -18,73 +32,62 @@ class NovaParseError(ValueError):
 
 @dataclass(slots=True)
 class _Cursor:
-    lines: list[str]
+    tokens: list[Token]
     index: int = 0
 
     def eof(self) -> bool:
-        return self.index >= len(self.lines)
+        return self.index >= len(self.tokens)
 
-    def peek(self) -> str:
-        return self.lines[self.index]
+    def peek(self) -> Token:
+        return self.tokens[self.index]
 
-    def next(self) -> str:
-        line = self.lines[self.index]
+    def next(self) -> Token:
+        token = self.tokens[self.index]
         self.index += 1
-        return line
+        return token
 
 
 class NovaParser:
     """Parser for Nova declarative language (.ns)."""
 
-    _DECLARATION_KEYWORDS = {"agent", "dataset", "flow", "state", "event", "tool", "system"}
+    _DECLARATION_KEYWORDS = {"agent", "dataset", "flow", "state", "event", "tool", "system", "sensor", "memory", "mesh"}
+
+    def __init__(self, lexer: NovaLexer | None = None) -> None:
+        self.lexer = lexer or NovaLexer()
 
     def parse_file(self, file_path: str | Path) -> NovaProgram:
         source = Path(file_path).read_text(encoding="utf-8")
         return self.parse(source)
 
     def parse(self, source: str) -> NovaProgram:
-        lines = source.splitlines()
-        cursor = _Cursor(lines=lines)
+        cursor = _Cursor(tokens=self.lexer.tokenize(source))
         declarations: list[Any] = []
-
         while not cursor.eof():
-            raw = cursor.peek().strip()
-            if not raw or raw.startswith("#"):
-                cursor.next()
-                continue
             declarations.append(self._parse_declaration(cursor))
-
         return NovaProgram(declarations=declarations)
 
     def _parse_declaration(self, cursor: _Cursor) -> Any:
         header = cursor.next()
-        line_no = cursor.index
-        stripped = header.strip()
+        if header.kind != "HEADER":
+            raise NovaParseError("expected declaration header", header.line)
 
-        if not stripped.endswith("{"):
-            raise NovaParseError("declaration header must end with '{'", line_no)
-
-        opening = stripped[:-1].strip()
-        parts = opening.split(maxsplit=1)
+        parts = header.value.split(maxsplit=1)
         if len(parts) != 2:
-            raise NovaParseError("declaration requires keyword and name", line_no)
+            raise NovaParseError("declaration requires keyword and name", header.line)
         keyword, name = parts
-
         if keyword not in self._DECLARATION_KEYWORDS:
-            raise NovaParseError(f"unknown declaration keyword '{keyword}'", line_no)
+            raise NovaParseError(f"unknown declaration keyword '{keyword}'", header.line)
 
         match keyword:
             case "flow":
                 steps = self._parse_flow_body(cursor)
-                return FlowDecl(name=name, span=SourceSpan(line_no), steps=steps)
+                return FlowDecl(name=name, span=SourceSpan(header.line), steps=steps)
             case "event":
                 trigger, actions = self._parse_event_body(cursor)
-                return EventDecl(name=name, span=SourceSpan(line_no), trigger=trigger, actions=actions)
-            case "agent" | "dataset" | "state" | "tool" | "system":
-                properties = self._parse_property_block(cursor)
-                return self._construct_property_node(keyword, name, line_no, properties)
+                return EventDecl(name=name, span=SourceSpan(header.line), trigger=trigger, actions=actions)
             case _:
-                raise NovaParseError(f"unsupported declaration '{keyword}'", line_no)
+                properties = self._parse_property_block(cursor)
+                return self._construct_property_node(keyword, name, header.line, properties)
 
     def _construct_property_node(self, keyword: str, name: str, line_no: int, properties: dict[str, Any]) -> Any:
         span = SourceSpan(line=line_no)
@@ -99,64 +102,66 @@ class NovaParser:
                 return ToolDecl(name=name, span=span, properties=properties)
             case "system":
                 return SystemDecl(name=name, span=span, properties=properties)
+            case "sensor":
+                return SensorDecl(name=name, span=span, properties=properties)
+            case "memory":
+                return MemoryDecl(name=name, span=span, properties=properties)
+            case "mesh":
+                return MeshDecl(name=name, span=span, properties=properties)
             case _:
                 raise NovaParseError(f"unexpected property declaration '{keyword}'", line_no)
 
     def _parse_property_block(self, cursor: _Cursor) -> dict[str, Any]:
         props: dict[str, Any] = {}
         while not cursor.eof():
-            line = cursor.next()
-            line_no = cursor.index
-            stripped = line.strip()
-            if not stripped or stripped.startswith("#"):
-                continue
-            if stripped == "}":
+            token = cursor.next()
+            if token.kind == "RBRACE":
                 return props
-            if ":" not in stripped:
-                raise NovaParseError("property line must contain ':'", line_no)
-            key, value = stripped.split(":", 1)
+            if token.kind != "LINE":
+                raise NovaParseError("invalid token in property block", token.line)
+            if ":" not in token.value:
+                raise NovaParseError("property line must contain ':'", token.line)
+            key, value = token.value.split(":", 1)
             props[key.strip()] = self._coerce_value(value.strip())
         raise NovaParseError("missing closing '}'", cursor.index)
 
     def _parse_flow_body(self, cursor: _Cursor) -> list[str]:
         steps: list[str] = []
         in_fence = False
+        last_line = 1
 
         while not cursor.eof():
-            line = cursor.next()
-            line_no = cursor.index
-            stripped = line.strip()
-
-            if not stripped or stripped.startswith("#"):
-                continue
-            if stripped == "```":
+            token = cursor.next()
+            last_line = token.line
+            if token.kind == "FENCE":
                 in_fence = not in_fence
                 continue
-            if stripped == "}" and not in_fence:
+            if token.kind == "RBRACE" and not in_fence:
                 return steps
-            steps.append(stripped)
+            if token.kind in {"LINE", "HEADER"}:
+                steps.append(token.value)
+                continue
+            raise NovaParseError("invalid flow content", token.line)
 
-        raise NovaParseError("missing closing '}' for flow", line_no)
+        raise NovaParseError("missing closing '}' for flow", last_line)
 
     def _parse_event_body(self, cursor: _Cursor) -> tuple[str, list[str]]:
         trigger = ""
         actions: list[str] = []
         while not cursor.eof():
-            line = cursor.next()
-            line_no = cursor.index
-            stripped = line.strip()
-            if not stripped or stripped.startswith("#"):
-                continue
-            if stripped == "}":
+            token = cursor.next()
+            if token.kind == "RBRACE":
                 if not trigger:
-                    raise NovaParseError("event requires trigger", line_no)
+                    raise NovaParseError("event requires trigger", token.line)
                 return trigger, actions
-            if stripped.startswith("on "):
-                trigger = stripped[3:].strip()
-            elif stripped.startswith("do "):
-                actions.append(stripped[3:].strip())
+            if token.kind != "LINE":
+                raise NovaParseError("event supports only line statements", token.line)
+            if token.value.startswith("on "):
+                trigger = token.value[3:].strip()
+            elif token.value.startswith("do "):
+                actions.append(token.value[3:].strip())
             else:
-                raise NovaParseError("event supports 'on' and 'do' entries", line_no)
+                raise NovaParseError("event supports 'on' and 'do' entries", token.line)
 
         raise NovaParseError("missing closing '}' for event", cursor.index)
 

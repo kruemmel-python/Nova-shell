@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from enum import Enum
 
-from nova.ast import AgentDecl, DatasetDecl, EventDecl, FlowDecl, NovaProgram, ToolDecl
+from nova.ast import AgentDecl, DatasetDecl, EventDecl, FlowDecl, MemoryDecl, MeshDecl, NovaProgram, SensorDecl, SystemDecl, ToolDecl
 
 
 class NodeKind(str, Enum):
@@ -12,6 +12,10 @@ class NodeKind(str, Enum):
     TOOL = "tool"
     FLOW = "flow"
     EVENT = "event"
+    SENSOR = "sensor"
+    MEMORY = "memory"
+    MESH = "mesh"
+    SYSTEM = "system"
 
 
 @dataclass(slots=True)
@@ -43,8 +47,10 @@ class ExecutionGraph:
 
     def topological_order(self) -> list[str]:
         incoming = {node_id: 0 for node_id in self.nodes}
+        outgoing: dict[str, list[GraphEdge]] = {node_id: [] for node_id in self.nodes}
         for edge in self.edges:
             incoming[edge.target] += 1
+            outgoing[edge.source].append(edge)
 
         ready = [node_id for node_id, count in incoming.items() if count == 0]
         ordered: list[str] = []
@@ -52,7 +58,7 @@ class ExecutionGraph:
         while ready:
             node_id = ready.pop(0)
             ordered.append(node_id)
-            for edge in [edge for edge in self.edges if edge.source == node_id]:
+            for edge in outgoing[node_id]:
                 incoming[edge.target] -= 1
                 if incoming[edge.target] == 0:
                     ready.append(edge.target)
@@ -80,6 +86,14 @@ class GraphCompiler:
                     graph.add_node(GraphNode(id=f"flow:{name}", kind=NodeKind.FLOW, metadata={"steps": declaration.steps}))
                 case EventDecl(name=name, trigger=trigger):
                     graph.add_node(GraphNode(id=f"event:{name}", kind=NodeKind.EVENT, metadata={"trigger": trigger, "actions": declaration.actions}))
+                case SensorDecl(name=name):
+                    graph.add_node(GraphNode(id=f"sensor:{name}", kind=NodeKind.SENSOR, metadata=declaration.properties))
+                case MemoryDecl(name=name):
+                    graph.add_node(GraphNode(id=f"memory:{name}", kind=NodeKind.MEMORY, metadata=declaration.properties))
+                case MeshDecl(name=name):
+                    graph.add_node(GraphNode(id=f"mesh:{name}", kind=NodeKind.MESH, metadata=declaration.properties))
+                case SystemDecl(name=name):
+                    graph.add_node(GraphNode(id=f"system:{name}", kind=NodeKind.SYSTEM, metadata=declaration.properties))
                 case _:
                     continue
 
@@ -95,8 +109,6 @@ class GraphCompiler:
             if not isinstance(steps, list):
                 continue
             for step in steps:
-                if not isinstance(step, str):
-                    continue
                 parts = step.split()
                 if not parts:
                     continue
@@ -105,27 +117,24 @@ class GraphCompiler:
                     graph.add_edge(target, flow.id, relation="feeds")
 
     def _add_event_edges(self, graph: ExecutionGraph) -> None:
-        event_nodes = [node for node in graph.nodes.values() if node.kind is NodeKind.EVENT]
-        for event in event_nodes:
+        for event in [node for node in graph.nodes.values() if node.kind is NodeKind.EVENT]:
             actions = event.metadata.get("actions", [])
             if not isinstance(actions, list):
                 continue
             for action in actions:
-                target = f"flow:{action}"
-                if target in graph.nodes:
-                    graph.add_edge(event.id, target, relation="triggers")
+                flow_id = f"flow:{action}"
+                if flow_id in graph.nodes:
+                    graph.add_edge(event.id, flow_id, relation="triggers")
 
     def _resolve_step_target(self, token: str, graph: ExecutionGraph) -> str | None:
-        if token.startswith("dataset."):
-            candidate = f"dataset:{token.split('.', 1)[1]}"
-            return candidate if candidate in graph.nodes else None
-        if token.startswith("tool."):
-            candidate = f"tool:{token.split('.', 1)[1]}"
-            return candidate if candidate in graph.nodes else None
-        if token in [node_id.split(":", 1)[1] for node_id in graph.nodes if node_id.startswith("agent:")]:
-            return f"agent:{token}"
-        explicit = [f"dataset:{token}", f"tool:{token}", f"agent:{token}"]
-        for candidate in explicit:
+        if "." in token:
+            ns, name = token.split(".", 1)
+            candidate = f"{ns}:{name}"
+            if candidate in graph.nodes:
+                return candidate
+
+        for prefix in ("dataset", "tool", "agent", "sensor", "memory", "mesh"):
+            candidate = f"{prefix}:{token}"
             if candidate in graph.nodes:
                 return candidate
         return None

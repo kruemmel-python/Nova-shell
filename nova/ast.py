@@ -42,6 +42,21 @@ class SystemDecl(NovaNode):
 
 
 @dataclass(slots=True)
+class SensorDecl(NovaNode):
+    properties: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass(slots=True)
+class MemoryDecl(NovaNode):
+    properties: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass(slots=True)
+class MeshDecl(NovaNode):
+    properties: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass(slots=True)
 class EventDecl(NovaNode):
     trigger: str
     actions: list[str] = field(default_factory=list)
@@ -52,7 +67,18 @@ class FlowDecl(NovaNode):
     steps: list[str] = field(default_factory=list)
 
 
-Declaration = AgentDecl | DatasetDecl | ToolDecl | StateDecl | SystemDecl | EventDecl | FlowDecl
+Declaration = (
+    AgentDecl
+    | DatasetDecl
+    | ToolDecl
+    | StateDecl
+    | SystemDecl
+    | SensorDecl
+    | MemoryDecl
+    | MeshDecl
+    | EventDecl
+    | FlowDecl
+)
 
 
 @dataclass(slots=True)
@@ -61,3 +87,6 @@ class NovaProgram:
 
     def by_type(self, node_type: type[Declaration]) -> list[Declaration]:
         return [decl for decl in self.declarations if isinstance(decl, node_type)]
+
+    def names(self) -> set[str]:
+        return {decl.name for decl in self.declarations}

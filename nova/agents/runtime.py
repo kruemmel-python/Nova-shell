@@ -35,6 +35,10 @@ class AgentRuntime:
     def register_tool(self, name: str, tool: ToolCallable) -> None:
         self._tools[name] = tool
 
+    @property
+    def agent_names(self) -> set[str]:
+        return set(self._agents)
+
     def execute_task(self, agent_name: str, task: str, payload: dict[str, Any] | None = None, context: AgentContext | None = None) -> dict[str, Any]:
         payload = payload or {}
         context = context or AgentContext()

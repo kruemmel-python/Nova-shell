@@ -3,6 +3,10 @@ mode: hybrid
 observability: true
 }
 
+mesh cluster_a {
+workers: 2
+}
+
 agent researcher {
 model: llama3
 embeddings: atheria
@@ -17,18 +21,25 @@ tool summarize {
 backend: llm
 }
 
+sensor market_watch {
+kind: rss
+interval: 60
+}
+
+memory market_memory {
+backend: atheria
+}
+
 dataset tech_rss {
 source: rss
 url: https://example.com/tech.xml
 }
 
 flow radar {
-```
 rss.fetch tech_rss
 atheria.embed tech_rss
 researcher summarize tech_rss
 emit dataset.updated tech_rss
-```
 }
 
 event refresh_on_update {

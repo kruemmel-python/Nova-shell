@@ -5,16 +5,18 @@ from pathlib import Path
 from typing import Any
 
 from nova.agents import AgentConfig, AgentRuntime
-from nova.ast import AgentDecl, DatasetDecl, EventDecl, FlowDecl, NovaProgram, ToolDecl
+from nova.ast import AgentDecl, DatasetDecl, EventDecl, FlowDecl, MemoryDecl, MeshDecl, NovaProgram, SensorDecl, ToolDecl
 from nova.events import EventBus
 from nova.graph import ExecutionGraph, GraphCompiler
-from nova.mesh import MeshExecutor
+from nova.mesh import MeshExecutor, WorkerNode
 from nova.parser import NovaParser
 
 
 @dataclass(slots=True)
 class RuntimeState:
     datasets: dict[str, dict[str, Any]] = field(default_factory=dict)
+    memory: dict[str, dict[str, Any]] = field(default_factory=dict)
+    sensors: dict[str, dict[str, Any]] = field(default_factory=dict)
     system: dict[str, Any] = field(default_factory=dict)
 
 
@@ -80,6 +82,15 @@ class NovaRuntime:
                     self.agent_runtime.register_agent(config)
                 case DatasetDecl(name=name, properties=properties):
                     self.state.datasets[name] = {"definition": properties, "rows": []}
+                case SensorDecl(name=name, properties=properties):
+                    self.state.sensors[name] = {"definition": properties, "status": "idle"}
+                case MemoryDecl(name=name, properties=properties):
+                    self.state.memory[name] = {"definition": properties, "entries": []}
+                case MeshDecl(properties=properties):
+                    workers = properties.get("workers")
+                    if isinstance(workers, int):
+                        for idx in range(workers):
+                            self.mesh_executor.registry.register(WorkerNode(worker_id=f"worker-{idx+1}"))
                 case ToolDecl(name=name):
                     self.agent_runtime.register_tool(name, lambda payload, tool_name=name: {"tool": tool_name, "ok": True, **payload})
                 case EventDecl(trigger=trigger, actions=actions):
@@ -97,12 +108,8 @@ class NovaRuntime:
         match head, tail:
             case _ if "." in head:
                 return self.mesh_executor.execute(task_name=head, payload={"args": tail})
-            case agent_name, [task, *args] if agent_name in self.agent_runtime._agents:
-                return self.agent_runtime.execute_task(
-                    agent_name=agent_name,
-                    task=task,
-                    payload={"args": args},
-                )
+            case agent_name, [task, *args] if agent_name in self.agent_runtime.agent_names:
+                return self.agent_runtime.execute_task(agent_name=agent_name, task=task, payload={"args": args})
             case "emit", [topic, *rest]:
                 payload = {"message": " ".join(rest)} if rest else {}
                 self.emit(topic, payload)
