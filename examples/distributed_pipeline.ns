@@ -1,0 +1,11 @@
+agent planner {
+model: llama3
+}
+
+flow cluster_compute {
+```
+gpu.vectorize batch_a
+wasm.score batch_a
+planner synthesize batch_a
+```
+}

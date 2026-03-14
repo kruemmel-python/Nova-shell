@@ -63,3 +63,7 @@ include-package-data = true
 
 [tool.setuptools.dynamic]
 version = {attr = "nova_shell.__version__"}
+
+[tool.setuptools.packages.find]
+include = ["nova*"]
+

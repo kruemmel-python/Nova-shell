@@ -1,0 +1,37 @@
+system nova_os {
+mode: hybrid
+observability: true
+}
+
+agent researcher {
+model: llama3
+embeddings: atheria
+tools: rss_fetch, summarize
+}
+
+tool rss_fetch {
+backend: external
+}
+
+tool summarize {
+backend: llm
+}
+
+dataset tech_rss {
+source: rss
+url: https://example.com/tech.xml
+}
+
+flow radar {
+```
+rss.fetch tech_rss
+atheria.embed tech_rss
+researcher summarize tech_rss
+emit dataset.updated tech_rss
+```
+}
+
+event refresh_on_update {
+on dataset.updated
+do radar
+}
