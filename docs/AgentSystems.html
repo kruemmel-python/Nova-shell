@@ -27,11 +27,14 @@
 <li><a class="wiki-nav-link" data-nav-href="GermanLanguage.html" href="GermanLanguage.html">GermanLanguage</a></li>
 <li><a class="wiki-nav-link" data-nav-href="QuickStart.html" href="QuickStart.html">QuickStart</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Installation.html" href="Installation.html">Installation</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Nutzung</h2>
 <ul>
 <li><a class="wiki-nav-link" data-nav-href="NovaCLI.html" href="NovaCLI.html">NovaCLI</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ShellCommandReference.html" href="ShellCommandReference.html">ShellCommandReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="APIReference.html" href="APIReference.html">APIReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ExamplesAndRecipes.html" href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Tutorials.html" href="Tutorials.html">Tutorials</a></li>
@@ -54,6 +57,7 @@
 <li><a class="wiki-nav-link" data-nav-href="ParserAndASTReference.html" href="ParserAndASTReference.html">ParserAndASTReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="RuntimeMethodReference.html" href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ClassReference.html" href="ClassReference.html">ClassReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="CodeReferenceIndex.html" href="CodeReferenceIndex.html">CodeReferenceIndex</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Plattformfunktionen</h2>
@@ -102,23 +106,58 @@
       <div class="wiki-layout">
         <article class="wiki-article">
           <h1 id="agent-systems">Agent Systems</h1>
-<h2 id="sichtweise">Sichtweise</h2>
-<p>Agenten werden als Systemkomponenten verstanden, nicht als isolierte Chat-Aufrufe.</p>
-<h2 id="eigenschaften">Eigenschaften</h2>
+<h2 id="zweck">Zweck</h2>
+<p>Diese Seite beschreibt das Agentenmodell in Nova-shell aus konzeptioneller Sicht. Sie ist absichtlich theoretischer als die konkrete Laufzeitdokumentation in <code>NovaAgents</code>.</p>
+<h2 id="kernpunkte">Kernpunkte</h2>
 <ul>
-<li>definierte Inputs</li>
-<li>Tools</li>
-<li>Prompt-Versionen</li>
-<li>Memory</li>
-<li>Governance</li>
-<li>Evaluation</li>
-<li>Einbettung in Flows und Graphen</li>
+<li>Ein Agent ist in Nova-shell eine definierte Prompt- und Ausfuehrungseinheit, kein eigenstaendiger Scheduler-Prozess.</li>
+<li>Agenten koennen einmalig laufen, als Instanz gespawnt werden oder als Knoten in einem Agent-Graph ausgefuehrt werden.</li>
+<li>Das System unterstuetzt lineare Workflows, Graph-DAGs und swarm-artige Verteilung auf Mesh-Worker.</li>
+<li>Wichtig ist die Trennung zwischen Agent-Definition, Agent-Instanz und Agent-Graph.</li>
+</ul>
+<h2 id="praktische-nutzung">Praktische Nutzung</h2>
+<ul>
+<li>Lege Agent-Definitionen an, wenn du wiederkehrende Rollen wie <code>analyst</code> oder <code>reviewer</code> brauchst.</li>
+<li>Nutze Agent-Instanzen fuer Sitzungen mit Verlauf und Folgefragen.</li>
+<li>Nutze Agent-Graphen, wenn Abhaengigkeiten zwischen Rollen explizit modelliert werden sollen.</li>
+<li>Nutze Swarm-Modus nur dann, wenn passende Mesh-Worker und Policies bereitstehen.</li>
+</ul>
+<h2 id="testbare-einstiege">Testbare Einstiege</h2>
+<h3 id="ein-einfacher-agent-graph">Ein einfacher Agent-Graph</h3>
+<pre><code class="language-powershell">agent create analyst &quot;Analyze {{input}}&quot; --provider lmstudio --model analyst-model
+agent create reviewer &quot;Review {{input}}&quot; --provider lmstudio --model reviewer-model
+agent graph create review_chain --nodes analyst,reviewer
+agent graph run review_chain --input &quot;quarterly report&quot;</code></pre>
+<p>Erwartung:</p>
+<ul>
+<li>Der Graph enthaelt beide Rollen in einer topologisch gueltigen Reihenfolge.</li>
+<li>Die Ausgabe der ersten Rolle dient als Eingabe der zweiten Rolle.</li>
+</ul>
+<h2 id="typische-fragen-und-fehler">Typische Fragen und Fehler</h2>
+<h3 id="graphlauf-scheitert-sofort">Graphlauf scheitert sofort</h3>
+<ul>
+<li>Mindestens ein referenzierter Agent existiert nicht.</li>
+<li>Der Graph enthaelt einen Zyklus oder ungueltige Kanten.</li>
+<li>Die Eingabe wurde ohne <code>--input</code> uebergeben.</li>
+</ul>
+<h2 id="verwandte-seiten">Verwandte Seiten</h2>
+<ul>
+<li><a href="NovaAgents.html">NovaAgents</a></li>
+<li><a href="AgentsAndKnowledge.html">AgentsAndKnowledge</a></li>
+<li><a href="NovaMesh.html">NovaMesh</a></li>
+<li><a href="Research.html">Research</a></li>
 </ul>
         </article>
         <aside class="wiki-toc">
           <div class="wiki-toc-card"><h2>On this page</h2><ul>
-<li class="wiki-toc-link"><a href="#sichtweise">Sichtweise</a></li>
-<li class="wiki-toc-link"><a href="#eigenschaften">Eigenschaften</a></li>
+<li class="wiki-toc-link"><a href="#zweck">Zweck</a></li>
+<li class="wiki-toc-link"><a href="#kernpunkte">Kernpunkte</a></li>
+<li class="wiki-toc-link"><a href="#praktische-nutzung">Praktische Nutzung</a></li>
+<li class="wiki-toc-link"><a href="#testbare-einstiege">Testbare Einstiege</a></li>
+<li class="wiki-toc-link level-3"><a href="#ein-einfacher-agent-graph">Ein einfacher Agent-Graph</a></li>
+<li class="wiki-toc-link"><a href="#typische-fragen-und-fehler">Typische Fragen und Fehler</a></li>
+<li class="wiki-toc-link level-3"><a href="#graphlauf-scheitert-sofort">Graphlauf scheitert sofort</a></li>
+<li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
 </ul></div>
         </aside>
       </div>

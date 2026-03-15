@@ -27,11 +27,14 @@
 <li><a class="wiki-nav-link" data-nav-href="GermanLanguage.html" href="GermanLanguage.html">GermanLanguage</a></li>
 <li><a class="wiki-nav-link" data-nav-href="QuickStart.html" href="QuickStart.html">QuickStart</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Installation.html" href="Installation.html">Installation</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Nutzung</h2>
 <ul>
 <li><a class="wiki-nav-link" data-nav-href="NovaCLI.html" href="NovaCLI.html">NovaCLI</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ShellCommandReference.html" href="ShellCommandReference.html">ShellCommandReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="APIReference.html" href="APIReference.html">APIReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ExamplesAndRecipes.html" href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Tutorials.html" href="Tutorials.html">Tutorials</a></li>
@@ -54,6 +57,7 @@
 <li><a class="wiki-nav-link" data-nav-href="ParserAndASTReference.html" href="ParserAndASTReference.html">ParserAndASTReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="RuntimeMethodReference.html" href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ClassReference.html" href="ClassReference.html">ClassReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="CodeReferenceIndex.html" href="CodeReferenceIndex.html">CodeReferenceIndex</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Plattformfunktionen</h2>
@@ -102,8 +106,16 @@
       <div class="wiki-layout">
         <article class="wiki-article">
           <h1 id="wiki-page-template">Wiki Page Template</h1>
-<p>Diese Seite definiert das bevorzugte Format fuer technische Wiki-Seiten in Nova-shell. Nicht jede Seite braucht jeden Abschnitt, aber die Reihenfolge soll moeglichst stabil bleiben.</p>
-<h2 id="standardschema">Standardschema</h2>
+<h2 id="zweck">Zweck</h2>
+<p>Diese Seite definiert das bevorzugte Format fuer Wiki-Seiten in Nova-shell. Sie ist die redaktionelle Vorlage, mit der die Dokumentation konsistent, technisch brauchbar und testbar bleibt.</p>
+<h2 id="grundprinzipien">Grundprinzipien</h2>
+<ul>
+<li>Jede technische Seite braucht einen klaren Zweck.</li>
+<li>Jede Seite soll zeigen, wie etwas benutzt wird, nicht nur was es ist.</li>
+<li>Jede Fachseite soll mindestens ein konkretes Beispiel oder einen testbaren Einstieg enthalten.</li>
+<li>Jede Seite soll sinnvoll auf naechste Seiten verweisen.</li>
+</ul>
+<h2 id="standardschema-fuer-technische-fachseiten">Standardschema fuer technische Fachseiten</h2>
 <pre><code class="language-text"># Seitentitel
 
 ## Zweck
@@ -124,20 +136,79 @@ Falls es direkte HTTP- oder Programmierschnittstellen gibt.
 ## Beispiele
 Kurze, echte Anwendungsbeispiele.
 
+## Typische Fehler oder Fragen
+Die ersten sinnvollen Diagnose- oder Denkpfade.
+
 ## Verwandte Seiten
 Nahe Architektur-, Referenz- oder Tutorialseiten.</code></pre>
-<h2 id="hinweise">Hinweise</h2>
+<h2 id="schema-fuer-tutorial-seiten">Schema fuer Tutorial-Seiten</h2>
+<pre><code class="language-text"># Tutorialtitel
+
+## Ziel
+
+## Voraussetzungen
+
+## Schritte
+
+## Ergebnispruefung
+
+## Typische Fehler
+
+## Verwandte Seiten</code></pre>
+<h2 id="schema-fuer-portal-und-navigationsseiten">Schema fuer Portal- und Navigationsseiten</h2>
+<pre><code class="language-text"># Seitentitel
+
+## Zweck
+
+## Startpunkte oder Bereiche
+
+## Empfohlene Lesepfade
+
+## Verwandte Seiten</code></pre>
+<h2 id="schema-fuer-faq-oder-troubleshooting-seiten">Schema fuer FAQ- oder Troubleshooting-Seiten</h2>
+<pre><code class="language-text"># Seitentitel
+
+## Zweck
+
+## Erster Diagnoseblock
+
+## Fragen oder Fehlerbilder
+
+## Verwandte Seiten</code></pre>
+<h2 id="redaktionsregeln">Redaktionsregeln</h2>
 <ul>
-<li>Portal-Seiten wie <code>Home</code>, <code>README</code>, <code>GermanLanguage</code> oder <code>FAQ</code> duerfen kompakter bleiben.</li>
-<li>Tutorial-Seiten duerfen statt <code>Kernobjekte</code> einen Abschnitt <code>Ziel</code> und <code>Schritte</code> haben.</li>
-<li>Referenzseiten sollen Tabellen fuer Klassen, Methoden und Endpunkte bevorzugen.</li>
-<li>Jede technische Seite sollte mindestens ein konkretes Beispiel enthalten.</li>
+<li>keine reine Schlagwortliste ohne Erklaerung</li>
+<li>keine leeren Kommandotabellen ohne Beispiel</li>
+<li>keine Verweise auf externe Projekt-Markdown-Dateien als Ersatz fuer Inhalt</li>
+<li>keine Theorie ohne Bezug zu realen Kommandos, Klassen oder Ablaufen</li>
+</ul>
+<h2 id="qualitaetscheck-fuer-neue-seiten">Qualitaetscheck fuer neue Seiten</h2>
+<p>Eine Seite ist erst dann fertig, wenn sie:</p>
+<ol>
+<li>ihren Zweck klar benennt</li>
+<li>mindestens einen realistischen Einstieg nennt</li>
+<li>intern sinnvoll verlinkt ist</li>
+<li>nicht nur Features aufzaehlt, sondern deren Rolle erklaert</li>
+<li>fuer Nutzer oder Entwickler eine erkennbare naechste Handlung anbietet</li>
+</ol>
+<h2 id="verwandte-seiten">Verwandte Seiten</h2>
+<ul>
+<li><a href="README.html">README</a></li>
+<li><a href="DevelopmentGuide.html">DevelopmentGuide</a></li>
+<li><a href="ReviewsAndReadingPaths.html">ReviewsAndReadingPaths</a></li>
 </ul>
         </article>
         <aside class="wiki-toc">
           <div class="wiki-toc-card"><h2>On this page</h2><ul>
-<li class="wiki-toc-link"><a href="#standardschema">Standardschema</a></li>
-<li class="wiki-toc-link"><a href="#hinweise">Hinweise</a></li>
+<li class="wiki-toc-link"><a href="#zweck">Zweck</a></li>
+<li class="wiki-toc-link"><a href="#grundprinzipien">Grundprinzipien</a></li>
+<li class="wiki-toc-link"><a href="#standardschema-fuer-technische-fachseiten">Standardschema fuer technische Fachseiten</a></li>
+<li class="wiki-toc-link"><a href="#schema-fuer-tutorial-seiten">Schema fuer Tutorial-Seiten</a></li>
+<li class="wiki-toc-link"><a href="#schema-fuer-portal-und-navigationsseiten">Schema fuer Portal- und Navigationsseiten</a></li>
+<li class="wiki-toc-link"><a href="#schema-fuer-faq-oder-troubleshooting-seiten">Schema fuer FAQ- oder Troubleshooting-Seiten</a></li>
+<li class="wiki-toc-link"><a href="#redaktionsregeln">Redaktionsregeln</a></li>
+<li class="wiki-toc-link"><a href="#qualitaetscheck-fuer-neue-seiten">Qualitaetscheck fuer neue Seiten</a></li>
+<li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
 </ul></div>
         </aside>
       </div>

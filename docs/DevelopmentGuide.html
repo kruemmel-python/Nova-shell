@@ -27,11 +27,14 @@
 <li><a class="wiki-nav-link" data-nav-href="GermanLanguage.html" href="GermanLanguage.html">GermanLanguage</a></li>
 <li><a class="wiki-nav-link" data-nav-href="QuickStart.html" href="QuickStart.html">QuickStart</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Installation.html" href="Installation.html">Installation</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Nutzung</h2>
 <ul>
 <li><a class="wiki-nav-link" data-nav-href="NovaCLI.html" href="NovaCLI.html">NovaCLI</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ShellCommandReference.html" href="ShellCommandReference.html">ShellCommandReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="APIReference.html" href="APIReference.html">APIReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ExamplesAndRecipes.html" href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Tutorials.html" href="Tutorials.html">Tutorials</a></li>
@@ -54,6 +57,7 @@
 <li><a class="wiki-nav-link" data-nav-href="ParserAndASTReference.html" href="ParserAndASTReference.html">ParserAndASTReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="RuntimeMethodReference.html" href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ClassReference.html" href="ClassReference.html">ClassReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="CodeReferenceIndex.html" href="CodeReferenceIndex.html">CodeReferenceIndex</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Plattformfunktionen</h2>
@@ -103,11 +107,8 @@
         <article class="wiki-article">
           <h1 id="development-guide">Development Guide</h1>
 <h2 id="zweck">Zweck</h2>
-<p>Diese Seite richtet sich an Entwickler, die Nova-shell erweitern oder warten.</p>
-<h2 id="kernobjekte">Kernobjekte</h2>
-<p>Die wichtigsten Entwicklungszonen sind Module und Verzeichnisse.</p>
-<h2 id="methoden-und-schnittstellen">Methoden und Schnittstellen</h2>
-<h3 id="projektzonen">Projektzonen</h3>
+<p>Diese Seite richtet sich an Entwickler, die Nova-shell erweitern oder warten. Sie verbindet Projektstruktur, typische Aenderungspfade, Tests und Dokumentationspflichten.</p>
+<h2 id="projektzonen">Projektzonen</h2>
 <table><thead><tr>
 <th>Bereich</th>
 <th>Ort</th>
@@ -154,8 +155,8 @@
 <td>Imports, Lockfiles, Formatter, Tests</td>
 </tr>
 </tbody></table>
-<h3 id="typische-erweiterungspunkte">Typische Erweiterungspunkte</h3>
-<h4 id="neue-sprachbausteine">Neue Sprachbausteine</h4>
+<h2 id="typische-erweiterungspunkte">Typische Erweiterungspunkte</h2>
+<h3 id="neue-sprachbausteine">Neue Sprachbausteine</h3>
 <ul>
 <li><code>nova/parser/parser.py</code></li>
 <li><code>nova/parser/ast.py</code></li>
@@ -163,12 +164,12 @@
 <li><code>nova/graph/model.py</code></li>
 <li><code>nova/runtime/runtime.py</code></li>
 </ul>
-<h4 id="neue-api-endpunkte">Neue API-Endpunkte</h4>
+<h3 id="neue-api-endpunkte">Neue API-Endpunkte</h3>
 <ul>
 <li><code>nova/runtime/api.py</code></li>
 <li><code>nova/runtime/runtime.py</code></li>
 </ul>
-<h4 id="neue-agent-features">Neue Agent-Features</h4>
+<h3 id="neue-agent-features">Neue Agent-Features</h3>
 <ul>
 <li><code>nova/agents/runtime.py</code></li>
 <li><code>nova/agents/providers.py</code></li>
@@ -177,7 +178,7 @@
 <li><code>nova/agents/evals.py</code></li>
 <li><code>nova/agents/sandbox.py</code></li>
 </ul>
-<h4 id="neue-toolchain-funktionen">Neue Toolchain-Funktionen</h4>
+<h3 id="neue-toolchain-funktionen">Neue Toolchain-Funktionen</h3>
 <ul>
 <li><code>nova/toolchain/loader.py</code></li>
 <li><code>nova/toolchain/registry.py</code></li>
@@ -186,6 +187,14 @@
 <li><code>nova/toolchain/lsp.py</code></li>
 <li><code>nova/toolchain/testing.py</code></li>
 </ul>
+<h2 id="entwicklungsablauf">Entwicklungsablauf</h2>
+<ol>
+<li>Fachseite der betroffenen Schicht lesen</li>
+<li>Referenzseite fuer Klassen oder Methoden aufschlagen</li>
+<li>Implementierung aendern</li>
+<li>Tests ausfuehren</li>
+<li>Dokumentation aktualisieren</li>
+</ol>
 <h2 id="cli">CLI</h2>
 <p>Entwicklungsnahe Kommandos:</p>
 <ul>
@@ -198,12 +207,16 @@
 </ul>
 <h2 id="api">API</h2>
 <p>Fuer Integrations- und Plattformtests ist vor allem die Control-Plane-API relevant. Details stehen in <a href="APIReference.html">APIReference</a>.</p>
-<h2 id="beispiele">Beispiele</h2>
-<h3 id="testen">Testen</h3>
-<pre><code class="language-bash">python -m unittest tests.test_build_release
+<h2 id="testbare-befehle">Testbare Befehle</h2>
+<h3 id="kernsuite">Kernsuite</h3>
+<pre><code class="language-powershell">python -m unittest discover -s tests -p &quot;test_*.py&quot;</code></pre>
+<h3 id="teilmengen">Teilmengen</h3>
+<pre><code class="language-powershell">python -m unittest tests.test_build_release
 python -m unittest tests.test_nova_language
 python -m unittest tests.test_nova_shell</code></pre>
-<h3 id="dokumentationspflicht-fuer-neue-features">Dokumentationspflicht fuer neue Features</h3>
+<h3 id="syntaxpruefung">Syntaxpruefung</h3>
+<pre><code class="language-powershell">python -m compileall nova nova_shell.py</code></pre>
+<h2 id="dokumentationspflicht-fuer-neue-features">Dokumentationspflicht fuer neue Features</h2>
 <p>Wenn neue Kernfeatures dazukommen, aktualisiere mindestens:</p>
 <ul>
 <li><a href="NovaRuntime.html">NovaRuntime</a></li>
@@ -211,27 +224,46 @@ python -m unittest tests.test_nova_shell</code></pre>
 <li><a href="ClassReference.html">ClassReference</a></li>
 <li><a href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
 </ul>
+<p>Wenn neue Sprachelemente dazukommen, zusaetzlich:</p>
+<ul>
+<li><a href="NovaLanguage.html">NovaLanguage</a></li>
+<li><a href="ComponentModel.html">ComponentModel</a></li>
+<li><a href="ParserAndASTReference.html">ParserAndASTReference</a></li>
+</ul>
+<h2 id="typische-fehler">Typische Fehler</h2>
+<h3 id="nur-der-code-ist-aktualisiert-nicht-die-wiki">Nur der Code ist aktualisiert, nicht die Wiki</h3>
+<p>Dann fehlt den Nutzern meist genau der praktische Einstieg, selbst wenn die Implementierung korrekt ist.</p>
+<h3 id="parser-geaendert-runtime-nicht">Parser geaendert, Runtime nicht</h3>
+<p>Dann sieht <code>ns.graph</code> oft gut aus, aber <code>ns.run</code> nicht.</p>
 <h2 id="verwandte-seiten">Verwandte Seiten</h2>
 <ul>
 <li><a href="RepositoryStructure.html">RepositoryStructure</a></li>
+<li><a href="Testing.html">Testing</a></li>
 <li><a href="ClassReference.html">ClassReference</a></li>
 <li><a href="ParserAndASTReference.html">ParserAndASTReference</a></li>
 <li><a href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
-<li><a href="PageTemplate.html">PageTemplate</a></li>
 </ul>
         </article>
         <aside class="wiki-toc">
           <div class="wiki-toc-card"><h2>On this page</h2><ul>
 <li class="wiki-toc-link"><a href="#zweck">Zweck</a></li>
-<li class="wiki-toc-link"><a href="#kernobjekte">Kernobjekte</a></li>
-<li class="wiki-toc-link"><a href="#methoden-und-schnittstellen">Methoden und Schnittstellen</a></li>
-<li class="wiki-toc-link level-3"><a href="#projektzonen">Projektzonen</a></li>
-<li class="wiki-toc-link level-3"><a href="#typische-erweiterungspunkte">Typische Erweiterungspunkte</a></li>
+<li class="wiki-toc-link"><a href="#projektzonen">Projektzonen</a></li>
+<li class="wiki-toc-link"><a href="#typische-erweiterungspunkte">Typische Erweiterungspunkte</a></li>
+<li class="wiki-toc-link level-3"><a href="#neue-sprachbausteine">Neue Sprachbausteine</a></li>
+<li class="wiki-toc-link level-3"><a href="#neue-api-endpunkte">Neue API-Endpunkte</a></li>
+<li class="wiki-toc-link level-3"><a href="#neue-agent-features">Neue Agent-Features</a></li>
+<li class="wiki-toc-link level-3"><a href="#neue-toolchain-funktionen">Neue Toolchain-Funktionen</a></li>
+<li class="wiki-toc-link"><a href="#entwicklungsablauf">Entwicklungsablauf</a></li>
 <li class="wiki-toc-link"><a href="#cli">CLI</a></li>
 <li class="wiki-toc-link"><a href="#api">API</a></li>
-<li class="wiki-toc-link"><a href="#beispiele">Beispiele</a></li>
-<li class="wiki-toc-link level-3"><a href="#testen">Testen</a></li>
-<li class="wiki-toc-link level-3"><a href="#dokumentationspflicht-fuer-neue-features">Dokumentationspflicht fuer neue Features</a></li>
+<li class="wiki-toc-link"><a href="#testbare-befehle">Testbare Befehle</a></li>
+<li class="wiki-toc-link level-3"><a href="#kernsuite">Kernsuite</a></li>
+<li class="wiki-toc-link level-3"><a href="#teilmengen">Teilmengen</a></li>
+<li class="wiki-toc-link level-3"><a href="#syntaxpruefung">Syntaxpruefung</a></li>
+<li class="wiki-toc-link"><a href="#dokumentationspflicht-fuer-neue-features">Dokumentationspflicht fuer neue Features</a></li>
+<li class="wiki-toc-link"><a href="#typische-fehler">Typische Fehler</a></li>
+<li class="wiki-toc-link level-3"><a href="#nur-der-code-ist-aktualisiert-nicht-die-wiki">Nur der Code ist aktualisiert, nicht die Wiki</a></li>
+<li class="wiki-toc-link level-3"><a href="#parser-geaendert-runtime-nicht">Parser geaendert, Runtime nicht</a></li>
 <li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
 </ul></div>
         </aside>

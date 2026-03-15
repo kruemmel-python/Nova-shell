@@ -27,11 +27,14 @@
 <li><a class="wiki-nav-link" data-nav-href="GermanLanguage.html" href="GermanLanguage.html">GermanLanguage</a></li>
 <li><a class="wiki-nav-link" data-nav-href="QuickStart.html" href="QuickStart.html">QuickStart</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Installation.html" href="Installation.html">Installation</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Nutzung</h2>
 <ul>
 <li><a class="wiki-nav-link" data-nav-href="NovaCLI.html" href="NovaCLI.html">NovaCLI</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ShellCommandReference.html" href="ShellCommandReference.html">ShellCommandReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="APIReference.html" href="APIReference.html">APIReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ExamplesAndRecipes.html" href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Tutorials.html" href="Tutorials.html">Tutorials</a></li>
@@ -54,6 +57,7 @@
 <li><a class="wiki-nav-link" data-nav-href="ParserAndASTReference.html" href="ParserAndASTReference.html">ParserAndASTReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="RuntimeMethodReference.html" href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ClassReference.html" href="ClassReference.html">ClassReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="CodeReferenceIndex.html" href="CodeReferenceIndex.html">CodeReferenceIndex</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Plattformfunktionen</h2>
@@ -103,7 +107,7 @@
         <article class="wiki-article">
           <h1 id="component-model">Component Model</h1>
 <h2 id="zweck">Zweck</h2>
-<p>Die Nova Language beschreibt Ressourcen als benannte Deklarationen. Diese werden spaeter in AST-Knoten und Graph-Knoten ueberfuehrt.</p>
+<p>Die Nova Language beschreibt Ressourcen als benannte Deklarationen. Diese werden spaeter in AST-Knoten, Graph-Knoten und Runtime-Objekte ueberfuehrt. Diese Seite erklaert die semantischen Bausteine des Systems.</p>
 <h2 id="kernobjekte">Kernobjekte</h2>
 <h3 id="agent"><code>agent</code></h3>
 <p>Rolle: modellgestuetzte Ausfuehrungseinheit fuer Aufgaben in einem Flow.</p>
@@ -142,12 +146,11 @@
 <p>Rolle: installierbares Artefakt fuer Services oder Plattformteile.</p>
 <h3 id="system"><code>system</code></h3>
 <p>Rolle: uebergeordnete Runtime-, Security- oder Placement-Konfiguration.</p>
-<h2 id="methoden-und-schnittstellen">Methoden und Schnittstellen</h2>
-<h3 id="zuordnung-zu-ast-und-graph">Zuordnung zu AST und Graph</h3>
+<h2 id="zuordnung-zu-ast-und-graph">Zuordnung zu AST und Graph</h2>
 <table><thead><tr>
 <th>Sprachbaustein</th>
 <th>AST-Klasse</th>
-<th>Graph-Klasse</th>
+<th>Graph-Klasse oder Laufzeitrolle</th>
 </tr></thead><tbody>
 <tr>
 <td><code>agent</code></td>
@@ -192,21 +195,31 @@
 <tr>
 <td><code>system</code></td>
 <td><code>SystemDeclaration</code></td>
-<td>Metadaten fuer Placement und Policy</td>
+<td>Metadaten fuer Placement, Policy und Runtime</td>
 </tr>
 </tbody></table>
+<h2 id="modell-vom-quelltext-bis-zur-laufzeit">Modell vom Quelltext bis zur Laufzeit</h2>
+<pre><code class="language-text">Declaration
+  -&gt;
+AST Node
+  -&gt;
+Graph Node oder Runtime Metadata
+  -&gt;
+Execution / State / Service / Event</code></pre>
 <h2 id="cli">CLI</h2>
-<p>Typische Kommandos, die auf diesen Bausteinen aufsetzen:</p>
+<p>Typische Kommandos, die direkt auf diesen Bausteinen aufsetzen:</p>
 <ul>
 <li><code>ns.exec</code></li>
 <li><code>ns.run</code></li>
 <li><code>ns.graph</code></li>
 <li><code>ns.format</code></li>
+<li><code>ns.lint</code></li>
 </ul>
 <h2 id="api">API</h2>
 <p>Die Bausteine wirken indirekt auf die API, weil sie spaeter als Runtime-, Queue-, Service- und Agentenobjekte sichtbar werden.</p>
-<h2 id="beispiele">Beispiele</h2>
-<pre><code class="language-nova">agent reviewer {
+<h2 id="testbare-beispiele">Testbare Beispiele</h2>
+<h3 id="minimales-modell">Minimales Modell</h3>
+<pre><code class="language-ns">agent reviewer {
   model: gpt-4o-mini
 }
 
@@ -217,12 +230,28 @@ dataset reports {
 flow review {
   reviewer summarize reports
 }</code></pre>
+<h3 id="erweiterte-komponenten">Erweiterte Komponenten</h3>
+<pre><code class="language-ns">state mission {
+  namespace: ops
+}
+
+event scheduler {
+  on: schedule.tick
+  flow: daily_ops
+}</code></pre>
+<h2 id="typische-fragen">Typische Fragen</h2>
+<h3 id="ist-flow-nur-eine-liste-von-befehlen">Ist <code>flow</code> nur eine Liste von Befehlen?</h3>
+<p>Nein. Ein <code>flow</code> ist die deklarative Quelle fuer einen Graph mit Knoten, Kanten und Laufzeitbedeutung.</p>
+<h3 id="ist-system-nur-konfiguration">Ist <code>system</code> nur Konfiguration?</h3>
+<p>Nicht nur. <code>system</code> beeinflusst oft Placement, Policy, Tenant- oder Runtime-Verhalten.</p>
+<h3 id="wo-sieht-man-die-technische-umsetzung">Wo sieht man die technische Umsetzung?</h3>
+<p>In <a href="ParserAndASTReference.html">ParserAndASTReference</a>, <a href="NovaGraphEngine.html">NovaGraphEngine</a> und <a href="NovaRuntime.html">NovaRuntime</a>.</p>
 <h2 id="verwandte-seiten">Verwandte Seiten</h2>
 <ul>
 <li><a href="NovaLanguage.html">NovaLanguage</a></li>
 <li><a href="ParserAndASTReference.html">ParserAndASTReference</a></li>
+<li><a href="NovaGraphEngine.html">NovaGraphEngine</a></li>
 <li><a href="NovaRuntime.html">NovaRuntime</a></li>
-<li><a href="PageTemplate.html">PageTemplate</a></li>
 </ul>
         </article>
         <aside class="wiki-toc">
@@ -238,11 +267,17 @@ flow review {
 <li class="wiki-toc-link level-3"><a href="#service">`service`</a></li>
 <li class="wiki-toc-link level-3"><a href="#package">`package`</a></li>
 <li class="wiki-toc-link level-3"><a href="#system">`system`</a></li>
-<li class="wiki-toc-link"><a href="#methoden-und-schnittstellen">Methoden und Schnittstellen</a></li>
-<li class="wiki-toc-link level-3"><a href="#zuordnung-zu-ast-und-graph">Zuordnung zu AST und Graph</a></li>
+<li class="wiki-toc-link"><a href="#zuordnung-zu-ast-und-graph">Zuordnung zu AST und Graph</a></li>
+<li class="wiki-toc-link"><a href="#modell-vom-quelltext-bis-zur-laufzeit">Modell vom Quelltext bis zur Laufzeit</a></li>
 <li class="wiki-toc-link"><a href="#cli">CLI</a></li>
 <li class="wiki-toc-link"><a href="#api">API</a></li>
-<li class="wiki-toc-link"><a href="#beispiele">Beispiele</a></li>
+<li class="wiki-toc-link"><a href="#testbare-beispiele">Testbare Beispiele</a></li>
+<li class="wiki-toc-link level-3"><a href="#minimales-modell">Minimales Modell</a></li>
+<li class="wiki-toc-link level-3"><a href="#erweiterte-komponenten">Erweiterte Komponenten</a></li>
+<li class="wiki-toc-link"><a href="#typische-fragen">Typische Fragen</a></li>
+<li class="wiki-toc-link level-3"><a href="#ist-flow-nur-eine-liste-von-befehlen">Ist `flow` nur eine Liste von Befehlen?</a></li>
+<li class="wiki-toc-link level-3"><a href="#ist-system-nur-konfiguration">Ist `system` nur Konfiguration?</a></li>
+<li class="wiki-toc-link level-3"><a href="#wo-sieht-man-die-technische-umsetzung">Wo sieht man die technische Umsetzung?</a></li>
 <li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
 </ul></div>
         </aside>

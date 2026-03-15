@@ -27,11 +27,14 @@
 <li><a class="wiki-nav-link" data-nav-href="GermanLanguage.html" href="GermanLanguage.html">GermanLanguage</a></li>
 <li><a class="wiki-nav-link" data-nav-href="QuickStart.html" href="QuickStart.html">QuickStart</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Installation.html" href="Installation.html">Installation</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Nutzung</h2>
 <ul>
 <li><a class="wiki-nav-link" data-nav-href="NovaCLI.html" href="NovaCLI.html">NovaCLI</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ShellCommandReference.html" href="ShellCommandReference.html">ShellCommandReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="APIReference.html" href="APIReference.html">APIReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ExamplesAndRecipes.html" href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Tutorials.html" href="Tutorials.html">Tutorials</a></li>
@@ -54,6 +57,7 @@
 <li><a class="wiki-nav-link" data-nav-href="ParserAndASTReference.html" href="ParserAndASTReference.html">ParserAndASTReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="RuntimeMethodReference.html" href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ClassReference.html" href="ClassReference.html">ClassReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="CodeReferenceIndex.html" href="CodeReferenceIndex.html">CodeReferenceIndex</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Plattformfunktionen</h2>
@@ -102,23 +106,51 @@
       <div class="wiki-layout">
         <article class="wiki-article">
           <h1 id="nova-graph-engine">Nova Graph Engine</h1>
-<h2 id="rolle">Rolle</h2>
-<p>Die Graph Engine verbindet AST und Runtime.</p>
-<h2 id="funktionen">Funktionen</h2>
+<h2 id="zweck">Zweck</h2>
+<p>Die Graph-Engine ist die Schicht, die deklarative Programme in ausfuehrbare Knoten- und Kantenstrukturen ueberfuehrt.</p>
+<h2 id="kernpunkte">Kernpunkte</h2>
 <ul>
-<li>Knoten und Kanten erzeugen</li>
-<li>Flow-Schliessungen bestimmen</li>
-<li>topologische Ordnung berechnen</li>
-<li>Agent-, Tool-, Service- und Package-Knoten darstellen</li>
+<li>Graphknoten repraesentieren Agenten, Datasets, Tools, Flows, Events oder Systemoperationen.</li>
+<li>Kanten repraesentieren Datenfluss oder Kontrollfluss.</li>
+<li>Der Graph ist auf deterministische Ausfuehrung und Diagnostik ausgelegt, nicht auf dekorative Visualisierung.</li>
+<li><code>ns.graph</code> ist der wichtigste Einstieg, um diese Schicht sichtbar zu machen.</li>
 </ul>
-<h2 id="nutzen">Nutzen</h2>
-<p>Sie macht aus deklarativen Programmen planbare und nachvollziehbare Ausfuehrungsgrafen.</p>
+<h2 id="praktische-nutzung">Praktische Nutzung</h2>
+<ul>
+<li>Pruefe neue <code>.ns</code>-Programme zuerst mit <code>ns.graph</code>.</li>
+<li>Verwende die Graphsicht, um Reihenfolge- oder Abhaengigkeitsfehler von Laufzeitproblemen zu trennen.</li>
+</ul>
+<h2 id="testbare-einstiege">Testbare Einstiege</h2>
+<h3 id="graph-eines-programms-anzeigen">Graph eines Programms anzeigen</h3>
+<pre><code class="language-powershell">ns.graph .\examples\market_radar.ns</code></pre>
+<p>Erwartung:</p>
+<ul>
+<li>Der kompilierte Graph zeigt Flows und beteiligte Knoten.</li>
+</ul>
+<h2 id="typische-fragen-und-fehler">Typische Fragen und Fehler</h2>
+<h3 id="graphaufbau-scheitert">Graphaufbau scheitert</h3>
+<ul>
+<li>Die Datei ist kein gueltiges deklaratives Nova-Programm.</li>
+<li>Eine Deklaration ist syntaktisch oder strukturell unvollstaendig.</li>
+</ul>
+<h2 id="verwandte-seiten">Verwandte Seiten</h2>
+<ul>
+<li><a href="NovaLanguage.html">NovaLanguage</a></li>
+<li><a href="ParserAndASTReference.html">ParserAndASTReference</a></li>
+<li><a href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
+<li><a href="ComponentModel.html">ComponentModel</a></li>
+</ul>
         </article>
         <aside class="wiki-toc">
           <div class="wiki-toc-card"><h2>On this page</h2><ul>
-<li class="wiki-toc-link"><a href="#rolle">Rolle</a></li>
-<li class="wiki-toc-link"><a href="#funktionen">Funktionen</a></li>
-<li class="wiki-toc-link"><a href="#nutzen">Nutzen</a></li>
+<li class="wiki-toc-link"><a href="#zweck">Zweck</a></li>
+<li class="wiki-toc-link"><a href="#kernpunkte">Kernpunkte</a></li>
+<li class="wiki-toc-link"><a href="#praktische-nutzung">Praktische Nutzung</a></li>
+<li class="wiki-toc-link"><a href="#testbare-einstiege">Testbare Einstiege</a></li>
+<li class="wiki-toc-link level-3"><a href="#graph-eines-programms-anzeigen">Graph eines Programms anzeigen</a></li>
+<li class="wiki-toc-link"><a href="#typische-fragen-und-fehler">Typische Fragen und Fehler</a></li>
+<li class="wiki-toc-link level-3"><a href="#graphaufbau-scheitert">Graphaufbau scheitert</a></li>
+<li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
 </ul></div>
         </aside>
       </div>

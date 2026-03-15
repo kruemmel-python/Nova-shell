@@ -27,11 +27,14 @@
 <li><a class="wiki-nav-link" data-nav-href="GermanLanguage.html" href="GermanLanguage.html">GermanLanguage</a></li>
 <li><a class="wiki-nav-link" data-nav-href="QuickStart.html" href="QuickStart.html">QuickStart</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Installation.html" href="Installation.html">Installation</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Nutzung</h2>
 <ul>
 <li><a class="wiki-nav-link" data-nav-href="NovaCLI.html" href="NovaCLI.html">NovaCLI</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ShellCommandReference.html" href="ShellCommandReference.html">ShellCommandReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="APIReference.html" href="APIReference.html">APIReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ExamplesAndRecipes.html" href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Tutorials.html" href="Tutorials.html">Tutorials</a></li>
@@ -54,6 +57,7 @@
 <li><a class="wiki-nav-link" data-nav-href="ParserAndASTReference.html" href="ParserAndASTReference.html">ParserAndASTReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="RuntimeMethodReference.html" href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ClassReference.html" href="ClassReference.html">ClassReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="CodeReferenceIndex.html" href="CodeReferenceIndex.html">CodeReferenceIndex</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Plattformfunktionen</h2>
@@ -102,34 +106,75 @@
       <div class="wiki-layout">
         <article class="wiki-article">
           <h1 id="operations-and-observability">Operations and Observability</h1>
-<h2 id="hauptfunktionen">Hauptfunktionen</h2>
+<h2 id="zweck">Zweck</h2>
+<p>Diese Seite beschreibt die Betriebs- und Diagnosepfade von Nova-shell. Sie deckt Telemetrie, Statusabfragen, Backups, Replay, Restore und Laufzeitdiagnose ab.</p>
+<h2 id="kernpunkte">Kernpunkte</h2>
 <ul>
-<li>Traces</li>
-<li>Alerts</li>
-<li>Telemetrieexport</li>
-<li>Backups</li>
-<li>Restore</li>
-<li>Failpoints</li>
-<li>Load-Tests</li>
-<li>Snapshot-Validierung</li>
+<li>Traces und Laufzeitereignisse fuer Flows, Services und Agenten</li>
+<li>Alerts und Diagnosepfade fuer Fehler und Regressionen</li>
+<li>Telemetrieexport ueber CLI und API</li>
+<li>Backups, Restore und Snapshot-Validierung</li>
+<li>Failpoints, Lasttests und Recovery-gestuetzte Betriebspruefung</li>
 </ul>
-<h2 id="betriebszugriffe">Betriebszugriffe</h2>
+<h2 id="wichtige-zugriffe">Wichtige Zugriffe</h2>
+<h3 id="cli">CLI</h3>
 <ul>
-<li>CLI fuer Status und Control Plane</li>
-<li>HTTP-API fuer Plattformsteuerung</li>
-<li>persistente Laufzeitdaten fuer Diagnose und Replay</li>
+<li><code>doctor</code></li>
+<li><code>ns.status</code></li>
+<li><code>ns.control</code></li>
+<li><code>ns.snapshot</code></li>
+<li><code>ns.resume</code></li>
 </ul>
+<h3 id="api">API</h3>
+<ul>
+<li>Runtime- und Control-Plane-Endpunkte aus <a href="APIReference.html">APIReference</a></li>
+<li>Status-, Queue-, Replay- und Metrics-Endpunkte</li>
+</ul>
+<h2 id="testbare-einstiege">Testbare Einstiege</h2>
+<h3 id="lokalen-runtime-status-pruefen">Lokalen Runtime-Status pruefen</h3>
+<pre><code class="language-powershell">doctor
+ns.status</code></pre>
+<h3 id="snapshot-schreiben-und-wieder-laden">Snapshot schreiben und wieder laden</h3>
+<pre><code class="language-powershell">ns.snapshot
+ns.resume</code></pre>
+<h3 id="html-wiki-als-diagnoseschritt-bauen">HTML-Wiki als Diagnoseschritt bauen</h3>
+<pre><code class="language-powershell">wiki build</code></pre>
+<p>Der letzte Schritt ist kein Betriebsfeature der Runtime selbst, aber ein schneller Integrationscheck fuer Toolchain und lokale Installation.</p>
+<h2 id="typische-betriebsfragen">Typische Betriebsfragen</h2>
+<h3 id="wo-sehe-ich-ob-die-runtime-gesund-wirkt">Wo sehe ich, ob die Runtime gesund wirkt?</h3>
+<p>Mit <code>doctor</code> fuer Installationsfaehigkeiten und <code>ns.status</code> fuer den Plattformzustand.</p>
+<h3 id="wie-sichere-ich-den-runtime-zustand">Wie sichere ich den Runtime-Zustand?</h3>
+<p>Ueber Snapshot- und Control-Plane-Pfade. Fuer umfangreichere Release- oder Betriebspfade siehe <a href="BuildAndRelease.html">BuildAndRelease</a>.</p>
+<h3 id="was-pruefe-ich-bei-einem-unklaren-fehler-zuerst">Was pruefe ich bei einem unklaren Fehler zuerst?</h3>
+<ol>
+<li><code>doctor</code></li>
+<li><code>ns.status</code></li>
+<li><code>ns.control</code></li>
+<li>relevante Logs oder Trace-Daten</li>
+</ol>
 <h2 id="verwandte-seiten">Verwandte Seiten</h2>
 <ul>
 <li><a href="NovaRuntime.html">NovaRuntime</a></li>
+<li><a href="RuntimeAndControlPlane.html">RuntimeAndControlPlane</a></li>
 <li><a href="APIReference.html">APIReference</a></li>
 <li><a href="Troubleshooting.html">Troubleshooting</a></li>
 </ul>
         </article>
         <aside class="wiki-toc">
           <div class="wiki-toc-card"><h2>On this page</h2><ul>
-<li class="wiki-toc-link"><a href="#hauptfunktionen">Hauptfunktionen</a></li>
-<li class="wiki-toc-link"><a href="#betriebszugriffe">Betriebszugriffe</a></li>
+<li class="wiki-toc-link"><a href="#zweck">Zweck</a></li>
+<li class="wiki-toc-link"><a href="#kernpunkte">Kernpunkte</a></li>
+<li class="wiki-toc-link"><a href="#wichtige-zugriffe">Wichtige Zugriffe</a></li>
+<li class="wiki-toc-link level-3"><a href="#cli">CLI</a></li>
+<li class="wiki-toc-link level-3"><a href="#api">API</a></li>
+<li class="wiki-toc-link"><a href="#testbare-einstiege">Testbare Einstiege</a></li>
+<li class="wiki-toc-link level-3"><a href="#lokalen-runtime-status-pruefen">Lokalen Runtime-Status pruefen</a></li>
+<li class="wiki-toc-link level-3"><a href="#snapshot-schreiben-und-wieder-laden">Snapshot schreiben und wieder laden</a></li>
+<li class="wiki-toc-link level-3"><a href="#html-wiki-als-diagnoseschritt-bauen">HTML-Wiki als Diagnoseschritt bauen</a></li>
+<li class="wiki-toc-link"><a href="#typische-betriebsfragen">Typische Betriebsfragen</a></li>
+<li class="wiki-toc-link level-3"><a href="#wo-sehe-ich-ob-die-runtime-gesund-wirkt">Wo sehe ich, ob die Runtime gesund wirkt?</a></li>
+<li class="wiki-toc-link level-3"><a href="#wie-sichere-ich-den-runtime-zustand">Wie sichere ich den Runtime-Zustand?</a></li>
+<li class="wiki-toc-link level-3"><a href="#was-pruefe-ich-bei-einem-unklaren-fehler-zuerst">Was pruefe ich bei einem unklaren Fehler zuerst?</a></li>
 <li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
 </ul></div>
         </aside>

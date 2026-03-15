@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="Nova-shell wiki builder">
-  <title>Mesh and Distributed Execution | Nova-shell Wiki</title>
+  <title>Mesh And Distributed Execution | Nova-shell Wiki</title>
   <link rel="stylesheet" href="assets/wiki.css">
 </head>
 <body>
@@ -27,11 +27,14 @@
 <li><a class="wiki-nav-link" data-nav-href="GermanLanguage.html" href="GermanLanguage.html">GermanLanguage</a></li>
 <li><a class="wiki-nav-link" data-nav-href="QuickStart.html" href="QuickStart.html">QuickStart</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Installation.html" href="Installation.html">Installation</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Nutzung</h2>
 <ul>
 <li><a class="wiki-nav-link" data-nav-href="NovaCLI.html" href="NovaCLI.html">NovaCLI</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ShellCommandReference.html" href="ShellCommandReference.html">ShellCommandReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="APIReference.html" href="APIReference.html">APIReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ExamplesAndRecipes.html" href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Tutorials.html" href="Tutorials.html">Tutorials</a></li>
@@ -54,6 +57,7 @@
 <li><a class="wiki-nav-link" data-nav-href="ParserAndASTReference.html" href="ParserAndASTReference.html">ParserAndASTReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="RuntimeMethodReference.html" href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ClassReference.html" href="ClassReference.html">ClassReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="CodeReferenceIndex.html" href="CodeReferenceIndex.html">CodeReferenceIndex</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Plattformfunktionen</h2>
@@ -95,34 +99,62 @@
         <button type="button" class="wiki-nav-toggle" data-nav-toggle>Menu</button>
         <div class="wiki-header-copy">
           <span class="wiki-kicker">Nova-shell Documentation</span>
-          <h1>Mesh and Distributed Execution</h1>
+          <h1>Mesh And Distributed Execution</h1>
           <p>Source: MeshAndDistributedExecution.md</p>
         </div>
       </header>
       <div class="wiki-layout">
         <article class="wiki-article">
-          <h1 id="mesh-and-distributed-execution">Mesh and Distributed Execution</h1>
-<h2 id="fokus">Fokus</h2>
-<p>Diese Seite ist das Portal fuer Worker, Remote-Dispatch und Executor-Pfade.</p>
-<h2 id="themen">Themen</h2>
+          <h1 id="mesh-and-distributed-execution">Mesh And Distributed Execution</h1>
+<h2 id="zweck">Zweck</h2>
+<p>Diese Seite ordnet die verteilte Ausfuehrung von Nova-shell auf Systemebene ein. Sie ist konzeptioneller als <code>NovaMesh</code>, aber betriebsnaeher als die reine Architekturuebersicht.</p>
+<h2 id="kernpunkte">Kernpunkte</h2>
 <ul>
-<li>Worker-Registrierung</li>
-<li>Capability-Routing</li>
-<li>verteilte Ausfuehrung</li>
-<li>Backend-Daemons</li>
-<li>Heartbeats und Health</li>
+<li>Worker melden Capabilities wie <code>py</code>, <code>cpu</code>, <code>ai</code> oder <code>gpu</code> an.</li>
+<li>Die Shell kann gezielt remote ausfuehren oder Entscheidungen ueber <code>mesh intelligent-run</code> treffen.</li>
+<li>Die deklarative Runtime kann Mesh-Worker als Ausfuehrungsziel fuer Graphschritte nutzen.</li>
+<li>Tokens, Labels und TLS-Profile machen den Meshpfad anschlussfaehig fuer Policy- und Tenantregeln.</li>
+</ul>
+<h2 id="praktische-nutzung">Praktische Nutzung</h2>
+<ul>
+<li>Starte lokale Worker zuerst, bevor du <code>remote</code> oder <code>mesh run</code> testest.</li>
+<li>Verwende Labels und Tokens, wenn du mehr als einen rein lokalen Demo-Pfad dokumentierst.</li>
+<li>Nutze <code>mesh list</code>, um Capabilities und Heartbeats sichtbar zu machen.</li>
+</ul>
+<h2 id="testbare-einstiege">Testbare Einstiege</h2>
+<h3 id="lokalen-worker-starten-und-nutzen">Lokalen Worker starten und nutzen</h3>
+<pre><code class="language-powershell">mesh start-worker --caps cpu,py
+mesh list
+mesh run py py 1 + 1</code></pre>
+<p>Erwartung:</p>
+<ul>
+<li>Es erscheint mindestens ein Worker mit <code>cpu</code> und <code>py</code>.</li>
+<li>Der Python-Befehl wird ueber den Worker ausgefuehrt.</li>
+</ul>
+<h2 id="typische-fragen-und-fehler">Typische Fragen und Fehler</h2>
+<h3 id="remote-aufruf-scheitert">Remote-Aufruf scheitert</h3>
+<ul>
+<li>Der Worker laeuft nicht.</li>
+<li>Die Capability des Workers passt nicht zum Befehl.</li>
+<li>URL, Port oder Token sind falsch.</li>
 </ul>
 <h2 id="verwandte-seiten">Verwandte Seiten</h2>
 <ul>
 <li><a href="NovaMesh.html">NovaMesh</a></li>
-<li><a href="NovaRuntime.html">NovaRuntime</a></li>
-<li><a href="SecurityModel.html">SecurityModel</a></li>
+<li><a href="RuntimeAndControlPlane.html">RuntimeAndControlPlane</a></li>
+<li><a href="SecurityAndTrust.html">SecurityAndTrust</a></li>
+<li><a href="PerformanceAndScaling.html">PerformanceAndScaling</a></li>
 </ul>
         </article>
         <aside class="wiki-toc">
           <div class="wiki-toc-card"><h2>On this page</h2><ul>
-<li class="wiki-toc-link"><a href="#fokus">Fokus</a></li>
-<li class="wiki-toc-link"><a href="#themen">Themen</a></li>
+<li class="wiki-toc-link"><a href="#zweck">Zweck</a></li>
+<li class="wiki-toc-link"><a href="#kernpunkte">Kernpunkte</a></li>
+<li class="wiki-toc-link"><a href="#praktische-nutzung">Praktische Nutzung</a></li>
+<li class="wiki-toc-link"><a href="#testbare-einstiege">Testbare Einstiege</a></li>
+<li class="wiki-toc-link level-3"><a href="#lokalen-worker-starten-und-nutzen">Lokalen Worker starten und nutzen</a></li>
+<li class="wiki-toc-link"><a href="#typische-fragen-und-fehler">Typische Fragen und Fehler</a></li>
+<li class="wiki-toc-link level-3"><a href="#remote-aufruf-scheitert">Remote-Aufruf scheitert</a></li>
 <li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
 </ul></div>
         </aside>

@@ -1,0 +1,1305 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="Nova-shell wiki builder">
+  <title>Code Reference Index | Nova-shell Wiki</title>
+  <link rel="stylesheet" href="assets/wiki.css">
+</head>
+<body>
+  <div class="wiki-shell">
+    <aside class="wiki-sidebar" data-sidebar>
+      <div class="wiki-brand">
+        <a href="Home.html">Nova-shell Wiki</a>
+        <p>HTML documentation for the Nova-shell platform.</p>
+      </div>
+      <label class="wiki-search">
+        <span>Search</span>
+        <input type="search" placeholder="Find pages, classes, methods..." data-wiki-search>
+      </label>
+      <div class="wiki-search-results" data-search-results></div>
+      <nav class="wiki-nav">
+        <section class="wiki-nav-section">
+<h2>Einstieg</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="Home.html" href="Home.html">Home</a></li>
+<li><a class="wiki-nav-link" data-nav-href="GermanLanguage.html" href="GermanLanguage.html">GermanLanguage</a></li>
+<li><a class="wiki-nav-link" data-nav-href="QuickStart.html" href="QuickStart.html">QuickStart</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Installation.html" href="Installation.html">Installation</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
+</ul></section>
+<section class="wiki-nav-section">
+<h2>Nutzung</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="NovaCLI.html" href="NovaCLI.html">NovaCLI</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ShellCommandReference.html" href="ShellCommandReference.html">ShellCommandReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="APIReference.html" href="APIReference.html">APIReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ExamplesAndRecipes.html" href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Tutorials.html" href="Tutorials.html">Tutorials</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialTechnologyRadar.html" href="TutorialTechnologyRadar.html">TutorialTechnologyRadar</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialMultiAgentCluster.html" href="TutorialMultiAgentCluster.html">TutorialMultiAgentCluster</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialLMStudioIntegration.html" href="TutorialLMStudioIntegration.html">TutorialLMStudioIntegration</a></li>
+</ul></section>
+<section class="wiki-nav-section">
+<h2>Architektur</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="Architecture.html" href="Architecture.html">Architecture</a></li>
+<li><a class="wiki-nav-link" data-nav-href="SystemOverview.html" href="SystemOverview.html">SystemOverview</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ComponentModel.html" href="ComponentModel.html">ComponentModel</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ExecutionModel.html" href="ExecutionModel.html">ExecutionModel</a></li>
+<li><a class="wiki-nav-link" data-nav-href="DataFlow.html" href="DataFlow.html">DataFlow</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaLanguage.html" href="NovaLanguage.html">NovaLanguage</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaRuntime.html" href="NovaRuntime.html">NovaRuntime</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaGraphEngine.html" href="NovaGraphEngine.html">NovaGraphEngine</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaPlanner.html" href="NovaPlanner.html">NovaPlanner</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ParserAndASTReference.html" href="ParserAndASTReference.html">ParserAndASTReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="RuntimeMethodReference.html" href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ClassReference.html" href="ClassReference.html">ClassReference</a></li>
+<li><a class="wiki-nav-link active" data-nav-href="CodeReferenceIndex.html" href="CodeReferenceIndex.html">CodeReferenceIndex</a></li>
+</ul></section>
+<section class="wiki-nav-section">
+<h2>Plattformfunktionen</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="NovaAgents.html" href="NovaAgents.html">NovaAgents</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaMesh.html" href="NovaMesh.html">NovaMesh</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaSensors.html" href="NovaSensors.html">NovaSensors</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaMemory.html" href="NovaMemory.html">NovaMemory</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaTools.html" href="NovaTools.html">NovaTools</a></li>
+</ul></section>
+<section class="wiki-nav-section">
+<h2>Entwicklung und Betrieb</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="DevelopmentGuide.html" href="DevelopmentGuide.html">DevelopmentGuide</a></li>
+<li><a class="wiki-nav-link" data-nav-href="PageTemplate.html" href="PageTemplate.html">PageTemplate</a></li>
+<li><a class="wiki-nav-link" data-nav-href="RepositoryStructure.html" href="RepositoryStructure.html">RepositoryStructure</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Testing.html" href="Testing.html">Testing</a></li>
+<li><a class="wiki-nav-link" data-nav-href="BuildAndRelease.html" href="BuildAndRelease.html">BuildAndRelease</a></li>
+<li><a class="wiki-nav-link" data-nav-href="SecurityModel.html" href="SecurityModel.html">SecurityModel</a></li>
+<li><a class="wiki-nav-link" data-nav-href="PerformanceAndScaling.html" href="PerformanceAndScaling.html">PerformanceAndScaling</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Troubleshooting.html" href="Troubleshooting.html">Troubleshooting</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Roadmap.html" href="Roadmap.html">Roadmap</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Contributing.html" href="Contributing.html">Contributing</a></li>
+<li><a class="wiki-nav-link" data-nav-href="License.html" href="License.html">License</a></li>
+</ul></section>
+<section class="wiki-nav-section">
+<h2>Theorie</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="Research.html" href="Research.html">Research</a></li>
+<li><a class="wiki-nav-link" data-nav-href="AIOSConcept.html" href="AIOSConcept.html">AIOSConcept</a></li>
+<li><a class="wiki-nav-link" data-nav-href="AgentSystems.html" href="AgentSystems.html">AgentSystems</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Glossary.html" href="Glossary.html">Glossary</a></li>
+<li><a class="wiki-nav-link" data-nav-href="FAQ.html" href="FAQ.html">FAQ</a></li>
+</ul></section>
+      </nav>
+    </aside>
+    <main class="wiki-main">
+      <header class="wiki-header">
+        <button type="button" class="wiki-nav-toggle" data-nav-toggle>Menu</button>
+        <div class="wiki-header-copy">
+          <span class="wiki-kicker">Nova-shell Documentation</span>
+          <h1>Code Reference Index</h1>
+          <p>Source: CodeReferenceIndex.md</p>
+        </div>
+      </header>
+      <div class="wiki-layout">
+        <article class="wiki-article">
+          <h1 id="code-reference-index">Code Reference Index</h1>
+<h2 id="zweck">Zweck</h2>
+<p>Diese Seite ist der vollstaendige Symbolindex der aktuellen Nova-shell-Codebasis. Sie ist nicht als Fliesstext-Architekturseite gedacht, sondern als schnelle Referenz:</p>
+<ul>
+<li>welches Modul existiert</li>
+<li>welche Klassen dort liegen</li>
+<li>welche Methoden eine Klasse hat</li>
+<li>welche Hilfsfunktionen auf Modulebene existieren</li>
+</ul>
+<p>Die erklaerenden Seiten bleiben:</p>
+<ul>
+<li><a href="ClassReference.html">ClassReference</a></li>
+<li><a href="ParserAndASTReference.html">ParserAndASTReference</a></li>
+<li><a href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
+<li><a href="ShellCommandReference.html">ShellCommandReference</a></li>
+</ul>
+<p>Diese Seite beantwortet dagegen:</p>
+<blockquote><p>Wo liegt ein Symbol genau und welche Methoden gehoeren dazu?</p></blockquote>
+<h2 id="wie-dieser-index-benutzt-werden-sollte">Wie dieser Index benutzt werden sollte</h2>
+<p>Diese Seite ist am staerksten, wenn du bereits einen Symbolnamen, ein Modul oder eine Klasse suchst. Sie ist nicht der beste erste Einstieg fuer neue Nutzer, sondern die Referenz nach Architektur- oder Nutzungsseiten.</p>
+<p>Empfohlene Reihenfolge:</p>
+<ol>
+<li>erst Fachseite lesen, zum Beispiel <a href="NovaRuntime.html">NovaRuntime</a> oder <a href="NovaAgents.html">NovaAgents</a></li>
+<li>dann in diesem Index das konkrete Symbol suchen</li>
+<li>danach in den Quelltext oder in die passende Methodenreferenz gehen</li>
+</ol>
+<h2 id="typische-lookup-fragen">Typische Lookup-Fragen</h2>
+<h3 id="ich-kenne-ein-modul-aber-nicht-die-klasse">Ich kenne ein Modul, aber nicht die Klasse</h3>
+<p>Suche nach dem Modulabschnitt, zum Beispiel <code>nova.runtime.runtime</code> oder <code>nova.mesh.registry</code>.</p>
+<h3 id="ich-kenne-die-klasse-aber-nicht-ihre-methoden">Ich kenne die Klasse, aber nicht ihre Methoden</h3>
+<p>Gehe zum passenden Abschnitt und nutze die aufgelisteten Methoden als Startpunkt fuer Quelltext oder Tests.</p>
+<h3 id="ich-kenne-nur-das-kommando">Ich kenne nur das Kommando</h3>
+<p>Dann beginne nicht hier, sondern in <a href="ShellCommandReference.html">ShellCommandReference</a>, und springe von dort zu Symbolen weiter.</p>
+<h2 id="testbare-symbolsuche-im-repository">Testbare Symbolsuche im Repository</h2>
+<p>Wenn du die Wiki mit dem echten Quellbaum abgleichen willst:</p>
+<pre><code class="language-powershell">rg &quot;class NovaRuntime|def run\\(&quot; nova
+rg &quot;_run_ai|_ns_run|route\\(&quot; nova_shell.py</code></pre>
+<p>Das ersetzt die Wiki nicht, ist aber die schnellste Querverifikation.</p>
+<h2 id="parser-und-graph">Parser und Graph</h2>
+<h3 id="nova-parser-ast"><code>nova.parser.ast</code></h3>
+<p>Klassen:</p>
+<ul>
+<li><code>SourceSpan</code></li>
+<li><code>ImportDeclaration</code></li>
+<li><code>AgentDeclaration</code></li>
+<li><code>DatasetDeclaration</code></li>
+<li><code>ToolDeclaration</code></li>
+<li><code>ServiceDeclaration</code></li>
+<li><code>PackageDeclaration</code></li>
+<li><code>StateDeclaration</code></li>
+<li><code>SystemDeclaration</code></li>
+<li><code>EventDeclaration</code></li>
+<li><code>FlowStep</code></li>
+<li><code>FlowDeclaration</code></li>
+<li><code>NovaAST</code></li>
+</ul>
+<p><code>NovaAST</code>-Methoden:</p>
+<ul>
+<li><code>by_type</code></li>
+<li><code>by_name</code></li>
+<li><code>flows</code></li>
+<li><code>imports</code></li>
+<li><code>agents</code></li>
+<li><code>datasets</code></li>
+<li><code>tools</code></li>
+<li><code>services</code></li>
+<li><code>packages</code></li>
+<li><code>events</code></li>
+<li><code>states</code></li>
+<li><code>systems</code></li>
+</ul>
+<h3 id="nova-parser-errors"><code>nova.parser.errors</code></h3>
+<p>Klassen:</p>
+<ul>
+<li><code>NovaSyntaxError</code></li>
+</ul>
+<h3 id="nova-parser-parser"><code>nova.parser.parser</code></h3>
+<p>Klassen:</p>
+<ul>
+<li><code>NovaParser</code></li>
+</ul>
+<p><code>NovaParser</code>-Methoden:</p>
+<ul>
+<li><code>register_extension</code></li>
+<li><code>parse_file</code></li>
+<li><code>parse</code></li>
+<li><code>_parse_import</code></li>
+<li><code>_collect_block</code></li>
+<li><code>_parse_block</code></li>
+<li><code>_parse_properties</code></li>
+<li><code>_parse_flow_body</code></li>
+<li><code>_parse_flow_step</code></li>
+<li><code>_split_alias</code></li>
+<li><code>_parse_value</code></li>
+<li><code>_split_comma</code></li>
+<li><code>_strip_inline_comment</code></li>
+</ul>
+<h3 id="nova-graph-compiler"><code>nova.graph.compiler</code></h3>
+<p>Klassen:</p>
+<ul>
+<li><code>GraphCompileError</code></li>
+<li><code>GraphCycleError</code></li>
+<li><code>_DefinitionIndex</code></li>
+<li><code>NovaGraphCompiler</code></li>
+</ul>
+<p><code>NovaGraphCompiler</code>-Methoden:</p>
+<ul>
+<li><code>compile</code></li>
+<li><code>_compile_flow</code></li>
+<li><code>_compile_flow_step</code></li>
+<li><code>_agent_action_and_inputs</code></li>
+<li><code>_resolve_system</code></li>
+<li><code>_resolve_property</code></li>
+<li><code>_normalize_list_property</code></li>
+<li><code>_normalize_dict_property</code></li>
+<li><code>_infer_backend</code></li>
+<li><code>_infer_capability</code></li>
+<li><code>_compile_event_edges</code></li>
+<li><code>_event_flows</code></li>
+</ul>
+<h3 id="nova-graph-model"><code>nova.graph.model</code></h3>
+<p>Klassen:</p>
+<ul>
+<li><code>DatasetNode</code></li>
+<li><code>ToolNode</code></li>
+<li><code>AgentNode</code></li>
+<li><code>ServiceNode</code></li>
+<li><code>PackageNode</code></li>
+<li><code>FlowNode</code></li>
+<li><code>EventNode</code></li>
+<li><code>ExecutionEdge</code></li>
+<li><code>ExecutionGraph</code></li>
+</ul>
+<p><code>ExecutionGraph</code>-Methoden:</p>
+<ul>
+<li><code>add_node</code></li>
+<li><code>add_edge</code></li>
+<li><code>successors</code></li>
+<li><code>flow_root</code></li>
+<li><code>closure_for_flow</code></li>
+<li><code>topological_order</code></li>
+<li><code>to_dict</code></li>
+<li><code>_serialize_node</code></li>
+</ul>
+<h2 id="agents-und-ai">Agents und AI</h2>
+<h3 id="nova-agents-evals"><code>nova.agents.evals</code></h3>
+<p>Funktionen:</p>
+<ul>
+<li><code>_truncate_text</code></li>
+<li><code>_sanitize_metadata</code></li>
+</ul>
+<p>Klassen:</p>
+<ul>
+<li><code>AgentEvalStore</code></li>
+</ul>
+<p><code>AgentEvalStore</code>-Methoden:</p>
+<ul>
+<li><code>_init_schema</code></li>
+<li><code>close</code></li>
+<li><code>record</code></li>
+<li><code>list_recent</code></li>
+<li><code>snapshot</code></li>
+<li><code>_score</code></li>
+</ul>
+<h3 id="nova-agents-memory"><code>nova.agents.memory</code></h3>
+<p>Funktionen:</p>
+<ul>
+<li><code>_truncate_text</code></li>
+<li><code>_sanitize_metadata</code></li>
+</ul>
+<p>Klassen:</p>
+<ul>
+<li><code>DistributedMemoryStore</code></li>
+</ul>
+<p><code>DistributedMemoryStore</code>-Methoden:</p>
+<ul>
+<li><code>_init_schema</code></li>
+<li><code>close</code></li>
+<li><code>append</code></li>
+<li><code>search</code></li>
+<li><code>snapshot</code></li>
+</ul>
+<h3 id="nova-agents-prompts"><code>nova.agents.prompts</code></h3>
+<p>Klassen:</p>
+<ul>
+<li><code>PromptRegistry</code></li>
+</ul>
+<p><code>PromptRegistry</code>-Methoden:</p>
+<ul>
+<li><code>_init_schema</code></li>
+<li><code>close</code></li>
+<li><code>register_agent</code></li>
+<li><code>resolve</code></li>
+<li><code>active_version</code></li>
+<li><code>list_versions</code></li>
+<li><code>snapshot</code></li>
+</ul>
+<h3 id="nova-agents-providers"><code>nova.agents.providers</code></h3>
+<p>Klassen:</p>
+<ul>
+<li><code>ProviderAdapter</code></li>
+<li><code>LocalProviderAdapter</code></li>
+<li><code>ShellProviderAdapter</code></li>
+<li><code>AtheriaProviderAdapter</code></li>
+<li><code>ProviderRegistry</code></li>
+</ul>
+<p>Methoden:</p>
+<ul>
+<li><code>ProviderAdapter.invoke</code></li>
+<li><code>LocalProviderAdapter.invoke</code></li>
+<li><code>ShellProviderAdapter.invoke</code></li>
+<li><code>AtheriaProviderAdapter.invoke</code></li>
+<li><code>ProviderRegistry.resolve</code></li>
+<li><code>ProviderRegistry.execute</code></li>
+</ul>
+<h3 id="nova-agents-runtime"><code>nova.agents.runtime</code></h3>
+<p>Klassen:</p>
+<ul>
+<li><code>AgentSpecification</code></li>
+<li><code>AgentTask</code></li>
+<li><code>AgentExecutionResult</code></li>
+<li><code>AgentRuntime</code></li>
+</ul>
+<p>Methoden:</p>
+<ul>
+<li><code>AgentExecutionResult.to_dict</code></li>
+<li><code>AgentRuntime.register</code></li>
+<li><code>AgentRuntime.specification</code></li>
+<li><code>AgentRuntime.execute</code></li>
+<li><code>AgentRuntime._render_output</code></li>
+<li><code>AgentRuntime._provider_output</code></li>
+<li><code>AgentRuntime._enforce_governance</code></li>
+<li><code>AgentRuntime._memory_scope</code></li>
+<li><code>AgentRuntime._summarize_input</code></li>
+<li><code>AgentRuntime._bounded_text</code></li>
+<li><code>AgentRuntime._compact_memory_context</code></li>
+</ul>
+<h3 id="nova-agents-sandbox"><code>nova.agents.sandbox</code></h3>
+<p>Klassen:</p>
+<ul>
+<li><code>ToolSandbox</code></li>
+</ul>
+<p>Methoden:</p>
+<ul>
+<li><code>authorize</code></li>
+<li><code>snapshot</code></li>
+</ul>
+<h2 id="events-mesh-und-protokolle">Events, Mesh und Protokolle</h2>
+<h3 id="nova-events-bus"><code>nova.events.bus</code></h3>
+<p>Klassen:</p>
+<ul>
+<li><code>Event</code></li>
+<li><code>EventSubscription</code></li>
+<li><code>EventBus</code></li>
+</ul>
+<p>Methoden:</p>
+<ul>
+<li><code>Event.to_dict</code></li>
+<li><code>EventBus.subscribe</code></li>
+<li><code>EventBus.publish</code></li>
+</ul>
+<h3 id="nova-mesh-control-plane"><code>nova.mesh.control_plane</code></h3>
+<p>Klassen:</p>
+<ul>
+<li><code>MeshTaskRecord</code></li>
+<li><code>PersistentMeshControlPlane</code></li>
+</ul>
+<p>Methoden:</p>
+<ul>
+<li><code>MeshTaskRecord.to_dict</code></li>
+<li><code>PersistentMeshControlPlane._init_schema</code></li>
+<li><code>PersistentMeshControlPlane.close</code></li>
+<li><code>PersistentMeshControlPlane.register_worker</code></li>
+<li><code>PersistentMeshControlPlane.heartbeat</code></li>
+<li><code>PersistentMeshControlPlane.start_task</code></li>
+<li><code>PersistentMeshControlPlane.finish_task</code></li>
+<li><code>PersistentMeshControlPlane.list_workers</code></li>
+<li><code>PersistentMeshControlPlane.list_tasks</code></li>
+<li><code>PersistentMeshControlPlane.snapshot</code></li>
+</ul>
+<h3 id="nova-mesh-protocol"><code>nova.mesh.protocol</code></h3>
+<p>Klassen:</p>
+<ul>
+<li><code>ExecutorTask</code></li>
+<li><code>ExecutorResult</code></li>
+</ul>
+<p>Methoden:</p>
+<ul>
+<li><code>ExecutorTask.to_dict</code></li>
+<li><code>ExecutorTask.from_dispatch_task</code></li>
+<li><code>ExecutorTask.from_dict</code></li>
+<li><code>ExecutorResult.to_dict</code></li>
+</ul>
+<h3 id="nova-mesh-registry"><code>nova.mesh.registry</code></h3>
+<p>Klassen:</p>
+<ul>
+<li><code>WorkerNode</code></li>
+<li><code>MeshRegistry</code></li>
+</ul>
+<p>Methoden:</p>
+<ul>
+<li><code>WorkerNode.heartbeat</code></li>
+<li><code>WorkerNode.to_dict</code></li>
+<li><code>MeshRegistry.register</code></li>
+<li><code>MeshRegistry.heartbeat</code></li>
+<li><code>MeshRegistry.list_workers</code></li>
+<li><code>MeshRegistry.candidates</code></li>
+<li><code>MeshRegistry.select</code></li>
+<li><code>MeshRegistry.dispatch</code></li>
+<li><code>MeshRegistry._dispatch_protocol</code></li>
+<li><code>MeshRegistry._matches_selector</code></li>
+<li><code>MeshRegistry._matches_tenant</code></li>
+<li><code>MeshRegistry._matches_transport</code></li>
+<li><code>MeshRegistry._ssl_context_for_worker</code></li>
+<li><code>MeshRegistry.health_report</code></li>
+<li><code>MeshRegistry.snapshot</code></li>
+</ul>
+<h2 id="runtime">Runtime</h2>
+<h3 id="nova-runtime-api"><code>nova.runtime.api</code></h3>
+<p>Klassen:</p>
+<ul>
+<li><code>NovaControlPlaneAPIServer</code></li>
+</ul>
+<p>Methoden:</p>
+<ul>
+<li><code>start</code></li>
+<li><code>stop</code></li>
+<li><code>status</code></li>
+</ul>
+<h3 id="nova-runtime-backends"><code>nova.runtime.backends</code></h3>
+<p>Klassen:</p>
+<ul>
+<li><code>BackendExecutionRequest</code></li>
+<li><code>LocalPythonBackend</code></li>
+<li><code>LocalSystemBackend</code></li>
+<li><code>ShellCommandBackend</code></li>
+<li><code>BackendRouter</code></li>
+</ul>
+<p>Methoden:</p>
+<ul>
+<li><code>LocalPythonBackend.execute</code></li>
+<li><code>LocalSystemBackend.execute</code></li>
+<li><code>ShellCommandBackend.execute</code></li>
+<li><code>BackendRouter.execute</code></li>
+<li><code>BackendRouter._native_backend_for_operation</code></li>
+<li><code>BackendRouter._build_shell_command</code></li>
+<li><code>BackendRouter._load_data</code></li>
+</ul>
+<h3 id="nova-runtime-cluster"><code>nova.runtime.cluster</code></h3>
+<p>Klassen:</p>
+<ul>
+<li><code>LeaderLease</code></li>
+<li><code>DeploymentRevision</code></li>
+<li><code>ClusterPlane</code></li>
+</ul>
+<p>Methoden:</p>
+<ul>
+<li><code>LeaderLease.to_dict</code></li>
+<li><code>DeploymentRevision.to_dict</code></li>
+<li><code>ClusterPlane._open_connection</code></li>
+<li><code>ClusterPlane._ensure_connection</code></li>
+<li><code>ClusterPlane._init_schema</code></li>
+<li><code>ClusterPlane.close</code></li>
+<li><code>ClusterPlane.acquire_leadership</code></li>
+<li><code>ClusterPlane.renew_leadership</code></li>
+<li><code>ClusterPlane.release_leadership</code></li>
+<li><code>ClusterPlane.leader_status</code></li>
+<li><code>ClusterPlane.create_rollout</code></li>
+<li><code>ClusterPlane.get_revision</code></li>
+<li><code>ClusterPlane.promote_revision</code></li>
+<li><code>ClusterPlane.rollback</code></li>
+<li><code>ClusterPlane.deployment_status</code></li>
+<li><code>ClusterPlane.record_health</code></li>
+<li><code>ClusterPlane.list_health</code></li>
+<li><code>ClusterPlane.health_summary</code></li>
+<li><code>ClusterPlane.evaluate_rollout</code></li>
+<li><code>ClusterPlane.register_playbook</code></li>
+<li><code>ClusterPlane.get_playbook</code></li>
+<li><code>ClusterPlane.list_playbooks</code></li>
+<li><code>ClusterPlane.run_playbook</code></li>
+<li><code>ClusterPlane.list_recovery_runs</code></li>
+<li><code>ClusterPlane.snapshot</code></li>
+</ul>
+<h3 id="nova-runtime-consensus"><code>nova.runtime.consensus</code></h3>
+<p>Klassen:</p>
+<ul>
+<li><code>ConsensusPeer</code></li>
+<li><code>ConsensusLogEntry</code></li>
+<li><code>ControlPlaneConsensus</code></li>
+</ul>
+<p>Methoden:</p>
+<ul>
+<li><code>ConsensusPeer.to_dict</code></li>
+<li><code>ConsensusLogEntry.to_dict</code></li>
+<li><code>ControlPlaneConsensus._open_connection</code></li>
+<li><code>ControlPlaneConsensus._ensure_connection</code></li>
+<li><code>ControlPlaneConsensus._init_schema</code></li>
+<li><code>ControlPlaneConsensus.close</code></li>
+<li><code>ControlPlaneConsensus._set_meta</code></li>
+<li><code>ControlPlaneConsensus._get_meta</code></li>
+<li><code>ControlPlaneConsensus.touch_leader_contact</code></li>
+<li><code>ControlPlaneConsensus.leader_contact_at</code></li>
+<li><code>ControlPlaneConsensus.configure</code></li>
+<li><code>ControlPlaneConsensus.status</code></li>
+<li><code>ControlPlaneConsensus.is_enabled</code></li>
+<li><code>ControlPlaneConsensus.set_enabled</code></li>
+<li><code>ControlPlaneConsensus._update_state</code></li>
+<li><code>ControlPlaneConsensus.register_peer</code></li>
+<li><code>ControlPlaneConsensus.update_peer</code></li>
+<li><code>ControlPlaneConsensus.remove_peer</code></li>
+<li><code>ControlPlaneConsensus.list_peers</code></li>
+<li><code>ControlPlaneConsensus.latest_snapshot</code></li>
+<li><code>ControlPlaneConsensus.needs_election</code></li>
+<li><code>ControlPlaneConsensus.quorum_size</code></li>
+<li><code>ControlPlaneConsensus.last_log_index</code></li>
+<li><code>ControlPlaneConsensus.last_log_term</code></li>
+<li><code>ControlPlaneConsensus.get_entry</code></li>
+<li><code>ControlPlaneConsensus.list_log</code></li>
+<li><code>ControlPlaneConsensus.request_vote</code></li>
+<li><code>ControlPlaneConsensus.start_election</code></li>
+<li><code>ControlPlaneConsensus.append_entries</code></li>
+<li><code>ControlPlaneConsensus.append_local</code></li>
+<li><code>ControlPlaneConsensus.mark_committed</code></li>
+<li><code>ControlPlaneConsensus.mark_applied</code></li>
+</ul>
+<h3 id="nova-runtime-context"><code>nova.runtime.context</code></h3>
+<p>Funktionen:</p>
+<ul>
+<li><code>to_jsonable</code></li>
+</ul>
+<p>Klassen:</p>
+<ul>
+<li><code>CommandExecutor</code></li>
+<li><code>CommandExecution</code></li>
+<li><code>DatasetSnapshot</code></li>
+<li><code>NodeExecutionRecord</code></li>
+<li><code>FlowExecutionRecord</code></li>
+<li><code>CompiledNovaProgram</code></li>
+<li><code>RuntimeContext</code></li>
+<li><code>NovaRuntimeResult</code></li>
+</ul>
+<p>Methoden:</p>
+<ul>
+<li><code>CommandExecutor.execute</code></li>
+<li><code>CommandExecution.to_dict</code></li>
+<li><code>DatasetSnapshot.update</code></li>
+<li><code>DatasetSnapshot.to_dict</code></li>
+<li><code>NodeExecutionRecord.to_dict</code></li>
+<li><code>FlowExecutionRecord.to_dict</code></li>
+<li><code>CompiledNovaProgram.to_dict</code></li>
+<li><code>RuntimeContext.close</code></li>
+<li><code>RuntimeContext.resolve_reference</code></li>
+<li><code>RuntimeContext.snapshot</code></li>
+<li><code>NovaRuntimeResult.to_dict</code></li>
+<li><code>NovaRuntimeResult.to_json</code></li>
+</ul>
+<h3 id="nova-runtime-control-plane"><code>nova.runtime.control_plane</code></h3>
+<p>Klassen:</p>
+<ul>
+<li><code>QueuedTask</code></li>
+<li><code>ScheduledJob</code></li>
+<li><code>DurableEventRecord</code></li>
+<li><code>DurableControlPlane</code></li>
+</ul>
+<p>Methoden:</p>
+<ul>
+<li><code>QueuedTask.to_dict</code></li>
+<li><code>ScheduledJob.to_dict</code></li>
+<li><code>DurableEventRecord.to_dict</code></li>
+<li><code>DurableControlPlane._open_connection</code></li>
+<li><code>DurableControlPlane._ensure_connection</code></li>
+<li><code>DurableControlPlane._init_schema</code></li>
+<li><code>DurableControlPlane.close</code></li>
+<li><code>DurableControlPlane.enqueue_task</code></li>
+<li><code>DurableControlPlane.find_task_by_idempotency</code></li>
+<li><code>DurableControlPlane.acquire_scheduler_lease</code></li>
+<li><code>DurableControlPlane.scheduler_owner</code></li>
+<li><code>DurableControlPlane.recover_stale_tasks</code></li>
+<li><code>DurableControlPlane.record_task_effect</code></li>
+<li><code>DurableControlPlane.get_task_effect</code></li>
+<li><code>DurableControlPlane.get_task_effect_by_idempotency</code></li>
+<li><code>DurableControlPlane.claim_tasks</code></li>
+<li><code>DurableControlPlane.complete_task</code></li>
+<li><code>DurableControlPlane.fail_task</code></li>
+<li><code>DurableControlPlane.list_tasks</code></li>
+<li><code>DurableControlPlane.schedule_job</code></li>
+<li><code>DurableControlPlane.list_schedules</code></li>
+<li><code>DurableControlPlane.scheduler_tick</code></li>
+<li><code>DurableControlPlane.publish_event</code></li>
+<li><code>DurableControlPlane.replay_events</code></li>
+<li><code>DurableControlPlane.record_daemon_state</code></li>
+<li><code>DurableControlPlane.daemon_status</code></li>
+<li><code>DurableControlPlane.snapshot</code></li>
+</ul>
+<h3 id="nova-runtime-executor-daemon"><code>nova.runtime.executor_daemon</code></h3>
+<p>Funktionen:</p>
+<ul>
+<li><code>main</code></li>
+</ul>
+<p>Klassen:</p>
+<ul>
+<li><code>ActiveJob</code></li>
+<li><code>ExecutorDaemon</code></li>
+</ul>
+<p>Methoden:</p>
+<ul>
+<li><code>ActiveJob.snapshot</code></li>
+<li><code>ExecutorDaemon._authorized</code></li>
+<li><code>ExecutorDaemon.start</code></li>
+<li><code>ExecutorDaemon.stop</code></li>
+<li><code>ExecutorDaemon.execute</code></li>
+<li><code>ExecutorDaemon.execute_async</code></li>
+<li><code>ExecutorDaemon.stream</code></li>
+<li><code>ExecutorDaemon.cancel</code></li>
+<li><code>ExecutorDaemon.job_status</code></li>
+<li><code>ExecutorDaemon._spawn_job</code></li>
+<li><code>ExecutorDaemon._start_process</code></li>
+<li><code>ExecutorDaemon._job_env</code></li>
+<li><code>ExecutorDaemon._drain_stream</code></li>
+<li><code>ExecutorDaemon._terminate_process</code></li>
+</ul>
+<h3 id="nova-runtime-executors"><code>nova.runtime.executors</code></h3>
+<p>Funktionen:</p>
+<ul>
+<li><code>execute_backend_task</code></li>
+</ul>
+<p>Klassen:</p>
+<ul>
+<li><code>ExecutorRecord</code></li>
+<li><code>_StreamTee</code></li>
+<li><code>_PythonAdapter</code></li>
+<li><code>_CppAdapter</code></li>
+<li><code>_GpuAdapter</code></li>
+<li><code>_WasmAdapter</code></li>
+<li><code>_AiAdapter</code></li>
+<li><code>NativeExecutorServer</code></li>
+<li><code>NativeExecutorManager</code></li>
+</ul>
+<p>Methoden:</p>
+<ul>
+<li><code>ExecutorRecord.to_dict</code></li>
+<li><code>_StreamTee.write</code></li>
+<li><code>_StreamTee.flush</code></li>
+<li><code>_StreamTee.rendered</code></li>
+<li><code>_PythonAdapter.execute</code></li>
+<li><code>_CppAdapter.execute</code></li>
+<li><code>_GpuAdapter.execute</code></li>
+<li><code>_WasmAdapter.execute</code></li>
+<li><code>_AiAdapter.execute</code></li>
+<li><code>NativeExecutorServer.start</code></li>
+<li><code>NativeExecutorServer.stop</code></li>
+<li><code>NativeExecutorManager._init_schema</code></li>
+<li><code>NativeExecutorManager.close</code></li>
+<li><code>NativeExecutorManager.ensure_backend</code></li>
+<li><code>NativeExecutorManager.get_backend</code></li>
+<li><code>NativeExecutorManager.list_backends</code></li>
+<li><code>NativeExecutorManager.execute</code></li>
+<li><code>NativeExecutorManager.execute_async</code></li>
+<li><code>NativeExecutorManager.cancel</code></li>
+<li><code>NativeExecutorManager.stream</code></li>
+<li><code>NativeExecutorManager.stop_backend</code></li>
+<li><code>NativeExecutorManager.restart_backend</code></li>
+<li><code>NativeExecutorManager.recover</code></li>
+<li><code>NativeExecutorManager.snapshot</code></li>
+<li><code>NativeExecutorManager._endpoint_file</code></li>
+<li><code>NativeExecutorManager._log_file</code></li>
+<li><code>NativeExecutorManager._start_backend</code></li>
+<li><code>NativeExecutorManager._healthy</code></li>
+<li><code>NativeExecutorManager._request</code></li>
+<li><code>NativeExecutorManager._mark_request</code></li>
+<li><code>NativeExecutorManager._update_record_status</code></li>
+<li><code>NativeExecutorManager._daemon_env</code></li>
+</ul>
+<h3 id="nova-runtime-observability"><code>nova.runtime.observability</code></h3>
+<p>Klassen:</p>
+<ul>
+<li><code>RuntimeTraceRecord</code></li>
+<li><code>RuntimeObservability</code></li>
+</ul>
+<p>Methoden:</p>
+<ul>
+<li><code>RuntimeTraceRecord.to_dict</code></li>
+<li><code>RuntimeObservability.record</code></li>
+<li><code>RuntimeObservability.add_alert_rule</code></li>
+<li><code>RuntimeObservability.traces</code></li>
+<li><code>RuntimeObservability.histogram</code></li>
+<li><code>RuntimeObservability.alerts</code></li>
+<li><code>RuntimeObservability.validate_trace_store</code></li>
+<li><code>RuntimeObservability.snapshot</code></li>
+</ul>
+<h3 id="nova-runtime-operations"><code>nova.runtime.operations</code></h3>
+<p>Klassen:</p>
+<ul>
+<li><code>RuntimeOperations</code></li>
+</ul>
+<p>Methoden:</p>
+<ul>
+<li><code>_init_schema</code></li>
+<li><code>close</code></li>
+<li><code>register_component</code></li>
+<li><code>validate_migrations</code></li>
+<li><code>set_failpoint</code></li>
+<li><code>clear_failpoint</code></li>
+<li><code>list_failpoints</code></li>
+<li><code>check_failpoint</code></li>
+<li><code>create_backup</code></li>
+<li><code>list_backups</code></li>
+<li><code>restore_backup</code></li>
+<li><code>run_load</code></li>
+<li><code>list_load_runs</code></li>
+<li><code>snapshot</code></li>
+</ul>
+<h3 id="nova-runtime-policy"><code>nova.runtime.policy</code></h3>
+<p>Klassen:</p>
+<ul>
+<li><code>AuditRecord</code></li>
+<li><code>RuntimeAuditLog</code></li>
+<li><code>RuntimePolicy</code></li>
+</ul>
+<p>Methoden:</p>
+<ul>
+<li><code>AuditRecord.to_dict</code></li>
+<li><code>RuntimeAuditLog.record</code></li>
+<li><code>RuntimeAuditLog.snapshot</code></li>
+<li><code>RuntimePolicy.configure</code></li>
+<li><code>RuntimePolicy.can_admin</code></li>
+<li><code>RuntimePolicy.can_operate</code></li>
+<li><code>RuntimePolicy.authorize_roles</code></li>
+<li><code>RuntimePolicy.authorize_tenant</code></li>
+<li><code>RuntimePolicy.permits_tenant</code></li>
+<li><code>RuntimePolicy.authorize_namespace</code></li>
+<li><code>RuntimePolicy.permits_namespace</code></li>
+<li><code>RuntimePolicy.resolve_quotas</code></li>
+<li><code>RuntimePolicy.snapshot</code></li>
+<li><code>RuntimePolicy._normalize_roles</code></li>
+</ul>
+<h3 id="nova-runtime-replication"><code>nova.runtime.replication</code></h3>
+<p>Klassen:</p>
+<ul>
+<li><code>ReplicatedLogStore</code></li>
+</ul>
+<p>Methoden:</p>
+<ul>
+<li><code>_open_connection</code></li>
+<li><code>_ensure_connection</code></li>
+<li><code>_init_schema</code></li>
+<li><code>close</code></li>
+<li><code>register_peer</code></li>
+<li><code>list_peers</code></li>
+<li><code>append_record</code></li>
+<li><code>list_records</code></li>
+<li><code>update_peer_status</code></li>
+<li><code>sync</code></li>
+<li><code>snapshot</code></li>
+</ul>
+<h3 id="nova-runtime-runtime"><code>nova.runtime.runtime</code></h3>
+<p>Klassen:</p>
+<ul>
+<li><code>NovaRuntime</code></li>
+</ul>
+<p><code>NovaRuntime</code>-Methoden:</p>
+<ul>
+<li><code>close</code></li>
+<li><code>compile</code></li>
+<li><code>load</code></li>
+<li><code>run</code></li>
+<li><code>execute_flow</code></li>
+<li><code>emit</code></li>
+<li><code>snapshot</code></li>
+<li><code>resume</code></li>
+<li><code>register_tenant</code></li>
+<li><code>select_tenant</code></li>
+<li><code>select_namespace</code></li>
+<li><code>issue_token</code></li>
+<li><code>verify_token</code></li>
+<li><code>login</code></li>
+<li><code>logout</code></li>
+<li><code>whoami</code></li>
+<li><code>revoke_token</code></li>
+<li><code>store_secret</code></li>
+<li><code>resolve_secret</code></li>
+<li><code>set_tls_profile</code></li>
+<li><code>set_trust_policy</code></li>
+<li><code>onboard_worker</code></li>
+<li><code>rotate_worker_certificate</code></li>
+<li><code>create_certificate_authority</code></li>
+<li><code>issue_certificate</code></li>
+<li><code>revoke_certificate</code></li>
+<li><code>acquire_leadership</code></li>
+<li><code>renew_leadership</code></li>
+<li><code>release_leadership</code></li>
+<li><code>leader_status</code></li>
+<li><code>create_rollout</code></li>
+<li><code>promote_revision</code></li>
+<li><code>rollback_deployment</code></li>
+<li><code>deployment_status</code></li>
+<li><code>list_services</code></li>
+<li><code>list_packages</code></li>
+<li><code>discover_service</code></li>
+<li><code>evaluate_service_autoscaling</code></li>
+<li><code>list_service_configs</code></li>
+<li><code>list_service_volumes</code></li>
+<li><code>list_service_ingress</code></li>
+<li><code>list_traffic_routes</code></li>
+<li><code>list_traffic_probes</code></li>
+<li><code>list_secret_mounts</code></li>
+<li><code>probe_service_traffic</code></li>
+<li><code>shift_service_traffic</code></li>
+<li><code>route_service_request</code></li>
+<li><code>start_traffic_proxy</code></li>
+<li><code>stop_traffic_proxy</code></li>
+<li><code>traffic_proxy_status</code></li>
+<li><code>scale_service</code></li>
+<li><code>executor_status</code></li>
+<li><code>restart_executor_backend</code></li>
+<li><code>stop_executor_backend</code></li>
+<li><code>cancel_executor_request</code></li>
+<li><code>stream_executor_request</code></li>
+<li><code>list_traces</code></li>
+<li><code>list_alerts</code></li>
+<li><code>validate_snapshot_file</code></li>
+<li><code>install_package</code></li>
+<li><code>deploy_service</code></li>
+<li><code>register_recovery_playbook</code></li>
+<li><code>list_recovery_playbooks</code></li>
+<li><code>run_recovery_playbook</code></li>
+<li><code>enqueue_flow</code></li>
+<li><code>schedule_flow</code></li>
+<li><code>schedule_event</code></li>
+<li><code>scheduler_tick</code></li>
+<li><code>run_pending_tasks</code></li>
+<li><code>list_queue_tasks</code></li>
+<li><code>list_schedules</code></li>
+<li><code>replay_event_log</code></li>
+<li><code>record_deployment_health</code></li>
+<li><code>evaluate_rollout</code></li>
+<li><code>control_status</code></li>
+<li><code>create_backup</code></li>
+<li><code>list_backups</code></li>
+<li><code>restore_backup</code></li>
+<li><code>validate_migrations</code></li>
+<li><code>set_failpoint</code></li>
+<li><code>clear_failpoint</code></li>
+<li><code>list_failpoints</code></li>
+<li><code>run_load_test</code></li>
+<li><code>write_lockfile</code></li>
+<li><code>publish_toolchain_package</code></li>
+<li><code>list_toolchain_packages</code></li>
+<li><code>format_source</code></li>
+<li><code>lint_source</code></li>
+<li><code>toolchain_symbols</code></li>
+<li><code>toolchain_hover</code></li>
+<li><code>run_program_tests</code></li>
+<li><code>register_prompt_version</code></li>
+<li><code>list_prompt_versions</code></li>
+<li><code>search_agent_memory</code></li>
+<li><code>list_agent_evals</code></li>
+<li><code>start_control_daemon</code></li>
+<li><code>stop_control_daemon</code></li>
+<li><code>control_tick</code></li>
+<li><code>register_replica_peer</code></li>
+<li><code>list_replica_peers</code></li>
+<li><code>list_replicated_records</code></li>
+<li><code>replay_state_log</code></li>
+<li><code>list_state</code></li>
+<li><code>list_workflow_runs</code></li>
+<li><code>replay_workflow_run</code></li>
+<li><code>export_metrics</code></li>
+<li><code>consensus_status</code></li>
+<li><code>remove_consensus_peer</code></li>
+<li><code>register_consensus_peer</code></li>
+<li><code>list_consensus_peers</code></li>
+<li><code>consensus_log</code></li>
+<li><code>consensus_snapshot</code></li>
+<li><code>start_consensus_election</code></li>
+<li><code>send_consensus_heartbeats</code></li>
+<li><code>compact_consensus_log</code></li>
+<li><code>install_consensus_snapshot</code></li>
+<li><code>sync_consensus</code></li>
+<li><code>consensus_request_vote</code></li>
+<li><code>consensus_append_entries</code></li>
+<li><code>sync_replication</code></li>
+<li><code>apply_replica_record</code></li>
+<li><code>_commit_consensus_mutation</code></li>
+<li><code>_read_consensus_result</code></li>
+<li><code>_apply_consensus_entry</code></li>
+<li><code>_send_consensus_vote</code></li>
+<li><code>_send_consensus_append</code></li>
+<li><code>_post_control_plane</code></li>
+<li><code>_maybe_failpoint</code></li>
+<li><code>_register_program_resources</code></li>
+<li><code>_configure_platform</code></li>
+<li><code>_register_event_bindings</code></li>
+<li><code>_restore_context_payload</code></li>
+<li><code>_require_context</code></li>
+<li><code>_refresh_state_cache</code></li>
+<li><code>_current_quotas</code></li>
+<li><code>_enforce_quota</code></li>
+<li><code>_tenant_queue_depth</code></li>
+<li><code>_tenant_schedule_count</code></li>
+<li><code>_tenant_state_count</code></li>
+<li><code>_tenant_worker_count</code></li>
+<li><code>_send_replica_record</code></li>
+<li><code>start_control_api</code></li>
+<li><code>stop_control_api</code></li>
+<li><code>control_api_status</code></li>
+<li><code>_resolve_path</code></li>
+<li><code>_install_package_local</code></li>
+<li><code>_deploy_service_local</code></li>
+<li><code>_execute_recovery_step</code></li>
+<li><code>_run_control_task</code></li>
+<li><code>_handle_bound_event</code></li>
+<li><code>_entry_flows</code></li>
+<li><code>_event_flows</code></li>
+<li><code>_execute_node</code></li>
+<li><code>_execute_tool</code></li>
+<li><code>_build_remote_command</code></li>
+<li><code>_execute_tool_local</code></li>
+<li><code>_tool_rss_fetch</code></li>
+<li><code>_tool_atheria_embed</code></li>
+<li><code>_tool_system_log</code></li>
+<li><code>_tool_event_emit</code></li>
+<li><code>_tool_flow_run</code></li>
+<li><code>_tool_state_set</code></li>
+<li><code>_tool_state_get</code></li>
+<li><code>_tool_service_deploy</code></li>
+<li><code>_tool_service_status</code></li>
+<li><code>_tool_package_install</code></li>
+<li><code>_tool_package_status</code></li>
+<li><code>_run_declared_command</code></li>
+<li><code>_bootstrap_dataset_records</code></li>
+<li><code>_normalize_record</code></li>
+<li><code>_publish_event</code></li>
+<li><code>assert_admin_access</code></li>
+<li><code>assert_operator_access</code></li>
+<li><code>_authorize_flow</code></li>
+<li><code>_authorize_node</code></li>
+<li><code>_audit</code></li>
+<li><code>_begin_trace</code></li>
+<li><code>_child_trace</code></li>
+<li><code>_current_trace</code></li>
+<li><code>_end_trace</code></li>
+</ul>
+<h2 id="toolchain-und-wiki">Toolchain und Wiki</h2>
+<h3 id="nova-toolchain-formatter"><code>nova.toolchain.formatter</code></h3>
+<p>Klassen:</p>
+<ul>
+<li><code>NovaFormatter</code></li>
+</ul>
+<p>Methoden:</p>
+<ul>
+<li><code>format_ast</code></li>
+<li><code>format_source</code></li>
+<li><code>_render_step</code></li>
+<li><code>_render_value</code></li>
+</ul>
+<h3 id="nova-toolchain-linter"><code>nova.toolchain.linter</code></h3>
+<p>Klassen:</p>
+<ul>
+<li><code>NovaLintDiagnostic</code></li>
+<li><code>NovaLinter</code></li>
+</ul>
+<p>Methoden:</p>
+<ul>
+<li><code>NovaLintDiagnostic.to_dict</code></li>
+<li><code>NovaLinter.lint</code></li>
+<li><code>NovaLinter._lint_flow</code></li>
+</ul>
+<h3 id="nova-toolchain-loader"><code>nova.toolchain.loader</code></h3>
+<p>Klassen:</p>
+<ul>
+<li><code>ResolvedNovaModule</code></li>
+<li><code>LoadedNovaProgram</code></li>
+<li><code>NovaModuleLoader</code></li>
+</ul>
+<p>Methoden:</p>
+<ul>
+<li><code>NovaModuleLoader.load</code></li>
+<li><code>NovaModuleLoader.write_lockfile</code></li>
+<li><code>NovaModuleLoader._load_module</code></li>
+<li><code>NovaModuleLoader._resolve_import</code></li>
+<li><code>NovaModuleLoader._checksum_path</code></li>
+<li><code>NovaModuleLoader._checksum_bytes</code></li>
+</ul>
+<h3 id="nova-toolchain-lsp"><code>nova.toolchain.lsp</code></h3>
+<p>Klassen:</p>
+<ul>
+<li><code>NovaLanguageServerFacade</code></li>
+</ul>
+<p>Methoden:</p>
+<ul>
+<li><code>symbols</code></li>
+<li><code>hover</code></li>
+<li><code>diagnostics</code></li>
+<li><code>completions</code></li>
+</ul>
+<h3 id="nova-toolchain-registry"><code>nova.toolchain.registry</code></h3>
+<p>Klassen:</p>
+<ul>
+<li><code>NovaPackageRegistry</code></li>
+</ul>
+<p>Methoden:</p>
+<ul>
+<li><code>publish</code></li>
+<li><code>resolve</code></li>
+<li><code>list_packages</code></li>
+<li><code>snapshot</code></li>
+<li><code>_split_target</code></li>
+<li><code>_checksum</code></li>
+<li><code>_load</code></li>
+<li><code>_store</code></li>
+</ul>
+<h3 id="nova-toolchain-testing"><code>nova.toolchain.testing</code></h3>
+<p>Klassen:</p>
+<ul>
+<li><code>NovaTestCaseResult</code></li>
+<li><code>NovaTestSuiteResult</code></li>
+<li><code>NovaTestRunner</code></li>
+</ul>
+<p>Methoden:</p>
+<ul>
+<li><code>NovaTestCaseResult.to_dict</code></li>
+<li><code>NovaTestSuiteResult.to_dict</code></li>
+<li><code>NovaTestRunner.run</code></li>
+<li><code>NovaTestRunner._assert_flow_expectations</code></li>
+</ul>
+<h3 id="nova-wiki-site"><code>nova.wiki.site</code></h3>
+<p>Funktionen:</p>
+<ul>
+<li><code>_slugify</code></li>
+<li><code>_convert_href</code></li>
+<li><code>_render_plain_fragment</code></li>
+<li><code>_render_inline</code></li>
+<li><code>_split_table_row</code></li>
+<li><code>_is_table_separator</code></li>
+<li><code>_strip_markdown</code></li>
+<li><code>_extract_title</code></li>
+<li><code>_extract_excerpt</code></li>
+<li><code>render_markdown</code></li>
+<li><code>_wiki_css</code></li>
+<li><code>_wiki_js</code></li>
+</ul>
+<p>Klassen:</p>
+<ul>
+<li><code>WikiHeading</code></li>
+<li><code>WikiPage</code></li>
+<li><code>WikiBuildResult</code></li>
+<li><code>NovaWikiSiteBuilder</code></li>
+<li><code>NovaWikiSiteServer</code></li>
+</ul>
+<p>Methoden:</p>
+<ul>
+<li><code>WikiBuildResult.to_dict</code></li>
+<li><code>NovaWikiSiteBuilder.build</code></li>
+<li><code>NovaWikiSiteBuilder._load_pages</code></li>
+<li><code>NovaWikiSiteBuilder._parse_sidebar</code></li>
+<li><code>NovaWikiSiteBuilder._load_footer_html</code></li>
+<li><code>NovaWikiSiteBuilder._render_page</code></li>
+<li><code>NovaWikiSiteBuilder._render_nav</code></li>
+<li><code>NovaWikiSiteBuilder._render_toc</code></li>
+<li><code>NovaWikiSiteServer.start</code></li>
+<li><code>NovaWikiSiteServer.stop</code></li>
+<li><code>NovaWikiSiteServer.status</code></li>
+<li><code>NovaWikiSiteServer.url</code></li>
+</ul>
+<h2 id="shell-runtime-und-legacy-pfad">Shell-Runtime und Legacy-Pfad</h2>
+<h3 id="nova-shell-py-modul-funktionen"><code>nova_shell.py</code> Modul-Funktionen</h3>
+<ul>
+<li><code>_is_windows_runtime</code></li>
+<li><code>safe_system_name</code></li>
+<li><code>cleanup_temp_tree</code></li>
+<li><code>safe_machine_name</code></li>
+<li><code>safe_platform_string</code></li>
+<li><code>_trend_focus_labels</code></li>
+<li><code>_trend_driver_text</code></li>
+<li><code>render_trend_explanation</code></li>
+<li><code>render_morning_briefing_summary</code></li>
+<li><code>configure_sideload_paths</code></li>
+<li><code>module_available</code></li>
+<li><code>load_runtime_config</code></li>
+<li><code>parse_dotenv_text</code></li>
+<li><code>load_dotenv_files</code></li>
+<li><code>_resolve_vswhere_path</code></li>
+<li><code>_run_vswhere</code></li>
+<li><code>resolve_gxx_command</code></li>
+<li><code>resolve_cl_command</code></li>
+<li><code>_resolve_runtime_asset_path</code></li>
+<li><code>_resolve_bundled_emcc_wrapper</code></li>
+<li><code>resolve_emcc_command</code></li>
+<li><code>build_tool_subprocess_env</code></li>
+<li><code>split_command</code></li>
+<li><code>command_name</code></li>
+<li><code>main</code></li>
+</ul>
+<h3 id="nova-shell-py-datentypen-und-engines"><code>nova_shell.py</code> Datentypen und Engines</h3>
+<p>Klassen:</p>
+<ul>
+<li><code>PipelineType</code></li>
+<li><code>CommandResult</code></li>
+<li><code>NovaShellCommandExecutor</code></li>
+<li><code>PipelineNode</code></li>
+<li><code>PipelineGraph</code></li>
+<li><code>AIProviderSpec</code></li>
+<li><code>AIAgentDefinition</code></li>
+<li><code>VectorMemoryEntry</code></li>
+<li><code>ToolSchemaDefinition</code></li>
+<li><code>AgentRuntimeInstance</code></li>
+<li><code>AgentGraphDefinition</code></li>
+<li><code>AtheriaSensorPluginSpec</code></li>
+<li><code>LensForkArtifact</code></li>
+<li><code>AutoRAGWatcherSpec</code></li>
+<li><code>LocalManagedWorker</code></li>
+<li><code>GPUTaskGraphArtifact</code></li>
+<li><code>PythonEngine</code></li>
+<li><code>CppEngine</code></li>
+<li><code>GPUEngine</code></li>
+<li><code>DataEngine</code></li>
+<li><code>SystemEngine</code></li>
+<li><code>EventBus</code></li>
+<li><code>NovaFabric</code></li>
+<li><code>PolicyEngine</code></li>
+<li><code>MeshScheduler</code></li>
+<li><code>NovaZeroPool</code></li>
+<li><code>FlowStateStore</code></li>
+<li><code>GCounterCRDT</code></li>
+<li><code>LWWMapCRDT</code></li>
+<li><code>NovaLensStore</code></li>
+<li><code>BaseAtheriaSensorPlugin</code></li>
+<li><code>AtheriaSensorRegistry</code></li>
+<li><code>NovaComputeJIT</code></li>
+<li><code>RemoteEngine</code></li>
+<li><code>PythonFlowStateProxy</code></li>
+<li><code>PythonFlowProxy</code></li>
+<li><code>WasmEngine</code></li>
+<li><code>NovaOptimizer</code></li>
+<li><code>ReactiveTrigger</code></li>
+<li><code>ReactiveFlowEngine</code></li>
+<li><code>GuardPolicyStore</code></li>
+<li><code>FabricRemoteBridge</code></li>
+<li><code>GraphArtifact</code></li>
+<li><code>NovaGraphCompiler</code></li>
+<li><code>NovaSynth</code></li>
+<li><code>NovaVectorMemory</code></li>
+<li><code>NovaAtheriaRuntime</code></li>
+<li><code>NovaAIProviderRuntime</code></li>
+<li><code>VisionServer</code></li>
+<li><code>MeshWorkerServer</code></li>
+<li><code>NovaShell</code></li>
+</ul>
+<p>Wichtige Methoden:</p>
+<ul>
+<li><code>NovaShellCommandExecutor.execute</code></li>
+<li><code>PipelineGraph.add</code></li>
+<li><code>PythonEngine.execute</code></li>
+<li><code>CppEngine.compile_and_run</code></li>
+<li><code>CppEngine.compile_to_wasm_and_run</code></li>
+<li><code>GPUEngine.run_kernel</code></li>
+<li><code>DataEngine.load_csv</code></li>
+<li><code>DataEngine.load_csv_arrow</code></li>
+<li><code>SystemEngine.execute</code></li>
+<li><code>EventBus.subscribe</code></li>
+<li><code>EventBus.emit</code></li>
+<li><code>EventBus.last</code></li>
+<li><code>MeshScheduler.add_worker</code></li>
+<li><code>MeshScheduler.list_workers</code></li>
+<li><code>MeshScheduler.select_worker</code></li>
+<li><code>RemoteEngine.execute</code></li>
+<li><code>WasmEngine.execute</code></li>
+<li><code>VisionServer.start</code></li>
+<li><code>VisionServer.stop</code></li>
+<li><code>MeshWorkerServer.serve</code></li>
+</ul>
+<h3 id="novashell"><code>NovaShell</code></h3>
+<p><code>NovaShell</code> ist die groesste Klasse des Projekts. Sie enthaelt Routing, Shell-Kommandos, Bruecken in die deklarative Runtime, Worker-Steuerung, AI-, Tool- und Plattformlogik.</p>
+<p>Methodengruppen:</p>
+<ul>
+<li>Shell-Grundfunktionen wie <code>_doctor</code>, <code>_help</code>, <code>_pwd</code>, <code>_cd</code></li>
+<li>Wiki-Funktionen wie <code>_run_wiki</code>, <code>_build_wiki_payload</code>, <code>_ensure_wiki_server</code></li>
+<li>deklarative Runtime-Funktionen wie <code>_ns_run</code>, <code>_ns_graph</code>, <code>_ns_control</code>, <code>_ns_snapshot</code>, <code>_ns_resume</code></li>
+<li>Compute-Funktionen wie <code>_run_python</code>, <code>_run_cpp</code>, <code>_run_cpp_sandbox</code>, <code>_run_gpu</code>, <code>_run_wasm</code></li>
+<li>AI- und Agentenfunktionen wie <code>_run_ai</code>, <code>_run_atheria</code>, <code>_run_agent</code>, <code>_run_agent_once</code>, <code>_run_agent_instance_message</code></li>
+<li>Tool- und Memory-Funktionen wie <code>_run_tool</code>, <code>_run_memory</code></li>
+<li>Mesh- und Remote-Funktionen wie <code>_run_mesh</code>, <code>_run_remote</code>, <code>_assign_swarm_worker</code></li>
+<li>Sicherheitsfunktionen wie <code>_run_guard</code>, <code>_resolve_guard_policy_reference</code></li>
+<li>Pipeline- und Routingfunktionen wie <code>_split_pipeline</code>, <code>_execute_stage</code>, <code>_route_internal</code>, <code>route</code></li>
+</ul>
+<p>Die vollstaendige Methodenliste von <code>NovaShell</code> steht in <a href="ShellCommandReference.html">ShellCommandReference</a> nach Kommandofamilien gegliedert und in <a href="ClassReference.html">ClassReference</a> in konzeptioneller Form.</p>
+<h2 id="wie-man-diesen-index-mit-anderen-seiten-kombiniert">Wie man diesen Index mit anderen Seiten kombiniert</h2>
+<p>Nutze:</p>
+<ul>
+<li><a href="ClassReference.html">ClassReference</a> fuer konzeptionelle Einordnung von Klassen</li>
+<li><a href="RuntimeMethodReference.html">RuntimeMethodReference</a> fuer die wichtigsten Laufzeitmethoden mit Bedeutung</li>
+<li><a href="ShellCommandReference.html">ShellCommandReference</a> fuer den Weg von CLI-Kommando zu Handler</li>
+<li><a href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a> fuer die eigentlichen Arbeits- und Programmiermuster</li>
+</ul>
+<h2 id="typische-einstiege-nach-aufgabe">Typische Einstiege nach Aufgabe</h2>
+<h3 id="ich-will-einen-cli-handler-finden">Ich will einen CLI-Handler finden</h3>
+<ol>
+<li><a href="ShellCommandReference.html">ShellCommandReference</a></li>
+<li>danach in diesem Index zu <code>nova_shell.py</code></li>
+</ol>
+<h3 id="ich-will-wissen-wo-ein-runtime-verhalten-sitzt">Ich will wissen, wo ein Runtime-Verhalten sitzt</h3>
+<ol>
+<li><a href="NovaRuntime.html">NovaRuntime</a></li>
+<li><a href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
+<li>danach in diesem Index zu <code>nova.runtime.*</code></li>
+</ol>
+<h3 id="ich-will-parser-ast-oder-graph-verstehen">Ich will Parser, AST oder Graph verstehen</h3>
+<ol>
+<li><a href="NovaLanguage.html">NovaLanguage</a></li>
+<li><a href="ParserAndASTReference.html">ParserAndASTReference</a></li>
+<li>danach in diesem Index zu <code>nova.parser.*</code> und <code>nova.graph.*</code></li>
+</ol>
+<h2 id="verwandte-seiten">Verwandte Seiten</h2>
+<ul>
+<li><a href="ClassReference.html">ClassReference</a></li>
+<li><a href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
+<li><a href="ShellCommandReference.html">ShellCommandReference</a></li>
+<li><a href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
+<li><a href="PageTemplate.html">PageTemplate</a></li>
+</ul>
+        </article>
+        <aside class="wiki-toc">
+          <div class="wiki-toc-card"><h2>On this page</h2><ul>
+<li class="wiki-toc-link"><a href="#zweck">Zweck</a></li>
+<li class="wiki-toc-link"><a href="#wie-dieser-index-benutzt-werden-sollte">Wie dieser Index benutzt werden sollte</a></li>
+<li class="wiki-toc-link"><a href="#typische-lookup-fragen">Typische Lookup-Fragen</a></li>
+<li class="wiki-toc-link level-3"><a href="#ich-kenne-ein-modul-aber-nicht-die-klasse">Ich kenne ein Modul, aber nicht die Klasse</a></li>
+<li class="wiki-toc-link level-3"><a href="#ich-kenne-die-klasse-aber-nicht-ihre-methoden">Ich kenne die Klasse, aber nicht ihre Methoden</a></li>
+<li class="wiki-toc-link level-3"><a href="#ich-kenne-nur-das-kommando">Ich kenne nur das Kommando</a></li>
+<li class="wiki-toc-link"><a href="#testbare-symbolsuche-im-repository">Testbare Symbolsuche im Repository</a></li>
+<li class="wiki-toc-link"><a href="#parser-und-graph">Parser und Graph</a></li>
+<li class="wiki-toc-link level-3"><a href="#nova-parser-ast">`nova.parser.ast`</a></li>
+<li class="wiki-toc-link level-3"><a href="#nova-parser-errors">`nova.parser.errors`</a></li>
+<li class="wiki-toc-link level-3"><a href="#nova-parser-parser">`nova.parser.parser`</a></li>
+<li class="wiki-toc-link level-3"><a href="#nova-graph-compiler">`nova.graph.compiler`</a></li>
+<li class="wiki-toc-link level-3"><a href="#nova-graph-model">`nova.graph.model`</a></li>
+<li class="wiki-toc-link"><a href="#agents-und-ai">Agents und AI</a></li>
+<li class="wiki-toc-link level-3"><a href="#nova-agents-evals">`nova.agents.evals`</a></li>
+<li class="wiki-toc-link level-3"><a href="#nova-agents-memory">`nova.agents.memory`</a></li>
+<li class="wiki-toc-link level-3"><a href="#nova-agents-prompts">`nova.agents.prompts`</a></li>
+<li class="wiki-toc-link level-3"><a href="#nova-agents-providers">`nova.agents.providers`</a></li>
+<li class="wiki-toc-link level-3"><a href="#nova-agents-runtime">`nova.agents.runtime`</a></li>
+<li class="wiki-toc-link level-3"><a href="#nova-agents-sandbox">`nova.agents.sandbox`</a></li>
+<li class="wiki-toc-link"><a href="#events-mesh-und-protokolle">Events, Mesh und Protokolle</a></li>
+<li class="wiki-toc-link level-3"><a href="#nova-events-bus">`nova.events.bus`</a></li>
+<li class="wiki-toc-link level-3"><a href="#nova-mesh-control-plane">`nova.mesh.control_plane`</a></li>
+<li class="wiki-toc-link level-3"><a href="#nova-mesh-protocol">`nova.mesh.protocol`</a></li>
+<li class="wiki-toc-link level-3"><a href="#nova-mesh-registry">`nova.mesh.registry`</a></li>
+<li class="wiki-toc-link"><a href="#runtime">Runtime</a></li>
+<li class="wiki-toc-link level-3"><a href="#nova-runtime-api">`nova.runtime.api`</a></li>
+<li class="wiki-toc-link level-3"><a href="#nova-runtime-backends">`nova.runtime.backends`</a></li>
+<li class="wiki-toc-link level-3"><a href="#nova-runtime-cluster">`nova.runtime.cluster`</a></li>
+<li class="wiki-toc-link level-3"><a href="#nova-runtime-consensus">`nova.runtime.consensus`</a></li>
+<li class="wiki-toc-link level-3"><a href="#nova-runtime-context">`nova.runtime.context`</a></li>
+<li class="wiki-toc-link level-3"><a href="#nova-runtime-control-plane">`nova.runtime.control_plane`</a></li>
+<li class="wiki-toc-link level-3"><a href="#nova-runtime-executor-daemon">`nova.runtime.executor_daemon`</a></li>
+<li class="wiki-toc-link level-3"><a href="#nova-runtime-executors">`nova.runtime.executors`</a></li>
+<li class="wiki-toc-link level-3"><a href="#nova-runtime-observability">`nova.runtime.observability`</a></li>
+<li class="wiki-toc-link level-3"><a href="#nova-runtime-operations">`nova.runtime.operations`</a></li>
+<li class="wiki-toc-link level-3"><a href="#nova-runtime-policy">`nova.runtime.policy`</a></li>
+<li class="wiki-toc-link level-3"><a href="#nova-runtime-replication">`nova.runtime.replication`</a></li>
+<li class="wiki-toc-link level-3"><a href="#nova-runtime-runtime">`nova.runtime.runtime`</a></li>
+<li class="wiki-toc-link"><a href="#toolchain-und-wiki">Toolchain und Wiki</a></li>
+<li class="wiki-toc-link level-3"><a href="#nova-toolchain-formatter">`nova.toolchain.formatter`</a></li>
+<li class="wiki-toc-link level-3"><a href="#nova-toolchain-linter">`nova.toolchain.linter`</a></li>
+<li class="wiki-toc-link level-3"><a href="#nova-toolchain-loader">`nova.toolchain.loader`</a></li>
+<li class="wiki-toc-link level-3"><a href="#nova-toolchain-lsp">`nova.toolchain.lsp`</a></li>
+<li class="wiki-toc-link level-3"><a href="#nova-toolchain-registry">`nova.toolchain.registry`</a></li>
+<li class="wiki-toc-link level-3"><a href="#nova-toolchain-testing">`nova.toolchain.testing`</a></li>
+<li class="wiki-toc-link level-3"><a href="#nova-wiki-site">`nova.wiki.site`</a></li>
+<li class="wiki-toc-link"><a href="#shell-runtime-und-legacy-pfad">Shell-Runtime und Legacy-Pfad</a></li>
+<li class="wiki-toc-link level-3"><a href="#nova-shell-py-modul-funktionen">`nova_shell.py` Modul-Funktionen</a></li>
+<li class="wiki-toc-link level-3"><a href="#nova-shell-py-datentypen-und-engines">`nova_shell.py` Datentypen und Engines</a></li>
+<li class="wiki-toc-link level-3"><a href="#novashell">`NovaShell`</a></li>
+<li class="wiki-toc-link"><a href="#wie-man-diesen-index-mit-anderen-seiten-kombiniert">Wie man diesen Index mit anderen Seiten kombiniert</a></li>
+<li class="wiki-toc-link"><a href="#typische-einstiege-nach-aufgabe">Typische Einstiege nach Aufgabe</a></li>
+<li class="wiki-toc-link level-3"><a href="#ich-will-einen-cli-handler-finden">Ich will einen CLI-Handler finden</a></li>
+<li class="wiki-toc-link level-3"><a href="#ich-will-wissen-wo-ein-runtime-verhalten-sitzt">Ich will wissen, wo ein Runtime-Verhalten sitzt</a></li>
+<li class="wiki-toc-link level-3"><a href="#ich-will-parser-ast-oder-graph-verstehen">Ich will Parser, AST oder Graph verstehen</a></li>
+<li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
+</ul></div>
+        </aside>
+      </div>
+      <footer class="wiki-footer">
+        <p><a href="Home.html">Home</a> | <a href="QuickStart.html">QuickStart</a> | <a href="Architecture.html">Architecture</a> | <a href="NovaCLI.html">NovaCLI</a> | <a href="DevelopmentGuide.html">DevelopmentGuide</a> | <a href="FAQ.html">FAQ</a></p>
+      </footer>
+    </main>
+  </div>
+  <script>
+    window.NOVA_WIKI = {
+      currentPage: "CodeReferenceIndex.html",
+      searchIndex: "assets/search-index.json"
+    };
+  </script>
+  <script src="assets/wiki.js" defer></script>
+</body>
+</html>

@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="Nova-shell wiki builder">
-  <title>Build and Release | Nova-shell Wiki</title>
+  <title>Build And Release | Nova-shell Wiki</title>
   <link rel="stylesheet" href="assets/wiki.css">
 </head>
 <body>
@@ -27,11 +27,14 @@
 <li><a class="wiki-nav-link" data-nav-href="GermanLanguage.html" href="GermanLanguage.html">GermanLanguage</a></li>
 <li><a class="wiki-nav-link" data-nav-href="QuickStart.html" href="QuickStart.html">QuickStart</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Installation.html" href="Installation.html">Installation</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Nutzung</h2>
 <ul>
 <li><a class="wiki-nav-link" data-nav-href="NovaCLI.html" href="NovaCLI.html">NovaCLI</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ShellCommandReference.html" href="ShellCommandReference.html">ShellCommandReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="APIReference.html" href="APIReference.html">APIReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ExamplesAndRecipes.html" href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Tutorials.html" href="Tutorials.html">Tutorials</a></li>
@@ -54,6 +57,7 @@
 <li><a class="wiki-nav-link" data-nav-href="ParserAndASTReference.html" href="ParserAndASTReference.html">ParserAndASTReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="RuntimeMethodReference.html" href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ClassReference.html" href="ClassReference.html">ClassReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="CodeReferenceIndex.html" href="CodeReferenceIndex.html">CodeReferenceIndex</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Plattformfunktionen</h2>
@@ -95,32 +99,74 @@
         <button type="button" class="wiki-nav-toggle" data-nav-toggle>Menu</button>
         <div class="wiki-header-copy">
           <span class="wiki-kicker">Nova-shell Documentation</span>
-          <h1>Build and Release</h1>
+          <h1>Build And Release</h1>
           <p>Source: BuildAndRelease.md</p>
         </div>
       </header>
       <div class="wiki-layout">
         <article class="wiki-article">
-          <h1 id="build-and-release">Build and Release</h1>
-<h2 id="grundlagen">Grundlagen</h2>
+          <h1 id="build-and-release">Build And Release</h1>
+<h2 id="zweck">Zweck</h2>
+<p>Diese Seite beschreibt den technischen Weg von Quellstand, Tests und Packaging bis zum veroeffentlichten Artefakt.</p>
+<h2 id="kernpunkte">Kernpunkte</h2>
 <ul>
-<li>Paketname: <code>nova-shell</code></li>
-<li>Python: <code>&gt;=3.12</code></li>
-<li>Console Script: <code>nova-shell</code></li>
-<li>Lizenz: <code>Apache-2.0</code></li>
+<li>Nova-shell besitzt getrennte Pfade fuer Python-Artefakte, Standalone-Bundle, MSI, Manifest, SBOM und Checksums.</li>
+<li>Der Windows-Releasepfad verwendet <code>scripts/build_windows.ps1</code> und <code>scripts/build_release.py</code>.</li>
+<li>Vor einem Release sollten Tests, Compile-Check und mindestens ein Smoke-Test des Bundles gruen sein.</li>
+<li>GitHub-Tag und GitHub-Release werden nach dem Artefaktbau aus dem verifizierten Stand erzeugt.</li>
 </ul>
-<h2 id="release-schwerpunkte">Release-Schwerpunkte</h2>
+<h2 id="praktische-nutzung">Praktische Nutzung</h2>
 <ul>
-<li>Packaging</li>
-<li>optionale Extras pro Feature-Set</li>
-<li>reproduzierbare Build-Pfade</li>
-<li>Release-Checks mit Tests und Startverifikation</li>
+<li>Nutze <code>python -m unittest discover -s tests -p &quot;test_*.py&quot;</code> fuer den kompletten Testlauf.</li>
+<li>Nutze <code>powershell -ExecutionPolicy Bypass -File scripts\build_windows.ps1 -Profile core -SkipTests</code> fuer den Windows-Core-Build.</li>
+<li>Nutze den direkten <code>--mode installers</code>-Pfad, wenn der Bundle-Stand bereits gebaut und verifiziert wurde.</li>
+</ul>
+<h2 id="testbare-einstiege">Testbare Einstiege</h2>
+<h3 id="release-lokal-vorbereiten">Release lokal vorbereiten</h3>
+<pre><code class="language-powershell">python -m unittest discover -s tests -p &quot;test_*.py&quot;
+python -m compileall nova nova_shell.py release_packaging.py scripts\build_release.py
+powershell -ExecutionPolicy Bypass -File scripts\build_windows.ps1 -Profile core -SkipTests</code></pre>
+<p>Erwartung:</p>
+<ul>
+<li>Tests, Compile-Check und Build laufen ohne Fehler.</li>
+<li>Unter <code>dist/release/windows-amd64/core</code> liegen MSI, Wheel, Source-Tarball, Manifest, SBOM und Checksums.</li>
+</ul>
+<h3 id="github-release-veroeffentlichen">GitHub Release veroeffentlichen</h3>
+<pre><code class="language-powershell">git push origin main
+git tag v0.8.12
+git push origin v0.8.12
+gh release create v0.8.12 --repo kruemmel-python/Nova-shell --title &quot;Nova-shell 0.8.12&quot; --notes-file H:\Nova-shell-main\dist\release\release-notes-v0.8.12.md H:\Nova-shell-main\dist\release\windows-amd64\core\installers\nova-shell-0.8.12-windows-x64-core.msi</code></pre>
+<p>Erwartung:</p>
+<ul>
+<li>Der Tag existiert remote.</li>
+<li>Der GitHub-Release besitzt die benoetigten Assets.</li>
+</ul>
+<h2 id="typische-fragen-und-fehler">Typische Fragen und Fehler</h2>
+<h3 id="msi-build-bricht-auf-windows-ab">MSI-Build bricht auf Windows ab</h3>
+<ul>
+<li>WiX oder die Visual-Studio-Build-Umgebung fehlen.</li>
+<li>Der Bundle-Pfad ist noch nicht fertig gestaged.</li>
+<li>Die Release-Logs in <code>dist/release/logs/</code> zeigen den letzten erfolgreichen Schritt.</li>
+</ul>
+<h2 id="verwandte-seiten">Verwandte Seiten</h2>
+<ul>
+<li><a href="Testing.html">Testing</a></li>
+<li><a href="Installation.html">Installation</a></li>
+<li><a href="Roadmap.html">Roadmap</a></li>
+<li><a href="Troubleshooting.html">Troubleshooting</a></li>
 </ul>
         </article>
         <aside class="wiki-toc">
           <div class="wiki-toc-card"><h2>On this page</h2><ul>
-<li class="wiki-toc-link"><a href="#grundlagen">Grundlagen</a></li>
-<li class="wiki-toc-link"><a href="#release-schwerpunkte">Release-Schwerpunkte</a></li>
+<li class="wiki-toc-link"><a href="#zweck">Zweck</a></li>
+<li class="wiki-toc-link"><a href="#kernpunkte">Kernpunkte</a></li>
+<li class="wiki-toc-link"><a href="#praktische-nutzung">Praktische Nutzung</a></li>
+<li class="wiki-toc-link"><a href="#testbare-einstiege">Testbare Einstiege</a></li>
+<li class="wiki-toc-link level-3"><a href="#release-lokal-vorbereiten">Release lokal vorbereiten</a></li>
+<li class="wiki-toc-link level-3"><a href="#github-release-veroeffentlichen">GitHub Release veroeffentlichen</a></li>
+<li class="wiki-toc-link"><a href="#typische-fragen-und-fehler">Typische Fragen und Fehler</a></li>
+<li class="wiki-toc-link level-3"><a href="#msi-build-bricht-auf-windows-ab">MSI-Build bricht auf Windows ab</a></li>
+<li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
 </ul></div>
         </aside>
       </div>

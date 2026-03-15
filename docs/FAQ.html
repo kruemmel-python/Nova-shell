@@ -27,11 +27,14 @@
 <li><a class="wiki-nav-link" data-nav-href="GermanLanguage.html" href="GermanLanguage.html">GermanLanguage</a></li>
 <li><a class="wiki-nav-link" data-nav-href="QuickStart.html" href="QuickStart.html">QuickStart</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Installation.html" href="Installation.html">Installation</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Nutzung</h2>
 <ul>
 <li><a class="wiki-nav-link" data-nav-href="NovaCLI.html" href="NovaCLI.html">NovaCLI</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ShellCommandReference.html" href="ShellCommandReference.html">ShellCommandReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="APIReference.html" href="APIReference.html">APIReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ExamplesAndRecipes.html" href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Tutorials.html" href="Tutorials.html">Tutorials</a></li>
@@ -54,6 +57,7 @@
 <li><a class="wiki-nav-link" data-nav-href="ParserAndASTReference.html" href="ParserAndASTReference.html">ParserAndASTReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="RuntimeMethodReference.html" href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ClassReference.html" href="ClassReference.html">ClassReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="CodeReferenceIndex.html" href="CodeReferenceIndex.html">CodeReferenceIndex</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Plattformfunktionen</h2>
@@ -102,8 +106,9 @@
       <div class="wiki-layout">
         <article class="wiki-article">
           <h1 id="faq">FAQ</h1>
+<h2 id="zweck">Zweck</h2>
 <p>Die FAQ ist die Kurzfassung fuer wiederkehrende Fragen. Die eigentliche Projektdokumentation liegt in den Architektur-, Referenz- und Beispielseiten dieser Wiki.</p>
-<p>Schnelle Einstiege:</p>
+<h2 id="schnelle-einstiege">Schnelle Einstiege</h2>
 <ul>
 <li><a href="Home.html">Home</a></li>
 <li><a href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
@@ -118,7 +123,7 @@
 <li><a href="Architecture.html">Architecture</a></li>
 </ul>
 <h2 id="muss-ich-ns-benutzen">Muss ich <code>.ns</code> benutzen?</h2>
-<p>Nein. Die CLI kann auch ohne deklarative Programme genutzt werden. Fuer deklarative Flows, Services und Agenten ist <code>.ns</code> aber der zentrale Pfad.</p>
+<p>Nein. Die CLI kann auch ohne deklarative Programme genutzt werden. Fuer reproduzierbare Flows, Services und Agenten ist <code>.ns</code> aber der zentrale Pfad.</p>
 <p>Mehr dazu:</p>
 <ul>
 <li><a href="NovaCLI.html">NovaCLI</a></li>
@@ -151,16 +156,48 @@
 <li><a href="ClassReference.html">ClassReference</a></li>
 <li><a href="ParserAndASTReference.html">ParserAndASTReference</a></li>
 <li><a href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
+<li><a href="CodeReferenceIndex.html">CodeReferenceIndex</a></li>
+</ul>
+<h2 id="wie-pruefe-ich-schnell-ob-meine-installation-gesund-ist">Wie pruefe ich schnell, ob meine Installation gesund ist?</h2>
+<p>Mit:</p>
+<pre><code class="language-powershell">doctor</code></pre>
+<h2 id="wie-beginne-ich-mit-einem-ersten-echten-ablauf">Wie beginne ich mit einem ersten echten Ablauf?</h2>
+<p>Mit:</p>
+<pre><code class="language-powershell">ns.graph examples\market_radar.ns
+ns.run examples\market_radar.ns</code></pre>
+<p>Danach weiter mit:</p>
+<ul>
+<li><a href="QuickStart.html">QuickStart</a></li>
+<li><a href="Tutorials.html">Tutorials</a></li>
+</ul>
+<h2 id="warum-funktioniert-ns-graph-aber-ns-run-nicht">Warum funktioniert <code>ns.graph</code>, aber <code>ns.run</code> nicht?</h2>
+<p>Dann ist die Syntax meist korrekt und das Problem liegt eher in Runtime, Tool, Provider oder Datenpfad.</p>
+<p>Mehr dazu:</p>
+<ul>
+<li><a href="NovaRuntime.html">NovaRuntime</a></li>
+<li><a href="Troubleshooting.html">Troubleshooting</a></li>
+</ul>
+<h2 id="verwandte-seiten">Verwandte Seiten</h2>
+<ul>
+<li><a href="QuickStart.html">QuickStart</a></li>
+<li><a href="Troubleshooting.html">Troubleshooting</a></li>
+<li><a href="GeneralLinks.html">GeneralLinks</a></li>
 </ul>
         </article>
         <aside class="wiki-toc">
           <div class="wiki-toc-card"><h2>On this page</h2><ul>
+<li class="wiki-toc-link"><a href="#zweck">Zweck</a></li>
+<li class="wiki-toc-link"><a href="#schnelle-einstiege">Schnelle Einstiege</a></li>
 <li class="wiki-toc-link"><a href="#ist-nova-shell-nur-eine-shell">Ist Nova-shell nur eine Shell?</a></li>
 <li class="wiki-toc-link"><a href="#muss-ich-ns-benutzen">Muss ich `.ns` benutzen?</a></li>
 <li class="wiki-toc-link"><a href="#gibt-es-verteilte-ausfuehrung">Gibt es verteilte Ausfuehrung?</a></li>
 <li class="wiki-toc-link"><a href="#gibt-es-eine-api">Gibt es eine API?</a></li>
 <li class="wiki-toc-link"><a href="#gibt-es-tests-fuer-ns">Gibt es Tests fuer `.ns`?</a></li>
 <li class="wiki-toc-link"><a href="#wo-finde-ich-klassen-und-methoden">Wo finde ich Klassen und Methoden?</a></li>
+<li class="wiki-toc-link"><a href="#wie-pruefe-ich-schnell-ob-meine-installation-gesund-ist">Wie pruefe ich schnell, ob meine Installation gesund ist?</a></li>
+<li class="wiki-toc-link"><a href="#wie-beginne-ich-mit-einem-ersten-echten-ablauf">Wie beginne ich mit einem ersten echten Ablauf?</a></li>
+<li class="wiki-toc-link"><a href="#warum-funktioniert-ns-graph-aber-ns-run-nicht">Warum funktioniert `ns.graph`, aber `ns.run` nicht?</a></li>
+<li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
 </ul></div>
         </aside>
       </div>

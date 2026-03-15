@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="Nova-shell wiki builder">
-  <title>Data and Execution Engines | Nova-shell Wiki</title>
+  <title>Data And Execution Engines | Nova-shell Wiki</title>
   <link rel="stylesheet" href="assets/wiki.css">
 </head>
 <body>
@@ -27,11 +27,14 @@
 <li><a class="wiki-nav-link" data-nav-href="GermanLanguage.html" href="GermanLanguage.html">GermanLanguage</a></li>
 <li><a class="wiki-nav-link" data-nav-href="QuickStart.html" href="QuickStart.html">QuickStart</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Installation.html" href="Installation.html">Installation</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Nutzung</h2>
 <ul>
 <li><a class="wiki-nav-link" data-nav-href="NovaCLI.html" href="NovaCLI.html">NovaCLI</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ShellCommandReference.html" href="ShellCommandReference.html">ShellCommandReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="APIReference.html" href="APIReference.html">APIReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ExamplesAndRecipes.html" href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Tutorials.html" href="Tutorials.html">Tutorials</a></li>
@@ -54,6 +57,7 @@
 <li><a class="wiki-nav-link" data-nav-href="ParserAndASTReference.html" href="ParserAndASTReference.html">ParserAndASTReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="RuntimeMethodReference.html" href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ClassReference.html" href="ClassReference.html">ClassReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="CodeReferenceIndex.html" href="CodeReferenceIndex.html">CodeReferenceIndex</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Plattformfunktionen</h2>
@@ -95,38 +99,66 @@
         <button type="button" class="wiki-nav-toggle" data-nav-toggle>Menu</button>
         <div class="wiki-header-copy">
           <span class="wiki-kicker">Nova-shell Documentation</span>
-          <h1>Data and Execution Engines</h1>
+          <h1>Data And Execution Engines</h1>
           <p>Source: DataAndExecutionEngines.md</p>
         </div>
       </header>
       <div class="wiki-layout">
         <article class="wiki-article">
-          <h1 id="data-and-execution-engines">Data and Execution Engines</h1>
-<h2 id="fokus">Fokus</h2>
-<p>Diese Seite fasst die polyglotten Ausfuehrungs- und Datenpfade zusammen.</p>
-<h2 id="engines">Engines</h2>
+          <h1 id="data-and-execution-engines">Data And Execution Engines</h1>
+<h2 id="zweck">Zweck</h2>
+<p>Nova-shell fuehrt nicht nur Python aus. Die Daten- und Execution-Schicht fasst mehrere Backends zusammen, die je nach Aufgabe unterschiedlich geeignet sind.</p>
+<h2 id="kernpunkte">Kernpunkte</h2>
 <ul>
-<li>Python</li>
-<li>C++</li>
-<li>GPU</li>
-<li>WASM</li>
-<li>System/Shell</li>
-<li>AI-nahe Backends</li>
+<li><code>py</code> deckt schnellen Ausdrucks- und Skriptbetrieb ab.</li>
+<li><code>cpp</code> und <code>cpp.sandbox</code> adressieren nativen bzw. sandboxed C++-Code.</li>
+<li><code>gpu</code> adressiert OpenCL-basierte GPU-Ausfuehrung, wenn <code>pyopencl</code> und <code>numpy</code> verfuegbar sind.</li>
+<li><code>wasm</code> und <code>jit_wasm</code> adressieren portable bzw. Emscripten-basierte Ausfuehrungspfade.</li>
+<li><code>data</code> und <code>data.load</code> liefern strukturierte Datenverarbeitung und Dateieinbindung.</li>
 </ul>
-<h2 id="datenpfade">Datenpfade</h2>
+<h2 id="praktische-nutzung">Praktische Nutzung</h2>
 <ul>
-<li>Datasets</li>
-<li>CLI-Pipelines</li>
-<li>State</li>
-<li>Memory</li>
-<li>verteilte Dispatch-Pfade</li>
+<li>Nutze <code>py</code> fuer den Standardfall.</li>
+<li>Nutze <code>cpp.sandbox</code>, wenn du isolierten nativen Code in einer kontrollierten Laufzeit ausprobieren willst.</li>
+<li>Nutze <code>gpu</code>, wenn OpenCL-Gerate und passende Laufzeitmodule vorhanden sind.</li>
+<li>Nutze <code>data.load</code> und anschliessend <code>py</code>, wenn du tabellarische oder JSON-Daten in Pipelines brauchst.</li>
+</ul>
+<h2 id="testbare-einstiege">Testbare Einstiege</h2>
+<h3 id="ein-einfacher-compute-check">Ein einfacher Compute-Check</h3>
+<pre><code class="language-powershell">py 1 + 1
+cpp.sandbox int main(){ return 0; }
+doctor</code></pre>
+<p>Erwartung:</p>
+<ul>
+<li><code>py</code> liefert direkt ein Ergebnis.</li>
+<li><code>cpp.sandbox</code> meldet im Erfolgsfall <code>sandbox executed</code>.</li>
+<li><code>doctor</code> zeigt, welche Runtime-Module wirklich verfuegbar sind.</li>
+</ul>
+<h2 id="typische-fragen-und-fehler">Typische Fragen und Fehler</h2>
+<h3 id="gpu-oder-wasm-laufen-nicht">GPU oder WASM laufen nicht</h3>
+<ul>
+<li><code>doctor</code> zeigt die benoetigten Module als <code>missing</code>.</li>
+<li>Toolchain oder Runtime fehlen im aktuellen Profil.</li>
+<li>Nutze zuerst den Minimaltest ueber <code>doctor</code> und <code>cpp.sandbox</code>.</li>
+</ul>
+<h2 id="verwandte-seiten">Verwandte Seiten</h2>
+<ul>
+<li><a href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
+<li><a href="NovaCLI.html">NovaCLI</a></li>
+<li><a href="ExecutionModel.html">ExecutionModel</a></li>
+<li><a href="PerformanceAndScaling.html">PerformanceAndScaling</a></li>
 </ul>
         </article>
         <aside class="wiki-toc">
           <div class="wiki-toc-card"><h2>On this page</h2><ul>
-<li class="wiki-toc-link"><a href="#fokus">Fokus</a></li>
-<li class="wiki-toc-link"><a href="#engines">Engines</a></li>
-<li class="wiki-toc-link"><a href="#datenpfade">Datenpfade</a></li>
+<li class="wiki-toc-link"><a href="#zweck">Zweck</a></li>
+<li class="wiki-toc-link"><a href="#kernpunkte">Kernpunkte</a></li>
+<li class="wiki-toc-link"><a href="#praktische-nutzung">Praktische Nutzung</a></li>
+<li class="wiki-toc-link"><a href="#testbare-einstiege">Testbare Einstiege</a></li>
+<li class="wiki-toc-link level-3"><a href="#ein-einfacher-compute-check">Ein einfacher Compute-Check</a></li>
+<li class="wiki-toc-link"><a href="#typische-fragen-und-fehler">Typische Fragen und Fehler</a></li>
+<li class="wiki-toc-link level-3"><a href="#gpu-oder-wasm-laufen-nicht">GPU oder WASM laufen nicht</a></li>
+<li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
 </ul></div>
         </aside>
       </div>

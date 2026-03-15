@@ -27,11 +27,14 @@
 <li><a class="wiki-nav-link" data-nav-href="GermanLanguage.html" href="GermanLanguage.html">GermanLanguage</a></li>
 <li><a class="wiki-nav-link" data-nav-href="QuickStart.html" href="QuickStart.html">QuickStart</a></li>
 <li><a class="wiki-nav-link active" data-nav-href="Installation.html" href="Installation.html">Installation</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Nutzung</h2>
 <ul>
 <li><a class="wiki-nav-link" data-nav-href="NovaCLI.html" href="NovaCLI.html">NovaCLI</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ShellCommandReference.html" href="ShellCommandReference.html">ShellCommandReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="APIReference.html" href="APIReference.html">APIReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ExamplesAndRecipes.html" href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Tutorials.html" href="Tutorials.html">Tutorials</a></li>
@@ -54,6 +57,7 @@
 <li><a class="wiki-nav-link" data-nav-href="ParserAndASTReference.html" href="ParserAndASTReference.html">ParserAndASTReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="RuntimeMethodReference.html" href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ClassReference.html" href="ClassReference.html">ClassReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="CodeReferenceIndex.html" href="CodeReferenceIndex.html">CodeReferenceIndex</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Plattformfunktionen</h2>
@@ -102,21 +106,25 @@
       <div class="wiki-layout">
         <article class="wiki-article">
           <h1 id="installation">Installation</h1>
+<h2 id="zweck">Zweck</h2>
+<p>Diese Seite beschreibt die saubere Installation von Nova-shell fuer Entwicklung, lokale Nutzung und Windows-Release-Betrieb.</p>
 <h2 id="anforderungen">Anforderungen</h2>
 <ul>
 <li>Python <code>3.12+</code></li>
 <li>Windows oder Linux</li>
+<li>fuer bestimmte Pfade optional: C++-Toolchain, WASM-Tooling, GPU- oder AI-Provider</li>
 </ul>
-<h2 id="installation-aus-dem-quellbaum">Installation aus dem Quellbaum</h2>
-<pre><code class="language-bash">git clone &lt;repository-url&gt;
+<h2 id="installationsarten">Installationsarten</h2>
+<h3 id="installation-aus-dem-quellbaum">Installation aus dem Quellbaum</h3>
+<pre><code class="language-powershell">git clone &lt;repository-url&gt;
 cd Nova-shell-main
 python -m pip install -e .</code></pre>
-<h2 id="direkter-start-ohne-paketinstallation">Direkter Start ohne Paketinstallation</h2>
-<pre><code class="language-bash">python -m nova_shell</code></pre>
-<h2 id="paketinstallation">Paketinstallation</h2>
-<pre><code class="language-bash">python -m pip install .</code></pre>
-<p>Danach:</p>
-<pre><code class="language-bash">nova-shell</code></pre>
+<p>Das ist der beste Weg fuer Entwicklung und direkte Arbeit am Repo.</p>
+<h3 id="direkter-start-ohne-paketinstallation">Direkter Start ohne Paketinstallation</h3>
+<pre><code class="language-powershell">python -m nova_shell</code></pre>
+<h3 id="paketinstallation">Paketinstallation</h3>
+<pre><code class="language-powershell">python -m pip install .
+nova-shell</code></pre>
 <h2 id="optionale-extras">Optionale Extras</h2>
 <p>Das Projekt bietet optionale Feature-Sets fuer:</p>
 <ul>
@@ -128,17 +136,57 @@ python -m pip install -e .</code></pre>
 <li>Atheria</li>
 <li>Release</li>
 </ul>
+<p>Je nach Profil sind nicht alle Extras noetig. Welche Faehigkeiten wirklich verfuegbar sind, zeigt <code>doctor</code>.</p>
+<h2 id="windows-msi-und-upgrade">Windows-MSI und Upgrade</h2>
+<p>Fuer bestehende Installationen unter <code>C:\Program Files\Nova-shell</code> gibt es einen Upgrade-Helper. Er stoppt laufende <code>nova_shell.exe</code>-Prozesse, sichert Runtime-Daten wie <code>Atheria</code>, spielt das neue MSI per Reinstall ein und prueft danach <code>doctor</code>, <code>wiki help</code> und <code>wiki build</code>.</p>
+<p>Aus dem Repository:</p>
+<pre><code class="language-powershell">powershell -ExecutionPolicy Bypass -File scripts\upgrade_windows_install.ps1</code></pre>
+<p>Mit explizitem Installer:</p>
+<pre><code class="language-powershell">powershell -ExecutionPolicy Bypass -File scripts\upgrade_windows_install.ps1 -InstallerPath H:\Nova-shell-main\dist\release\windows-amd64\core\installers\nova-shell-0.8.12-windows-x64-core.msi</code></pre>
+<p>Nur den Ablauf pruefen:</p>
+<pre><code class="language-powershell">powershell -ExecutionPolicy Bypass -File scripts\upgrade_windows_install.ps1 -DryRun</code></pre>
 <h2 id="verifikation">Verifikation</h2>
-<pre><code class="language-bash">nova-shell --no-plugins -c &quot;py 1 + 1&quot;</code></pre>
+<h3 id="minimaler-starttest">Minimaler Starttest</h3>
+<pre><code class="language-powershell">nova-shell --no-plugins -c &quot;py 1 + 1&quot;</code></pre>
+<h3 id="vollere-diagnose">Vollere Diagnose</h3>
+<pre><code class="language-powershell">doctor
+wiki build</code></pre>
+<h3 id="deklarative-runtime-pruefen">Deklarative Runtime pruefen</h3>
+<pre><code class="language-powershell">ns.graph examples\market_radar.ns</code></pre>
+<h2 id="typische-fehler">Typische Fehler</h2>
+<h3 id="nova-shell-wird-nicht-gefunden"><code>nova-shell</code> wird nicht gefunden</h3>
+<p>Dann entweder <code>python -m nova_shell</code> verwenden oder die Paketinstallation pruefen.</p>
+<h3 id="doctor-zeigt-fehlende-faehigkeiten"><code>doctor</code> zeigt fehlende Faehigkeiten</h3>
+<p>Dann ist oft nur ein optionales Modul nicht vorhanden, nicht die gesamte Installation kaputt.</p>
+<h3 id="neues-feature-wie-wiki-fehlt-nach-update">Neues Feature wie <code>wiki</code> fehlt nach Update</h3>
+<p>Dann laeuft oft noch eine aeltere installierte Version, nicht der aktuelle Build.</p>
+<h2 id="verwandte-seiten">Verwandte Seiten</h2>
+<ul>
+<li><a href="QuickStart.html">QuickStart</a></li>
+<li><a href="Troubleshooting.html">Troubleshooting</a></li>
+<li><a href="BuildAndRelease.html">BuildAndRelease</a></li>
+<li><a href="NovaCLI.html">NovaCLI</a></li>
+</ul>
         </article>
         <aside class="wiki-toc">
           <div class="wiki-toc-card"><h2>On this page</h2><ul>
+<li class="wiki-toc-link"><a href="#zweck">Zweck</a></li>
 <li class="wiki-toc-link"><a href="#anforderungen">Anforderungen</a></li>
-<li class="wiki-toc-link"><a href="#installation-aus-dem-quellbaum">Installation aus dem Quellbaum</a></li>
-<li class="wiki-toc-link"><a href="#direkter-start-ohne-paketinstallation">Direkter Start ohne Paketinstallation</a></li>
-<li class="wiki-toc-link"><a href="#paketinstallation">Paketinstallation</a></li>
+<li class="wiki-toc-link"><a href="#installationsarten">Installationsarten</a></li>
+<li class="wiki-toc-link level-3"><a href="#installation-aus-dem-quellbaum">Installation aus dem Quellbaum</a></li>
+<li class="wiki-toc-link level-3"><a href="#direkter-start-ohne-paketinstallation">Direkter Start ohne Paketinstallation</a></li>
+<li class="wiki-toc-link level-3"><a href="#paketinstallation">Paketinstallation</a></li>
 <li class="wiki-toc-link"><a href="#optionale-extras">Optionale Extras</a></li>
+<li class="wiki-toc-link"><a href="#windows-msi-und-upgrade">Windows-MSI und Upgrade</a></li>
 <li class="wiki-toc-link"><a href="#verifikation">Verifikation</a></li>
+<li class="wiki-toc-link level-3"><a href="#minimaler-starttest">Minimaler Starttest</a></li>
+<li class="wiki-toc-link level-3"><a href="#vollere-diagnose">Vollere Diagnose</a></li>
+<li class="wiki-toc-link level-3"><a href="#deklarative-runtime-pruefen">Deklarative Runtime pruefen</a></li>
+<li class="wiki-toc-link"><a href="#typische-fehler">Typische Fehler</a></li>
+<li class="wiki-toc-link level-3"><a href="#nova-shell-wird-nicht-gefunden">`nova-shell` wird nicht gefunden</a></li>
+<li class="wiki-toc-link level-3"><a href="#doctor-zeigt-fehlende-faehigkeiten">`doctor` zeigt fehlende Faehigkeiten</a></li>
+<li class="wiki-toc-link level-3"><a href="#neues-feature-wie-wiki-fehlt-nach-update">Neues Feature wie `wiki` fehlt nach Update</a></li>
+<li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
 </ul></div>
         </aside>
       </div>

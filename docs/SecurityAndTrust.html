@@ -27,11 +27,14 @@
 <li><a class="wiki-nav-link" data-nav-href="GermanLanguage.html" href="GermanLanguage.html">GermanLanguage</a></li>
 <li><a class="wiki-nav-link" data-nav-href="QuickStart.html" href="QuickStart.html">QuickStart</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Installation.html" href="Installation.html">Installation</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Nutzung</h2>
 <ul>
 <li><a class="wiki-nav-link" data-nav-href="NovaCLI.html" href="NovaCLI.html">NovaCLI</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ShellCommandReference.html" href="ShellCommandReference.html">ShellCommandReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="APIReference.html" href="APIReference.html">APIReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ExamplesAndRecipes.html" href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Tutorials.html" href="Tutorials.html">Tutorials</a></li>
@@ -54,6 +57,7 @@
 <li><a class="wiki-nav-link" data-nav-href="ParserAndASTReference.html" href="ParserAndASTReference.html">ParserAndASTReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="RuntimeMethodReference.html" href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ClassReference.html" href="ClassReference.html">ClassReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="CodeReferenceIndex.html" href="CodeReferenceIndex.html">CodeReferenceIndex</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Plattformfunktionen</h2>
@@ -102,27 +106,48 @@
       <div class="wiki-layout">
         <article class="wiki-article">
           <h1 id="security-and-trust">Security and Trust</h1>
-<h2 id="fokus">Fokus</h2>
-<p>Diese Seite fasst Trust, Worker-Onboarding, Zertifikate und Policy-Sicht zusammen.</p>
-<h2 id="themen">Themen</h2>
+<h2 id="zweck">Zweck</h2>
+<p>Diese Seite fasst Trust, Worker-Onboarding, Zertifikate und die operative Sicherheitsansicht zusammen. Sie ist die Bruecke zwischen dem abstrakteren <a href="SecurityModel.html">SecurityModel</a> und den konkreten Laufzeitpfaden.</p>
+<h2 id="kernpunkte">Kernpunkte</h2>
 <ul>
 <li>Tokens und Rollen</li>
-<li>Secrets</li>
-<li>TLS</li>
-<li>Trust-Policies</li>
+<li>Secrets und deren kontrollierte Nutzung</li>
+<li>TLS und vertrauensbasierte Worker-Kommunikation</li>
+<li>Trust-Policies fuer Worker und Remote-Ausfuehrung</li>
 <li>sichere Tool- und Agentenpfade</li>
+</ul>
+<h2 id="praktische-nutzung">Praktische Nutzung</h2>
+<h3 id="sicherheitsfaehigkeiten-lokal-pruefen">Sicherheitsfaehigkeiten lokal pruefen</h3>
+<pre><code class="language-powershell">doctor
+ns.auth</code></pre>
+<h3 id="relevante-fragen">Relevante Fragen</h3>
+<ul>
+<li>Ist ein Worker ueberhaupt vertrauenswuerdig genug fuer die geplante Aufgabe?</li>
+<li>Darf ein bestimmter Agent dieses Tool oder diesen Namespace nutzen?</li>
+<li>Welche Rollen oder Policies muessen fuer einen Ablauf gesetzt sein?</li>
+</ul>
+<h2 id="abgrenzung">Abgrenzung</h2>
+<ul>
+<li>Das formale Sicherheitsmodell ist in <a href="SecurityModel.html">SecurityModel</a> beschrieben.</li>
+<li>Die verteilte Rolle von Trust im Cluster liegt in <a href="NovaMesh.html">NovaMesh</a>.</li>
+<li>Agentenspezifische Sicherheitsaspekte liegen in <a href="NovaAgents.html">NovaAgents</a>.</li>
 </ul>
 <h2 id="verwandte-seiten">Verwandte Seiten</h2>
 <ul>
 <li><a href="SecurityModel.html">SecurityModel</a></li>
 <li><a href="NovaMesh.html">NovaMesh</a></li>
 <li><a href="NovaAgents.html">NovaAgents</a></li>
+<li><a href="RuntimeAndControlPlane.html">RuntimeAndControlPlane</a></li>
 </ul>
         </article>
         <aside class="wiki-toc">
           <div class="wiki-toc-card"><h2>On this page</h2><ul>
-<li class="wiki-toc-link"><a href="#fokus">Fokus</a></li>
-<li class="wiki-toc-link"><a href="#themen">Themen</a></li>
+<li class="wiki-toc-link"><a href="#zweck">Zweck</a></li>
+<li class="wiki-toc-link"><a href="#kernpunkte">Kernpunkte</a></li>
+<li class="wiki-toc-link"><a href="#praktische-nutzung">Praktische Nutzung</a></li>
+<li class="wiki-toc-link level-3"><a href="#sicherheitsfaehigkeiten-lokal-pruefen">Sicherheitsfaehigkeiten lokal pruefen</a></li>
+<li class="wiki-toc-link level-3"><a href="#relevante-fragen">Relevante Fragen</a></li>
+<li class="wiki-toc-link"><a href="#abgrenzung">Abgrenzung</a></li>
 <li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
 </ul></div>
         </aside>

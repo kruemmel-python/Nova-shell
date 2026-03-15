@@ -27,11 +27,14 @@
 <li><a class="wiki-nav-link" data-nav-href="GermanLanguage.html" href="GermanLanguage.html">GermanLanguage</a></li>
 <li><a class="wiki-nav-link" data-nav-href="QuickStart.html" href="QuickStart.html">QuickStart</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Installation.html" href="Installation.html">Installation</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Nutzung</h2>
 <ul>
 <li><a class="wiki-nav-link" data-nav-href="NovaCLI.html" href="NovaCLI.html">NovaCLI</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ShellCommandReference.html" href="ShellCommandReference.html">ShellCommandReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="APIReference.html" href="APIReference.html">APIReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ExamplesAndRecipes.html" href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Tutorials.html" href="Tutorials.html">Tutorials</a></li>
@@ -54,6 +57,7 @@
 <li><a class="wiki-nav-link" data-nav-href="ParserAndASTReference.html" href="ParserAndASTReference.html">ParserAndASTReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="RuntimeMethodReference.html" href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ClassReference.html" href="ClassReference.html">ClassReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="CodeReferenceIndex.html" href="CodeReferenceIndex.html">CodeReferenceIndex</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Plattformfunktionen</h2>
@@ -102,9 +106,9 @@
       <div class="wiki-layout">
         <article class="wiki-article">
           <h1 id="service-fabric-and-traffic-plane">Service Fabric and Traffic Plane</h1>
-<h2 id="fokus">Fokus</h2>
-<p>Diese Seite beschreibt Services, Packages und die Routing-Schicht.</p>
-<h2 id="themen">Themen</h2>
+<h2 id="zweck">Zweck</h2>
+<p>Diese Seite beschreibt die Service-, Package- und Routing-Schicht von Nova-shell. Sie erklaert, wie laufende Dienste, Revisionen, Ingress, Probes und Traffic-Shifts in die Plattform eingebettet sind.</p>
+<h2 id="kernpunkte">Kernpunkte</h2>
 <ul>
 <li>Service-Definitionen</li>
 <li>Package-Installation</li>
@@ -113,17 +117,48 @@
 <li>Health-Probes</li>
 <li>Traffic-Shifts</li>
 </ul>
+<h2 id="praktische-nutzung">Praktische Nutzung</h2>
+<h3 id="relevante-cli-pfade">Relevante CLI-Pfade</h3>
+<pre><code class="language-powershell">ns.deploy
+ns.status
+ns.control</code></pre>
+<h3 id="typische-einsatzfaelle">Typische Einsatzfaelle</h3>
+<ul>
+<li>einen Dienst mit neuer Revision ausrollen</li>
+<li>Traffic schrittweise von einer alten auf eine neue Revision verschieben</li>
+<li>Service-Gesundheit ueber Probes beobachten</li>
+<li>Konfiguration, Secret-Nutzung und Routing gemeinsam betrachten</li>
+</ul>
+<h2 id="wichtige-zusammenhaenge">Wichtige Zusammenhaenge</h2>
+<ul>
+<li>Die Service-Schicht baut auf Runtime- und Control-Plane-Zustaenden auf.</li>
+<li>Observability ist fuer sichere Traffic-Shifts unverzichtbar.</li>
+<li>Performancefragen tauchen oft zuerst an Service- oder Probe-Kanten auf.</li>
+</ul>
+<h2 id="typische-fehlerbilder">Typische Fehlerbilder</h2>
+<h3 id="neue-revision-ist-registriert-bekommt-aber-keinen-traffic">Neue Revision ist registriert, bekommt aber keinen Traffic</h3>
+<p>Dann muessen Ingress-, Health- oder Traffic-Shift-Regeln geprueft werden.</p>
+<h3 id="service-ist-erreichbar-aber-instabil">Service ist erreichbar, aber instabil</h3>
+<p>Dann ist oft die Probe-Definition oder die Runtime-Abhaengigkeit unvollstaendig.</p>
 <h2 id="verwandte-seiten">Verwandte Seiten</h2>
 <ul>
 <li><a href="NovaRuntime.html">NovaRuntime</a></li>
 <li><a href="OperationsAndObservability.html">OperationsAndObservability</a></li>
 <li><a href="PerformanceAndScaling.html">PerformanceAndScaling</a></li>
+<li><a href="APIReference.html">APIReference</a></li>
 </ul>
         </article>
         <aside class="wiki-toc">
           <div class="wiki-toc-card"><h2>On this page</h2><ul>
-<li class="wiki-toc-link"><a href="#fokus">Fokus</a></li>
-<li class="wiki-toc-link"><a href="#themen">Themen</a></li>
+<li class="wiki-toc-link"><a href="#zweck">Zweck</a></li>
+<li class="wiki-toc-link"><a href="#kernpunkte">Kernpunkte</a></li>
+<li class="wiki-toc-link"><a href="#praktische-nutzung">Praktische Nutzung</a></li>
+<li class="wiki-toc-link level-3"><a href="#relevante-cli-pfade">Relevante CLI-Pfade</a></li>
+<li class="wiki-toc-link level-3"><a href="#typische-einsatzfaelle">Typische Einsatzfaelle</a></li>
+<li class="wiki-toc-link"><a href="#wichtige-zusammenhaenge">Wichtige Zusammenhaenge</a></li>
+<li class="wiki-toc-link"><a href="#typische-fehlerbilder">Typische Fehlerbilder</a></li>
+<li class="wiki-toc-link level-3"><a href="#neue-revision-ist-registriert-bekommt-aber-keinen-traffic">Neue Revision ist registriert, bekommt aber keinen Traffic</a></li>
+<li class="wiki-toc-link level-3"><a href="#service-ist-erreichbar-aber-instabil">Service ist erreichbar, aber instabil</a></li>
 <li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
 </ul></div>
         </aside>

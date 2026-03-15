@@ -27,11 +27,14 @@
 <li><a class="wiki-nav-link" data-nav-href="GermanLanguage.html" href="GermanLanguage.html">GermanLanguage</a></li>
 <li><a class="wiki-nav-link" data-nav-href="QuickStart.html" href="QuickStart.html">QuickStart</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Installation.html" href="Installation.html">Installation</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Nutzung</h2>
 <ul>
 <li><a class="wiki-nav-link" data-nav-href="NovaCLI.html" href="NovaCLI.html">NovaCLI</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ShellCommandReference.html" href="ShellCommandReference.html">ShellCommandReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="APIReference.html" href="APIReference.html">APIReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ExamplesAndRecipes.html" href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Tutorials.html" href="Tutorials.html">Tutorials</a></li>
@@ -54,6 +57,7 @@
 <li><a class="wiki-nav-link" data-nav-href="ParserAndASTReference.html" href="ParserAndASTReference.html">ParserAndASTReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="RuntimeMethodReference.html" href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ClassReference.html" href="ClassReference.html">ClassReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="CodeReferenceIndex.html" href="CodeReferenceIndex.html">CodeReferenceIndex</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Plattformfunktionen</h2>
@@ -102,34 +106,53 @@
       <div class="wiki-layout">
         <article class="wiki-article">
           <h1 id="execution-model">Execution Model</h1>
-<h2 id="kerngedanke">Kerngedanke</h2>
-<p>Nova-shell fuehrt deklarative Programme als Execution Graph aus.</p>
-<h2 id="pipeline">Pipeline</h2>
-<pre><code class="language-text">Source
-  ↓
-Parser
-  ↓
-Typed AST
-  ↓
-Graph Compiler
-  ↓
-Execution Graph
-  ↓
-Runtime</code></pre>
-<h2 id="eigenschaften">Eigenschaften</h2>
+<h2 id="zweck">Zweck</h2>
+<p>Das Execution Model beschreibt den Weg von einer Eingabe bis zur Ausfuehrung in Shell- oder Declarative-Pfaden.</p>
+<h2 id="kernpunkte">Kernpunkte</h2>
 <ul>
-<li>topologische Ausfuehrung</li>
-<li>Flow-Schliessung statt Gesamtprogrammzwang</li>
-<li>Event-Bindings fuer neue Runs</li>
-<li>Queueing und Scheduling als externe Trigger</li>
-<li>persistente States und Replay</li>
+<li>Shellbefehle laufen direkt ueber <code>NovaShell</code> und die zugeordneten Handler.</li>
+<li>Deklarative Programme durchlaufen Parser, AST, Graph-Compiler und Runtime.</li>
+<li>Queue, Event-Bus und Daemon koennen Ausfuehrung asynchron und wiederholbar machen.</li>
+<li>Snapshots und Replay machen den Laufzeitpfad durable.</li>
+</ul>
+<h2 id="praktische-nutzung">Praktische Nutzung</h2>
+<ul>
+<li>Verstehe zuerst, ob du einen direkten Shellbefehl oder einen Graphlauf startest.</li>
+<li>Nutze <code>ns.status</code> und <code>ns.control status</code>, wenn die eigentliche Frage nicht Rechenergebnis, sondern Runtimezustand ist.</li>
+</ul>
+<h2 id="testbare-einstiege">Testbare Einstiege</h2>
+<h3 id="direkter-shelllauf-und-deklarativer-lauf-im-vergleich">Direkter Shelllauf und deklarativer Lauf im Vergleich</h3>
+<pre><code class="language-powershell">py 1 + 1
+ns.exec values = sys printf &quot;1\n2\n&quot;; for v in values:;     py $v</code></pre>
+<p>Erwartung:</p>
+<ul>
+<li>Der erste Befehl laeuft direkt als Ausdruck.</li>
+<li>Der zweite Befehl wird ueber den NovaScript-Interpreter abgearbeitet.</li>
+</ul>
+<h2 id="typische-fragen-und-fehler">Typische Fragen und Fehler</h2>
+<h3 id="unklarer-laufzeitpfad">Unklarer Laufzeitpfad</h3>
+<ul>
+<li>Wenn <code>.ns</code> und <code>ns.*</code> im Spiel sind, ist der deklarative Pfad relevant.</li>
+<li>Wenn einzelne Kommandos direkt aufgerufen werden, ist meist die Shell-Runtime gemeint.</li>
+</ul>
+<h2 id="verwandte-seiten">Verwandte Seiten</h2>
+<ul>
+<li><a href="Architecture.html">Architecture</a></li>
+<li><a href="NovaRuntime.html">NovaRuntime</a></li>
+<li><a href="CLIAndLegacyRuntime.html">CLIAndLegacyRuntime</a></li>
+<li><a href="DataFlow.html">DataFlow</a></li>
 </ul>
         </article>
         <aside class="wiki-toc">
           <div class="wiki-toc-card"><h2>On this page</h2><ul>
-<li class="wiki-toc-link"><a href="#kerngedanke">Kerngedanke</a></li>
-<li class="wiki-toc-link"><a href="#pipeline">Pipeline</a></li>
-<li class="wiki-toc-link"><a href="#eigenschaften">Eigenschaften</a></li>
+<li class="wiki-toc-link"><a href="#zweck">Zweck</a></li>
+<li class="wiki-toc-link"><a href="#kernpunkte">Kernpunkte</a></li>
+<li class="wiki-toc-link"><a href="#praktische-nutzung">Praktische Nutzung</a></li>
+<li class="wiki-toc-link"><a href="#testbare-einstiege">Testbare Einstiege</a></li>
+<li class="wiki-toc-link level-3"><a href="#direkter-shelllauf-und-deklarativer-lauf-im-vergleich">Direkter Shelllauf und deklarativer Lauf im Vergleich</a></li>
+<li class="wiki-toc-link"><a href="#typische-fragen-und-fehler">Typische Fragen und Fehler</a></li>
+<li class="wiki-toc-link level-3"><a href="#unklarer-laufzeitpfad">Unklarer Laufzeitpfad</a></li>
+<li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
 </ul></div>
         </aside>
       </div>

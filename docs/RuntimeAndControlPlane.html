@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="Nova-shell wiki builder">
-  <title>Runtime and Control Plane | Nova-shell Wiki</title>
+  <title>Runtime And Control Plane | Nova-shell Wiki</title>
   <link rel="stylesheet" href="assets/wiki.css">
 </head>
 <body>
@@ -27,11 +27,14 @@
 <li><a class="wiki-nav-link" data-nav-href="GermanLanguage.html" href="GermanLanguage.html">GermanLanguage</a></li>
 <li><a class="wiki-nav-link" data-nav-href="QuickStart.html" href="QuickStart.html">QuickStart</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Installation.html" href="Installation.html">Installation</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Nutzung</h2>
 <ul>
 <li><a class="wiki-nav-link" data-nav-href="NovaCLI.html" href="NovaCLI.html">NovaCLI</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ShellCommandReference.html" href="ShellCommandReference.html">ShellCommandReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="APIReference.html" href="APIReference.html">APIReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ExamplesAndRecipes.html" href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Tutorials.html" href="Tutorials.html">Tutorials</a></li>
@@ -54,6 +57,7 @@
 <li><a class="wiki-nav-link" data-nav-href="ParserAndASTReference.html" href="ParserAndASTReference.html">ParserAndASTReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="RuntimeMethodReference.html" href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ClassReference.html" href="ClassReference.html">ClassReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="CodeReferenceIndex.html" href="CodeReferenceIndex.html">CodeReferenceIndex</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Plattformfunktionen</h2>
@@ -95,35 +99,63 @@
         <button type="button" class="wiki-nav-toggle" data-nav-toggle>Menu</button>
         <div class="wiki-header-copy">
           <span class="wiki-kicker">Nova-shell Documentation</span>
-          <h1>Runtime and Control Plane</h1>
+          <h1>Runtime And Control Plane</h1>
           <p>Source: RuntimeAndControlPlane.md</p>
         </div>
       </header>
       <div class="wiki-layout">
         <article class="wiki-article">
-          <h1 id="runtime-and-control-plane">Runtime and Control Plane</h1>
-<h2 id="fokus">Fokus</h2>
-<p>Diese Seite verbindet Runtime-Ausfuehrung mit Queue, Scheduling, API und Replay.</p>
-<h2 id="themen">Themen</h2>
+          <h1 id="runtime-and-control-plane">Runtime And Control Plane</h1>
+<h2 id="zweck">Zweck</h2>
+<p>Diese Seite fasst Runtimekern, Queue, Scheduler, API, Replay, State und Plattformzustand zusammen.</p>
+<h2 id="kernpunkte">Kernpunkte</h2>
 <ul>
-<li>Flow-Ausfuehrung</li>
-<li>Event-Bus</li>
-<li>Queueing und Scheduling</li>
-<li>Control-Plane-API</li>
-<li>Replay und Snapshot</li>
-<li>Consensus und Replication</li>
+<li><code>NovaRuntime</code> fuehrt deklarative Programme aus und verwaltet den geladenen Zustand.</li>
+<li><code>ns.control</code> exponiert Queue, Schedules, Daemon, API, State, Replication, Workflows, Services und Packages.</li>
+<li>Die Control Plane ist die Betriebsoberflaeche des AI-OS-Pfads.</li>
+</ul>
+<h2 id="praktische-nutzung">Praktische Nutzung</h2>
+<ul>
+<li>Verwende <code>ns.status</code> fuer den schnellen Runtime-Ueberblick.</li>
+<li>Verwende <code>ns.control status</code> fuer Plattform- und Control-Plane-Zustand.</li>
+<li>Verwende Queue-, Schedule- und Daemon-Kommandos fuer wiederholbare Workloads.</li>
+</ul>
+<h2 id="testbare-einstiege">Testbare Einstiege</h2>
+<h3 id="queue-und-daemon-pruefen">Queue und Daemon pruefen</h3>
+<pre><code class="language-powershell">ns.run .\control.ns
+ns.control queue enqueue queued_job
+ns.control queue run
+ns.control daemon tick 4
+ns.control status</code></pre>
+<p>Erwartung:</p>
+<ul>
+<li>Ein Queue-Task wird verarbeitet.</li>
+<li>Der Plattformstatus zeigt Event- und Schedule-Zaehler.</li>
+</ul>
+<h2 id="typische-fragen-und-fehler">Typische Fragen und Fehler</h2>
+<h3 id="ns-control-liefert-fehler"><code>ns.control</code> liefert Fehler</h3>
+<ul>
+<li>Es ist noch keine deklarative Runtime geladen.</li>
+<li>Der aufgerufene Unterpfad ist nur fuer Adminoperationen gedacht.</li>
+<li>Eine benoetigte Datei oder ein Snapshot fehlt.</li>
 </ul>
 <h2 id="verwandte-seiten">Verwandte Seiten</h2>
 <ul>
 <li><a href="NovaRuntime.html">NovaRuntime</a></li>
 <li><a href="APIReference.html">APIReference</a></li>
 <li><a href="OperationsAndObservability.html">OperationsAndObservability</a></li>
+<li><a href="SecurityModel.html">SecurityModel</a></li>
 </ul>
         </article>
         <aside class="wiki-toc">
           <div class="wiki-toc-card"><h2>On this page</h2><ul>
-<li class="wiki-toc-link"><a href="#fokus">Fokus</a></li>
-<li class="wiki-toc-link"><a href="#themen">Themen</a></li>
+<li class="wiki-toc-link"><a href="#zweck">Zweck</a></li>
+<li class="wiki-toc-link"><a href="#kernpunkte">Kernpunkte</a></li>
+<li class="wiki-toc-link"><a href="#praktische-nutzung">Praktische Nutzung</a></li>
+<li class="wiki-toc-link"><a href="#testbare-einstiege">Testbare Einstiege</a></li>
+<li class="wiki-toc-link level-3"><a href="#queue-und-daemon-pruefen">Queue und Daemon pruefen</a></li>
+<li class="wiki-toc-link"><a href="#typische-fragen-und-fehler">Typische Fragen und Fehler</a></li>
+<li class="wiki-toc-link level-3"><a href="#ns-control-liefert-fehler">`ns.control` liefert Fehler</a></li>
 <li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
 </ul></div>
         </aside>

@@ -27,11 +27,14 @@
 <li><a class="wiki-nav-link" data-nav-href="GermanLanguage.html" href="GermanLanguage.html">GermanLanguage</a></li>
 <li><a class="wiki-nav-link" data-nav-href="QuickStart.html" href="QuickStart.html">QuickStart</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Installation.html" href="Installation.html">Installation</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Nutzung</h2>
 <ul>
 <li><a class="wiki-nav-link" data-nav-href="NovaCLI.html" href="NovaCLI.html">NovaCLI</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ShellCommandReference.html" href="ShellCommandReference.html">ShellCommandReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="APIReference.html" href="APIReference.html">APIReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ExamplesAndRecipes.html" href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Tutorials.html" href="Tutorials.html">Tutorials</a></li>
@@ -54,6 +57,7 @@
 <li><a class="wiki-nav-link" data-nav-href="ParserAndASTReference.html" href="ParserAndASTReference.html">ParserAndASTReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="RuntimeMethodReference.html" href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ClassReference.html" href="ClassReference.html">ClassReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="CodeReferenceIndex.html" href="CodeReferenceIndex.html">CodeReferenceIndex</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Plattformfunktionen</h2>
@@ -103,19 +107,62 @@
         <article class="wiki-article">
           <h1 id="tutorial-lm-studio-integration">Tutorial: LM Studio Integration</h1>
 <h2 id="ziel">Ziel</h2>
-<p>Ein lokaler Modellpfad wird in denselben Workflow-Rahmen eingebettet wie andere Provider.</p>
-<h2 id="schritte">Schritte</h2>
-<ol>
-<li>Agent mit lokalem Provider definieren</li>
-<li>Eingabedaten bereitstellen</li>
-<li>Flow ausfuehren</li>
-<li>Resultat und Memory pruefen</li>
-</ol>
+<p>Dieses Tutorial zeigt, wie ein lokaler Modellpfad in denselben Workflow-Rahmen eingebettet wird wie andere Provider. Der Kernpunkt ist: Nova-shell trennt Providerwahl und Ablaufmodell.</p>
+<h2 id="voraussetzungen">Voraussetzungen</h2>
+<ul>
+<li>lokale Installation mit funktionierendem <code>doctor</code></li>
+<li>ein konfigurierter lokaler AI-Pfad oder ein kompatibler Provider</li>
+<li>Grundverstaendnis von Agenten in <code>.ns</code></li>
+</ul>
+<h2 id="schrittfolge">Schrittfolge</h2>
+<h3 id="1-providerstatus-pruefen">1. Providerstatus pruefen</h3>
+<pre><code class="language-powershell">doctor
+ai</code></pre>
+<h3 id="2-agentenkonfiguration-verstehen">2. Agentenkonfiguration verstehen</h3>
+<p>In Nova-shell wird der lokale Modellpfad nicht als Sonderfall des Gesamtflusses behandelt. Wichtig sind:</p>
+<ul>
+<li>Agentendefinition</li>
+<li>Providerwahl</li>
+<li>Modellname</li>
+<li>optionale Memory- oder Prompt-Konfiguration</li>
+</ul>
+<h3 id="3-deklarativen-ablauf-testen">3. Deklarativen Ablauf testen</h3>
+<p>Ein einfacher Weg ist, zuerst ein vorhandenes Agentenbeispiel mit <code>ns.graph</code> anzusehen und dann den Provider anzupassen.</p>
+<pre><code class="language-powershell">ns.graph examples\advanced_agent_fabric.ns</code></pre>
+<h3 id="4-ergebnis-und-memory-pruefen">4. Ergebnis und Memory pruefen</h3>
+<p>Nach der Ausfuehrung sollten Agentenoutput und gegebenenfalls der Memory-Pfad nachvollziehbar sein.</p>
+<h2 id="ergebnispruefung">Ergebnispruefung</h2>
+<p>Das Tutorial ist erfolgreich, wenn:</p>
+<ul>
+<li>der Agent ueber einen lokalen Provider angesprochen werden kann</li>
+<li>der restliche Flow unveraendert im Nova-Modell bleibt</li>
+<li>Prompt-, Tool- und Memory-Pfade weiterhin nachvollziehbar sind</li>
+</ul>
+<h2 id="typische-fehlerbilder">Typische Fehlerbilder</h2>
+<ul>
+<li>lokaler Provider nicht erreichbar</li>
+<li>Modellname stimmt nicht mit der lokalen Laufzeit ueberein</li>
+<li>der Provider ist verfuegbar, aber der deklarative Agent verweist noch auf einen anderen Pfad</li>
+</ul>
+<h2 id="verwandte-seiten">Verwandte Seiten</h2>
+<ul>
+<li><a href="NovaAgents.html">NovaAgents</a></li>
+<li><a href="NovaCLI.html">NovaCLI</a></li>
+<li><a href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
+</ul>
         </article>
         <aside class="wiki-toc">
           <div class="wiki-toc-card"><h2>On this page</h2><ul>
 <li class="wiki-toc-link"><a href="#ziel">Ziel</a></li>
-<li class="wiki-toc-link"><a href="#schritte">Schritte</a></li>
+<li class="wiki-toc-link"><a href="#voraussetzungen">Voraussetzungen</a></li>
+<li class="wiki-toc-link"><a href="#schrittfolge">Schrittfolge</a></li>
+<li class="wiki-toc-link level-3"><a href="#1-providerstatus-pruefen">1. Providerstatus pruefen</a></li>
+<li class="wiki-toc-link level-3"><a href="#2-agentenkonfiguration-verstehen">2. Agentenkonfiguration verstehen</a></li>
+<li class="wiki-toc-link level-3"><a href="#3-deklarativen-ablauf-testen">3. Deklarativen Ablauf testen</a></li>
+<li class="wiki-toc-link level-3"><a href="#4-ergebnis-und-memory-pruefen">4. Ergebnis und Memory pruefen</a></li>
+<li class="wiki-toc-link"><a href="#ergebnispruefung">Ergebnispruefung</a></li>
+<li class="wiki-toc-link"><a href="#typische-fehlerbilder">Typische Fehlerbilder</a></li>
+<li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
 </ul></div>
         </aside>
       </div>

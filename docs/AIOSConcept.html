@@ -27,11 +27,14 @@
 <li><a class="wiki-nav-link" data-nav-href="GermanLanguage.html" href="GermanLanguage.html">GermanLanguage</a></li>
 <li><a class="wiki-nav-link" data-nav-href="QuickStart.html" href="QuickStart.html">QuickStart</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Installation.html" href="Installation.html">Installation</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Nutzung</h2>
 <ul>
 <li><a class="wiki-nav-link" data-nav-href="NovaCLI.html" href="NovaCLI.html">NovaCLI</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ShellCommandReference.html" href="ShellCommandReference.html">ShellCommandReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="APIReference.html" href="APIReference.html">APIReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ExamplesAndRecipes.html" href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Tutorials.html" href="Tutorials.html">Tutorials</a></li>
@@ -54,6 +57,7 @@
 <li><a class="wiki-nav-link" data-nav-href="ParserAndASTReference.html" href="ParserAndASTReference.html">ParserAndASTReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="RuntimeMethodReference.html" href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ClassReference.html" href="ClassReference.html">ClassReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="CodeReferenceIndex.html" href="CodeReferenceIndex.html">CodeReferenceIndex</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Plattformfunktionen</h2>
@@ -102,21 +106,59 @@
       <div class="wiki-layout">
         <article class="wiki-article">
           <h1 id="ai-os-concept">AI OS Concept</h1>
-<h2 id="these">These</h2>
-<p>Nova-shell behandelt AI nicht als Zusatzfunktion, sondern als eigene Betriebsschicht.</p>
-<h2 id="warum-ai-os">Warum AI OS?</h2>
+<h2 id="zweck">Zweck</h2>
+<p>Nova-shell wird als AI Operating System beschrieben, weil es Sprache, Runtime, Scheduling, Memory, Agenten und Betriebsdienste in einer Laufzeit zusammenzieht.</p>
+<h2 id="kernpunkte">Kernpunkte</h2>
 <ul>
-<li>Sprache fuer Ressourcen und Verhalten</li>
-<li>Runtime fuer Agenten und Wissen</li>
-<li>Control Plane fuer Scheduling und Replay</li>
-<li>Service- und Traffic-Modelle</li>
-<li>Security, Trust und Operations</li>
+<li>Die Shell dient als Bedienoberflaeche fuer Compute, Daten, KI und Plattformzustand.</li>
+<li>Die Nova-Sprache beschreibt Systeme, Daten, Agenten, Flows und Events deklarativ.</li>
+<li>Die Runtime uebersetzt Deklarationen in einen ausfuehrbaren Graphen und betreibt Queue, State, Events, Mesh und API.</li>
+<li>Das OS-Bild ist funktional zu verstehen: Orchestrierung, Beobachtbarkeit, Sicherheit und Wiederaufnahme von Arbeit.</li>
+</ul>
+<h2 id="praktische-nutzung">Praktische Nutzung</h2>
+<ul>
+<li>Nutze die CLI fuer lokale Interaktion und Diagnose.</li>
+<li>Nutze <code>.ns</code>-Dateien fuer reproduzierbare Programme und Systemmodelle.</li>
+<li>Nutze <code>ns.control</code>, <code>mesh</code>, <code>guard</code> und <code>wiki</code>, wenn aus einer Runtime eine Plattform werden soll.</li>
+</ul>
+<h2 id="testbare-einstiege">Testbare Einstiege</h2>
+<h3 id="vom-shellkommando-zur-plattform">Vom Shellkommando zur Plattform</h3>
+<pre><code class="language-powershell">doctor
+ns.run .\control.ns
+ns.control status
+mesh start-worker --caps cpu,py
+wiki build</code></pre>
+<p>Erwartung:</p>
+<ul>
+<li>Die lokale Installation ist verifiziert.</li>
+<li>Die deklarative Runtime ist aktiv.</li>
+<li>Ein Worker und die HTML-Wiki erweitern die Shell um Plattformdienste.</li>
+</ul>
+<h2 id="typische-fragen-und-fehler">Typische Fragen und Fehler</h2>
+<h3 id="was-das-ai-os-nicht-automatisch-bedeutet">Was das AI-OS nicht automatisch bedeutet</h3>
+<ul>
+<li>Es ist kein vollstaendiges allgemeines Betriebssystem wie Windows oder Linux.</li>
+<li>Globale Infrastruktur, SRE und reales Multi-Region-Betriebsmodell liegen ausserhalb des Repos.</li>
+<li>Die Metapher beschreibt die Orchestrierungs- und Laufzeitschicht des Projekts.</li>
+</ul>
+<h2 id="verwandte-seiten">Verwandte Seiten</h2>
+<ul>
+<li><a href="Architecture.html">Architecture</a></li>
+<li><a href="NovaRuntime.html">NovaRuntime</a></li>
+<li><a href="RuntimeAndControlPlane.html">RuntimeAndControlPlane</a></li>
+<li><a href="Research.html">Research</a></li>
 </ul>
         </article>
         <aside class="wiki-toc">
           <div class="wiki-toc-card"><h2>On this page</h2><ul>
-<li class="wiki-toc-link"><a href="#these">These</a></li>
-<li class="wiki-toc-link"><a href="#warum-ai-os">Warum AI OS?</a></li>
+<li class="wiki-toc-link"><a href="#zweck">Zweck</a></li>
+<li class="wiki-toc-link"><a href="#kernpunkte">Kernpunkte</a></li>
+<li class="wiki-toc-link"><a href="#praktische-nutzung">Praktische Nutzung</a></li>
+<li class="wiki-toc-link"><a href="#testbare-einstiege">Testbare Einstiege</a></li>
+<li class="wiki-toc-link level-3"><a href="#vom-shellkommando-zur-plattform">Vom Shellkommando zur Plattform</a></li>
+<li class="wiki-toc-link"><a href="#typische-fragen-und-fehler">Typische Fragen und Fehler</a></li>
+<li class="wiki-toc-link level-3"><a href="#was-das-ai-os-nicht-automatisch-bedeutet">Was das AI-OS nicht automatisch bedeutet</a></li>
+<li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
 </ul></div>
         </aside>
       </div>

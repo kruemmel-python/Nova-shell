@@ -27,11 +27,14 @@
 <li><a class="wiki-nav-link" data-nav-href="GermanLanguage.html" href="GermanLanguage.html">GermanLanguage</a></li>
 <li><a class="wiki-nav-link" data-nav-href="QuickStart.html" href="QuickStart.html">QuickStart</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Installation.html" href="Installation.html">Installation</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Nutzung</h2>
 <ul>
 <li><a class="wiki-nav-link" data-nav-href="NovaCLI.html" href="NovaCLI.html">NovaCLI</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ShellCommandReference.html" href="ShellCommandReference.html">ShellCommandReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="APIReference.html" href="APIReference.html">APIReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ExamplesAndRecipes.html" href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Tutorials.html" href="Tutorials.html">Tutorials</a></li>
@@ -54,6 +57,7 @@
 <li><a class="wiki-nav-link" data-nav-href="ParserAndASTReference.html" href="ParserAndASTReference.html">ParserAndASTReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="RuntimeMethodReference.html" href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ClassReference.html" href="ClassReference.html">ClassReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="CodeReferenceIndex.html" href="CodeReferenceIndex.html">CodeReferenceIndex</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Plattformfunktionen</h2>
@@ -102,24 +106,56 @@
       <div class="wiki-layout">
         <article class="wiki-article">
           <h1 id="nova-memory">Nova Memory</h1>
-<h2 id="rolle">Rolle</h2>
-<p>Nova Memory umfasst persistente Wissens- und Speicherschichten fuer Flows und Agenten.</p>
-<h2 id="ebenen">Ebenen</h2>
+<h2 id="zweck">Zweck</h2>
+<p>Nova Memory ist die semantische Speicherschicht fuer Shell- und Agentpfade. Die Seite erklaert Scope, Embedding und Retrieval im Projektkontext.</p>
+<h2 id="kernpunkte">Kernpunkte</h2>
 <ul>
-<li>Flow State</li>
-<li>Agent Memory</li>
-<li>Embedding Records</li>
-<li>Vector Search</li>
-<li>Namespaces und Projekte</li>
+<li>Memory ist in Namespace und Projekt gegliedert.</li>
+<li>Eintraege koennen explizit, aus Dateien oder indirekt aus Agentlaeufen entstehen.</li>
+<li>Die Memory-Schicht ist lokal und leichtgewichtig genug fuer schnelle Iteration.</li>
+<li>Agenten und Atheria koennen Memory als Kontextquelle verwenden.</li>
 </ul>
-<h2 id="nutzen">Nutzen</h2>
-<p>Memory ist Teil der Runtime-Semantik und nicht nur ein externer Zusatzdienst.</p>
+<h2 id="praktische-nutzung">Praktische Nutzung</h2>
+<ul>
+<li>Setze Namespace und Projekt bewusst, bevor du Inhalte schreibst.</li>
+<li>Nutze <code>--file</code> und <code>--meta</code> fuer nachvollziehbare Einbettungen aus echten Artefakten.</li>
+<li>Nutze <code>memory status</code>, wenn du Scope-Fehler vermutest.</li>
+</ul>
+<h2 id="testbare-einstiege">Testbare Einstiege</h2>
+<h3 id="scope-und-retrieval-pruefen">Scope und Retrieval pruefen</h3>
+<pre><code class="language-powershell">memory namespace docs
+memory project wiki
+memory embed --id intro &quot;Nova-shell ist eine deklarative Runtime mit CLI und Mesh.&quot;
+memory search &quot;Mesh Runtime&quot;</code></pre>
+<p>Erwartung:</p>
+<ul>
+<li>Der Eintrag wird im aktiven Scope gespeichert.</li>
+<li>Die Suche liefert einen semantisch passenden Treffer.</li>
+</ul>
+<h2 id="typische-fragen-und-fehler">Typische Fragen und Fehler</h2>
+<h3 id="treffer-liegen-im-falschen-projekt">Treffer liegen im falschen Projekt</h3>
+<ul>
+<li>Namespace oder Projekt wurden vor dem Embed nicht gesetzt.</li>
+<li>Es wurde mit <code>--all</code> oder in einem anderen Scope gesucht.</li>
+</ul>
+<h2 id="verwandte-seiten">Verwandte Seiten</h2>
+<ul>
+<li><a href="AgentsAndKnowledge.html">AgentsAndKnowledge</a></li>
+<li><a href="NovaAgents.html">NovaAgents</a></li>
+<li><a href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
+<li><a href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
+</ul>
         </article>
         <aside class="wiki-toc">
           <div class="wiki-toc-card"><h2>On this page</h2><ul>
-<li class="wiki-toc-link"><a href="#rolle">Rolle</a></li>
-<li class="wiki-toc-link"><a href="#ebenen">Ebenen</a></li>
-<li class="wiki-toc-link"><a href="#nutzen">Nutzen</a></li>
+<li class="wiki-toc-link"><a href="#zweck">Zweck</a></li>
+<li class="wiki-toc-link"><a href="#kernpunkte">Kernpunkte</a></li>
+<li class="wiki-toc-link"><a href="#praktische-nutzung">Praktische Nutzung</a></li>
+<li class="wiki-toc-link"><a href="#testbare-einstiege">Testbare Einstiege</a></li>
+<li class="wiki-toc-link level-3"><a href="#scope-und-retrieval-pruefen">Scope und Retrieval pruefen</a></li>
+<li class="wiki-toc-link"><a href="#typische-fragen-und-fehler">Typische Fragen und Fehler</a></li>
+<li class="wiki-toc-link level-3"><a href="#treffer-liegen-im-falschen-projekt">Treffer liegen im falschen Projekt</a></li>
+<li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
 </ul></div>
         </aside>
       </div>

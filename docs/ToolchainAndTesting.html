@@ -27,11 +27,14 @@
 <li><a class="wiki-nav-link" data-nav-href="GermanLanguage.html" href="GermanLanguage.html">GermanLanguage</a></li>
 <li><a class="wiki-nav-link" data-nav-href="QuickStart.html" href="QuickStart.html">QuickStart</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Installation.html" href="Installation.html">Installation</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Nutzung</h2>
 <ul>
 <li><a class="wiki-nav-link" data-nav-href="NovaCLI.html" href="NovaCLI.html">NovaCLI</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ShellCommandReference.html" href="ShellCommandReference.html">ShellCommandReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="APIReference.html" href="APIReference.html">APIReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ExamplesAndRecipes.html" href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Tutorials.html" href="Tutorials.html">Tutorials</a></li>
@@ -54,6 +57,7 @@
 <li><a class="wiki-nav-link" data-nav-href="ParserAndASTReference.html" href="ParserAndASTReference.html">ParserAndASTReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="RuntimeMethodReference.html" href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ClassReference.html" href="ClassReference.html">ClassReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="CodeReferenceIndex.html" href="CodeReferenceIndex.html">CodeReferenceIndex</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Plattformfunktionen</h2>
@@ -102,9 +106,9 @@
       <div class="wiki-layout">
         <article class="wiki-article">
           <h1 id="toolchain-and-testing">Toolchain and Testing</h1>
-<h2 id="fokus">Fokus</h2>
-<p>Diese Seite verbindet Sprachtooling und Testpfade.</p>
-<h2 id="themen">Themen</h2>
+<h2 id="zweck">Zweck</h2>
+<p>Diese Seite verbindet Sprachtooling und Testpfade. Sie beschreibt die Werkzeuge, die fuer <code>.ns</code>-Quelltext, Toolchain-Konsistenz und Entwicklerproduktivitaet wichtig sind.</p>
+<h2 id="kernpunkte">Kernpunkte</h2>
 <ul>
 <li>Imports</li>
 <li>Lockfiles</li>
@@ -114,17 +118,42 @@
 <li><code>.ns</code>-Tests</li>
 <li>Runtime- und Shell-Tests</li>
 </ul>
+<h2 id="praktische-nutzung">Praktische Nutzung</h2>
+<h3 id="typischer-arbeitsablauf">Typischer Arbeitsablauf</h3>
+<ol>
+<li><code>.ns</code>-Quelle schreiben oder aendern</li>
+<li>Graph oder Ausfuehrung pruefen</li>
+<li>Tests fuer Sprache und Runtime ausfuehren</li>
+<li>bei Bedarf HTML-Wiki oder Release-Helfer pruefen</li>
+</ol>
+<h3 id="relevante-kommandos">Relevante Kommandos</h3>
+<pre><code class="language-powershell">ns.graph
+ns.run
+python -m unittest tests.test_nova_language
+wiki build</code></pre>
+<h2 id="typische-werkzeuge-im-projekt">Typische Werkzeuge im Projekt</h2>
+<ul>
+<li>Parser- und AST-Pfade fuer Sprachstruktur</li>
+<li>Referenzseiten fuer Klassen und Methoden</li>
+<li>Unittest-basierte Regressionstests</li>
+<li>Wiki als Langform-Dokumentation und Beispielebene</li>
+</ul>
 <h2 id="verwandte-seiten">Verwandte Seiten</h2>
 <ul>
 <li><a href="NovaLanguage.html">NovaLanguage</a></li>
 <li><a href="Testing.html">Testing</a></li>
 <li><a href="DevelopmentGuide.html">DevelopmentGuide</a></li>
+<li><a href="ParserAndASTReference.html">ParserAndASTReference</a></li>
 </ul>
         </article>
         <aside class="wiki-toc">
           <div class="wiki-toc-card"><h2>On this page</h2><ul>
-<li class="wiki-toc-link"><a href="#fokus">Fokus</a></li>
-<li class="wiki-toc-link"><a href="#themen">Themen</a></li>
+<li class="wiki-toc-link"><a href="#zweck">Zweck</a></li>
+<li class="wiki-toc-link"><a href="#kernpunkte">Kernpunkte</a></li>
+<li class="wiki-toc-link"><a href="#praktische-nutzung">Praktische Nutzung</a></li>
+<li class="wiki-toc-link level-3"><a href="#typischer-arbeitsablauf">Typischer Arbeitsablauf</a></li>
+<li class="wiki-toc-link level-3"><a href="#relevante-kommandos">Relevante Kommandos</a></li>
+<li class="wiki-toc-link"><a href="#typische-werkzeuge-im-projekt">Typische Werkzeuge im Projekt</a></li>
 <li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
 </ul></div>
         </aside>

@@ -27,11 +27,14 @@
 <li><a class="wiki-nav-link" data-nav-href="GermanLanguage.html" href="GermanLanguage.html">GermanLanguage</a></li>
 <li><a class="wiki-nav-link" data-nav-href="QuickStart.html" href="QuickStart.html">QuickStart</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Installation.html" href="Installation.html">Installation</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Nutzung</h2>
 <ul>
 <li><a class="wiki-nav-link" data-nav-href="NovaCLI.html" href="NovaCLI.html">NovaCLI</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ShellCommandReference.html" href="ShellCommandReference.html">ShellCommandReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="APIReference.html" href="APIReference.html">APIReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ExamplesAndRecipes.html" href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Tutorials.html" href="Tutorials.html">Tutorials</a></li>
@@ -54,6 +57,7 @@
 <li><a class="wiki-nav-link" data-nav-href="ParserAndASTReference.html" href="ParserAndASTReference.html">ParserAndASTReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="RuntimeMethodReference.html" href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ClassReference.html" href="ClassReference.html">ClassReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="CodeReferenceIndex.html" href="CodeReferenceIndex.html">CodeReferenceIndex</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Plattformfunktionen</h2>
@@ -102,32 +106,72 @@
       <div class="wiki-layout">
         <article class="wiki-article">
           <h1 id="data-flow">Data Flow</h1>
-<h2 id="datenformen">Datenformen</h2>
+<h2 id="zweck">Zweck</h2>
+<p>Diese Seite beschreibt, wie Daten, Steuerfluss und Ereignisse durch Nova-shell laufen. Wichtig ist die Trennung zwischen Datenkanten und Kontrollkanten.</p>
+<h2 id="kernpunkte">Kernpunkte</h2>
 <ul>
-<li>primitive Werte</li>
-<li>Listen und Records</li>
-<li>Datasets</li>
-<li>Flow-Outputs</li>
-<li>State-Werte</li>
-<li>Memory- und Embedding-Daten</li>
+<li>Datasets bringen Daten in den Graphen ein.</li>
+<li>Flows transformieren Daten ueber Tools, Backends und Agenten.</li>
+<li>State speichert Ergebnisse oder Zwischenschritte persistent.</li>
+<li>Events aktivieren Flows, ohne selbst Nutzdaten verarbeiten zu muessen.</li>
 </ul>
-<h2 id="hauptpfade">Hauptpfade</h2>
-<ol>
-<li>CLI-Pipelines</li>
-<li>Dataset-Referenzen</li>
-<li>State-Store</li>
-<li>Agent Memory</li>
-<li>Mesh-Dispatch</li>
-<li>Service- und Traffic-Metadaten</li>
-</ol>
-<h2 id="persistenz">Persistenz</h2>
-<p>Nova-shell kann Datenfluesse ueber State, Event-Log, Workflow-Store, Replikation und Traces nachvollziehbar halten.</p>
+<h2 id="praktische-nutzung">Praktische Nutzung</h2>
+<ul>
+<li>Lies einen Flow immer als Kette von Ein- und Ausgabewerten.</li>
+<li>Pruefe bei Fehlern zuerst, ob Datenwerte oder Event-Ausloeser fehlen.</li>
+<li>Nutze <code>ns.graph</code>, wenn unklar ist, in welcher Reihenfolge Knoten verbunden wurden.</li>
+</ul>
+<h2 id="testbare-einstiege">Testbare Einstiege</h2>
+<h3 id="einfache-event-zu-flow-kette">Einfache Event-zu-Flow-Kette</h3>
+<p>Lege zuerst ein minimales Programm als Datei an und fuehre es danach aus.</p>
+<pre><code class="language-powershell">@&quot;
+system control_plane {
+  daemon_autostart: false
+}
+
+flow queued_job {
+  system.log &quot;queued&quot; -&gt; queue_output
+  state.set queue_value queue_output
+}
+
+event ping_handler {
+  on: ping
+  flow: queued_job
+}
+&quot;@ | Set-Content .\control.ns
+ns.run .\control.ns
+event emit ping now
+ns.control events ping 0 10</code></pre>
+<p>Erwartung:</p>
+<ul>
+<li>Das Event wird geloggt.</li>
+<li>Der zugeordnete Flow wird danach ausgeloest.</li>
+</ul>
+<h2 id="typische-fragen-und-fehler">Typische Fragen und Fehler</h2>
+<h3 id="ein-flow-bekommt-keine-eingabe">Ein Flow bekommt keine Eingabe</h3>
+<ul>
+<li>Ein vorheriger Knoten hat nichts geliefert.</li>
+<li>Der Event-Pfad wurde nicht ausgelost.</li>
+<li>Der State-Eintrag wurde unter einem anderen Schluessel geschrieben.</li>
+</ul>
+<h2 id="verwandte-seiten">Verwandte Seiten</h2>
+<ul>
+<li><a href="ExecutionModel.html">ExecutionModel</a></li>
+<li><a href="ComponentModel.html">ComponentModel</a></li>
+<li><a href="NovaRuntime.html">NovaRuntime</a></li>
+<li><a href="NovaGraphEngine.html">NovaGraphEngine</a></li>
+</ul>
         </article>
         <aside class="wiki-toc">
           <div class="wiki-toc-card"><h2>On this page</h2><ul>
-<li class="wiki-toc-link"><a href="#datenformen">Datenformen</a></li>
-<li class="wiki-toc-link"><a href="#hauptpfade">Hauptpfade</a></li>
-<li class="wiki-toc-link"><a href="#persistenz">Persistenz</a></li>
+<li class="wiki-toc-link"><a href="#zweck">Zweck</a></li>
+<li class="wiki-toc-link"><a href="#kernpunkte">Kernpunkte</a></li>
+<li class="wiki-toc-link"><a href="#praktische-nutzung">Praktische Nutzung</a></li>
+<li class="wiki-toc-link"><a href="#testbare-einstiege">Testbare Einstiege</a></li>
+<li class="wiki-toc-link level-3"><a href="#einfache-event-zu-flow-kette">Einfache Event-zu-Flow-Kette</a></li>
+<li class="wiki-toc-link"><a href="#typische-fragen-und-fehler">Typische Fragen und Fehler</a></li>
+<li class="wiki-toc-link level-3"><a href="#ein-flow-bekommt-keine-eingabe">Ein Flow bekommt keine Eingabe</a></li>
+<li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
 </ul></div>
         </aside>
       </div>

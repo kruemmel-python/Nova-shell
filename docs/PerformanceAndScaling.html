@@ -27,11 +27,14 @@
 <li><a class="wiki-nav-link" data-nav-href="GermanLanguage.html" href="GermanLanguage.html">GermanLanguage</a></li>
 <li><a class="wiki-nav-link" data-nav-href="QuickStart.html" href="QuickStart.html">QuickStart</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Installation.html" href="Installation.html">Installation</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Nutzung</h2>
 <ul>
 <li><a class="wiki-nav-link" data-nav-href="NovaCLI.html" href="NovaCLI.html">NovaCLI</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ShellCommandReference.html" href="ShellCommandReference.html">ShellCommandReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="APIReference.html" href="APIReference.html">APIReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ExamplesAndRecipes.html" href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Tutorials.html" href="Tutorials.html">Tutorials</a></li>
@@ -54,6 +57,7 @@
 <li><a class="wiki-nav-link" data-nav-href="ParserAndASTReference.html" href="ParserAndASTReference.html">ParserAndASTReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="RuntimeMethodReference.html" href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ClassReference.html" href="ClassReference.html">ClassReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="CodeReferenceIndex.html" href="CodeReferenceIndex.html">CodeReferenceIndex</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Plattformfunktionen</h2>
@@ -102,15 +106,17 @@
       <div class="wiki-layout">
         <article class="wiki-article">
           <h1 id="performance-and-scaling">Performance and Scaling</h1>
+<h2 id="zweck">Zweck</h2>
+<p>Diese Seite beschreibt die wichtigsten Skalierungsachsen von Nova-shell und die Stellen, an denen Performancefragen im System sichtbar werden.</p>
 <h2 id="skalierungsachsen">Skalierungsachsen</h2>
 <ul>
 <li>lokale vs. verteilte Ausfuehrung</li>
 <li>mehr Worker im Mesh</li>
 <li>mehr Service-Replicas</li>
 <li>hoehere Queue- und Scheduler-Last</li>
-<li>groeßere Agent- und Memory-Arbeitsmengen</li>
+<li>groessere Agent-, Memory- und Datenmengen</li>
 </ul>
-<h2 id="hebel">Hebel</h2>
+<h2 id="wichtige-hebel">Wichtige Hebel</h2>
 <ul>
 <li>passende Backends waehlen</li>
 <li>Worker-Capabilities sauber trennen</li>
@@ -118,11 +124,44 @@
 <li>Observability fuer Bottlenecks nutzen</li>
 <li>Load-Tests regelmaessig ausfuehren</li>
 </ul>
+<h2 id="praktische-nutzung">Praktische Nutzung</h2>
+<h3 id="lokale-last-von-verteilter-last-trennen">Lokale Last von verteilter Last trennen</h3>
+<p>Wenn ein Flow lokal langsam ist, sollte zuerst geprueft werden, ob das Problem im Parser-, Tool- oder Agent-Pfad liegt. Wenn die Last erst im Cluster sichtbar wird, sind Mesh-, Queue- oder Service-Fabric-Pfade wahrscheinlicher.</p>
+<h3 id="diagnose-mit-cli">Diagnose mit CLI</h3>
+<pre><code class="language-powershell">doctor
+ns.status
+ns.control</code></pre>
+<h3 id="typische-skalierungsentscheidungen">Typische Skalierungsentscheidungen</h3>
+<ul>
+<li>CPU- oder C++-Last eher ueber dedizierte Worker-Klassen ausfuehren</li>
+<li>GPU-Last nur auf Worker mit passenden Capabilities routen</li>
+<li>Agenten- und Atheria-Pfade getrennt beobachten, wenn Memory oder Embeddings stark wachsen</li>
+</ul>
+<h2 id="typische-fehlerbilder">Typische Fehlerbilder</h2>
+<h3 id="queue-waechst-aber-nichts-wird-schneller">Queue waechst, aber nichts wird schneller</h3>
+<p>Dann ist oft nicht die Queue selbst das Problem, sondern fehlende Worker-Kapazitaet oder eine zu grobe Routing-Aufteilung.</p>
+<h3 id="service-ist-gesund-aber-langsam">Service ist gesund, aber langsam</h3>
+<p>Dann sollten Traffic-Plane, Probes und Replica-Verteilung geprueft werden.</p>
+<h2 id="verwandte-seiten">Verwandte Seiten</h2>
+<ul>
+<li><a href="NovaMesh.html">NovaMesh</a></li>
+<li><a href="ServiceFabricAndTrafficPlane.html">ServiceFabricAndTrafficPlane</a></li>
+<li><a href="OperationsAndObservability.html">OperationsAndObservability</a></li>
+</ul>
         </article>
         <aside class="wiki-toc">
           <div class="wiki-toc-card"><h2>On this page</h2><ul>
+<li class="wiki-toc-link"><a href="#zweck">Zweck</a></li>
 <li class="wiki-toc-link"><a href="#skalierungsachsen">Skalierungsachsen</a></li>
-<li class="wiki-toc-link"><a href="#hebel">Hebel</a></li>
+<li class="wiki-toc-link"><a href="#wichtige-hebel">Wichtige Hebel</a></li>
+<li class="wiki-toc-link"><a href="#praktische-nutzung">Praktische Nutzung</a></li>
+<li class="wiki-toc-link level-3"><a href="#lokale-last-von-verteilter-last-trennen">Lokale Last von verteilter Last trennen</a></li>
+<li class="wiki-toc-link level-3"><a href="#diagnose-mit-cli">Diagnose mit CLI</a></li>
+<li class="wiki-toc-link level-3"><a href="#typische-skalierungsentscheidungen">Typische Skalierungsentscheidungen</a></li>
+<li class="wiki-toc-link"><a href="#typische-fehlerbilder">Typische Fehlerbilder</a></li>
+<li class="wiki-toc-link level-3"><a href="#queue-waechst-aber-nichts-wird-schneller">Queue waechst, aber nichts wird schneller</a></li>
+<li class="wiki-toc-link level-3"><a href="#service-ist-gesund-aber-langsam">Service ist gesund, aber langsam</a></li>
+<li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
 </ul></div>
         </aside>
       </div>

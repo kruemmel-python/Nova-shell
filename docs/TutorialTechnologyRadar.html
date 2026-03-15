@@ -27,11 +27,14 @@
 <li><a class="wiki-nav-link" data-nav-href="GermanLanguage.html" href="GermanLanguage.html">GermanLanguage</a></li>
 <li><a class="wiki-nav-link" data-nav-href="QuickStart.html" href="QuickStart.html">QuickStart</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Installation.html" href="Installation.html">Installation</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Nutzung</h2>
 <ul>
 <li><a class="wiki-nav-link" data-nav-href="NovaCLI.html" href="NovaCLI.html">NovaCLI</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ShellCommandReference.html" href="ShellCommandReference.html">ShellCommandReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="APIReference.html" href="APIReference.html">APIReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ExamplesAndRecipes.html" href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Tutorials.html" href="Tutorials.html">Tutorials</a></li>
@@ -54,6 +57,7 @@
 <li><a class="wiki-nav-link" data-nav-href="ParserAndASTReference.html" href="ParserAndASTReference.html">ParserAndASTReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="RuntimeMethodReference.html" href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ClassReference.html" href="ClassReference.html">ClassReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="CodeReferenceIndex.html" href="CodeReferenceIndex.html">CodeReferenceIndex</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Plattformfunktionen</h2>
@@ -103,22 +107,71 @@
         <article class="wiki-article">
           <h1 id="tutorial-technology-radar">Tutorial: Technology Radar</h1>
 <h2 id="ziel">Ziel</h2>
-<p>Ein einfacher Radar-Workflow sammelt Signale und laesst sie durch einen Agenten verdichten.</p>
+<p>Ein einfacher Radar-Workflow sammelt Signale aus einem Dataset und laesst sie durch einen Agenten verdichten. Dieses Tutorial ist der beste erste Lauf fuer die deklarative Sprache.</p>
+<h2 id="voraussetzungen">Voraussetzungen</h2>
+<ul>
+<li>funktionierende Installation, geprueft mit <code>doctor</code></li>
+<li>Zugriff auf die Beispielprogramme im Ordner <code>examples</code></li>
+<li>eine Runtime, die <code>ns.graph</code> und <code>ns.run</code> ausfuehren kann</li>
+</ul>
+<h2 id="beispielprogramm">Beispielprogramm</h2>
+<p>Das Tutorial basiert auf der Datei <code>examples/market_radar.ns</code> im Repository. Die dortige Struktur kombiniert:</p>
+<ul>
+<li><code>system</code> fuer lokale Runtime-Konfiguration</li>
+<li><code>state</code> fuer Memory/Knowledge-Namespace</li>
+<li><code>agent researcher</code></li>
+<li><code>dataset tech_rss</code></li>
+<li><code>flow radar</code></li>
+<li><code>event new_information</code></li>
+</ul>
 <h2 id="schritte">Schritte</h2>
+<h3 id="1-graph-anzeigen">1. Graph anzeigen</h3>
+<pre><code class="language-powershell">ns.graph examples\market_radar.ns</code></pre>
+<p>Erwartung: Die Runtime zeigt dir die kompilierten Knoten und deren Reihenfolge.</p>
+<h3 id="2-programm-ausfuehren">2. Programm ausfuehren</h3>
+<pre><code class="language-powershell">ns.run examples\market_radar.ns</code></pre>
+<p>Erwartung: Dataset, Embedding-Pfad und Agent-Schritt werden durchlaufen.</p>
+<h3 id="3-ergebnis-interpretieren">3. Ergebnis interpretieren</h3>
+<p>Achte auf diese inhaltlichen Rollen:</p>
+<ul>
+<li><code>rss.fetch tech_rss -&gt; fresh_news</code></li>
+<li><code>atheria.embed tech_rss -&gt; embedded_news</code></li>
+<li><code>researcher summarize tech_rss -&gt; briefing</code></li>
+</ul>
+<p>Damit siehst du die drei Grundachsen des Systems:</p>
 <ol>
-<li>Dataset definieren</li>
-<li>Agent definieren</li>
-<li>Flow anlegen</li>
-<li><code>ns.run</code> ausfuehren</li>
+<li>Daten laden</li>
+<li>Wissen oder Embeddings aufbauen</li>
+<li>Agentenaktion auf den Daten ausfuehren</li>
 </ol>
-<h2 id="ergebnis">Ergebnis</h2>
-<p>Ein strukturierter Radar-Output fuer weitere Analyse oder Reports.</p>
+<h2 id="ergebnispruefung">Ergebnispruefung</h2>
+<p>Wenn <code>ns.graph</code> funktioniert, aber <code>ns.run</code> nicht, liegt das Problem meist nicht in der Syntax, sondern in Runtime, Datenpfad oder Provider-Konfiguration.</p>
+<h2 id="was-dieses-tutorial-lehrt">Was dieses Tutorial lehrt</h2>
+<ul>
+<li>Grundsyntax von <code>.ns</code></li>
+<li>Datenfluss in einem einfachen Graph</li>
+<li>Zusammenspiel von Dataset, Agent, Memory und Atheria</li>
+</ul>
+<h2 id="verwandte-seiten">Verwandte Seiten</h2>
+<ul>
+<li><a href="NovaLanguage.html">NovaLanguage</a></li>
+<li><a href="NovaGraphEngine.html">NovaGraphEngine</a></li>
+<li><a href="DataFlow.html">DataFlow</a></li>
+<li><a href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
+</ul>
         </article>
         <aside class="wiki-toc">
           <div class="wiki-toc-card"><h2>On this page</h2><ul>
 <li class="wiki-toc-link"><a href="#ziel">Ziel</a></li>
+<li class="wiki-toc-link"><a href="#voraussetzungen">Voraussetzungen</a></li>
+<li class="wiki-toc-link"><a href="#beispielprogramm">Beispielprogramm</a></li>
 <li class="wiki-toc-link"><a href="#schritte">Schritte</a></li>
-<li class="wiki-toc-link"><a href="#ergebnis">Ergebnis</a></li>
+<li class="wiki-toc-link level-3"><a href="#1-graph-anzeigen">1. Graph anzeigen</a></li>
+<li class="wiki-toc-link level-3"><a href="#2-programm-ausfuehren">2. Programm ausfuehren</a></li>
+<li class="wiki-toc-link level-3"><a href="#3-ergebnis-interpretieren">3. Ergebnis interpretieren</a></li>
+<li class="wiki-toc-link"><a href="#ergebnispruefung">Ergebnispruefung</a></li>
+<li class="wiki-toc-link"><a href="#was-dieses-tutorial-lehrt">Was dieses Tutorial lehrt</a></li>
+<li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
 </ul></div>
         </aside>
       </div>

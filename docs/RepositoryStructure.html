@@ -27,11 +27,14 @@
 <li><a class="wiki-nav-link" data-nav-href="GermanLanguage.html" href="GermanLanguage.html">GermanLanguage</a></li>
 <li><a class="wiki-nav-link" data-nav-href="QuickStart.html" href="QuickStart.html">QuickStart</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Installation.html" href="Installation.html">Installation</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Nutzung</h2>
 <ul>
 <li><a class="wiki-nav-link" data-nav-href="NovaCLI.html" href="NovaCLI.html">NovaCLI</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ShellCommandReference.html" href="ShellCommandReference.html">ShellCommandReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="APIReference.html" href="APIReference.html">APIReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ExamplesAndRecipes.html" href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Tutorials.html" href="Tutorials.html">Tutorials</a></li>
@@ -54,6 +57,7 @@
 <li><a class="wiki-nav-link" data-nav-href="ParserAndASTReference.html" href="ParserAndASTReference.html">ParserAndASTReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="RuntimeMethodReference.html" href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ClassReference.html" href="ClassReference.html">ClassReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="CodeReferenceIndex.html" href="CodeReferenceIndex.html">CodeReferenceIndex</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Plattformfunktionen</h2>
@@ -102,6 +106,8 @@
       <div class="wiki-layout">
         <article class="wiki-article">
           <h1 id="repository-structure">Repository Structure</h1>
+<h2 id="zweck">Zweck</h2>
+<p>Diese Seite ordnet den Quellbaum von Nova-shell und zeigt, wo welche Verantwortung liegt. Sie ist eine Orientierungsseite fuer Entwickler, Reviewer und Dokumentationsarbeit.</p>
 <h2 id="top-level">Top-Level</h2>
 <pre><code class="language-text">nova/
 tests/
@@ -113,19 +119,52 @@ WIKI/
 nova_shell.py
 novascript.py</code></pre>
 <h2 id="wichtige-bereiche">Wichtige Bereiche</h2>
+<h3 id="nova-parser"><code>nova/parser</code></h3>
+<p>Parser, AST und Sprachnahe Syntaxverarbeitung fuer <code>.ns</code>.</p>
+<h3 id="nova-graph"><code>nova/graph</code></h3>
+<p>Execution-Graph-Modell, Compiler und Knotenstrukturen.</p>
+<h3 id="nova-runtime"><code>nova/runtime</code></h3>
+<p>Deklarative Runtime, Control Plane, Scheduling, Security, Operations und Service-nahe Plattformlogik.</p>
+<h3 id="nova-agents"><code>nova/agents</code></h3>
+<p>Agent Runtime, Provider-Pfade, Memory, Prompts, Evals und Tool-Sandboxing.</p>
+<h3 id="nova-mesh"><code>nova/mesh</code></h3>
+<p>Verteilte Worker- und Remote-Ausfuehrung.</p>
+<h3 id="tests"><code>tests</code></h3>
+<p>Unit-, Integrations- und Shell-nahe Tests.</p>
+<h3 id="scripts"><code>scripts</code></h3>
+<p>Build-, Release-, Packaging- und Upgrade-Helfer.</p>
+<h3 id="wiki"><code>WIKI</code></h3>
+<p>Projektinterne Langform-Dokumentation, Referenz- und Tutorialseiten.</p>
+<h2 id="praktischer-lesepfad">Praktischer Lesepfad</h2>
+<p>Wer eine neue Funktion verstehen will, sollte meist in dieser Reihenfolge lesen:</p>
+<ol>
+<li>passende Wiki-Seite</li>
+<li>Referenzseite in <a href="CodeReferenceIndex.html">CodeReferenceIndex</a></li>
+<li>Implementierung im passenden <code>nova/*</code>-Subsystem</li>
+<li>zugehoerige Tests</li>
+</ol>
+<h2 id="verwandte-seiten">Verwandte Seiten</h2>
 <ul>
-<li><code>nova/parser</code></li>
-<li><code>nova/graph</code></li>
-<li><code>nova/runtime</code></li>
-<li><code>nova/agents</code></li>
-<li><code>nova/mesh</code></li>
-<li><code>tests</code></li>
+<li><a href="Subsystems.html">Subsystems</a></li>
+<li><a href="DevelopmentGuide.html">DevelopmentGuide</a></li>
+<li><a href="CodeReferenceIndex.html">CodeReferenceIndex</a></li>
 </ul>
         </article>
         <aside class="wiki-toc">
           <div class="wiki-toc-card"><h2>On this page</h2><ul>
+<li class="wiki-toc-link"><a href="#zweck">Zweck</a></li>
 <li class="wiki-toc-link"><a href="#top-level">Top-Level</a></li>
 <li class="wiki-toc-link"><a href="#wichtige-bereiche">Wichtige Bereiche</a></li>
+<li class="wiki-toc-link level-3"><a href="#nova-parser">`nova/parser`</a></li>
+<li class="wiki-toc-link level-3"><a href="#nova-graph">`nova/graph`</a></li>
+<li class="wiki-toc-link level-3"><a href="#nova-runtime">`nova/runtime`</a></li>
+<li class="wiki-toc-link level-3"><a href="#nova-agents">`nova/agents`</a></li>
+<li class="wiki-toc-link level-3"><a href="#nova-mesh">`nova/mesh`</a></li>
+<li class="wiki-toc-link level-3"><a href="#tests">`tests`</a></li>
+<li class="wiki-toc-link level-3"><a href="#scripts">`scripts`</a></li>
+<li class="wiki-toc-link level-3"><a href="#wiki">`WIKI`</a></li>
+<li class="wiki-toc-link"><a href="#praktischer-lesepfad">Praktischer Lesepfad</a></li>
+<li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
 </ul></div>
         </aside>
       </div>

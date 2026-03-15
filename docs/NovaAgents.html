@@ -27,11 +27,14 @@
 <li><a class="wiki-nav-link" data-nav-href="GermanLanguage.html" href="GermanLanguage.html">GermanLanguage</a></li>
 <li><a class="wiki-nav-link" data-nav-href="QuickStart.html" href="QuickStart.html">QuickStart</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Installation.html" href="Installation.html">Installation</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Nutzung</h2>
 <ul>
 <li><a class="wiki-nav-link" data-nav-href="NovaCLI.html" href="NovaCLI.html">NovaCLI</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ShellCommandReference.html" href="ShellCommandReference.html">ShellCommandReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="APIReference.html" href="APIReference.html">APIReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ExamplesAndRecipes.html" href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Tutorials.html" href="Tutorials.html">Tutorials</a></li>
@@ -54,6 +57,7 @@
 <li><a class="wiki-nav-link" data-nav-href="ParserAndASTReference.html" href="ParserAndASTReference.html">ParserAndASTReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="RuntimeMethodReference.html" href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ClassReference.html" href="ClassReference.html">ClassReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="CodeReferenceIndex.html" href="CodeReferenceIndex.html">CodeReferenceIndex</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Plattformfunktionen</h2>
@@ -103,15 +107,7 @@
         <article class="wiki-article">
           <h1 id="nova-agents">Nova Agents</h1>
 <h2 id="zweck">Zweck</h2>
-<p>Agenten sind in Nova-shell deklarierte, wiederverwendbare Laufzeitobjekte mit:</p>
-<ul>
-<li>Provider- und Modellauswahl</li>
-<li>Tool-Freigaben</li>
-<li>Memory-Scope</li>
-<li>Prompt-Versionen</li>
-<li>Governance</li>
-<li>Evaluationen</li>
-</ul>
+<p>Agenten sind in Nova-shell deklarierte, wiederverwendbare Laufzeitobjekte mit Provider- und Modellauswahl, Tool-Freigaben, Memory-Scope, Prompt-Versionen, Governance und Evaluationen.</p>
 <h2 id="kernobjekte">Kernobjekte</h2>
 <table><thead><tr>
 <th>Klasse</th>
@@ -131,11 +127,11 @@
 </tr>
 <tr>
 <td><code>AgentRuntime</code></td>
-<td>Registrierung und Ausfuehrung</td>
+<td>Registrierung, Aufloesung und Ausfuehrung</td>
 </tr>
 <tr>
 <td><code>PromptRegistry</code></td>
-<td>Prompt-Versionen</td>
+<td>Verwaltung von Prompt-Versionen</td>
 </tr>
 <tr>
 <td><code>DistributedMemoryStore</code></td>
@@ -143,36 +139,48 @@
 </tr>
 <tr>
 <td><code>AgentEvalStore</code></td>
-<td>Auswertungsdaten</td>
+<td>Auswertungsdaten und Bewertungsartefakte</td>
 </tr>
 <tr>
 <td><code>ToolSandbox</code></td>
-<td>Tool-Freigabe und Governance</td>
+<td>Tool-Freigabe, Begrenzung und Governance</td>
 </tr>
 </tbody></table>
+<h2 id="agent-lebenszyklus">Agent-Lebenszyklus</h2>
+<pre><code class="language-text">Declaration
+  -&gt;
+AgentRuntime.register()
+  -&gt;
+AgentTask
+  -&gt;
+Governance
+  -&gt;
+Prompt Resolution
+  -&gt;
+Provider Invocation oder lokales Rendern
+  -&gt;
+Memory Write
+  -&gt;
+Evaluation</code></pre>
 <h2 id="methoden-und-schnittstellen">Methoden und Schnittstellen</h2>
-<p><code>AgentRuntime</code>:</p>
+<p>Wichtige <code>AgentRuntime</code>-Schnittstellen:</p>
 <ul>
 <li><code>register(declaration)</code></li>
 <li><code>specification(name)</code></li>
 <li><code>execute(task, context)</code></li>
 </ul>
-<h3 id="agent-lebenszyklus">Agent-Lebenszyklus</h3>
-<pre><code class="language-text">Declaration
-  ↓
-AgentRuntime.register()
-  ↓
-AgentTask
-  ↓
-Governance
-  ↓
-Prompt Resolution
-  ↓
-Provider Invocation oder lokales Rendern
-  ↓
-Memory Write
-  ↓
-Evaluation</code></pre>
+<p>Wichtige Agentenfelder in <code>.ns</code>:</p>
+<ul>
+<li><code>provider</code></li>
+<li><code>providers</code></li>
+<li><code>model</code></li>
+<li><code>tools</code></li>
+<li><code>memory</code></li>
+<li><code>system_prompt</code></li>
+<li><code>prompts</code></li>
+<li><code>prompt_version</code></li>
+<li><code>governance</code></li>
+</ul>
 <h2 id="cli">CLI</h2>
 <p>Typische Agent-Kommandos:</p>
 <ul>
@@ -188,33 +196,69 @@ Evaluation</code></pre>
 <li><code>/agents/evals</code></li>
 <li><code>/agents/memory</code></li>
 </ul>
-<h2 id="beispiele">Beispiele</h2>
+<h2 id="testbare-beispiele">Testbare Beispiele</h2>
+<h3 id="deklarativer-agent">Deklarativer Agent</h3>
 <pre><code class="language-ns">agent reviewer {
   provider: openai
   model: gpt-4o-mini
   tools: [memory.search, system.log]
   memory: review
 }</code></pre>
+<h3 id="cli-beispiel">CLI-Beispiel</h3>
 <pre><code class="language-text">agent create analyst &quot;Summarize {{input}}&quot;
 agent run analyst quarterly report
 agent graph create review_chain --nodes analyst,reviewer</code></pre>
+<h3 id="python-beispiel">Python-Beispiel</h3>
+<pre><code class="language-python">from nova.agents.runtime import AgentRuntime, AgentSpecification, AgentTask
+
+agents = AgentRuntime()
+agents.register(
+    AgentSpecification(
+        name=&quot;researcher&quot;,
+        model=&quot;gpt-4o-mini&quot;,
+        tools=[&quot;system.log&quot;],
+    )
+)
+
+result = agents.execute(
+    AgentTask(
+        agent=&quot;researcher&quot;,
+        objective=&quot;Summarize the current dataset&quot;,
+    )
+)
+print(result.output)</code></pre>
+<h2 id="typische-fehler-und-fragen">Typische Fehler und Fragen</h2>
+<h3 id="warum-antwortet-ein-agent-anders-als-erwartet">Warum antwortet ein Agent anders als erwartet?</h3>
+<p>Dann muessen meist Prompt-Version, Providerwahl, Governance oder Tool-Freigaben geprueft werden.</p>
+<h3 id="wo-landet-agent-memory">Wo landet Agent-Memory?</h3>
+<p>Im konfigurierten Memory-Scope oder Namespace, nicht als loses Nebenprodukt.</p>
+<h3 id="woran-erkenne-ich-ob-ein-agent-lokal-oder-extern-arbeitet">Woran erkenne ich, ob ein Agent lokal oder extern arbeitet?</h3>
+<p>An Provider, Modell und Runtime-Kontext.</p>
 <h2 id="verwandte-seiten">Verwandte Seiten</h2>
 <ul>
-<li><a href="ClassReference.html">ClassReference</a></li>
+<li><a href="AgentsAndKnowledge.html">AgentsAndKnowledge</a></li>
+<li><a href="NovaMemory.html">NovaMemory</a></li>
+<li><a href="NovaTools.html">NovaTools</a></li>
 <li><a href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
 <li><a href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
-<li><a href="PageTemplate.html">PageTemplate</a></li>
 </ul>
         </article>
         <aside class="wiki-toc">
           <div class="wiki-toc-card"><h2>On this page</h2><ul>
 <li class="wiki-toc-link"><a href="#zweck">Zweck</a></li>
 <li class="wiki-toc-link"><a href="#kernobjekte">Kernobjekte</a></li>
+<li class="wiki-toc-link"><a href="#agent-lebenszyklus">Agent-Lebenszyklus</a></li>
 <li class="wiki-toc-link"><a href="#methoden-und-schnittstellen">Methoden und Schnittstellen</a></li>
-<li class="wiki-toc-link level-3"><a href="#agent-lebenszyklus">Agent-Lebenszyklus</a></li>
 <li class="wiki-toc-link"><a href="#cli">CLI</a></li>
 <li class="wiki-toc-link"><a href="#api">API</a></li>
-<li class="wiki-toc-link"><a href="#beispiele">Beispiele</a></li>
+<li class="wiki-toc-link"><a href="#testbare-beispiele">Testbare Beispiele</a></li>
+<li class="wiki-toc-link level-3"><a href="#deklarativer-agent">Deklarativer Agent</a></li>
+<li class="wiki-toc-link level-3"><a href="#cli-beispiel">CLI-Beispiel</a></li>
+<li class="wiki-toc-link level-3"><a href="#python-beispiel">Python-Beispiel</a></li>
+<li class="wiki-toc-link"><a href="#typische-fehler-und-fragen">Typische Fehler und Fragen</a></li>
+<li class="wiki-toc-link level-3"><a href="#warum-antwortet-ein-agent-anders-als-erwartet">Warum antwortet ein Agent anders als erwartet?</a></li>
+<li class="wiki-toc-link level-3"><a href="#wo-landet-agent-memory">Wo landet Agent-Memory?</a></li>
+<li class="wiki-toc-link level-3"><a href="#woran-erkenne-ich-ob-ein-agent-lokal-oder-extern-arbeitet">Woran erkenne ich, ob ein Agent lokal oder extern arbeitet?</a></li>
 <li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
 </ul></div>
         </aside>

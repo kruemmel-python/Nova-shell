@@ -27,11 +27,14 @@
 <li><a class="wiki-nav-link" data-nav-href="GermanLanguage.html" href="GermanLanguage.html">GermanLanguage</a></li>
 <li><a class="wiki-nav-link" data-nav-href="QuickStart.html" href="QuickStart.html">QuickStart</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Installation.html" href="Installation.html">Installation</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Nutzung</h2>
 <ul>
 <li><a class="wiki-nav-link" data-nav-href="NovaCLI.html" href="NovaCLI.html">NovaCLI</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ShellCommandReference.html" href="ShellCommandReference.html">ShellCommandReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="APIReference.html" href="APIReference.html">APIReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ExamplesAndRecipes.html" href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Tutorials.html" href="Tutorials.html">Tutorials</a></li>
@@ -54,6 +57,7 @@
 <li><a class="wiki-nav-link" data-nav-href="ParserAndASTReference.html" href="ParserAndASTReference.html">ParserAndASTReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="RuntimeMethodReference.html" href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ClassReference.html" href="ClassReference.html">ClassReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="CodeReferenceIndex.html" href="CodeReferenceIndex.html">CodeReferenceIndex</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Plattformfunktionen</h2>
@@ -103,14 +107,7 @@
         <article class="wiki-article">
           <h1 id="nova-mesh">Nova Mesh</h1>
 <h2 id="zweck">Zweck</h2>
-<p>Nova Mesh ist die verteilte Ausfuehrungsschicht von Nova-shell. Sie verbindet:</p>
-<ul>
-<li>Worker-Registrierung</li>
-<li>Capability-basierten Dispatch</li>
-<li>lokale und entfernte Executor-Pfade</li>
-<li>Heartbeats und Health</li>
-<li>verteilte Aufgabenverteilung</li>
-</ul>
+<p>Nova Mesh ist die verteilte Ausfuehrungsschicht von Nova-shell. Sie verbindet Worker-Registrierung, Capability-basierten Dispatch, lokale und entfernte Executor-Pfade, Health-Signale und standardisierte Aufgabenverteilung.</p>
 <h2 id="kernobjekte">Kernobjekte</h2>
 <table><thead><tr>
 <th>Klasse</th>
@@ -118,15 +115,15 @@
 </tr></thead><tbody>
 <tr>
 <td><code>WorkerNode</code></td>
-<td>Repräsentation eines Workers</td>
+<td>Repräsentation eines Workers mit Endpoint, Capabilities und Metadaten</td>
 </tr>
 <tr>
 <td><code>MeshRegistry</code></td>
-<td>Registry und Dispatch-Logik</td>
+<td>Registry, Auswahl und Dispatch-Logik</td>
 </tr>
 <tr>
 <td><code>PersistentMeshControlPlane</code></td>
-<td>persistente Mesh-Task-Historie</td>
+<td>persistente Mesh-Task- und Worker-Historie</td>
 </tr>
 <tr>
 <td><code>ExecutorTask</code></td>
@@ -138,25 +135,34 @@
 </tr>
 <tr>
 <td><code>MeshWorkerServer</code></td>
-<td>lokaler Worker-Prozess in der CLI-Runtime</td>
+<td>Worker-Prozess in der CLI-Runtime</td>
 </tr>
 <tr>
 <td><code>NativeExecutorManager</code></td>
-<td>lokale Executor-Verwaltung</td>
+<td>Verwaltung lokaler nativer Executor</td>
 </tr>
 </tbody></table>
+<h2 id="worker-lebenszyklus">Worker-Lebenszyklus</h2>
+<pre><code class="language-text">register
+  -&gt;
+heartbeat
+  -&gt;
+capability match
+  -&gt;
+task dispatch
+  -&gt;
+result / status / retry</code></pre>
 <h2 id="methoden-und-schnittstellen">Methoden und Schnittstellen</h2>
-<p>Wichtige Registry- und Worker-Schnittstellen:</p>
+<p>Wichtige Mesh-Operationen:</p>
 <ul>
 <li>Worker registrieren</li>
 <li>Heartbeats senden</li>
 <li>Capabilities matchen</li>
 <li>Tasks dispatchen</li>
-<li>Executor-Ergebnisse zurueckgeben</li>
+<li>Ergebnisse zurueckgeben</li>
+<li>Health und Status auswerten</li>
 </ul>
-<h3 id="worker-lebenszyklus">Worker-Lebenszyklus</h3>
-<pre><code class="language-text">register -&gt; heartbeat -&gt; capability match -&gt; task dispatch -&gt; result</code></pre>
-<h3 id="capability-modell">Capability-Modell</h3>
+<h2 id="capability-modell">Capability-Modell</h2>
 <p>Typische Capabilities:</p>
 <ul>
 <li><code>py</code></li>
@@ -165,30 +171,28 @@
 <li><code>wasm</code></li>
 <li><code>ai</code></li>
 </ul>
+<p>Diese Capabilities steuern, welche Worker fuer welche Aufgaben in Frage kommen.</p>
 <h2 id="cli">CLI</h2>
 <p>Typische Mesh-Kommandos:</p>
 <pre><code class="language-text">mesh start-worker --caps py,gpu
 mesh beat
 mesh intelligent-run py 1 + 1
 mesh stop-worker</code></pre>
+<p>Je nach Aufbau kann zusaetzlich mit <code>mesh add</code>, <code>mesh list</code> oder Control-Plane-Kommandos gearbeitet werden.</p>
 <h2 id="api">API</h2>
-<p>Mesh-relevante API-Bereiche:</p>
+<p>Mesh-relevante API-Bereiche umfassen:</p>
 <ul>
+<li>Worker- und Registry-Zustaende</li>
 <li>Konsens- und Peer-Endpunkte</li>
 <li>Executor-Status</li>
-<li>Replikationsstatus</li>
+<li>Replikations- und Dispatch-Status</li>
 </ul>
-<h2 id="beispiele">Beispiele</h2>
-<h3 id="declarative-runtime-und-mesh">Declarative Runtime und Mesh</h3>
-<p>Relevante Metadaten fuer Placement:</p>
-<ul>
-<li><code>capability</code></li>
-<li><code>selector</code></li>
-<li><code>tenant</code></li>
-<li><code>namespace</code></li>
-<li><code>require_tls</code></li>
-</ul>
-<h3 id="python-beispiel">Python-Beispiel</h3>
+<p>Details stehen in <a href="APIReference.html">APIReference</a>.</p>
+<h2 id="testbare-beispiele">Testbare Beispiele</h2>
+<h3 id="worker-lokal-starten">Worker lokal starten</h3>
+<pre><code class="language-powershell">mesh start-worker --caps py,gpu
+mesh beat</code></pre>
+<h3 id="registry-aus-python-pruefen">Registry aus Python pruefen</h3>
 <pre><code class="language-python">from nova.mesh.registry import MeshRegistry, WorkerNode
 
 registry = MeshRegistry()
@@ -199,26 +203,52 @@ registry.register(
         capabilities={&quot;gpu&quot;, &quot;py&quot;},
     )
 )</code></pre>
+<h3 id="deklarative-platzierungsmetadaten">Deklarative Platzierungsmetadaten</h3>
+<p>Relevante Metadaten in <code>.ns</code>-Programmen:</p>
+<ul>
+<li><code>capability</code></li>
+<li><code>selector</code></li>
+<li><code>tenant</code></li>
+<li><code>namespace</code></li>
+<li><code>require_tls</code></li>
+</ul>
+<h2 id="typische-fehler-und-fragen">Typische Fehler und Fragen</h2>
+<h3 id="warum-wird-ein-task-nicht-verteilt">Warum wird ein Task nicht verteilt?</h3>
+<p>Oft passt keine Capability, der Worker ist nicht registriert oder Policy- und Trust-Anforderungen verhindern den Dispatch.</p>
+<h3 id="wann-ist-mesh-ueberhaupt-relevant">Wann ist Mesh ueberhaupt relevant?</h3>
+<p>Sobald Last, Spezialisierung oder Isolation nicht mehr nur lokal abgebildet werden sollen.</p>
+<h3 id="was-pruefe-ich-zuerst">Was pruefe ich zuerst?</h3>
+<ol>
+<li>Worker-Status</li>
+<li>Heartbeats</li>
+<li>Capability-Match</li>
+<li>Trust- und TLS-Anforderungen</li>
+</ol>
 <h2 id="verwandte-seiten">Verwandte Seiten</h2>
 <ul>
-<li><a href="ClassReference.html">ClassReference</a></li>
+<li><a href="MeshAndDistributedExecution.html">MeshAndDistributedExecution</a></li>
 <li><a href="NovaRuntime.html">NovaRuntime</a></li>
+<li><a href="SecurityAndTrust.html">SecurityAndTrust</a></li>
 <li><a href="APIReference.html">APIReference</a></li>
-<li><a href="PageTemplate.html">PageTemplate</a></li>
 </ul>
         </article>
         <aside class="wiki-toc">
           <div class="wiki-toc-card"><h2>On this page</h2><ul>
 <li class="wiki-toc-link"><a href="#zweck">Zweck</a></li>
 <li class="wiki-toc-link"><a href="#kernobjekte">Kernobjekte</a></li>
+<li class="wiki-toc-link"><a href="#worker-lebenszyklus">Worker-Lebenszyklus</a></li>
 <li class="wiki-toc-link"><a href="#methoden-und-schnittstellen">Methoden und Schnittstellen</a></li>
-<li class="wiki-toc-link level-3"><a href="#worker-lebenszyklus">Worker-Lebenszyklus</a></li>
-<li class="wiki-toc-link level-3"><a href="#capability-modell">Capability-Modell</a></li>
+<li class="wiki-toc-link"><a href="#capability-modell">Capability-Modell</a></li>
 <li class="wiki-toc-link"><a href="#cli">CLI</a></li>
 <li class="wiki-toc-link"><a href="#api">API</a></li>
-<li class="wiki-toc-link"><a href="#beispiele">Beispiele</a></li>
-<li class="wiki-toc-link level-3"><a href="#declarative-runtime-und-mesh">Declarative Runtime und Mesh</a></li>
-<li class="wiki-toc-link level-3"><a href="#python-beispiel">Python-Beispiel</a></li>
+<li class="wiki-toc-link"><a href="#testbare-beispiele">Testbare Beispiele</a></li>
+<li class="wiki-toc-link level-3"><a href="#worker-lokal-starten">Worker lokal starten</a></li>
+<li class="wiki-toc-link level-3"><a href="#registry-aus-python-pruefen">Registry aus Python pruefen</a></li>
+<li class="wiki-toc-link level-3"><a href="#deklarative-platzierungsmetadaten">Deklarative Platzierungsmetadaten</a></li>
+<li class="wiki-toc-link"><a href="#typische-fehler-und-fragen">Typische Fehler und Fragen</a></li>
+<li class="wiki-toc-link level-3"><a href="#warum-wird-ein-task-nicht-verteilt">Warum wird ein Task nicht verteilt?</a></li>
+<li class="wiki-toc-link level-3"><a href="#wann-ist-mesh-ueberhaupt-relevant">Wann ist Mesh ueberhaupt relevant?</a></li>
+<li class="wiki-toc-link level-3"><a href="#was-pruefe-ich-zuerst">Was pruefe ich zuerst?</a></li>
 <li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
 </ul></div>
         </aside>

@@ -27,11 +27,14 @@
 <li><a class="wiki-nav-link" data-nav-href="GermanLanguage.html" href="GermanLanguage.html">GermanLanguage</a></li>
 <li><a class="wiki-nav-link active" data-nav-href="QuickStart.html" href="QuickStart.html">QuickStart</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Installation.html" href="Installation.html">Installation</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Nutzung</h2>
 <ul>
 <li><a class="wiki-nav-link" data-nav-href="NovaCLI.html" href="NovaCLI.html">NovaCLI</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ShellCommandReference.html" href="ShellCommandReference.html">ShellCommandReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="APIReference.html" href="APIReference.html">APIReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ExamplesAndRecipes.html" href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Tutorials.html" href="Tutorials.html">Tutorials</a></li>
@@ -54,6 +57,7 @@
 <li><a class="wiki-nav-link" data-nav-href="ParserAndASTReference.html" href="ParserAndASTReference.html">ParserAndASTReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="RuntimeMethodReference.html" href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ClassReference.html" href="ClassReference.html">ClassReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="CodeReferenceIndex.html" href="CodeReferenceIndex.html">CodeReferenceIndex</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Plattformfunktionen</h2>
@@ -103,22 +107,35 @@
         <article class="wiki-article">
           <h1 id="quick-start">Quick Start</h1>
 <h2 id="ziel">Ziel</h2>
-<p>Innerhalb weniger Minuten:</p>
+<p>Innerhalb weniger Minuten sollst du:</p>
 <ul>
-<li>Shell starten</li>
-<li>ersten Befehl ausfuehren</li>
-<li>erstes <code>.ns</code>-Programm laufen lassen</li>
-<li>Plattformstatus abrufen</li>
+<li>die Shell starten</li>
+<li>die Installation pruefen</li>
+<li>einen ersten lokalen Befehl ausfuehren</li>
+<li>einen Graph inspizieren</li>
+<li>ein erstes <code>.ns</code>-Programm laufen lassen</li>
+<li>den Plattformstatus ansehen</li>
 </ul>
-<h2 id="1-shell-starten">1. Shell starten</h2>
-<pre><code class="language-bash">python -m nova_shell</code></pre>
-<p>oder nach Installation:</p>
-<pre><code class="language-bash">nova-shell</code></pre>
-<h2 id="2-erster-befehl">2. Erster Befehl</h2>
+<h2 id="voraussetzungen">Voraussetzungen</h2>
+<ul>
+<li>Python <code>3.12+</code> oder eine installierte Nova-shell-Distribution</li>
+<li>Projektroot oder installierter <code>nova-shell</code>-Befehl</li>
+</ul>
+<h2 id="1-installation-pruefen">1. Installation pruefen</h2>
+<pre><code class="language-powershell">doctor</code></pre>
+<p>Wenn <code>doctor</code> erfolgreich laeuft, sind Shell, Laufzeitfaehigkeiten und optionale Module sichtbar.</p>
+<h2 id="2-shell-starten">2. Shell starten</h2>
+<p>Aus dem Quellbaum:</p>
+<pre><code class="language-powershell">python -m nova_shell</code></pre>
+<p>Nach Installation:</p>
+<pre><code class="language-powershell">nova-shell</code></pre>
+<h2 id="3-ersten-lokalen-befehl-ausfuehren">3. Ersten lokalen Befehl ausfuehren</h2>
 <pre><code class="language-text">nova&gt; py 1 + 1
 2</code></pre>
-<h2 id="3-erste-nova-datei">3. Erste Nova-Datei</h2>
-<pre><code class="language-text">agent helper {
+<p>Damit pruefst du den interaktiven Compute-Pfad.</p>
+<h2 id="4-ein-erstes-ns-programm-anlegen">4. Ein erstes <code>.ns</code>-Programm anlegen</h2>
+<p>Datei <code>hello.ns</code>:</p>
+<pre><code class="language-ns">agent helper {
   model: local
 }
 
@@ -129,25 +146,56 @@ dataset notes {
 flow boot {
   helper summarize notes -&gt; result
 }</code></pre>
-<p>Ausfuehrung:</p>
+<h2 id="5-zuerst-den-graph-ansehen">5. Zuerst den Graph ansehen</h2>
+<pre><code class="language-text">nova&gt; ns.graph hello.ns</code></pre>
+<p>Das ist der schnellste Weg, Syntax und Struktur zu pruefen, bevor du ausfuehrst.</p>
+<h2 id="6-danach-ausfuehren">6. Danach ausfuehren</h2>
 <pre><code class="language-text">nova&gt; ns.run hello.ns</code></pre>
-<h2 id="4-status">4. Status</h2>
+<h2 id="7-plattformstatus-ansehen">7. Plattformstatus ansehen</h2>
 <pre><code class="language-text">nova&gt; ns.status</code></pre>
-<h2 id="n-chste-schritte">Nächste Schritte</h2>
+<h2 id="8-optional-die-html-wiki-bauen">8. Optional die HTML-Wiki bauen</h2>
+<pre><code class="language-text">nova&gt; wiki build</code></pre>
+<p>Damit pruefst du zusaetzlich den Dokumentations- und Toolchain-Pfad.</p>
+<h2 id="was-du-danach-tun-solltest">Was du danach tun solltest</h2>
+<ul>
+<li><a href="Installation.html">Installation</a> fuer saubere Setups und MSI-Pfade</li>
+<li><a href="NovaCLI.html">NovaCLI</a> fuer die gesamte Befehlsoberflaeche</li>
+<li><a href="NovaLanguage.html">NovaLanguage</a> fuer die Sprache selbst</li>
+<li><a href="ExamplesAndRecipes.html">ExamplesAndRecipes</a> fuer mehr konkrete Ablaufe</li>
+</ul>
+<h2 id="typische-fehler">Typische Fehler</h2>
+<h3 id="nova-shell-wird-nicht-gefunden"><code>nova-shell</code> wird nicht gefunden</h3>
+<p>Dann entweder <code>python -m nova_shell</code> nutzen oder die Installation pruefen.</p>
+<h3 id="ns-run-scheitert-aber-ns-graph-geht"><code>ns.run</code> scheitert, aber <code>ns.graph</code> geht</h3>
+<p>Dann ist die Syntax meist korrekt und das Problem liegt eher in Runtime, Provider, Datenpfad oder Tool-Ausfuehrung.</p>
+<h3 id="doctor-zeigt-fehlende-faehigkeiten"><code>doctor</code> zeigt fehlende Faehigkeiten</h3>
+<p>Dann zuerst <a href="Installation.html">Installation</a> und <a href="Troubleshooting.html">Troubleshooting</a> lesen.</p>
+<h2 id="verwandte-seiten">Verwandte Seiten</h2>
 <ul>
 <li><a href="Installation.html">Installation</a></li>
 <li><a href="NovaCLI.html">NovaCLI</a></li>
 <li><a href="NovaLanguage.html">NovaLanguage</a></li>
+<li><a href="Troubleshooting.html">Troubleshooting</a></li>
 </ul>
         </article>
         <aside class="wiki-toc">
           <div class="wiki-toc-card"><h2>On this page</h2><ul>
 <li class="wiki-toc-link"><a href="#ziel">Ziel</a></li>
-<li class="wiki-toc-link"><a href="#1-shell-starten">1. Shell starten</a></li>
-<li class="wiki-toc-link"><a href="#2-erster-befehl">2. Erster Befehl</a></li>
-<li class="wiki-toc-link"><a href="#3-erste-nova-datei">3. Erste Nova-Datei</a></li>
-<li class="wiki-toc-link"><a href="#4-status">4. Status</a></li>
-<li class="wiki-toc-link"><a href="#n-chste-schritte">Nächste Schritte</a></li>
+<li class="wiki-toc-link"><a href="#voraussetzungen">Voraussetzungen</a></li>
+<li class="wiki-toc-link"><a href="#1-installation-pruefen">1. Installation pruefen</a></li>
+<li class="wiki-toc-link"><a href="#2-shell-starten">2. Shell starten</a></li>
+<li class="wiki-toc-link"><a href="#3-ersten-lokalen-befehl-ausfuehren">3. Ersten lokalen Befehl ausfuehren</a></li>
+<li class="wiki-toc-link"><a href="#4-ein-erstes-ns-programm-anlegen">4. Ein erstes `.ns`-Programm anlegen</a></li>
+<li class="wiki-toc-link"><a href="#5-zuerst-den-graph-ansehen">5. Zuerst den Graph ansehen</a></li>
+<li class="wiki-toc-link"><a href="#6-danach-ausfuehren">6. Danach ausfuehren</a></li>
+<li class="wiki-toc-link"><a href="#7-plattformstatus-ansehen">7. Plattformstatus ansehen</a></li>
+<li class="wiki-toc-link"><a href="#8-optional-die-html-wiki-bauen">8. Optional die HTML-Wiki bauen</a></li>
+<li class="wiki-toc-link"><a href="#was-du-danach-tun-solltest">Was du danach tun solltest</a></li>
+<li class="wiki-toc-link"><a href="#typische-fehler">Typische Fehler</a></li>
+<li class="wiki-toc-link level-3"><a href="#nova-shell-wird-nicht-gefunden">`nova-shell` wird nicht gefunden</a></li>
+<li class="wiki-toc-link level-3"><a href="#ns-run-scheitert-aber-ns-graph-geht">`ns.run` scheitert, aber `ns.graph` geht</a></li>
+<li class="wiki-toc-link level-3"><a href="#doctor-zeigt-fehlende-faehigkeiten">`doctor` zeigt fehlende Faehigkeiten</a></li>
+<li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
 </ul></div>
         </aside>
       </div>

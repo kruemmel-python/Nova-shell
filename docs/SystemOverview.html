@@ -27,11 +27,14 @@
 <li><a class="wiki-nav-link" data-nav-href="GermanLanguage.html" href="GermanLanguage.html">GermanLanguage</a></li>
 <li><a class="wiki-nav-link" data-nav-href="QuickStart.html" href="QuickStart.html">QuickStart</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Installation.html" href="Installation.html">Installation</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Nutzung</h2>
 <ul>
 <li><a class="wiki-nav-link" data-nav-href="NovaCLI.html" href="NovaCLI.html">NovaCLI</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ShellCommandReference.html" href="ShellCommandReference.html">ShellCommandReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="APIReference.html" href="APIReference.html">APIReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ExamplesAndRecipes.html" href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Tutorials.html" href="Tutorials.html">Tutorials</a></li>
@@ -54,6 +57,7 @@
 <li><a class="wiki-nav-link" data-nav-href="ParserAndASTReference.html" href="ParserAndASTReference.html">ParserAndASTReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="RuntimeMethodReference.html" href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ClassReference.html" href="ClassReference.html">ClassReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="CodeReferenceIndex.html" href="CodeReferenceIndex.html">CodeReferenceIndex</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Plattformfunktionen</h2>
@@ -103,28 +107,27 @@
         <article class="wiki-article">
           <h1 id="system-overview">System Overview</h1>
 <h2 id="zweck">Zweck</h2>
-<p>Diese Seite ordnet die wichtigsten Subsysteme von Nova-shell ein. Sie ist die kompakte technische Uebersicht fuer Leser, die zunaechst die Systemschichten und ihre Rollen verstehen wollen.</p>
-<h2 id="kernobjekte">Kernobjekte</h2>
-<h3 id="subsysteme-im-projekt">Subsysteme im Projekt</h3>
+<p>Diese Seite ordnet die wichtigsten Subsysteme von Nova-shell ein. Sie ist die kompakte technische Uebersicht fuer Leser, die zuerst die Systemschichten, ihre Rollen und ihre Beziehungen verstehen wollen.</p>
+<h2 id="schichten-des-systems">Schichten des Systems</h2>
 <table><thead><tr>
-<th>Bereich</th>
+<th>Schicht</th>
 <th>Rolle</th>
-<th>Zentrale Klassen</th>
+<th>Typische Einstiegspunkte</th>
 </tr></thead><tbody>
 <tr>
 <td>CLI</td>
-<td>interaktive Nutzung, Routing und lokale Befehle</td>
-<td><code>NovaShell</code>, <code>CommandResult</code></td>
+<td>interaktive Nutzung, lokales Routing, Shell-Kommandos</td>
+<td><code>nova_shell.py</code>, <code>NovaShell</code>, <code>ShellCommandReference</code></td>
 </tr>
 <tr>
 <td>Engines</td>
-<td>lokale Ausfuehrung fuer Compute und Daten</td>
-<td><code>PythonEngine</code>, <code>CppEngine</code>, <code>GPUEngine</code>, <code>WasmEngine</code>, <code>DataEngine</code>, <code>SystemEngine</code></td>
+<td>lokale Compute- und Datenausfuehrung</td>
+<td><code>py</code>, <code>cpp</code>, <code>gpu</code>, <code>wasm</code>, <code>data</code>, <code>sys</code></td>
 </tr>
 <tr>
 <td>Sprache</td>
-<td>deklarative Beschreibung von Ressourcen und Flows</td>
-<td><code>NovaParser</code>, <code>NovaAST</code></td>
+<td>deklarative Beschreibung von Ressourcen, Flows und Systemzustand</td>
+<td><code>NovaParser</code>, <code>NovaAST</code>, <code>.ns</code>-Dateien</td>
 </tr>
 <tr>
 <td>Graph Engine</td>
@@ -133,69 +136,76 @@
 </tr>
 <tr>
 <td>Runtime</td>
-<td>Flow-Ausfuehrung und Zustand</td>
+<td>Laden, Kompilieren, Ausfuehren, Events, Snapshots</td>
 <td><code>NovaRuntime</code>, <code>RuntimeContext</code></td>
 </tr>
 <tr>
 <td>Agents</td>
-<td>modellgestuetzte Aufgaben</td>
+<td>modellgestuetzte Aufgaben mit Tools, Memory und Governance</td>
 <td><code>AgentRuntime</code>, <code>AgentSpecification</code>, <code>AgentTask</code></td>
 </tr>
 <tr>
-<td>Memory</td>
-<td>Wissens- und Suchschicht</td>
-<td><code>NovaVectorMemory</code>, <code>DistributedMemoryStore</code></td>
+<td>Memory und Knowledge</td>
+<td>lokales Wissen, Suche, Sharding, Embeddings</td>
+<td><code>Atheria</code>, <code>DistributedMemoryStore</code>, <code>NovaVectorMemory</code></td>
 </tr>
 <tr>
 <td>Mesh</td>
-<td>verteilte Worker</td>
-<td><code>MeshRegistry</code>, <code>MeshWorkerServer</code></td>
+<td>verteilte Worker, Dispatch, Capabilities, Remote-Ausfuehrung</td>
+<td><code>MeshRegistry</code>, <code>WorkerNode</code>, <code>MeshWorkerServer</code></td>
 </tr>
 <tr>
 <td>Control Plane</td>
-<td>Queue, Scheduling, API</td>
+<td>Queue, Schedules, Replay, API, Status</td>
 <td><code>DurableControlPlane</code>, <code>NovaControlPlaneAPIServer</code></td>
 </tr>
 <tr>
 <td>Service Fabric</td>
-<td>Services und Packages</td>
+<td>Services, Packages, Revisionen, Traffic</td>
 <td><code>ServiceFabric</code>, <code>ServiceTrafficPlane</code></td>
 </tr>
 <tr>
 <td>Security</td>
-<td>Rollen, Secrets, TLS</td>
+<td>Rollen, Namespaces, Secrets, TLS, Trust</td>
 <td><code>SecurityPlane</code>, <code>RuntimePolicy</code></td>
 </tr>
 </tbody></table>
-<h2 id="methoden-und-schnittstellen">Methoden und Schnittstellen</h2>
-<h3 id="betriebsmodi">Betriebsmodi</h3>
+<h2 id="wie-die-schichten-zusammenwirken">Wie die Schichten zusammenwirken</h2>
+<pre><code class="language-text">CLI oder .ns-Datei
+  -&gt;
+Parser und AST
+  -&gt;
+Graph Compiler
+  -&gt;
+Runtime
+  -&gt;
+Tools / Agents / Memory / Mesh / Services
+  -&gt;
+Status, Events, API, Traces</code></pre>
+<h2 id="betriebsmodi">Betriebsmodi</h2>
+<p>Nova-shell kann in mehreren Modi benutzt werden:</p>
 <ul>
-<li>interaktive Shell-Nutzung</li>
-<li>deklarative <code>.ns</code>-Programmausfuehrung</li>
-<li>lokale AI- und Agentenausfuehrung</li>
-<li>verteilte Worker-Ausfuehrung</li>
-<li>Service- und Traffic-Steuerung</li>
-<li>API- und Control-Plane-Betrieb</li>
+<li>als interaktive Compute- und AI-Shell</li>
+<li>als deklarative <code>.ns</code>-Runtime</li>
+<li>als lokale Agent- und Knowledge-Laufzeit</li>
+<li>als verteilte Worker- und Mesh-Plattform</li>
+<li>als Service- und Traffic-Steuerungsschicht</li>
+<li>als API- und Control-Plane-Prozess</li>
 </ul>
-<h3 id="daten-und-kontrollfluesse">Daten- und Kontrollfluesse</h3>
-<h4 id="datenfluss">Datenfluss</h4>
-<pre><code class="language-text">Dataset -&gt; Tool -&gt; Agent -&gt; Output -&gt; Memory</code></pre>
-<h4 id="kontrollfluss">Kontrollfluss</h4>
-<pre><code class="language-text">Event -&gt; Flow -&gt; Graph Closure -&gt; Node Execution -&gt; Event</code></pre>
-<h2 id="cli">CLI</h2>
-<p>Subsysteme werden in der Praxis vor allem ueber diese Kommandos sichtbar:</p>
-<ul>
-<li><code>py</code>, <code>cpp</code>, <code>gpu</code>, <code>wasm</code></li>
-<li><code>agent</code></li>
-<li><code>atheria</code></li>
-<li><code>mesh</code></li>
-<li><code>ns.run</code></li>
-<li><code>ns.control</code></li>
-</ul>
-<h2 id="api">API</h2>
-<p>Die HTTP-Control-Plane exponiert Runtime-, Queue-, Service-, Mesh- und Observability-Zustaende. Details stehen in <a href="APIReference.html">APIReference</a>.</p>
-<h2 id="beispiele">Beispiele</h2>
-<h3 id="wichtige-einstiegspunkte">Wichtige Einstiegspunkte</h3>
+<h2 id="typische-daten-und-kontrollfluesse">Typische Daten- und Kontrollfluesse</h2>
+<h3 id="datenfluss">Datenfluss</h3>
+<pre><code class="language-text">Dataset -&gt; Tool -&gt; Agent -&gt; Memory -&gt; Result</code></pre>
+<h3 id="kontrollfluss">Kontrollfluss</h3>
+<pre><code class="language-text">Event -&gt; Flow -&gt; Graph -&gt; Node Execution -&gt; Event / State / Service Action</code></pre>
+<h2 id="testbare-einstiege">Testbare Einstiege</h2>
+<h3 id="installations-und-systemfaehigkeiten-pruefen">Installations- und Systemfaehigkeiten pruefen</h3>
+<pre><code class="language-powershell">doctor</code></pre>
+<h3 id="deklarativen-graph-ansehen">Deklarativen Graph ansehen</h3>
+<pre><code class="language-powershell">ns.graph examples\market_radar.ns</code></pre>
+<h3 id="runtime-und-plattformstatus-ansehen">Runtime- und Plattformstatus ansehen</h3>
+<pre><code class="language-powershell">ns.status
+ns.control</code></pre>
+<h2 id="wichtige-startpunkte-im-code">Wichtige Startpunkte im Code</h2>
 <ul>
 <li><code>nova_shell.py</code></li>
 <li><code>nova/parser/parser.py</code></li>
@@ -205,26 +215,45 @@
 <li><code>nova/agents/runtime.py</code></li>
 <li><code>nova/mesh/registry.py</code></li>
 </ul>
+<h2 id="typische-fragen">Typische Fragen</h2>
+<h3 id="ist-nova-shell-nur-eine-shell">Ist Nova-shell nur eine Shell?</h3>
+<p>Nein. Die Shell ist nur eine Schicht. Darunter liegen Sprache, Graph, Runtime, Agenten, Mesh und Plattformdienste.</p>
+<h3 id="wo-beginne-ich-wenn-ich-einen-fehler-suche">Wo beginne ich, wenn ich einen Fehler suche?</h3>
+<p>Zuerst:</p>
+<ol>
+<li><code>doctor</code></li>
+<li><code>ns.status</code></li>
+<li>die passende Fachseite der betroffenen Schicht</li>
+</ol>
+<h3 id="wo-beginne-ich-wenn-ich-entwickeln-will">Wo beginne ich, wenn ich entwickeln will?</h3>
+<p>Mit <a href="DevelopmentGuide.html">DevelopmentGuide</a>, <a href="RepositoryStructure.html">RepositoryStructure</a> und der passenden Referenzseite.</p>
 <h2 id="verwandte-seiten">Verwandte Seiten</h2>
 <ul>
 <li><a href="Architecture.html">Architecture</a></li>
 <li><a href="ComponentModel.html">ComponentModel</a></li>
+<li><a href="NovaRuntime.html">NovaRuntime</a></li>
+<li><a href="Subsystems.html">Subsystems</a></li>
 <li><a href="ClassReference.html">ClassReference</a></li>
-<li><a href="PageTemplate.html">PageTemplate</a></li>
 </ul>
         </article>
         <aside class="wiki-toc">
           <div class="wiki-toc-card"><h2>On this page</h2><ul>
 <li class="wiki-toc-link"><a href="#zweck">Zweck</a></li>
-<li class="wiki-toc-link"><a href="#kernobjekte">Kernobjekte</a></li>
-<li class="wiki-toc-link level-3"><a href="#subsysteme-im-projekt">Subsysteme im Projekt</a></li>
-<li class="wiki-toc-link"><a href="#methoden-und-schnittstellen">Methoden und Schnittstellen</a></li>
-<li class="wiki-toc-link level-3"><a href="#betriebsmodi">Betriebsmodi</a></li>
-<li class="wiki-toc-link level-3"><a href="#daten-und-kontrollfluesse">Daten- und Kontrollfluesse</a></li>
-<li class="wiki-toc-link"><a href="#cli">CLI</a></li>
-<li class="wiki-toc-link"><a href="#api">API</a></li>
-<li class="wiki-toc-link"><a href="#beispiele">Beispiele</a></li>
-<li class="wiki-toc-link level-3"><a href="#wichtige-einstiegspunkte">Wichtige Einstiegspunkte</a></li>
+<li class="wiki-toc-link"><a href="#schichten-des-systems">Schichten des Systems</a></li>
+<li class="wiki-toc-link"><a href="#wie-die-schichten-zusammenwirken">Wie die Schichten zusammenwirken</a></li>
+<li class="wiki-toc-link"><a href="#betriebsmodi">Betriebsmodi</a></li>
+<li class="wiki-toc-link"><a href="#typische-daten-und-kontrollfluesse">Typische Daten- und Kontrollfluesse</a></li>
+<li class="wiki-toc-link level-3"><a href="#datenfluss">Datenfluss</a></li>
+<li class="wiki-toc-link level-3"><a href="#kontrollfluss">Kontrollfluss</a></li>
+<li class="wiki-toc-link"><a href="#testbare-einstiege">Testbare Einstiege</a></li>
+<li class="wiki-toc-link level-3"><a href="#installations-und-systemfaehigkeiten-pruefen">Installations- und Systemfaehigkeiten pruefen</a></li>
+<li class="wiki-toc-link level-3"><a href="#deklarativen-graph-ansehen">Deklarativen Graph ansehen</a></li>
+<li class="wiki-toc-link level-3"><a href="#runtime-und-plattformstatus-ansehen">Runtime- und Plattformstatus ansehen</a></li>
+<li class="wiki-toc-link"><a href="#wichtige-startpunkte-im-code">Wichtige Startpunkte im Code</a></li>
+<li class="wiki-toc-link"><a href="#typische-fragen">Typische Fragen</a></li>
+<li class="wiki-toc-link level-3"><a href="#ist-nova-shell-nur-eine-shell">Ist Nova-shell nur eine Shell?</a></li>
+<li class="wiki-toc-link level-3"><a href="#wo-beginne-ich-wenn-ich-einen-fehler-suche">Wo beginne ich, wenn ich einen Fehler suche?</a></li>
+<li class="wiki-toc-link level-3"><a href="#wo-beginne-ich-wenn-ich-entwickeln-will">Wo beginne ich, wenn ich entwickeln will?</a></li>
 <li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
 </ul></div>
         </aside>

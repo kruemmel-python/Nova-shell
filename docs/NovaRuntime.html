@@ -27,11 +27,14 @@
 <li><a class="wiki-nav-link" data-nav-href="GermanLanguage.html" href="GermanLanguage.html">GermanLanguage</a></li>
 <li><a class="wiki-nav-link" data-nav-href="QuickStart.html" href="QuickStart.html">QuickStart</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Installation.html" href="Installation.html">Installation</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Nutzung</h2>
 <ul>
 <li><a class="wiki-nav-link" data-nav-href="NovaCLI.html" href="NovaCLI.html">NovaCLI</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ShellCommandReference.html" href="ShellCommandReference.html">ShellCommandReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="APIReference.html" href="APIReference.html">APIReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ExamplesAndRecipes.html" href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Tutorials.html" href="Tutorials.html">Tutorials</a></li>
@@ -54,6 +57,7 @@
 <li><a class="wiki-nav-link" data-nav-href="ParserAndASTReference.html" href="ParserAndASTReference.html">ParserAndASTReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="RuntimeMethodReference.html" href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ClassReference.html" href="ClassReference.html">ClassReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="CodeReferenceIndex.html" href="CodeReferenceIndex.html">CodeReferenceIndex</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Plattformfunktionen</h2>
@@ -103,20 +107,52 @@
         <article class="wiki-article">
           <h1 id="nova-runtime">Nova Runtime</h1>
 <h2 id="zweck">Zweck</h2>
-<p><code>NovaRuntime</code> ist die zentrale Laufzeit fuer deklarative <code>.ns</code>-Programme. Sie kompiliert, laedt, fuehrt aus, emittiert Events und stellt Plattformdienste bereit.</p>
+<p><code>NovaRuntime</code> ist die zentrale Laufzeit fuer deklarative <code>.ns</code>-Programme. Sie laedt Programme, kompiliert Graphen, fuehrt Flows aus, emittiert Events und bindet Plattformdienste wie Queue, Control Plane, Services und Observability zusammen.</p>
 <h2 id="kernobjekte">Kernobjekte</h2>
-<ul>
-<li><code>NovaRuntime</code></li>
-<li><code>RuntimeContext</code></li>
-<li><code>CompiledNovaProgram</code></li>
-<li><code>NovaRuntimeResult</code></li>
-<li><code>BackendRouter</code></li>
-<li><code>DurableControlPlane</code></li>
-<li><code>NovaControlPlaneAPIServer</code></li>
-</ul>
+<table><thead><tr>
+<th>Objekt</th>
+<th>Rolle</th>
+</tr></thead><tbody>
+<tr>
+<td><code>NovaRuntime</code></td>
+<td>zentrale Laufzeitinstanz</td>
+</tr>
+<tr>
+<td><code>RuntimeContext</code></td>
+<td>gebuendelter Kontext fuer Agents, State, Control Plane, Security und Services</td>
+</tr>
+<tr>
+<td><code>CompiledNovaProgram</code></td>
+<td>geladene und kompilierte Programmdarstellung</td>
+</tr>
+<tr>
+<td><code>NovaRuntimeResult</code></td>
+<td>Ergebnis einer Programmausfuehrung</td>
+</tr>
+<tr>
+<td><code>BackendRouter</code></td>
+<td>Zuweisung von Ausfuehrungen auf passende lokale oder native Backends</td>
+</tr>
+<tr>
+<td><code>DurableControlPlane</code></td>
+<td>Queue, Schedules, Replay und Status</td>
+</tr>
+<tr>
+<td><code>NovaControlPlaneAPIServer</code></td>
+<td>HTTP-API fuer die Plattform</td>
+</tr>
+</tbody></table>
+<h2 id="lebenszyklus">Lebenszyklus</h2>
+<pre><code class="language-text">parse / load
+  -&gt;
+compile
+  -&gt;
+execute_flow / run / emit
+  -&gt;
+state, events, services, traces
+  -&gt;
+snapshot / resume / close</code></pre>
 <h2 id="methoden-und-schnittstellen">Methoden und Schnittstellen</h2>
-<h3 id="lebenszyklus">Lebenszyklus</h3>
-<pre><code class="language-text">compile -&gt; load -&gt; execute_flow / run / emit -&gt; snapshot / resume -&gt; close</code></pre>
 <h3 id="programm-und-kontext">Programm und Kontext</h3>
 <ul>
 <li><code>compile(source, source_name, base_path)</code></li>
@@ -159,7 +195,8 @@
 <li><code>list_packages()</code></li>
 <li><code>discover_service(...)</code></li>
 </ul>
-<h3 id="eingebaute-toolpfade">Eingebaute Toolpfade</h3>
+<h2 id="eingebaute-toolpfade">Eingebaute Toolpfade</h2>
+<p>Die Runtime kennt eingebaute Pfade, die in Flows direkt auftauchen koennen:</p>
 <ul>
 <li><code>rss.fetch</code></li>
 <li><code>atheria.embed</code></li>
@@ -190,10 +227,12 @@
 <li><code>control_api_status()</code></li>
 <li><code>export_metrics(...)</code></li>
 </ul>
-<h2 id="beispiele">Beispiele</h2>
+<p>Details stehen in <a href="APIReference.html">APIReference</a>.</p>
+<h2 id="testbare-beispiele">Testbare Beispiele</h2>
+<h3 id="ein-programm-aus-python-laufen-lassen">Ein Programm aus Python laufen lassen</h3>
 <pre><code class="language-python">from nova.runtime.runtime import NovaRuntime
 
-source = \&quot;\&quot;\&quot;
+source = &quot;&quot;&quot;
 agent helper {
   model: local
 }
@@ -205,36 +244,57 @@ dataset notes {
 flow boot {
   helper summarize notes -&gt; summary
 }
-\&quot;\&quot;\&quot;
+&quot;&quot;&quot;
 
 with NovaRuntime() as runtime:
     result = runtime.run(source)
     print(result.context_snapshot)</code></pre>
+<h3 id="ein-bestehendes-beispiel-ueber-die-cli-ausfuehren">Ein bestehendes Beispiel ueber die CLI ausfuehren</h3>
+<pre><code class="language-powershell">ns.graph examples\market_radar.ns
+ns.run examples\market_radar.ns
+ns.status</code></pre>
+<h3 id="snapshot-schreiben-und-laden">Snapshot schreiben und laden</h3>
+<pre><code class="language-powershell">ns.snapshot
+ns.resume</code></pre>
+<h2 id="typische-fehler-und-fragen">Typische Fehler und Fragen</h2>
+<h3 id="wann-ist-ein-problem-ein-parser-und-wann-ein-runtime-problem">Wann ist ein Problem ein Parser- und wann ein Runtime-Problem?</h3>
+<p>Wenn <code>ns.graph</code> funktioniert, aber <code>ns.run</code> nicht, ist die Syntax meist korrekt und der Fehler liegt spaeter im Laufzeitpfad.</p>
+<h3 id="wo-fuehrt-die-runtime-agenten-aus">Wo fuehrt die Runtime Agenten aus?</h3>
+<p>Nicht isoliert von allem anderen, sondern im <code>RuntimeContext</code> zusammen mit State, Events, Services und Mesh.</p>
+<h3 id="wo-beginnt-man-bei-plattformfehlern">Wo beginnt man bei Plattformfehlern?</h3>
+<p>Mit <code>ns.status</code>, <code>ns.control</code> und den API- oder Trace-Pfaden.</p>
 <h2 id="verwandte-seiten">Verwandte Seiten</h2>
 <ul>
 <li><a href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
 <li><a href="APIReference.html">APIReference</a></li>
+<li><a href="RuntimeAndControlPlane.html">RuntimeAndControlPlane</a></li>
 <li><a href="NovaAgents.html">NovaAgents</a></li>
 <li><a href="NovaMesh.html">NovaMesh</a></li>
-<li><a href="PageTemplate.html">PageTemplate</a></li>
 </ul>
         </article>
         <aside class="wiki-toc">
           <div class="wiki-toc-card"><h2>On this page</h2><ul>
 <li class="wiki-toc-link"><a href="#zweck">Zweck</a></li>
 <li class="wiki-toc-link"><a href="#kernobjekte">Kernobjekte</a></li>
+<li class="wiki-toc-link"><a href="#lebenszyklus">Lebenszyklus</a></li>
 <li class="wiki-toc-link"><a href="#methoden-und-schnittstellen">Methoden und Schnittstellen</a></li>
-<li class="wiki-toc-link level-3"><a href="#lebenszyklus">Lebenszyklus</a></li>
 <li class="wiki-toc-link level-3"><a href="#programm-und-kontext">Programm und Kontext</a></li>
 <li class="wiki-toc-link level-3"><a href="#flow-und-eventausfuehrung">Flow- und Eventausfuehrung</a></li>
 <li class="wiki-toc-link level-3"><a href="#snapshot-und-wiederaufnahme">Snapshot und Wiederaufnahme</a></li>
 <li class="wiki-toc-link level-3"><a href="#scheduler-und-control-plane">Scheduler und Control Plane</a></li>
 <li class="wiki-toc-link level-3"><a href="#api-und-betrieb">API und Betrieb</a></li>
 <li class="wiki-toc-link level-3"><a href="#services-und-plattform">Services und Plattform</a></li>
-<li class="wiki-toc-link level-3"><a href="#eingebaute-toolpfade">Eingebaute Toolpfade</a></li>
+<li class="wiki-toc-link"><a href="#eingebaute-toolpfade">Eingebaute Toolpfade</a></li>
 <li class="wiki-toc-link"><a href="#cli">CLI</a></li>
 <li class="wiki-toc-link"><a href="#api">API</a></li>
-<li class="wiki-toc-link"><a href="#beispiele">Beispiele</a></li>
+<li class="wiki-toc-link"><a href="#testbare-beispiele">Testbare Beispiele</a></li>
+<li class="wiki-toc-link level-3"><a href="#ein-programm-aus-python-laufen-lassen">Ein Programm aus Python laufen lassen</a></li>
+<li class="wiki-toc-link level-3"><a href="#ein-bestehendes-beispiel-ueber-die-cli-ausfuehren">Ein bestehendes Beispiel ueber die CLI ausfuehren</a></li>
+<li class="wiki-toc-link level-3"><a href="#snapshot-schreiben-und-laden">Snapshot schreiben und laden</a></li>
+<li class="wiki-toc-link"><a href="#typische-fehler-und-fragen">Typische Fehler und Fragen</a></li>
+<li class="wiki-toc-link level-3"><a href="#wann-ist-ein-problem-ein-parser-und-wann-ein-runtime-problem">Wann ist ein Problem ein Parser- und wann ein Runtime-Problem?</a></li>
+<li class="wiki-toc-link level-3"><a href="#wo-fuehrt-die-runtime-agenten-aus">Wo fuehrt die Runtime Agenten aus?</a></li>
+<li class="wiki-toc-link level-3"><a href="#wo-beginnt-man-bei-plattformfehlern">Wo beginnt man bei Plattformfehlern?</a></li>
 <li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
 </ul></div>
         </aside>

@@ -27,11 +27,14 @@
 <li><a class="wiki-nav-link" data-nav-href="GermanLanguage.html" href="GermanLanguage.html">GermanLanguage</a></li>
 <li><a class="wiki-nav-link" data-nav-href="QuickStart.html" href="QuickStart.html">QuickStart</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Installation.html" href="Installation.html">Installation</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Nutzung</h2>
 <ul>
 <li><a class="wiki-nav-link" data-nav-href="NovaCLI.html" href="NovaCLI.html">NovaCLI</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ShellCommandReference.html" href="ShellCommandReference.html">ShellCommandReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="APIReference.html" href="APIReference.html">APIReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ExamplesAndRecipes.html" href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Tutorials.html" href="Tutorials.html">Tutorials</a></li>
@@ -54,6 +57,7 @@
 <li><a class="wiki-nav-link" data-nav-href="ParserAndASTReference.html" href="ParserAndASTReference.html">ParserAndASTReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="RuntimeMethodReference.html" href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ClassReference.html" href="ClassReference.html">ClassReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="CodeReferenceIndex.html" href="CodeReferenceIndex.html">CodeReferenceIndex</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Plattformfunktionen</h2>
@@ -103,31 +107,54 @@
         <article class="wiki-article">
           <h1 id="nova-language">Nova Language</h1>
 <h2 id="zweck">Zweck</h2>
-<p>Nova Language ist die deklarative Sprache von Nova-shell. Sie beschreibt Ressourcen, Flows, Events, Services und Packages in <code>.ns</code>-Dateien.</p>
-<p>Die Sprache dient als Eingang fuer:</p>
-<ul>
-<li>Parser</li>
-<li>AST</li>
-<li>Modul-Loader</li>
-<li>Lockfiles</li>
-<li>Graph-Compiler</li>
-<li>Runtime</li>
-<li>Test-Runner</li>
-</ul>
-<h2 id="kernobjekte">Kernobjekte</h2>
-<ul>
-<li><code>import</code></li>
-<li><code>agent</code></li>
-<li><code>dataset</code></li>
-<li><code>tool</code></li>
-<li><code>flow</code></li>
-<li><code>event</code></li>
-<li><code>state</code></li>
-<li><code>service</code></li>
-<li><code>package</code></li>
-<li><code>system</code></li>
-</ul>
-<p>Zentrale Klassen:</p>
+<p>Nova Language ist die deklarative Sprache von Nova-shell. Sie beschreibt Ressourcen, Flows, Events, Services und Packages in <code>.ns</code>-Dateien und bildet damit den sprachlichen Eingang in Parser, Graph-Compiler, Runtime und Toolchain.</p>
+<h2 id="sprachbausteine">Sprachbausteine</h2>
+<table><thead><tr>
+<th>Baustein</th>
+<th>Rolle</th>
+</tr></thead><tbody>
+<tr>
+<td><code>import</code></td>
+<td>bindet weitere Dateien oder Registry-Module ein</td>
+</tr>
+<tr>
+<td><code>agent</code></td>
+<td>beschreibt Agentenrollen, Modelle, Tools und Memory</td>
+</tr>
+<tr>
+<td><code>dataset</code></td>
+<td>beschreibt Datenquellen oder Datenobjekte</td>
+</tr>
+<tr>
+<td><code>tool</code></td>
+<td>beschreibt aufrufbare Werkzeuge</td>
+</tr>
+<tr>
+<td><code>flow</code></td>
+<td>beschreibt ausfuehrbare Graphen</td>
+</tr>
+<tr>
+<td><code>event</code></td>
+<td>beschreibt Trigger und ihre Ziel-Flows</td>
+</tr>
+<tr>
+<td><code>state</code></td>
+<td>beschreibt Laufzeitzustand oder Namespaces</td>
+</tr>
+<tr>
+<td><code>service</code></td>
+<td>beschreibt laufende Dienste</td>
+</tr>
+<tr>
+<td><code>package</code></td>
+<td>beschreibt installierbare Artefakte</td>
+</tr>
+<tr>
+<td><code>system</code></td>
+<td>beschreibt Runtime-, Policy- oder Placement-Kontext</td>
+</tr>
+</tbody></table>
+<h2 id="zentrale-klassen">Zentrale Klassen</h2>
 <ul>
 <li><code>NovaParser</code></li>
 <li><code>NovaAST</code></li>
@@ -137,7 +164,20 @@
 <li><code>ToolDeclaration</code></li>
 <li><code>FlowDeclaration</code></li>
 <li><code>EventDeclaration</code></li>
+<li><code>ServiceDeclaration</code></li>
+<li><code>PackageDeclaration</code></li>
 </ul>
+<h2 id="sprachmodell">Sprachmodell</h2>
+<p>Nova Language ist keine lose Sammlung von Textbloecken, sondern wird schrittweise verarbeitet:</p>
+<pre><code class="language-text">.ns Source
+  -&gt;
+Parser
+  -&gt;
+AST
+  -&gt;
+Graph Compiler
+  -&gt;
+Runtime</code></pre>
 <h2 id="methoden-und-schnittstellen">Methoden und Schnittstellen</h2>
 <p>Wichtige Parser-Methoden:</p>
 <ul>
@@ -145,11 +185,14 @@
 <li><code>parse_file</code></li>
 <li><code>register_extension</code></li>
 </ul>
-<p>Wichtige Sprachschnittstellen:</p>
+<p>Wichtige Toolchain-Schnittstellen:</p>
 <ul>
 <li>Dateiimporte</li>
 <li>Registry-Importe</li>
-<li>Flow-Schritte mit optionalem Alias <code>-&gt;</code></li>
+<li>Lockfiles</li>
+<li>Formatierung</li>
+<li>Linting</li>
+<li><code>.ns</code>-Tests</li>
 </ul>
 <h2 id="cli">CLI</h2>
 <p>Typische Sprachpfade in der CLI:</p>
@@ -162,8 +205,8 @@
 <li><code>ns.test</code></li>
 </ul>
 <h2 id="api">API</h2>
-<p>Direkte HTTP-Endpunkte fuer den Parser gibt es nicht. Die Sprache wirkt ueber Runtime, Toolchain und Control-Plane indirekt in die API hinein.</p>
-<h2 id="beispiele">Beispiele</h2>
+<p>Direkte HTTP-Endpunkte fuer den Parser gibt es nicht. Die Sprache wirkt ueber Runtime, Toolchain und Control Plane indirekt in die API hinein.</p>
+<h2 id="testbare-beispiele">Testbare Beispiele</h2>
 <h3 id="grundsyntax">Grundsyntax</h3>
 <pre><code class="language-ns">agent helper {
   model: local
@@ -176,36 +219,21 @@ dataset notes {
 flow boot {
   helper summarize notes -&gt; summary
 }</code></pre>
-<h3 id="flows">Flows</h3>
-<p><code>flow</code> ist der wichtigste aktive Baustein. Ein Flow besteht aus Properties und Schritten.</p>
+<h3 id="flow-mit-aliasen">Flow mit Aliasen</h3>
 <pre><code class="language-ns">flow radar {
-  entry: true
   rss.fetch tech_rss -&gt; fetched
   researcher summarize tech_rss -&gt; summary
   event.emit dataset.updated
 }</code></pre>
-<p>Ein Flow-Schritt besteht aus:</p>
+<p>Ein Flow-Schritt besteht typischerweise aus:</p>
 <ul>
 <li>Operation</li>
 <li>Argumenten</li>
 <li>optionalem Alias mit <code>-&gt;</code></li>
 </ul>
 <h3 id="imports-und-module">Imports und Module</h3>
-<p>Nova Language unterstuetzt:</p>
-<ul>
-<li>Dateiimporte</li>
-<li>Registry-Importe</li>
-</ul>
-<p>Diese werden ueber <code>NovaModuleLoader</code> aufgeloest.</p>
-<h3 id="agent-plus-flow">Agent plus Flow</h3>
-<pre><code class="language-ns">agent reviewer {
-  provider: openai
-  model: gpt-4o-mini
-}
-
-flow review {
-  reviewer summarize report -&gt; result
-}</code></pre>
+<pre><code class="language-ns">import &quot;agents/research.ns&quot;
+import &quot;flows/radar.ns&quot;</code></pre>
 <h3 id="eventgetriebene-automation">Eventgetriebene Automation</h3>
 <pre><code class="language-ns">event refresh_on_update {
   on: dataset.updated
@@ -214,36 +242,49 @@ flow review {
 <h3 id="service-und-package">Service und Package</h3>
 <pre><code class="language-ns">package analytics_pkg {
   version: 1.0.0
-  entrypoint: examples/service_package_platform.ns
+  source: &quot;./dist/analytics.tar&quot;
 }
 
 service analytics_api {
   replicas: 2
   package: analytics_pkg
 }</code></pre>
+<h2 id="typische-fehler-und-fragen">Typische Fehler und Fragen</h2>
+<h3 id="wann-benutze-ich-ns-statt-direkter-cli-befehle">Wann benutze ich <code>.ns</code> statt direkter CLI-Befehle?</h3>
+<p>Wenn der Ablauf reproduzierbar, versionierbar oder graphbasiert sein soll.</p>
+<h3 id="wo-sehe-ich-ob-mein-programm-syntaktisch-korrekt-ist">Wo sehe ich, ob mein Programm syntaktisch korrekt ist?</h3>
+<p>Am schnellsten mit:</p>
+<pre><code class="language-powershell">ns.graph datei.ns</code></pre>
+<h3 id="wo-beginnt-die-fehlersuche-bei-imports">Wo beginnt die Fehlersuche bei Imports?</h3>
+<p>Bei Modulpfad, Lockfile, Loader-Kontext und Toolchain.</p>
 <h2 id="verwandte-seiten">Verwandte Seiten</h2>
 <ul>
 <li><a href="ParserAndASTReference.html">ParserAndASTReference</a></li>
 <li><a href="ComponentModel.html">ComponentModel</a></li>
-<li><a href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
+<li><a href="NovaGraphEngine.html">NovaGraphEngine</a></li>
+<li><a href="ToolchainAndTesting.html">ToolchainAndTesting</a></li>
 <li><a href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
-<li><a href="PageTemplate.html">PageTemplate</a></li>
 </ul>
         </article>
         <aside class="wiki-toc">
           <div class="wiki-toc-card"><h2>On this page</h2><ul>
 <li class="wiki-toc-link"><a href="#zweck">Zweck</a></li>
-<li class="wiki-toc-link"><a href="#kernobjekte">Kernobjekte</a></li>
+<li class="wiki-toc-link"><a href="#sprachbausteine">Sprachbausteine</a></li>
+<li class="wiki-toc-link"><a href="#zentrale-klassen">Zentrale Klassen</a></li>
+<li class="wiki-toc-link"><a href="#sprachmodell">Sprachmodell</a></li>
 <li class="wiki-toc-link"><a href="#methoden-und-schnittstellen">Methoden und Schnittstellen</a></li>
 <li class="wiki-toc-link"><a href="#cli">CLI</a></li>
 <li class="wiki-toc-link"><a href="#api">API</a></li>
-<li class="wiki-toc-link"><a href="#beispiele">Beispiele</a></li>
+<li class="wiki-toc-link"><a href="#testbare-beispiele">Testbare Beispiele</a></li>
 <li class="wiki-toc-link level-3"><a href="#grundsyntax">Grundsyntax</a></li>
-<li class="wiki-toc-link level-3"><a href="#flows">Flows</a></li>
+<li class="wiki-toc-link level-3"><a href="#flow-mit-aliasen">Flow mit Aliasen</a></li>
 <li class="wiki-toc-link level-3"><a href="#imports-und-module">Imports und Module</a></li>
-<li class="wiki-toc-link level-3"><a href="#agent-plus-flow">Agent plus Flow</a></li>
 <li class="wiki-toc-link level-3"><a href="#eventgetriebene-automation">Eventgetriebene Automation</a></li>
 <li class="wiki-toc-link level-3"><a href="#service-und-package">Service und Package</a></li>
+<li class="wiki-toc-link"><a href="#typische-fehler-und-fragen">Typische Fehler und Fragen</a></li>
+<li class="wiki-toc-link level-3"><a href="#wann-benutze-ich-ns-statt-direkter-cli-befehle">Wann benutze ich `.ns` statt direkter CLI-Befehle?</a></li>
+<li class="wiki-toc-link level-3"><a href="#wo-sehe-ich-ob-mein-programm-syntaktisch-korrekt-ist">Wo sehe ich, ob mein Programm syntaktisch korrekt ist?</a></li>
+<li class="wiki-toc-link level-3"><a href="#wo-beginnt-die-fehlersuche-bei-imports">Wo beginnt die Fehlersuche bei Imports?</a></li>
 <li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
 </ul></div>
         </aside>

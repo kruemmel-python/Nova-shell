@@ -27,11 +27,14 @@
 <li><a class="wiki-nav-link" data-nav-href="GermanLanguage.html" href="GermanLanguage.html">GermanLanguage</a></li>
 <li><a class="wiki-nav-link" data-nav-href="QuickStart.html" href="QuickStart.html">QuickStart</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Installation.html" href="Installation.html">Installation</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Nutzung</h2>
 <ul>
 <li><a class="wiki-nav-link" data-nav-href="NovaCLI.html" href="NovaCLI.html">NovaCLI</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ShellCommandReference.html" href="ShellCommandReference.html">ShellCommandReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="APIReference.html" href="APIReference.html">APIReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ExamplesAndRecipes.html" href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Tutorials.html" href="Tutorials.html">Tutorials</a></li>
@@ -54,6 +57,7 @@
 <li><a class="wiki-nav-link" data-nav-href="ParserAndASTReference.html" href="ParserAndASTReference.html">ParserAndASTReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="RuntimeMethodReference.html" href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ClassReference.html" href="ClassReference.html">ClassReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="CodeReferenceIndex.html" href="CodeReferenceIndex.html">CodeReferenceIndex</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Plattformfunktionen</h2>
@@ -102,6 +106,17 @@
       <div class="wiki-layout">
         <article class="wiki-article">
           <h1 id="contributing">Contributing</h1>
+<h2 id="zweck">Zweck</h2>
+<p>Diese Seite beschreibt den bevorzugten Beitragsfluss fuer Nova-shell. Sie gilt fuer Code, Tests, Wiki, Release-Helfer und Beispiele.</p>
+<h2 id="standardablauf">Standardablauf</h2>
+<ol>
+<li>Thema eingrenzen</li>
+<li>passende Wiki- und Referenzseiten lesen</li>
+<li>Aenderung in einem eigenen Branch umsetzen</li>
+<li>lokale Tests ausfuehren</li>
+<li>Dokumentation aktualisieren</li>
+<li>Commit und Push vorbereiten</li>
+</ol>
 <h2 id="grundsaetze">Grundsaetze</h2>
 <ul>
 <li>kleine, klar begrenzte Aenderungen</li>
@@ -109,10 +124,49 @@
 <li>Architekturgrenzen respektieren</li>
 <li>Dokumentation mitziehen, wenn Bedienung oder Semantik sich aendert</li>
 </ul>
+<h2 id="typische-beitragstypen">Typische Beitragstypen</h2>
+<h3 id="code">Code</h3>
+<ul>
+<li>neue Commands</li>
+<li>Parser- oder AST-Erweiterungen</li>
+<li>Graph-, Runtime- oder Mesh-Aenderungen</li>
+</ul>
+<h3 id="dokumentation">Dokumentation</h3>
+<ul>
+<li>neue Beispielseiten</li>
+<li>tiefere Referenzen fuer Klassen und Methoden</li>
+<li>Ueberarbeitung unklarer Seiten</li>
+</ul>
+<h3 id="betrieb-und-release">Betrieb und Release</h3>
+<ul>
+<li>Build-Skripte</li>
+<li>MSI- oder Wheel-Pipeline</li>
+<li>Smoke- und Integrationstests</li>
+</ul>
+<h2 id="vor-dem-push">Vor dem Push</h2>
+<p>Mindestens dieser Testlauf sollte erfolgreich sein:</p>
+<pre><code class="language-powershell">python -m unittest discover -s tests -p &quot;test_*.py&quot;</code></pre>
+<p>Wenn die Aenderung vor allem die Wiki betrifft, ist zusaetzlich sinnvoll:</p>
+<pre><code class="language-powershell">wiki build</code></pre>
+<h2 id="verwandte-seiten">Verwandte Seiten</h2>
+<ul>
+<li><a href="Community.html">Community</a></li>
+<li><a href="DevelopmentGuide.html">DevelopmentGuide</a></li>
+<li><a href="Testing.html">Testing</a></li>
+<li><a href="BuildAndRelease.html">BuildAndRelease</a></li>
+</ul>
         </article>
         <aside class="wiki-toc">
           <div class="wiki-toc-card"><h2>On this page</h2><ul>
+<li class="wiki-toc-link"><a href="#zweck">Zweck</a></li>
+<li class="wiki-toc-link"><a href="#standardablauf">Standardablauf</a></li>
 <li class="wiki-toc-link"><a href="#grundsaetze">Grundsaetze</a></li>
+<li class="wiki-toc-link"><a href="#typische-beitragstypen">Typische Beitragstypen</a></li>
+<li class="wiki-toc-link level-3"><a href="#code">Code</a></li>
+<li class="wiki-toc-link level-3"><a href="#dokumentation">Dokumentation</a></li>
+<li class="wiki-toc-link level-3"><a href="#betrieb-und-release">Betrieb und Release</a></li>
+<li class="wiki-toc-link"><a href="#vor-dem-push">Vor dem Push</a></li>
+<li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
 </ul></div>
         </aside>
       </div>

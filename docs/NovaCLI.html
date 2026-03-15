@@ -27,11 +27,14 @@
 <li><a class="wiki-nav-link" data-nav-href="GermanLanguage.html" href="GermanLanguage.html">GermanLanguage</a></li>
 <li><a class="wiki-nav-link" data-nav-href="QuickStart.html" href="QuickStart.html">QuickStart</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Installation.html" href="Installation.html">Installation</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Nutzung</h2>
 <ul>
 <li><a class="wiki-nav-link active" data-nav-href="NovaCLI.html" href="NovaCLI.html">NovaCLI</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ShellCommandReference.html" href="ShellCommandReference.html">ShellCommandReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="APIReference.html" href="APIReference.html">APIReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ExamplesAndRecipes.html" href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Tutorials.html" href="Tutorials.html">Tutorials</a></li>
@@ -54,6 +57,7 @@
 <li><a class="wiki-nav-link" data-nav-href="ParserAndASTReference.html" href="ParserAndASTReference.html">ParserAndASTReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="RuntimeMethodReference.html" href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ClassReference.html" href="ClassReference.html">ClassReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="CodeReferenceIndex.html" href="CodeReferenceIndex.html">CodeReferenceIndex</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Plattformfunktionen</h2>
@@ -103,7 +107,25 @@
         <article class="wiki-article">
           <h1 id="nova-cli">Nova CLI</h1>
 <h2 id="zweck">Zweck</h2>
-<p>Die CLI ist die praktische Eintrittsschicht in Nova-shell. Sie deckt sowohl die bestehende Shell-Runtime als auch den deklarativen Nova-Runtimepfad ab.</p>
+<p>Die CLI ist nicht nur ein Befehlsstarter, sondern die operative Oberflaeche von Nova-shell. Sie verbindet:</p>
+<ul>
+<li>die klassische Shell-Runtime</li>
+<li>die deklarative Nova-Runtime fuer <code>.ns</code></li>
+<li>lokale AI-, Memory- und Atheria-Pfade</li>
+<li>Mesh-, Remote- und Plattformdienste</li>
+</ul>
+<p>Wichtig ist deshalb die Unterscheidung zwischen drei Befehlsarten:</p>
+<ul>
+<li>sofort ausfuehrbare Einzelkommandos wie <code>py</code>, <code>memory</code>, <code>wiki</code></li>
+<li>zustandsbehaftete Laufzeitkommandos wie <code>agent</code>, <code>mesh</code>, <code>vision</code></li>
+<li>deklarative Runtime-Kommandos wie <code>ns.run</code>, <code>ns.graph</code>, <code>ns.control</code></li>
+</ul>
+<p>Diese Seite ist die Kommandoreferenz. Wenn du mit Nova-shell wirklich programmieren willst, lies direkt dazu:</p>
+<ul>
+<li><a href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
+<li><a href="ShellCommandReference.html">ShellCommandReference</a></li>
+<li><a href="CodeReferenceIndex.html">CodeReferenceIndex</a></li>
+</ul>
 <h2 id="kernobjekte">Kernobjekte</h2>
 <ul>
 <li><code>NovaShell</code></li>
@@ -111,149 +133,600 @@
 <li><code>CommandResult</code></li>
 <li><code>MeshWorkerServer</code></li>
 <li><code>VisionServer</code></li>
+<li><code>NovaRuntime</code></li>
 </ul>
 <h2 id="methoden-und-schnittstellen">Methoden und Schnittstellen</h2>
-<p>Die CLI ist kommandozentriert. Die wichtigsten Schnittstellen sind Kommandogruppen, Subkommandos und Shell-Integrationen.</p>
+<p>Die CLI hat drei Rueckgabeformen:</p>
+<ul>
+<li>Textausgabe fuer einfache Kommandos wie <code>py 1 + 1</code></li>
+<li>JSON-Ausgabe fuer Status-, Listen- und Verwaltungsbefehle</li>
+<li>Seiteneffekte wie Dateierzeugung, Worker-Start, HTTP-Server oder Snapshots</li>
+</ul>
+<p>Als Faustregel gilt:</p>
+<ul>
+<li><code>status</code>, <code>list</code>, <code>show</code>, <code>config</code> liefern meist JSON</li>
+<li><code>run</code>, <code>call</code>, <code>message</code>, <code>prompt</code> liefern meist Nutzdaten oder Text</li>
+<li><code>start</code>, <code>stop</code>, <code>build</code>, <code>snapshot</code> veraendern Laufzeit oder Dateien</li>
+</ul>
 <h2 id="cli">CLI</h2>
 <h3 id="grundform">Grundform</h3>
 <p>Interaktive Nutzung:</p>
 <pre><code class="language-bash">nova-shell</code></pre>
 <p>Einzelkommando:</p>
 <pre><code class="language-bash">nova-shell --no-plugins -c &quot;py 1 + 1&quot;</code></pre>
+<p>JSON-freundliche Nutzung in PowerShell:</p>
+<pre><code class="language-powershell">nova-shell --no-plugins -c &quot;doctor&quot;
+nova-shell --no-plugins -c &quot;ai providers&quot; | ConvertFrom-Json</code></pre>
 <h3 id="kommandogruppen">Kommandogruppen</h3>
 <h4 id="compute">Compute</h4>
 <table><thead><tr>
 <th>Kommando</th>
 <th>Zweck</th>
-<th>Beispiel</th>
+<th>Direkt testbares Beispiel</th>
+<th>Erwartung</th>
 </tr></thead><tbody>
 <tr>
 <td><code>py</code></td>
 <td>Python-Ausdruecke und Code</td>
 <td><code>py 1 + 1</code></td>
+<td>Ausgabe <code>2</code></td>
 </tr>
 <tr>
 <td><code>cpp</code></td>
-<td>native C++-Ausfuehrung</td>
+<td>native C++-Pfade</td>
 <td><code>cpp.sandbox int main(){ return 0; }</code></td>
+<td>Ausgabe <code>sandbox executed</code></td>
 </tr>
 <tr>
 <td><code>gpu</code></td>
 <td>GPU/OpenCL-Pfade</td>
 <td><code>gpu graph show</code></td>
+<td>Struktur- oder Fehlerausgabe, wenn kein Graph geladen ist</td>
 </tr>
 <tr>
 <td><code>wasm</code></td>
 <td>WebAssembly-Ausfuehrung</td>
-<td><code>wasm run program.wasm</code></td>
+<td><code>wasm .\module.wasm</code></td>
+<td>fuehrt ein vorhandenes WASM-Modul aus</td>
 </tr>
 <tr>
 <td><code>sys</code></td>
 <td>Shell-/Systemaufrufe</td>
-<td><code>sys dir</code></td>
+<td><code>sys echo hello</code></td>
+<td>Ausgabe <code>hello</code></td>
 </tr>
 </tbody></table>
 <h4 id="ai-und-knowledge">AI und Knowledge</h4>
 <table><thead><tr>
 <th>Kommando</th>
 <th>Zweck</th>
+<th>Direkt testbares Beispiel</th>
+<th>Erwartung</th>
 </tr></thead><tbody>
 <tr>
 <td><code>ai</code></td>
 <td>Provider, Modelle und Prompts</td>
+<td><code>ai providers</code></td>
+<td>JSON-Liste verfuegbarer Provider</td>
 </tr>
 <tr>
 <td><code>atheria</code></td>
 <td>lokales Wissens- und Trainingssystem</td>
+<td><code>atheria status</code></td>
+<td>JSON mit <code>available</code>, <code>trained_records</code>, <code>core_loaded</code></td>
 </tr>
 <tr>
 <td><code>agent</code></td>
 <td>Agenten, Instanzen und Graphen</td>
+<td><code>agent list</code></td>
+<td>JSON-Liste definierter Agenten</td>
 </tr>
 <tr>
 <td><code>memory</code></td>
 <td>Vector Memory und Namespaces</td>
+<td><code>memory status</code></td>
+<td>JSON mit Namespace und Projekt</td>
 </tr>
 <tr>
 <td><code>tool</code></td>
 <td>Tool-Registrierung und Tool-Aufrufe</td>
+<td><code>tool list</code></td>
+<td>JSON-Liste registrierter Tools</td>
 </tr>
 </tbody></table>
 <h4 id="deklarative-runtime">Deklarative Runtime</h4>
 <table><thead><tr>
 <th>Kommando</th>
 <th>Zweck</th>
+<th>Direkt testbares Beispiel</th>
+<th>Erwartung</th>
 </tr></thead><tbody>
 <tr>
 <td><code>ns.exec</code></td>
-<td>Inline-Ausfuehrung von Nova-Quelltext</td>
+<td>Inline-Ausfuehrung</td>
+<td><code>ns.exec values = sys printf &#x27;1\n2\n&#x27;; for v in values:;     py $v</code></td>
+<td>Pipeline-Ausgabe aus Inline-Skript</td>
 </tr>
 <tr>
 <td><code>ns.run</code></td>
 <td><code>.ns</code>-Datei ausfuehren</td>
+<td><code>ns.run .\control.ns</code></td>
+<td>Runtime laeuft und initialisiert Flows/Events</td>
 </tr>
 <tr>
 <td><code>ns.graph</code></td>
 <td>kompilierten Graph zeigen</td>
+<td><code>ns.graph .\control.ns</code></td>
+<td>JSON oder Graphbeschreibung</td>
 </tr>
 <tr>
 <td><code>ns.status</code></td>
 <td>Runtime- und Plattformstatus</td>
+<td><code>ns.status</code></td>
+<td>JSON mit geladenen Systemen und Laufzeitstatus</td>
 </tr>
 <tr>
 <td><code>ns.control</code></td>
 <td>Queue, API, Replay, Metrics</td>
+<td><code>ns.control status</code></td>
+<td>JSON mit Queue-, Event- und Schedule-Status</td>
 </tr>
 <tr>
 <td><code>ns.snapshot</code></td>
 <td>Snapshot schreiben</td>
+<td><code>ns.snapshot .\snap.json</code></td>
+<td>Snapshot-Datei wird erzeugt</td>
 </tr>
 <tr>
 <td><code>ns.resume</code></td>
 <td>Snapshot wieder laden</td>
+<td><code>ns.resume .\snap.json</code></td>
+<td>Snapshot wird wiederhergestellt</td>
 </tr>
 </tbody></table>
 <h4 id="plattform">Plattform</h4>
 <table><thead><tr>
 <th>Kommando</th>
 <th>Zweck</th>
+<th>Direkt testbares Beispiel</th>
+<th>Erwartung</th>
 </tr></thead><tbody>
 <tr>
 <td><code>mesh</code></td>
 <td>Worker und verteilte Ausfuehrung</td>
+<td><code>mesh start-worker --caps cpu,py</code></td>
+<td>lokaler Worker startet</td>
 </tr>
 <tr>
 <td><code>wiki</code></td>
-<td>Markdown-Wiki nach HTML bauen, lokal serven und im Browser oeffnen</td>
+<td>Markdown-Wiki nach HTML bauen und serven</td>
+<td><code>wiki build</code></td>
+<td>HTML-Site wird erzeugt</td>
 </tr>
 <tr>
 <td><code>remote</code></td>
 <td>Remote-Ausfuehrung</td>
+<td><code>remote http://127.0.0.1:PORT py 1 + 1</code></td>
+<td>Remote-Worker liefert Ergebnis</td>
 </tr>
 <tr>
 <td><code>vision</code></td>
 <td>Web- und UI-Flaechen</td>
+<td><code>vision start 8877</code></td>
+<td>lokaler Vision-Server startet</td>
 </tr>
 <tr>
 <td><code>guard</code></td>
 <td>Sicherheits- und Sandbox-Pfade</td>
+<td><code>guard list</code></td>
+<td>JSON mit Policies und eBPF-Profilen</td>
 </tr>
 </tbody></table>
 <h2 id="api">API</h2>
-<p>Die CLI spricht nicht nur lokal, sondern kann Plattformfunktionen ueber die Control-Plane-API begleiten. Fuer HTTP-Endpunkte siehe <a href="APIReference.html">APIReference</a>.</p>
+<p>Die CLI spricht nicht nur lokal. Mit <code>ns.control api start</code> stellt sie eine HTTP-Control-Plane bereit. Fuer Endpunkte, Payloads und HTTP-Aufrufe siehe <a href="APIReference.html">APIReference</a>.</p>
 <h2 id="beispiele">Beispiele</h2>
-<h3 id="beispielmuster">Beispielmuster</h3>
+<h3 id="schnell-pruefbar-ai-und-knowledge">Schnell pruefbar: AI und Knowledge</h3>
+<p>Die folgenden Befehle sind lokal testbar und benoetigen keine externe Cloud-Session.</p>
+<h4 id="provider-und-ai-konfiguration">Provider und AI-Konfiguration</h4>
+<pre><code class="language-powershell">ai providers
+ai config</code></pre>
+<p>Erwartung:</p>
+<ul>
+<li><code>ai providers</code> liefert JSON mit den bekannten Providern</li>
+<li><code>ai config</code> zeigt aktiven Provider, Modell und geladene Umgebungsdateien</li>
+</ul>
+<h4 id="atheria-initialisieren-und-pruefen">Atheria initialisieren und pruefen</h4>
+<pre><code class="language-powershell">atheria status
+atheria init</code></pre>
+<p>Erwartung:</p>
+<ul>
+<li><code>atheria status</code> zeigt, ob die lokale Atheria-Installation gefunden wurde</li>
+<li><code>atheria init</code> laedt den Atheria-Kern und meldet danach <code>core_loaded</code></li>
+</ul>
+<h4 id="memory-mit-einem-echten-suchlauf">Memory mit einem echten Suchlauf</h4>
+<pre><code class="language-powershell">memory namespace docs
+memory project wiki
+memory embed --id intro &quot;Nova-shell kombiniert CLI, Runtime, Graph und AI-OS.&quot;
+memory search &quot;Graph Runtime&quot;</code></pre>
+<p>Erwartung:</p>
+<ul>
+<li>der <code>embed</code>-Aufruf legt einen neuen Memory-Eintrag an</li>
+<li><code>memory search</code> liefert Treffer inklusive Score, Namespace und Projekt</li>
+</ul>
+<h4 id="tool-registrierung-mit-direktem-funktionsbeweis">Tool-Registrierung mit direktem Funktionsbeweis</h4>
+<pre><code class="language-powershell">tool register greet --description &quot;Greet user&quot; --schema &quot;{\&quot;type\&quot;:\&quot;object\&quot;,\&quot;properties\&quot;:{\&quot;name\&quot;:{\&quot;type\&quot;:\&quot;string\&quot;}},\&quot;required\&quot;:[\&quot;name\&quot;]}&quot; --pipeline &quot;py \&quot;Hello \&quot; + {{py:name}}&quot;
+tool call greet name=Nova
+tool show greet</code></pre>
+<p>Erwartung:</p>
+<ul>
+<li><code>tool register</code> erzeugt ein registriertes Tool</li>
+<li><code>tool call greet name=Nova</code> gibt <code>Hello Nova</code> aus</li>
+<li><code>tool show greet</code> zeigt Schema und Pipeline</li>
+</ul>
+<h4 id="agenten-nur-testbar-wenn-ein-provider-konfiguriert-ist">Agenten: nur testbar, wenn ein Provider konfiguriert ist</h4>
+<pre><code class="language-powershell">agent create helper &quot;Summarize {{input}}&quot; --provider lmstudio --model local-model --system &quot;You are precise.&quot;
+agent run helper quarterly report
+agent show helper</code></pre>
+<p>Erwartung:</p>
+<ul>
+<li><code>agent create</code> speichert die Agent-Definition</li>
+<li><code>agent run</code> fuehrt den Prompt ueber den konfigurierten Provider aus</li>
+<li><code>agent show</code> liefert Definition, Provider und Modell</li>
+</ul>
+<p>Hinweis: <code>agent</code> ist absichtlich nicht rein lokal wie <code>memory</code> oder <code>tool</code>. Fuer produktive Tests muss ein funktionierender Provider oder lokaler Modellserver verfuegbar sein.</p>
+<h3 id="schnell-pruefbar-deklarative-runtime">Schnell pruefbar: Deklarative Runtime</h3>
+<p>Die folgenden Beispiele erzeugen erst eine kleine <code>.ns</code>-Datei und arbeiten dann mit <code>ns.run</code>, <code>ns.graph</code>, Queue und Snapshot.</p>
+<h4 id="minimales-control-plane-beispiel-anlegen">Minimales Control-Plane-Beispiel anlegen</h4>
+<pre><code class="language-powershell">@&#x27;
+system control_plane {
+  daemon_autostart: false
+}
+
+flow queued_job {
+  system.log &quot;queued&quot; -&gt; queue_output
+  state.set queue_value queue_output
+}
+
+event ping_handler {
+  on: ping
+  flow: queued_job
+}
+&#x27;@ | Set-Content .\control.ns</code></pre>
+<h4 id="runtime-laden-und-graph-anzeigen">Runtime laden und Graph anzeigen</h4>
+<pre><code class="language-powershell">ns.run .\control.ns
+ns.graph .\control.ns
+ns.status</code></pre>
+<p>Erwartung:</p>
+<ul>
+<li><code>ns.run</code> laedt das System, den Flow und den Event-Handler</li>
+<li><code>ns.graph</code> zeigt den kompilierten Ausfuehrungsgraphen</li>
+<li><code>ns.status</code> zeigt den aktuellen Runtime-Zustand</li>
+</ul>
+<h4 id="queue-event-und-daemon-testen">Queue, Event und Daemon testen</h4>
+<pre><code class="language-powershell">ns.control queue enqueue queued_job
+ns.control queue run
+event emit ping now
+ns.control events ping 0 10
+ns.control status</code></pre>
+<p>Erwartung:</p>
+<ul>
+<li><code>queue enqueue</code> stellt einen Lauf in die Queue</li>
+<li><code>queue run</code> verarbeitet mindestens einen Eintrag</li>
+<li><code>event emit</code> erzeugt ein Laufzeitereignis</li>
+<li><code>ns.control events ping 0 10</code> zeigt das eingegangene Event</li>
+</ul>
+<h4 id="snapshot-und-resume">Snapshot und Resume</h4>
+<pre><code class="language-powershell">ns.snapshot .\control-snapshot.json
+ns.resume .\control-snapshot.json
+ns.status</code></pre>
+<p>Erwartung:</p>
+<ul>
+<li>Snapshot-Datei entsteht auf dem Dateisystem</li>
+<li><code>ns.resume</code> laedt den letzten Zustand wieder ein</li>
+</ul>
+<h3 id="schnell-pruefbar-plattform-und-betrieb">Schnell pruefbar: Plattform und Betrieb</h3>
+<h4 id="mesh-lokal-starten">Mesh lokal starten</h4>
+<pre><code class="language-powershell">mesh start-worker --caps cpu,py
+mesh list
+mesh run py py 1 + 1</code></pre>
+<p>Erwartung:</p>
+<ul>
+<li>ein lokaler Worker wird auf <code>127.0.0.1</code> gestartet</li>
+<li><code>mesh list</code> zeigt URL, Faehigkeiten und Heartbeat-Status</li>
+<li><code>mesh run py py 1 + 1</code> fuehrt Python ueber den Worker aus</li>
+</ul>
+<h4 id="remote-gegen-einen-bekannten-worker-testen">Remote gegen einen bekannten Worker testen</h4>
+<pre><code class="language-powershell">remote http://127.0.0.1:8766 py 1 + 1</code></pre>
+<p>Erwartung:</p>
+<ul>
+<li>der angegebene Worker fuehrt den Befehl remote aus</li>
+</ul>
+<p>Hinweis: Die URL muss zu einem laufenden Worker passen. Falls du den Port nicht kennst, starte erst <code>mesh start-worker --caps cpu,py</code> und lies ihn mit <code>mesh list</code> aus.</p>
+<h4 id="html-wiki-bauen-und-oeffnen">HTML-Wiki bauen und oeffnen</h4>
+<pre><code class="language-powershell">wiki build
+wiki serve --open
+wiki status
+wiki stop</code></pre>
+<p>Erwartung:</p>
+<ul>
+<li><code>wiki build</code> erzeugt die HTML-Dateien</li>
+<li><code>wiki serve --open</code> startet einen lokalen Server und oeffnet <code>Home.html</code></li>
+<li><code>wiki status</code> zeigt Build- und Serverstatus</li>
+<li><code>wiki stop</code> beendet den lokalen Wiki-Server</li>
+</ul>
+<h4 id="vision-server-starten">Vision-Server starten</h4>
+<pre><code class="language-powershell">vision start 8877
+vision status
+vision stop</code></pre>
+<p>Erwartung:</p>
+<ul>
+<li>ein lokaler HTTP-Server fuer Vision/UI startet auf Port <code>8877</code></li>
+<li><code>vision status</code> liefert <code>running</code> oder <code>stopped</code></li>
+</ul>
+<h4 id="guard-und-sandbox-pruefen">Guard und Sandbox pruefen</h4>
+<pre><code class="language-powershell">guard list
+guard sandbox on
+guard sandbox status
+guard sandbox off
+guard ebpf-status</code></pre>
+<p>Erwartung:</p>
+<ul>
+<li><code>guard list</code> zeigt eingebaute und geladene Policies</li>
+<li><code>guard sandbox on|off</code> schaltet den Standard-Sandboxpfad um</li>
+<li><code>guard ebpf-status</code> zeigt, ob Kernel-eBPF oder Userspace-Fallback aktiv ist</li>
+</ul>
+<h2 id="kommando-referenz-im-detail">Kommando-Referenz im Detail</h2>
+<h3 id="ai"><code>ai</code></h3>
+<p>Zweck: Provider, Modellwahl, Prompt-Ausfuehrung und Planerzugriff.</p>
+<p>Syntax:</p>
 <pre><code class="language-text">ai providers
+ai models [provider]
+ai use &lt;provider&gt; [model]
+ai config
+ai env reload [file]
+ai plan &lt;prompt&gt;
+ai prompt &lt;prompt&gt;</code></pre>
+<p>Wann benutzen:</p>
+<ul>
+<li><code>providers</code> und <code>config</code> fuer Diagnose</li>
+<li><code>use</code> fuer Provider- und Modellwechsel</li>
+<li><code>plan</code> fuer Pipeline- oder Tool-Vorschlaege</li>
+<li><code>prompt</code> fuer direkte Modellaufrufe</li>
+</ul>
+<h3 id="atheria"><code>atheria</code></h3>
+<p>Zweck: lokales Wissenssystem, Kerninitialisierung, Suche, Chat, Sensoren und Evolution.</p>
+<p>Syntax:</p>
+<pre><code class="language-text">atheria status
 atheria init
-memory search &quot;distributed execution&quot;
-mesh start-worker --caps py,gpu
-ns.run examples/market_radar.ns
-ns.control daemon start
-wiki serve --open</code></pre>
+atheria search &lt;query&gt;
+atheria chat &lt;prompt&gt;
+atheria sensor gallery|list|show ...
+atheria evolve status|plan|simulate|apply ...</code></pre>
+<p>Wann benutzen:</p>
+<ul>
+<li><code>status</code> und <code>init</code> als erster Integrationscheck</li>
+<li><code>search</code> fuer lokales Wissens-Querying</li>
+<li><code>chat</code> fuer Atheria-gestuetzte Interaktion</li>
+<li><code>sensor</code> fuer Plugin- und Sensorpfade</li>
+<li><code>evolve</code> fuer adaptive Wissens- und Systemanpassung</li>
+</ul>
+<h3 id="agent"><code>agent</code></h3>
+<p>Zweck: Agent-Definitionen, Laufzeitinstanzen, Agent-Workflows und Agent-Graphen.</p>
+<p>Syntax:</p>
+<pre><code class="language-text">agent list
+agent show &lt;name&gt;
+agent create &lt;name&gt; &lt;prompt_template&gt; [--provider p] [--model m] [--system text]
+agent run &lt;name&gt; [input]
+agent spawn &lt;instance_name&gt; --from &lt;agent&gt;
+agent message &lt;instance_name&gt; &lt;message&gt;
+agent workflow --agents a,b[,c] --input text
+agent graph create &lt;name&gt; --nodes a,b[,c] [--edges a&gt;b,b&gt;c]
+agent graph run &lt;name&gt; --input text</code></pre>
+<p>Wann benutzen:</p>
+<ul>
+<li><code>create</code> und <code>run</code> fuer einzelne Agenten</li>
+<li><code>spawn</code> und <code>message</code> fuer zustandsbehaftete Instanzen</li>
+<li><code>workflow</code> fuer lineare Mehragentenlaeufe</li>
+<li><code>graph</code> fuer explizite Agent-DAGs</li>
+</ul>
+<h3 id="memory"><code>memory</code></h3>
+<p>Zweck: lokales semantisches Memory mit Namespace- und Projekt-Scope.</p>
+<p>Syntax:</p>
+<pre><code class="language-text">memory namespace [name]
+memory project [name]
+memory status
+memory embed [--id name] [--file path] [--meta json] &lt;text&gt;
+memory search [--namespace n] [--project p] [--all] [--limit n] &lt;query&gt;
+memory list</code></pre>
+<p>Wann benutzen:</p>
+<ul>
+<li><code>namespace</code> und <code>project</code> fuer saubere Trennung von Daten</li>
+<li><code>embed</code> fuer Wissensaufnahme</li>
+<li><code>search</code> fuer Retrieval</li>
+<li><code>status</code> und <code>list</code> fuer Scope- und Inhaltspruefung</li>
+</ul>
+<h3 id="tool"><code>tool</code></h3>
+<p>Zweck: registrierbare CLI- oder Runtime-Werkzeuge mit Schema und Pipeline-Template.</p>
+<p>Syntax:</p>
+<pre><code class="language-text">tool list
+tool show &lt;name&gt;
+tool register &lt;name&gt; --description text --schema json --pipeline template
+tool call &lt;name&gt; [json|key=value ...]</code></pre>
+<p>Wann benutzen:</p>
+<ul>
+<li><code>register</code> fuer wiederverwendbare Operationen</li>
+<li><code>call</code> fuer strukturierte Aufrufe mit validierten Argumenten</li>
+<li><code>show</code> fuer Debugging und Schema-Pruefung</li>
+</ul>
+<h3 id="ns-exec"><code>ns.exec</code></h3>
+<p>Zweck: Inline-Ausfuehrung eines kurzen Nova-Skripts ohne Datei.</p>
+<p>Syntax:</p>
+<pre><code class="language-text">ns.exec &lt;inline_script&gt;</code></pre>
+<p>Wann benutzen:</p>
+<ul>
+<li>fuer schnelle Experimente</li>
+<li>fuer kurze Pipeline-Tests</li>
+<li>fuer Shell-nahe Skripte ohne <code>.ns</code>-Datei</li>
+</ul>
+<h3 id="ns-run"><code>ns.run</code></h3>
+<p>Zweck: eine <code>.ns</code>-Datei laden und in die deklarative Runtime uebernehmen.</p>
+<p>Syntax:</p>
+<pre><code class="language-text">ns.run &lt;script.ns&gt;</code></pre>
+<p>Wann benutzen:</p>
+<ul>
+<li>fuer echte Programme</li>
+<li>fuer Flows, Events, Systeme, Services und Packages</li>
+</ul>
+<h3 id="ns-graph"><code>ns.graph</code></h3>
+<p>Zweck: den kompilierten Graph einer deklarativen Nova-Datei sichtbar machen.</p>
+<p>Syntax:</p>
+<pre><code class="language-text">ns.graph &lt;script.ns&gt;</code></pre>
+<p>Wann benutzen:</p>
+<ul>
+<li>vor dem ersten produktiven Lauf</li>
+<li>zur Fehlersuche bei Knoten, Kanten und Abhaengigkeiten</li>
+</ul>
+<h3 id="ns-status"><code>ns.status</code></h3>
+<p>Zweck: Momentaufnahme der geladenen deklarativen Runtime.</p>
+<p>Syntax:</p>
+<pre><code class="language-text">ns.status</code></pre>
+<p>Wann benutzen:</p>
+<ul>
+<li>nach <code>ns.run</code></li>
+<li>nach <code>ns.resume</code></li>
+<li>nach Queue-, Schedule- oder API-Aktionen</li>
+</ul>
+<h3 id="ns-control"><code>ns.control</code></h3>
+<p>Zweck: Control-Plane fuer Queue, Scheduler, API, Events, State, Replikation, Workflows, Metrics, Services und Packages.</p>
+<p>Syntax:</p>
+<pre><code class="language-text">ns.control status
+ns.control queue enqueue &lt;flow&gt;
+ns.control queue list
+ns.control queue run
+ns.control schedule add-flow &lt;job&gt; &lt;flow&gt; &lt;interval_seconds&gt;
+ns.control daemon start|stop|tick|status
+ns.control api start|stop|status [host] [port] [token]
+ns.control metrics prometheus</code></pre>
+<p>Wann benutzen:</p>
+<ul>
+<li>fuer Betrieb und Observability</li>
+<li>fuer Replay, Scheduling und Queue-Tests</li>
+<li>fuer API- und Daemon-Steuerung</li>
+</ul>
+<h3 id="mesh"><code>mesh</code></h3>
+<p>Zweck: Worker-Registry und verteilte Ausfuehrung.</p>
+<p>Syntax:</p>
+<pre><code class="language-text">mesh add &lt;worker_url&gt; &lt;cap1,cap2,...&gt;
+mesh list
+mesh run &lt;capability&gt; &lt;command&gt;
+mesh intelligent-run &lt;capability&gt; &lt;command&gt;
+mesh beat &lt;worker_url&gt; [latency_ms] [handle1,handle2]
+mesh start-worker --caps cpu,py
+mesh stop-worker &lt;worker_id|url|port&gt;</code></pre>
+<p>Wann benutzen:</p>
+<ul>
+<li>fuer lokale oder entfernte Worker</li>
+<li>fuer Lastverteilung</li>
+<li>fuer capability-basierte Ausfuehrung</li>
+</ul>
+<h3 id="wiki"><code>wiki</code></h3>
+<p>Zweck: die Projekt-Wiki lokal nach HTML bauen, serven und oeffnen.</p>
+<p>Syntax:</p>
+<pre><code class="language-text">wiki status
+wiki build
+wiki serve [--host HOST] [--port PORT] [--open]
+wiki open [PAGE]
+wiki stop</code></pre>
+<p>Wann benutzen:</p>
+<ul>
+<li>fuer lokale Dokumentationsarbeit</li>
+<li>fuer HTML-Preview vor Release</li>
+<li>fuer Installer- und Bundle-Checks</li>
+</ul>
+<h3 id="remote"><code>remote</code></h3>
+<p>Zweck: ein einzelnes Kommando an einen bekannten Worker senden.</p>
+<p>Syntax:</p>
+<pre><code class="language-text">remote &lt;worker_url&gt; &lt;command&gt;</code></pre>
+<p>Wann benutzen:</p>
+<ul>
+<li>fuer gezielte Remote-Ausfuehrung</li>
+<li>wenn die Ziel-URL schon bekannt ist</li>
+</ul>
+<h3 id="vision"><code>vision</code></h3>
+<p>Zweck: lokale Web- oder UI-Flaechen fuer Nova-shell starten und stoppen.</p>
+<p>Syntax:</p>
+<pre><code class="language-text">vision start [port]
+vision status
+vision stop</code></pre>
+<p>Wann benutzen:</p>
+<ul>
+<li>fuer lokale Demo- oder UI-Pfade</li>
+<li>fuer Browser-gestuetzte Oberflaechen</li>
+</ul>
+<h3 id="guard"><code>guard</code></h3>
+<p>Zweck: Policy-, Sandbox- und eBPF-Steuerung.</p>
+<p>Syntax:</p>
+<pre><code class="language-text">guard list
+guard set &lt;policy&gt;
+guard load &lt;policy.yaml|policy.json&gt;
+guard sandbox on|off|status
+guard ebpf-status
+guard ebpf-compile &lt;policy|file&gt;
+guard ebpf-enforce &lt;policy|file&gt;
+guard ebpf-release</code></pre>
+<p>Wann benutzen:</p>
+<ul>
+<li>fuer Sicherheitsprofile</li>
+<li>fuer Sandbox-Steuerung</li>
+<li>fuer eBPF-gestuetzte Enforcement-Pfade</li>
+</ul>
+<h2 id="typische-fehlerbilder">Typische Fehlerbilder</h2>
+<h3 id="agent-run-liefert-einen-providerfehler"><code>agent run</code> liefert einen Providerfehler</h3>
+<p>Ursache:</p>
+<ul>
+<li>kein Provider aktiv</li>
+<li>lokaler Modellserver nicht gestartet</li>
+<li>API-Schluessel oder <code>.env</code> fehlt</li>
+</ul>
+<p>Erster Check:</p>
+<pre><code class="language-powershell">ai providers
+ai config</code></pre>
+<h3 id="remote-oder-mesh-run-findet-keinen-worker"><code>remote</code> oder <code>mesh run</code> findet keinen Worker</h3>
+<p>Ursache:</p>
+<ul>
+<li>kein Worker gestartet</li>
+<li>URL oder Port falsch</li>
+<li>Capability fehlt</li>
+</ul>
+<p>Erster Check:</p>
+<pre><code class="language-powershell">mesh list</code></pre>
+<h3 id="cpp-sandbox-oder-wasm-schlagen-fehl"><code>cpp.sandbox</code> oder <code>wasm</code> schlagen fehl</h3>
+<p>Ursache:</p>
+<ul>
+<li><code>emcc</code> oder <code>wasmtime</code> fehlen</li>
+<li>Sandbox-Konfiguration ist nicht aktiv</li>
+</ul>
+<p>Erster Check:</p>
+<pre><code class="language-powershell">doctor
+cpp.sandbox int main(){ return 0; }</code></pre>
+<h3 id="ns-graph-oder-ns-run-schlagen-auf-einer-datei-fehl"><code>ns.graph</code> oder <code>ns.run</code> schlagen auf einer Datei fehl</h3>
+<p>Ursache:</p>
+<ul>
+<li>Syntaxfehler in <code>.ns</code></li>
+<li>falscher Laufzeitpfad</li>
+<li>Datei ist keine deklarative Nova-Datei</li>
+</ul>
+<p>Erster Check:</p>
+<pre><code class="language-powershell">ns.graph .\control.ns</code></pre>
 <h2 id="verwandte-seiten">Verwandte Seiten</h2>
 <ul>
 <li><a href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
+<li><a href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
+<li><a href="ShellCommandReference.html">ShellCommandReference</a></li>
+<li><a href="CodeReferenceIndex.html">CodeReferenceIndex</a></li>
 <li><a href="APIReference.html">APIReference</a></li>
+<li><a href="NovaLanguage.html">NovaLanguage</a></li>
+<li><a href="NovaRuntime.html">NovaRuntime</a></li>
 <li><a href="ClassReference.html">ClassReference</a></li>
 <li><a href="PageTemplate.html">PageTemplate</a></li>
 </ul>
@@ -268,7 +741,30 @@ wiki serve --open</code></pre>
 <li class="wiki-toc-link level-3"><a href="#kommandogruppen">Kommandogruppen</a></li>
 <li class="wiki-toc-link"><a href="#api">API</a></li>
 <li class="wiki-toc-link"><a href="#beispiele">Beispiele</a></li>
-<li class="wiki-toc-link level-3"><a href="#beispielmuster">Beispielmuster</a></li>
+<li class="wiki-toc-link level-3"><a href="#schnell-pruefbar-ai-und-knowledge">Schnell pruefbar: AI und Knowledge</a></li>
+<li class="wiki-toc-link level-3"><a href="#schnell-pruefbar-deklarative-runtime">Schnell pruefbar: Deklarative Runtime</a></li>
+<li class="wiki-toc-link level-3"><a href="#schnell-pruefbar-plattform-und-betrieb">Schnell pruefbar: Plattform und Betrieb</a></li>
+<li class="wiki-toc-link"><a href="#kommando-referenz-im-detail">Kommando-Referenz im Detail</a></li>
+<li class="wiki-toc-link level-3"><a href="#ai">`ai`</a></li>
+<li class="wiki-toc-link level-3"><a href="#atheria">`atheria`</a></li>
+<li class="wiki-toc-link level-3"><a href="#agent">`agent`</a></li>
+<li class="wiki-toc-link level-3"><a href="#memory">`memory`</a></li>
+<li class="wiki-toc-link level-3"><a href="#tool">`tool`</a></li>
+<li class="wiki-toc-link level-3"><a href="#ns-exec">`ns.exec`</a></li>
+<li class="wiki-toc-link level-3"><a href="#ns-run">`ns.run`</a></li>
+<li class="wiki-toc-link level-3"><a href="#ns-graph">`ns.graph`</a></li>
+<li class="wiki-toc-link level-3"><a href="#ns-status">`ns.status`</a></li>
+<li class="wiki-toc-link level-3"><a href="#ns-control">`ns.control`</a></li>
+<li class="wiki-toc-link level-3"><a href="#mesh">`mesh`</a></li>
+<li class="wiki-toc-link level-3"><a href="#wiki">`wiki`</a></li>
+<li class="wiki-toc-link level-3"><a href="#remote">`remote`</a></li>
+<li class="wiki-toc-link level-3"><a href="#vision">`vision`</a></li>
+<li class="wiki-toc-link level-3"><a href="#guard">`guard`</a></li>
+<li class="wiki-toc-link"><a href="#typische-fehlerbilder">Typische Fehlerbilder</a></li>
+<li class="wiki-toc-link level-3"><a href="#agent-run-liefert-einen-providerfehler">`agent run` liefert einen Providerfehler</a></li>
+<li class="wiki-toc-link level-3"><a href="#remote-oder-mesh-run-findet-keinen-worker">`remote` oder `mesh run` findet keinen Worker</a></li>
+<li class="wiki-toc-link level-3"><a href="#cpp-sandbox-oder-wasm-schlagen-fehl">`cpp.sandbox` oder `wasm` schlagen fehl</a></li>
+<li class="wiki-toc-link level-3"><a href="#ns-graph-oder-ns-run-schlagen-auf-einer-datei-fehl">`ns.graph` oder `ns.run` schlagen auf einer Datei fehl</a></li>
 <li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
 </ul></div>
         </aside>

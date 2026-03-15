@@ -27,11 +27,14 @@
 <li><a class="wiki-nav-link" data-nav-href="GermanLanguage.html" href="GermanLanguage.html">GermanLanguage</a></li>
 <li><a class="wiki-nav-link" data-nav-href="QuickStart.html" href="QuickStart.html">QuickStart</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Installation.html" href="Installation.html">Installation</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Nutzung</h2>
 <ul>
 <li><a class="wiki-nav-link" data-nav-href="NovaCLI.html" href="NovaCLI.html">NovaCLI</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ShellCommandReference.html" href="ShellCommandReference.html">ShellCommandReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="APIReference.html" href="APIReference.html">APIReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ExamplesAndRecipes.html" href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Tutorials.html" href="Tutorials.html">Tutorials</a></li>
@@ -54,6 +57,7 @@
 <li><a class="wiki-nav-link" data-nav-href="ParserAndASTReference.html" href="ParserAndASTReference.html">ParserAndASTReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="RuntimeMethodReference.html" href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ClassReference.html" href="ClassReference.html">ClassReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="CodeReferenceIndex.html" href="CodeReferenceIndex.html">CodeReferenceIndex</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Plattformfunktionen</h2>
@@ -102,22 +106,53 @@
       <div class="wiki-layout">
         <article class="wiki-article">
           <h1 id="nova-planner">Nova Planner</h1>
-<h2 id="rolle">Rolle</h2>
-<p>Die Planungslogik verteilt sich ueber mehrere Ebenen:</p>
+<h2 id="zweck">Zweck</h2>
+<p>Der Planner ist die Schicht hinter <code>ai plan</code>. Er versucht, aus einer natuerlichen Aufgabenbeschreibung eine handhabbare Nova-shell-Aktion oder Pipeline abzuleiten.</p>
+<h2 id="kernpunkte">Kernpunkte</h2>
 <ul>
-<li>Graph-Planung</li>
-<li>Queue- und Scheduler-Planung</li>
-<li>Agent-Workflow-Planung</li>
-<li>Service- und Traffic-Planung</li>
-<li>Backend- und Worker-Auswahl</li>
+<li>Der Planner kann heuristisch oder providerbasiert arbeiten.</li>
+<li>Heuristische Plaene greifen bevorzugt auf registrierte Tools und bekannte Muster zurueck.</li>
+<li>Providerbasierte Plaene koennen JSON- oder Pipeline-Vorschlaege liefern.</li>
+<li>Der Planner ist ein Uebersetzer zwischen Prompt und operativer Ausfuehrung, kein Ersatz fuer <code>.ns</code>-Programme.</li>
 </ul>
-<h2 id="ergebnis">Ergebnis</h2>
-<p>Der Planner bestimmt, wann, wo und in welcher Form eine Aufgabe ausgefuehrt wird.</p>
+<h2 id="praktische-nutzung">Praktische Nutzung</h2>
+<ul>
+<li>Nutze <code>ai plan</code>, wenn du aus einer Aufgabenbeschreibung einen ersten Shell- oder Toolpfad ableiten willst.</li>
+<li>Nutze <code>ai plan --run</code>, wenn du den Vorschlag unmittelbar ausfuehren willst.</li>
+</ul>
+<h2 id="testbare-einstiege">Testbare Einstiege</h2>
+<h3 id="heuristischen-toolplan-pruefen">Heuristischen Toolplan pruefen</h3>
+<pre><code class="language-powershell">tool register csv_average --description &quot;calculate csv average from file&quot; --schema &quot;{\&quot;type\&quot;:\&quot;object\&quot;,\&quot;properties\&quot;:{\&quot;file\&quot;:{\&quot;type\&quot;:\&quot;string\&quot;}}}&quot; --pipeline &quot;data load {{file}} | py sum(float(r[\&quot;A\&quot;]) for r in _) / len(_)&quot;
+ai plan &quot;calculate csv average&quot;</code></pre>
+<p>Erwartung:</p>
+<ul>
+<li>Der Planner bevorzugt das registrierte Tool.</li>
+<li>Die Rueckgabe ist ein konkreter, ausfuehrbarer Vorschlag.</li>
+</ul>
+<h2 id="typische-fragen-und-fehler">Typische Fragen und Fehler</h2>
+<h3 id="ein-plan-ist-zu-allgemein">Ein Plan ist zu allgemein</h3>
+<ul>
+<li>Es fehlt ein registriertes Tool oder ein aktiver Provider.</li>
+<li>Die Eingabe beschreibt kein klar zuordenbares Muster.</li>
+</ul>
+<h2 id="verwandte-seiten">Verwandte Seiten</h2>
+<ul>
+<li><a href="NovaCLI.html">NovaCLI</a></li>
+<li><a href="NovaTools.html">NovaTools</a></li>
+<li><a href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
+<li><a href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
+</ul>
         </article>
         <aside class="wiki-toc">
           <div class="wiki-toc-card"><h2>On this page</h2><ul>
-<li class="wiki-toc-link"><a href="#rolle">Rolle</a></li>
-<li class="wiki-toc-link"><a href="#ergebnis">Ergebnis</a></li>
+<li class="wiki-toc-link"><a href="#zweck">Zweck</a></li>
+<li class="wiki-toc-link"><a href="#kernpunkte">Kernpunkte</a></li>
+<li class="wiki-toc-link"><a href="#praktische-nutzung">Praktische Nutzung</a></li>
+<li class="wiki-toc-link"><a href="#testbare-einstiege">Testbare Einstiege</a></li>
+<li class="wiki-toc-link level-3"><a href="#heuristischen-toolplan-pruefen">Heuristischen Toolplan pruefen</a></li>
+<li class="wiki-toc-link"><a href="#typische-fragen-und-fehler">Typische Fragen und Fehler</a></li>
+<li class="wiki-toc-link level-3"><a href="#ein-plan-ist-zu-allgemein">Ein Plan ist zu allgemein</a></li>
+<li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
 </ul></div>
         </aside>
       </div>

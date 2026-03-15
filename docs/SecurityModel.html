@@ -27,11 +27,14 @@
 <li><a class="wiki-nav-link" data-nav-href="GermanLanguage.html" href="GermanLanguage.html">GermanLanguage</a></li>
 <li><a class="wiki-nav-link" data-nav-href="QuickStart.html" href="QuickStart.html">QuickStart</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Installation.html" href="Installation.html">Installation</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Nutzung</h2>
 <ul>
 <li><a class="wiki-nav-link" data-nav-href="NovaCLI.html" href="NovaCLI.html">NovaCLI</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ShellCommandReference.html" href="ShellCommandReference.html">ShellCommandReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="APIReference.html" href="APIReference.html">APIReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ExamplesAndRecipes.html" href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Tutorials.html" href="Tutorials.html">Tutorials</a></li>
@@ -54,6 +57,7 @@
 <li><a class="wiki-nav-link" data-nav-href="ParserAndASTReference.html" href="ParserAndASTReference.html">ParserAndASTReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="RuntimeMethodReference.html" href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ClassReference.html" href="ClassReference.html">ClassReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="CodeReferenceIndex.html" href="CodeReferenceIndex.html">CodeReferenceIndex</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Plattformfunktionen</h2>
@@ -102,6 +106,8 @@
       <div class="wiki-layout">
         <article class="wiki-article">
           <h1 id="security-model">Security Model</h1>
+<h2 id="zweck">Zweck</h2>
+<p>Diese Seite beschreibt die grundlegenden Sicherheitsziele und Schutzmechanismen von Nova-shell. Sie soll erklaeren, wie Identitaet, Isolation, Secrets und kontrollierte Ausfuehrung zusammenhaengen.</p>
 <h2 id="sicherheitsziele">Sicherheitsziele</h2>
 <ul>
 <li>Tenant-Isolation</li>
@@ -121,11 +127,40 @@
 <li>Tool-Sandboxing</li>
 <li>Guard- und Isolationspfade</li>
 </ul>
+<h2 id="praktische-pruefpunkte">Praktische Pruefpunkte</h2>
+<h3 id="installations-und-laufzeitfaehigkeiten">Installations- und Laufzeitfaehigkeiten</h3>
+<pre><code class="language-powershell">doctor</code></pre>
+<h3 id="policy-und-auth-pfade">Policy- und Auth-Pfade</h3>
+<pre><code class="language-powershell">ns.auth
+ns.status</code></pre>
+<h2 id="typische-sicherheitsfragen">Typische Sicherheitsfragen</h2>
+<h3 id="wer-darf-was-ausfuehren">Wer darf was ausfuehren?</h3>
+<p>Das wird ueber Rollen, Namespaces, Policies und Trust-Pfade bestimmt.</p>
+<h3 id="wie-wird-remote-ausfuehrung-abgesichert">Wie wird Remote-Ausfuehrung abgesichert?</h3>
+<p>Ueber Worker-Vertrauen, Token-, Zertifikats- und Policy-Pfade.</p>
+<h3 id="wo-liegen-secrets-im-gesamtmodell">Wo liegen Secrets im Gesamtmodell?</h3>
+<p>Secrets gehoeren zur Plattform- und Laufzeitschicht und muessen getrennt von der eigentlichen Workflow-Logik behandelt werden.</p>
+<h2 id="verwandte-seiten">Verwandte Seiten</h2>
+<ul>
+<li><a href="SecurityAndTrust.html">SecurityAndTrust</a></li>
+<li><a href="NovaMesh.html">NovaMesh</a></li>
+<li><a href="NovaAgents.html">NovaAgents</a></li>
+<li><a href="ServiceFabricAndTrafficPlane.html">ServiceFabricAndTrafficPlane</a></li>
+</ul>
         </article>
         <aside class="wiki-toc">
           <div class="wiki-toc-card"><h2>On this page</h2><ul>
+<li class="wiki-toc-link"><a href="#zweck">Zweck</a></li>
 <li class="wiki-toc-link"><a href="#sicherheitsziele">Sicherheitsziele</a></li>
 <li class="wiki-toc-link"><a href="#mechanismen">Mechanismen</a></li>
+<li class="wiki-toc-link"><a href="#praktische-pruefpunkte">Praktische Pruefpunkte</a></li>
+<li class="wiki-toc-link level-3"><a href="#installations-und-laufzeitfaehigkeiten">Installations- und Laufzeitfaehigkeiten</a></li>
+<li class="wiki-toc-link level-3"><a href="#policy-und-auth-pfade">Policy- und Auth-Pfade</a></li>
+<li class="wiki-toc-link"><a href="#typische-sicherheitsfragen">Typische Sicherheitsfragen</a></li>
+<li class="wiki-toc-link level-3"><a href="#wer-darf-was-ausfuehren">Wer darf was ausfuehren?</a></li>
+<li class="wiki-toc-link level-3"><a href="#wie-wird-remote-ausfuehrung-abgesichert">Wie wird Remote-Ausfuehrung abgesichert?</a></li>
+<li class="wiki-toc-link level-3"><a href="#wo-liegen-secrets-im-gesamtmodell">Wo liegen Secrets im Gesamtmodell?</a></li>
+<li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
 </ul></div>
         </aside>
       </div>

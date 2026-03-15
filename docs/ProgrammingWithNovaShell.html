@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="Nova-shell wiki builder">
+  <title>Programming With Nova-shell | Nova-shell Wiki</title>
+  <link rel="stylesheet" href="assets/wiki.css">
+</head>
+<body>
+  <div class="wiki-shell">
+    <aside class="wiki-sidebar" data-sidebar>
+      <div class="wiki-brand">
+        <a href="Home.html">Nova-shell Wiki</a>
+        <p>HTML documentation for the Nova-shell platform.</p>
+      </div>
+      <label class="wiki-search">
+        <span>Search</span>
+        <input type="search" placeholder="Find pages, classes, methods..." data-wiki-search>
+      </label>
+      <div class="wiki-search-results" data-search-results></div>
+      <nav class="wiki-nav">
+        <section class="wiki-nav-section">
+<h2>Einstieg</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="Home.html" href="Home.html">Home</a></li>
+<li><a class="wiki-nav-link" data-nav-href="GermanLanguage.html" href="GermanLanguage.html">GermanLanguage</a></li>
+<li><a class="wiki-nav-link" data-nav-href="QuickStart.html" href="QuickStart.html">QuickStart</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Installation.html" href="Installation.html">Installation</a></li>
+<li><a class="wiki-nav-link active" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
+</ul></section>
+<section class="wiki-nav-section">
+<h2>Nutzung</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="NovaCLI.html" href="NovaCLI.html">NovaCLI</a></li>
+<li><a class="wiki-nav-link active" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ShellCommandReference.html" href="ShellCommandReference.html">ShellCommandReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="APIReference.html" href="APIReference.html">APIReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ExamplesAndRecipes.html" href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Tutorials.html" href="Tutorials.html">Tutorials</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialTechnologyRadar.html" href="TutorialTechnologyRadar.html">TutorialTechnologyRadar</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialMultiAgentCluster.html" href="TutorialMultiAgentCluster.html">TutorialMultiAgentCluster</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialLMStudioIntegration.html" href="TutorialLMStudioIntegration.html">TutorialLMStudioIntegration</a></li>
+</ul></section>
+<section class="wiki-nav-section">
+<h2>Architektur</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="Architecture.html" href="Architecture.html">Architecture</a></li>
+<li><a class="wiki-nav-link" data-nav-href="SystemOverview.html" href="SystemOverview.html">SystemOverview</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ComponentModel.html" href="ComponentModel.html">ComponentModel</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ExecutionModel.html" href="ExecutionModel.html">ExecutionModel</a></li>
+<li><a class="wiki-nav-link" data-nav-href="DataFlow.html" href="DataFlow.html">DataFlow</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaLanguage.html" href="NovaLanguage.html">NovaLanguage</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaRuntime.html" href="NovaRuntime.html">NovaRuntime</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaGraphEngine.html" href="NovaGraphEngine.html">NovaGraphEngine</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaPlanner.html" href="NovaPlanner.html">NovaPlanner</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ParserAndASTReference.html" href="ParserAndASTReference.html">ParserAndASTReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="RuntimeMethodReference.html" href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ClassReference.html" href="ClassReference.html">ClassReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="CodeReferenceIndex.html" href="CodeReferenceIndex.html">CodeReferenceIndex</a></li>
+</ul></section>
+<section class="wiki-nav-section">
+<h2>Plattformfunktionen</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="NovaAgents.html" href="NovaAgents.html">NovaAgents</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaMesh.html" href="NovaMesh.html">NovaMesh</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaSensors.html" href="NovaSensors.html">NovaSensors</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaMemory.html" href="NovaMemory.html">NovaMemory</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaTools.html" href="NovaTools.html">NovaTools</a></li>
+</ul></section>
+<section class="wiki-nav-section">
+<h2>Entwicklung und Betrieb</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="DevelopmentGuide.html" href="DevelopmentGuide.html">DevelopmentGuide</a></li>
+<li><a class="wiki-nav-link" data-nav-href="PageTemplate.html" href="PageTemplate.html">PageTemplate</a></li>
+<li><a class="wiki-nav-link" data-nav-href="RepositoryStructure.html" href="RepositoryStructure.html">RepositoryStructure</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Testing.html" href="Testing.html">Testing</a></li>
+<li><a class="wiki-nav-link" data-nav-href="BuildAndRelease.html" href="BuildAndRelease.html">BuildAndRelease</a></li>
+<li><a class="wiki-nav-link" data-nav-href="SecurityModel.html" href="SecurityModel.html">SecurityModel</a></li>
+<li><a class="wiki-nav-link" data-nav-href="PerformanceAndScaling.html" href="PerformanceAndScaling.html">PerformanceAndScaling</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Troubleshooting.html" href="Troubleshooting.html">Troubleshooting</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Roadmap.html" href="Roadmap.html">Roadmap</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Contributing.html" href="Contributing.html">Contributing</a></li>
+<li><a class="wiki-nav-link" data-nav-href="License.html" href="License.html">License</a></li>
+</ul></section>
+<section class="wiki-nav-section">
+<h2>Theorie</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="Research.html" href="Research.html">Research</a></li>
+<li><a class="wiki-nav-link" data-nav-href="AIOSConcept.html" href="AIOSConcept.html">AIOSConcept</a></li>
+<li><a class="wiki-nav-link" data-nav-href="AgentSystems.html" href="AgentSystems.html">AgentSystems</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Glossary.html" href="Glossary.html">Glossary</a></li>
+<li><a class="wiki-nav-link" data-nav-href="FAQ.html" href="FAQ.html">FAQ</a></li>
+</ul></section>
+      </nav>
+    </aside>
+    <main class="wiki-main">
+      <header class="wiki-header">
+        <button type="button" class="wiki-nav-toggle" data-nav-toggle>Menu</button>
+        <div class="wiki-header-copy">
+          <span class="wiki-kicker">Nova-shell Documentation</span>
+          <h1>Programming With Nova-shell</h1>
+          <p>Source: ProgrammingWithNovaShell.md</p>
+        </div>
+      </header>
+      <div class="wiki-layout">
+        <article class="wiki-article">
+          <h1 id="programming-with-nova-shell">Programming With Nova-shell</h1>
+<h2 id="zweck">Zweck</h2>
+<p>Diese Seite ist der eigentliche Programmierleitfaden fuer Nova-shell. Sie beantwortet nicht nur, welche Befehle es gibt, sondern wie man mit Nova-shell arbeitet, wie Programme aufgebaut werden und wie sich CLI, <code>.ns</code>-Sprache und Python-API zueinander verhalten.</p>
+<p>Wenn jemand nach dem Lesen der Wiki wirklich mit Nova-shell programmieren koennen soll, dann muss diese Seite zusammen mit <a href="NovaCLI.html">NovaCLI</a>, <a href="NovaLanguage.html">NovaLanguage</a>, <a href="ShellCommandReference.html">ShellCommandReference</a> und <a href="CodeReferenceIndex.html">CodeReferenceIndex</a> gelesen werden.</p>
+<h2 id="die-vier-programmierstile">Die vier Programmierstile</h2>
+<p>Nova-shell hat vier echte Programmierstile:</p>
+<ul>
+<li>Shell-Kommandos wie <code>py</code>, <code>memory</code>, <code>tool</code>, <code>mesh</code></li>
+<li>Pipelines wie <code>data load sample.csv | py len(_)</code></li>
+<li>deklarative <code>.ns</code>-Programme</li>
+<li>Python-Einstiegspunkte ueber <code>nova/</code> und <code>nova_shell.py</code></li>
+</ul>
+<p>Die wichtigste Regel ist:</p>
+<ul>
+<li>benutze Shell-Kommandos fuer schnelle Arbeit, Admin-Aufgaben und lokale Experimente</li>
+<li>benutze Pipelines fuer kleine Datenfluesse zwischen Kommandos</li>
+<li>benutze <code>.ns</code>, wenn du reproduzierbare Flows, Events, Agent-Orchestrierung und Runtime-Zustand brauchst</li>
+<li>benutze Python, wenn du Nova-shell erweitern oder intern integrieren willst</li>
+</ul>
+<h2 id="mentales-modell">Mentales Modell</h2>
+<p>Nova-shell besteht aus zwei Laufzeitpfaden:</p>
+<pre><code class="language-text">CLI/Shell Path
+  nova_shell.py
+  -&gt;
+Kommandorouter
+  -&gt;
+Engines
+  -&gt;
+Atheria / Memory / Mesh / Vision / Guard
+
+Declarative Path
+  .ns source
+  -&gt;
+NovaParser
+  -&gt;
+NovaAST
+  -&gt;
+NovaGraphCompiler
+  -&gt;
+NovaRuntime</code></pre>
+<p>Das ist wichtig fuer die Praxis:</p>
+<ul>
+<li><code>memory embed &quot;text&quot;</code> geht ueber den Shell-Pfad</li>
+<li><code>ns.run example.ns</code> geht ueber Parser, Compiler und Runtime</li>
+<li>beide Pfade teilen sich inhaltlich Konzepte wie Agenten, Events, State und Tool-Ausfuehrung</li>
+</ul>
+<h2 id="programmieren-mit-der-cli">Programmieren mit der CLI</h2>
+<h3 id="1-kleine-ausdruecke">1. Kleine Ausdruecke</h3>
+<pre><code class="language-powershell">py 1 + 1
+py {&quot;kind&quot;: &quot;nova&quot;, &quot;value&quot;: 3}
+sys echo hello</code></pre>
+<p>Gut fuer:</p>
+<ul>
+<li>schnelle Berechnungen</li>
+<li>kleine Datentransformationen</li>
+<li>Systemkommandos im Shell-Kontext</li>
+</ul>
+<h3 id="2-daten-in-memory-legen">2. Daten in Memory legen</h3>
+<pre><code class="language-powershell">memory namespace docs
+memory project intro
+memory embed --id intro &quot;Nova-shell orchestrates agents, memory, tools and distributed execution.&quot;
+memory search &quot;distributed execution&quot;</code></pre>
+<p>Das ist der typische Weg, um semantische Inhalte nicht nur temporär im Terminal zu halten.</p>
+<h3 id="3-ein-tool-als-wiederverwendbare-funktion-bauen">3. Ein Tool als wiederverwendbare Funktion bauen</h3>
+<pre><code class="language-powershell">tool register greet --description &quot;Greet user&quot; --schema &quot;{\&quot;type\&quot;:\&quot;object\&quot;,\&quot;properties\&quot;:{\&quot;name\&quot;:{\&quot;type\&quot;:\&quot;string\&quot;}},\&quot;required\&quot;:[\&quot;name\&quot;]}&quot; --pipeline &quot;py \&quot;Hello \&quot; + {{py:name}}&quot;
+tool call greet name=Nova
+tool show greet</code></pre>
+<p>Nutze diesen Weg statt Copy-Paste, wenn ein Ausdruck mehrfach gebraucht wird.</p>
+<h3 id="4-einen-agenten-definieren">4. Einen Agenten definieren</h3>
+<pre><code class="language-powershell">ai providers
+agent create helper &quot;Summarize {{input}}&quot; --provider lmstudio --model local-model --system &quot;You are precise.&quot;
+agent run helper quarterly report
+agent show helper</code></pre>
+<p>Wichtig: Das funktioniert nur mit einem konfigurierten Provider.</p>
+<h3 id="5-lokal-verteilt-arbeiten">5. Lokal verteilt arbeiten</h3>
+<pre><code class="language-powershell">mesh start-worker --caps cpu,py
+mesh list
+mesh run py py 1 + 1</code></pre>
+<h2 id="programmieren-mit-pipelines">Programmieren mit Pipelines</h2>
+<p>Pipelines sind ideal fuer kleine Automationen ohne <code>.ns</code>.</p>
+<h3 id="einfache-pipeline">Einfache Pipeline</h3>
+<pre><code class="language-powershell">sys echo &quot;nova-shell&quot; | py _.upper()</code></pre>
+<h3 id="strukturierte-daten">Strukturierte Daten</h3>
+<pre><code class="language-powershell">data load sample.csv | py len(_)</code></pre>
+<p>Wichtig: Der Platzhalter <code>_</code> ist im Folgeschritt der aktuelle Pipelinewert.</p>
+<h2 id="programmieren-mit-ns">Programmieren mit <code>.ns</code></h2>
+<p><code>.ns</code> ist der richtige Pfad fuer:</p>
+<ul>
+<li>wiederholbare Ablaufe</li>
+<li>Event-Trigger</li>
+<li>Agenten- und Tool-Orchestrierung</li>
+<li>Queue, Snapshot, Resume, Replay</li>
+<li>verteilte Ausfuehrung</li>
+</ul>
+<h3 id="einfaches-beispiel">Einfaches Beispiel</h3>
+<pre><code class="language-ns">system control_plane {
+  daemon_autostart: false
+}
+
+flow queued_job {
+  system.log &quot;queued&quot; -&gt; queue_output
+  state.set queue_value queue_output
+}
+
+event ping_handler {
+  on: ping
+  flow: queued_job
+}</code></pre>
+<h3 id="praktischer-ablauf">Praktischer Ablauf</h3>
+<pre><code class="language-powershell">@&#x27;
+system control_plane {
+  daemon_autostart: false
+}
+
+flow queued_job {
+  system.log &quot;queued&quot; -&gt; queue_output
+  state.set queue_value queue_output
+}
+
+event ping_handler {
+  on: ping
+  flow: queued_job
+}
+&#x27;@ | Set-Content .\control.ns
+
+ns.graph .\control.ns
+ns.run .\control.ns
+ns.status</code></pre>
+<h3 id="queue-und-events-wirklich-nutzen">Queue und Events wirklich nutzen</h3>
+<pre><code class="language-powershell">ns.control queue enqueue queued_job
+ns.control queue run
+event emit ping now
+ns.control events ping 0 10</code></pre>
+<h3 id="snapshot-und-resume">Snapshot und Resume</h3>
+<pre><code class="language-powershell">ns.snapshot .\control-snapshot.json
+ns.resume .\control-snapshot.json
+ns.status</code></pre>
+<h2 id="programmieren-mit-python">Programmieren mit Python</h2>
+<p>Die Python-API ist sinnvoll, wenn du:</p>
+<ul>
+<li>Nova-shell in eigene Programme einbetten willst</li>
+<li>Parser, Compiler oder Runtime direkt testen willst</li>
+<li>Toolchain-Funktionen automatisieren willst</li>
+</ul>
+<h3 id="parser-und-runtime-direkt-benutzen">Parser und Runtime direkt benutzen</h3>
+<pre><code class="language-python">from nova.parser.parser import NovaParser
+from nova.graph.compiler import NovaGraphCompiler
+from nova.runtime.runtime import NovaRuntime
+
+source = &quot;&quot;&quot;
+flow hello {
+  system.log &quot;hello&quot; -&gt; out
+}
+&quot;&quot;&quot;
+
+parser = NovaParser()
+ast = parser.parse(source, source_name=&quot;hello.ns&quot;)
+graph = NovaGraphCompiler().compile(ast)
+
+runtime = NovaRuntime()
+runtime.compile(ast)
+print(graph.to_dict())</code></pre>
+<h3 id="shell-direkt-als-objekt-benutzen">Shell direkt als Objekt benutzen</h3>
+<pre><code class="language-python">from nova_shell import NovaShell
+
+shell = NovaShell()
+result = shell.route(&quot;py 1 + 1&quot;)
+print(result.output)</code></pre>
+<h2 id="typische-programmiermuster">Typische Programmiermuster</h2>
+<h3 id="tool-statt-copy-paste">Tool statt Copy-Paste</h3>
+<p>Wenn du denselben Pipelineausdruck mehrfach brauchst, registriere ein Tool statt denselben Ausdruck immer wieder als Einzeiler zu schreiben.</p>
+<h3 id="memory-statt-lose-zwischenablage">Memory statt lose Zwischenablage</h3>
+<p>Wenn Texte oder semantische Ergebnisse wiederverwendet werden sollen, nutze <code>memory embed</code> und <code>memory search</code> statt nur Shell-Ausgaben.</p>
+<h3 id="ns-fuer-stabile-ablaufe"><code>.ns</code> fuer stabile Ablaufe</h3>
+<p>Wenn ein Ablauf:</p>
+<ul>
+<li>wiederholt wird</li>
+<li>auf Events reagiert</li>
+<li>einen Zustand braucht</li>
+<li>in Queue oder Scheduler laufen soll</li>
+</ul>
+<p>dann gehoert er in <code>.ns</code>, nicht nur in eine Shell-Zeile.</p>
+<h3 id="erst-lokal-dann-mesh">Erst lokal, dann Mesh</h3>
+<p>Entwickle in dieser Reihenfolge:</p>
+<ol>
+<li>lokal als Shell-Befehl</li>
+<li>lokal als Tool oder Flow</li>
+<li>danach ueber <code>mesh run</code> oder <code>.ns</code> plus Worker</li>
+</ol>
+<h2 id="debugging">Debugging</h2>
+<h3 id="erste-diagnosekommandos">Erste Diagnosekommandos</h3>
+<pre><code class="language-powershell">doctor
+help
+tool list
+memory status
+ai config
+mesh list
+ns.status</code></pre>
+<h3 id="wenn-cpp-sandbox-oder-wasm-probleme-machen">Wenn <code>cpp.sandbox</code> oder <code>wasm</code> Probleme machen</h3>
+<pre><code class="language-powershell">doctor
+cpp.sandbox int main(){ return 0; }</code></pre>
+<p>Erwartung:</p>
+<ul>
+<li><code>doctor</code> zeigt <code>emcc: ok</code> und <code>wasmtime: ok</code></li>
+<li><code>cpp.sandbox int main(){ return 0; }</code> liefert <code>sandbox executed</code></li>
+</ul>
+<h3 id="wenn-ns-graph-geht-aber-ns-run-nicht">Wenn <code>ns.graph</code> geht, aber <code>ns.run</code> nicht</h3>
+<p>Dann ist die Syntax oft schon korrekt und das Problem liegt spaeter in Runtime, Tool, Provider oder Datenpfad.</p>
+<h2 id="lesepfade">Lesepfade</h2>
+<p>Wenn du mit der CLI programmieren willst:</p>
+<ol>
+<li><a href="NovaCLI.html">NovaCLI</a></li>
+<li><a href="ShellCommandReference.html">ShellCommandReference</a></li>
+<li><a href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
+</ol>
+<p>Wenn du <code>.ns</code>-Programme schreiben willst:</p>
+<ol>
+<li><a href="NovaLanguage.html">NovaLanguage</a></li>
+<li><a href="ParserAndASTReference.html">ParserAndASTReference</a></li>
+<li><a href="NovaRuntime.html">NovaRuntime</a></li>
+</ol>
+<p>Wenn du die interne API verstehen willst:</p>
+<ol>
+<li><a href="ClassReference.html">ClassReference</a></li>
+<li><a href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
+<li><a href="CodeReferenceIndex.html">CodeReferenceIndex</a></li>
+</ol>
+<h2 id="verwandte-seiten">Verwandte Seiten</h2>
+<ul>
+<li><a href="NovaCLI.html">NovaCLI</a></li>
+<li><a href="ShellCommandReference.html">ShellCommandReference</a></li>
+<li><a href="NovaLanguage.html">NovaLanguage</a></li>
+<li><a href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
+<li><a href="ClassReference.html">ClassReference</a></li>
+<li><a href="CodeReferenceIndex.html">CodeReferenceIndex</a></li>
+<li><a href="PageTemplate.html">PageTemplate</a></li>
+</ul>
+        </article>
+        <aside class="wiki-toc">
+          <div class="wiki-toc-card"><h2>On this page</h2><ul>
+<li class="wiki-toc-link"><a href="#zweck">Zweck</a></li>
+<li class="wiki-toc-link"><a href="#die-vier-programmierstile">Die vier Programmierstile</a></li>
+<li class="wiki-toc-link"><a href="#mentales-modell">Mentales Modell</a></li>
+<li class="wiki-toc-link"><a href="#programmieren-mit-der-cli">Programmieren mit der CLI</a></li>
+<li class="wiki-toc-link level-3"><a href="#1-kleine-ausdruecke">1. Kleine Ausdruecke</a></li>
+<li class="wiki-toc-link level-3"><a href="#2-daten-in-memory-legen">2. Daten in Memory legen</a></li>
+<li class="wiki-toc-link level-3"><a href="#3-ein-tool-als-wiederverwendbare-funktion-bauen">3. Ein Tool als wiederverwendbare Funktion bauen</a></li>
+<li class="wiki-toc-link level-3"><a href="#4-einen-agenten-definieren">4. Einen Agenten definieren</a></li>
+<li class="wiki-toc-link level-3"><a href="#5-lokal-verteilt-arbeiten">5. Lokal verteilt arbeiten</a></li>
+<li class="wiki-toc-link"><a href="#programmieren-mit-pipelines">Programmieren mit Pipelines</a></li>
+<li class="wiki-toc-link level-3"><a href="#einfache-pipeline">Einfache Pipeline</a></li>
+<li class="wiki-toc-link level-3"><a href="#strukturierte-daten">Strukturierte Daten</a></li>
+<li class="wiki-toc-link"><a href="#programmieren-mit-ns">Programmieren mit `.ns`</a></li>
+<li class="wiki-toc-link level-3"><a href="#einfaches-beispiel">Einfaches Beispiel</a></li>
+<li class="wiki-toc-link level-3"><a href="#praktischer-ablauf">Praktischer Ablauf</a></li>
+<li class="wiki-toc-link level-3"><a href="#queue-und-events-wirklich-nutzen">Queue und Events wirklich nutzen</a></li>
+<li class="wiki-toc-link level-3"><a href="#snapshot-und-resume">Snapshot und Resume</a></li>
+<li class="wiki-toc-link"><a href="#programmieren-mit-python">Programmieren mit Python</a></li>
+<li class="wiki-toc-link level-3"><a href="#parser-und-runtime-direkt-benutzen">Parser und Runtime direkt benutzen</a></li>
+<li class="wiki-toc-link level-3"><a href="#shell-direkt-als-objekt-benutzen">Shell direkt als Objekt benutzen</a></li>
+<li class="wiki-toc-link"><a href="#typische-programmiermuster">Typische Programmiermuster</a></li>
+<li class="wiki-toc-link level-3"><a href="#tool-statt-copy-paste">Tool statt Copy-Paste</a></li>
+<li class="wiki-toc-link level-3"><a href="#memory-statt-lose-zwischenablage">Memory statt lose Zwischenablage</a></li>
+<li class="wiki-toc-link level-3"><a href="#ns-fuer-stabile-ablaufe">`.ns` fuer stabile Ablaufe</a></li>
+<li class="wiki-toc-link level-3"><a href="#erst-lokal-dann-mesh">Erst lokal, dann Mesh</a></li>
+<li class="wiki-toc-link"><a href="#debugging">Debugging</a></li>
+<li class="wiki-toc-link level-3"><a href="#erste-diagnosekommandos">Erste Diagnosekommandos</a></li>
+<li class="wiki-toc-link level-3"><a href="#wenn-cpp-sandbox-oder-wasm-probleme-machen">Wenn `cpp.sandbox` oder `wasm` Probleme machen</a></li>
+<li class="wiki-toc-link level-3"><a href="#wenn-ns-graph-geht-aber-ns-run-nicht">Wenn `ns.graph` geht, aber `ns.run` nicht</a></li>
+<li class="wiki-toc-link"><a href="#lesepfade">Lesepfade</a></li>
+<li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
+</ul></div>
+        </aside>
+      </div>
+      <footer class="wiki-footer">
+        <p><a href="Home.html">Home</a> | <a href="QuickStart.html">QuickStart</a> | <a href="Architecture.html">Architecture</a> | <a href="NovaCLI.html">NovaCLI</a> | <a href="DevelopmentGuide.html">DevelopmentGuide</a> | <a href="FAQ.html">FAQ</a></p>
+      </footer>
+    </main>
+  </div>
+  <script>
+    window.NOVA_WIKI = {
+      currentPage: "ProgrammingWithNovaShell.html",
+      searchIndex: "assets/search-index.json"
+    };
+  </script>
+  <script src="assets/wiki.js" defer></script>
+</body>
+</html>

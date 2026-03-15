@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="Nova-shell wiki builder">
+  <title>Shell Command Reference | Nova-shell Wiki</title>
+  <link rel="stylesheet" href="assets/wiki.css">
+</head>
+<body>
+  <div class="wiki-shell">
+    <aside class="wiki-sidebar" data-sidebar>
+      <div class="wiki-brand">
+        <a href="Home.html">Nova-shell Wiki</a>
+        <p>HTML documentation for the Nova-shell platform.</p>
+      </div>
+      <label class="wiki-search">
+        <span>Search</span>
+        <input type="search" placeholder="Find pages, classes, methods..." data-wiki-search>
+      </label>
+      <div class="wiki-search-results" data-search-results></div>
+      <nav class="wiki-nav">
+        <section class="wiki-nav-section">
+<h2>Einstieg</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="Home.html" href="Home.html">Home</a></li>
+<li><a class="wiki-nav-link" data-nav-href="GermanLanguage.html" href="GermanLanguage.html">GermanLanguage</a></li>
+<li><a class="wiki-nav-link" data-nav-href="QuickStart.html" href="QuickStart.html">QuickStart</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Installation.html" href="Installation.html">Installation</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
+</ul></section>
+<section class="wiki-nav-section">
+<h2>Nutzung</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="NovaCLI.html" href="NovaCLI.html">NovaCLI</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
+<li><a class="wiki-nav-link active" data-nav-href="ShellCommandReference.html" href="ShellCommandReference.html">ShellCommandReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="APIReference.html" href="APIReference.html">APIReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ExamplesAndRecipes.html" href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Tutorials.html" href="Tutorials.html">Tutorials</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialTechnologyRadar.html" href="TutorialTechnologyRadar.html">TutorialTechnologyRadar</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialMultiAgentCluster.html" href="TutorialMultiAgentCluster.html">TutorialMultiAgentCluster</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialLMStudioIntegration.html" href="TutorialLMStudioIntegration.html">TutorialLMStudioIntegration</a></li>
+</ul></section>
+<section class="wiki-nav-section">
+<h2>Architektur</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="Architecture.html" href="Architecture.html">Architecture</a></li>
+<li><a class="wiki-nav-link" data-nav-href="SystemOverview.html" href="SystemOverview.html">SystemOverview</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ComponentModel.html" href="ComponentModel.html">ComponentModel</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ExecutionModel.html" href="ExecutionModel.html">ExecutionModel</a></li>
+<li><a class="wiki-nav-link" data-nav-href="DataFlow.html" href="DataFlow.html">DataFlow</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaLanguage.html" href="NovaLanguage.html">NovaLanguage</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaRuntime.html" href="NovaRuntime.html">NovaRuntime</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaGraphEngine.html" href="NovaGraphEngine.html">NovaGraphEngine</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaPlanner.html" href="NovaPlanner.html">NovaPlanner</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ParserAndASTReference.html" href="ParserAndASTReference.html">ParserAndASTReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="RuntimeMethodReference.html" href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ClassReference.html" href="ClassReference.html">ClassReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="CodeReferenceIndex.html" href="CodeReferenceIndex.html">CodeReferenceIndex</a></li>
+</ul></section>
+<section class="wiki-nav-section">
+<h2>Plattformfunktionen</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="NovaAgents.html" href="NovaAgents.html">NovaAgents</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaMesh.html" href="NovaMesh.html">NovaMesh</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaSensors.html" href="NovaSensors.html">NovaSensors</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaMemory.html" href="NovaMemory.html">NovaMemory</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaTools.html" href="NovaTools.html">NovaTools</a></li>
+</ul></section>
+<section class="wiki-nav-section">
+<h2>Entwicklung und Betrieb</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="DevelopmentGuide.html" href="DevelopmentGuide.html">DevelopmentGuide</a></li>
+<li><a class="wiki-nav-link" data-nav-href="PageTemplate.html" href="PageTemplate.html">PageTemplate</a></li>
+<li><a class="wiki-nav-link" data-nav-href="RepositoryStructure.html" href="RepositoryStructure.html">RepositoryStructure</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Testing.html" href="Testing.html">Testing</a></li>
+<li><a class="wiki-nav-link" data-nav-href="BuildAndRelease.html" href="BuildAndRelease.html">BuildAndRelease</a></li>
+<li><a class="wiki-nav-link" data-nav-href="SecurityModel.html" href="SecurityModel.html">SecurityModel</a></li>
+<li><a class="wiki-nav-link" data-nav-href="PerformanceAndScaling.html" href="PerformanceAndScaling.html">PerformanceAndScaling</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Troubleshooting.html" href="Troubleshooting.html">Troubleshooting</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Roadmap.html" href="Roadmap.html">Roadmap</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Contributing.html" href="Contributing.html">Contributing</a></li>
+<li><a class="wiki-nav-link" data-nav-href="License.html" href="License.html">License</a></li>
+</ul></section>
+<section class="wiki-nav-section">
+<h2>Theorie</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="Research.html" href="Research.html">Research</a></li>
+<li><a class="wiki-nav-link" data-nav-href="AIOSConcept.html" href="AIOSConcept.html">AIOSConcept</a></li>
+<li><a class="wiki-nav-link" data-nav-href="AgentSystems.html" href="AgentSystems.html">AgentSystems</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Glossary.html" href="Glossary.html">Glossary</a></li>
+<li><a class="wiki-nav-link" data-nav-href="FAQ.html" href="FAQ.html">FAQ</a></li>
+</ul></section>
+      </nav>
+    </aside>
+    <main class="wiki-main">
+      <header class="wiki-header">
+        <button type="button" class="wiki-nav-toggle" data-nav-toggle>Menu</button>
+        <div class="wiki-header-copy">
+          <span class="wiki-kicker">Nova-shell Documentation</span>
+          <h1>Shell Command Reference</h1>
+          <p>Source: ShellCommandReference.md</p>
+        </div>
+      </header>
+      <div class="wiki-layout">
+        <article class="wiki-article">
+          <h1 id="shell-command-reference">Shell Command Reference</h1>
+<h2 id="zweck">Zweck</h2>
+<p>Diese Seite verbindet die sichtbaren CLI-Kommandos mit den internen Handlern in <code>NovaShell</code>. Sie ist fuer Entwickler wichtig, die nicht nur Befehle benutzen, sondern verstehen wollen:</p>
+<ul>
+<li>welcher Handler ein Kommando ausfuehrt</li>
+<li>welche Rueckgabeform zu erwarten ist</li>
+<li>welche Kommandos lokal testbar sind</li>
+<li>wann ein Kommando Shell-, Agenten- oder Runtime-Zustand veraendert</li>
+</ul>
+<h2 id="kernobjekte">Kernobjekte</h2>
+<ul>
+<li><code>NovaShell.route</code></li>
+<li><code>NovaShell._route_internal</code></li>
+<li><code>NovaShell._route_single</code></li>
+<li><code>NovaShell._execute_stage</code></li>
+<li><code>CommandResult</code></li>
+</ul>
+<h2 id="ausfuehrungsmodell">Ausfuehrungsmodell</h2>
+<p>Der Shell-Pfad sieht vereinfacht so aus:</p>
+<pre><code class="language-text">text command
+  -&gt;
+NovaShell.route(...)
+  -&gt;
+command parsing
+  -&gt;
+top-level handler such as _run_ai or _ns_run
+  -&gt;
+CommandResult(output, error, data, data_type)</code></pre>
+<p>Wenn du wissen willst, was ein Kommando tut, suchst du den zugehoerigen Handler. Wenn du verstehen willst, wie Pipelines funktionieren, suchst du <code>route</code>, <code>_split_pipeline</code>, <code>_execute_stage</code>.</p>
+<h2 id="rueckgabeform">Rueckgabeform</h2>
+<p>Die meisten Kommandos laufen am Ende auf <code>CommandResult</code> hinaus. Praktisch bedeutet das:</p>
+<ul>
+<li><code>output</code> ist der sichtbare Text</li>
+<li><code>error</code> enthaelt eine Fehlerbeschreibung</li>
+<li><code>data</code> kann strukturierte Daten tragen</li>
+<li><code>data_type</code> beschreibt grob, wie <code>data</code> zu interpretieren ist</li>
+</ul>
+<p>Fuer Shell-Arbeit ist <code>output</code> relevant, fuer Integrationen und Tests oft <code>data</code>.</p>
+<h2 id="kommandofamilien">Kommandofamilien</h2>
+<h3 id="basis-und-shell-kommandos">Basis- und Shell-Kommandos</h3>
+<table><thead><tr>
+<th>Kommando</th>
+<th>Handler</th>
+<th>Typisches Ergebnis</th>
+</tr></thead><tbody>
+<tr>
+<td><code>doctor</code></td>
+<td><code>_doctor</code></td>
+<td>Textstatus der Installation</td>
+</tr>
+<tr>
+<td><code>help</code></td>
+<td><code>_help</code></td>
+<td>Textliste aller Kommandos</td>
+</tr>
+<tr>
+<td><code>cd</code></td>
+<td><code>_cd</code></td>
+<td>Arbeitsverzeichnis wird geaendert</td>
+</tr>
+<tr>
+<td><code>pwd</code></td>
+<td><code>_pwd</code></td>
+<td>aktuelles Arbeitsverzeichnis</td>
+</tr>
+<tr>
+<td><code>clear</code>, <code>cls</code></td>
+<td><code>_clear_console</code></td>
+<td>Konsole wird geleert</td>
+</tr>
+<tr>
+<td><code>watch</code></td>
+<td><code>_watch</code></td>
+<td>Beobachtungs- oder Pollinglauf</td>
+</tr>
+<tr>
+<td><code>events</code></td>
+<td><code>_events</code></td>
+<td>Eventuebersicht</td>
+</tr>
+<tr>
+<td><code>wiki</code></td>
+<td><code>_run_wiki</code></td>
+<td>JSON mit Build-, Open- oder Serverstatus</td>
+</tr>
+</tbody></table>
+<h3 id="compute">Compute</h3>
+<table><thead><tr>
+<th>Kommando</th>
+<th>Handler</th>
+<th>Testbarer Einstieg</th>
+</tr></thead><tbody>
+<tr>
+<td><code>py</code></td>
+<td><code>_run_python</code></td>
+<td><code>py 1 + 1</code></td>
+</tr>
+<tr>
+<td><code>cpp</code></td>
+<td><code>_run_cpp</code></td>
+<td><code>cpp 1 + 1</code></td>
+</tr>
+<tr>
+<td><code>cpp.sandbox</code></td>
+<td><code>_run_cpp_sandbox</code></td>
+<td><code>cpp.sandbox int main(){ return 0; }</code></td>
+</tr>
+<tr>
+<td><code>cpp.expr</code></td>
+<td><code>_run_cpp_expr</code></td>
+<td><code>cpp.expr x + 1</code></td>
+</tr>
+<tr>
+<td><code>cpp.expr_chain</code></td>
+<td><code>_run_cpp_expr_chain</code></td>
+<td><code>cpp.expr_chain x+1 ; x*2</code></td>
+</tr>
+<tr>
+<td><code>gpu</code></td>
+<td><code>_run_gpu</code></td>
+<td><code>gpu graph show</code></td>
+</tr>
+<tr>
+<td><code>wasm</code></td>
+<td><code>_run_wasm</code></td>
+<td><code>wasm .\module.wasm</code></td>
+</tr>
+<tr>
+<td><code>jit_wasm</code></td>
+<td><code>_run_jit_wasm</code></td>
+<td><code>jit_wasm 1 + 2 * 3</code></td>
+</tr>
+<tr>
+<td><code>sys</code></td>
+<td><code>_run_system</code></td>
+<td><code>sys echo hello</code></td>
+</tr>
+<tr>
+<td><code>data</code></td>
+<td><code>_run_data</code></td>
+<td><code>data load sample.csv</code></td>
+</tr>
+<tr>
+<td><code>data.load</code></td>
+<td><code>_run_data_load</code></td>
+<td><code>data.load sample.csv</code></td>
+</tr>
+</tbody></table>
+<h3 id="ai-memory-und-tools">AI, Memory und Tools</h3>
+<table><thead><tr>
+<th>Kommando</th>
+<th>Handler</th>
+<th>Testbarer Einstieg</th>
+</tr></thead><tbody>
+<tr>
+<td><code>ai</code></td>
+<td><code>_run_ai</code></td>
+<td><code>ai providers</code></td>
+</tr>
+<tr>
+<td><code>atheria</code></td>
+<td><code>_run_atheria</code></td>
+<td><code>atheria status</code></td>
+</tr>
+<tr>
+<td><code>agent</code></td>
+<td><code>_run_agent</code></td>
+<td><code>agent list</code></td>
+</tr>
+<tr>
+<td><code>memory</code></td>
+<td><code>_run_memory</code></td>
+<td><code>memory status</code></td>
+</tr>
+<tr>
+<td><code>tool</code></td>
+<td><code>_run_tool</code></td>
+<td><code>tool list</code></td>
+</tr>
+<tr>
+<td><code>event</code></td>
+<td><code>_run_event</code></td>
+<td><code>event emit ping now</code></td>
+</tr>
+</tbody></table>
+<h3 id="plattform-und-runtime">Plattform und Runtime</h3>
+<table><thead><tr>
+<th>Kommando</th>
+<th>Handler</th>
+<th>Testbarer Einstieg</th>
+</tr></thead><tbody>
+<tr>
+<td><code>mesh</code></td>
+<td><code>_run_mesh</code></td>
+<td><code>mesh list</code></td>
+</tr>
+<tr>
+<td><code>remote</code></td>
+<td><code>_run_remote</code></td>
+<td><code>remote http://127.0.0.1:8766 py 1 + 1</code></td>
+</tr>
+<tr>
+<td><code>vision</code></td>
+<td><code>_run_vision</code></td>
+<td><code>vision status</code></td>
+</tr>
+<tr>
+<td><code>guard</code></td>
+<td><code>_run_guard</code></td>
+<td><code>guard list</code></td>
+</tr>
+<tr>
+<td><code>secure</code></td>
+<td><code>_run_secure</code></td>
+<td>Security- oder Trust-Pfad</td>
+</tr>
+<tr>
+<td><code>flow</code></td>
+<td><code>_run_flow</code></td>
+<td>Flow-Utilities</td>
+</tr>
+<tr>
+<td><code>observe</code></td>
+<td><code>_run_observe</code></td>
+<td>Beobachtung und Status</td>
+</tr>
+<tr>
+<td><code>studio</code></td>
+<td><code>_run_studio</code></td>
+<td>Studio- oder UI-Pfad</td>
+</tr>
+</tbody></table>
+<h3 id="deklarative-runtime">Deklarative Runtime</h3>
+<table><thead><tr>
+<th>Kommando</th>
+<th>Handler</th>
+<th>Testbarer Einstieg</th>
+</tr></thead><tbody>
+<tr>
+<td><code>ns.exec</code></td>
+<td><code>_ns_exec</code></td>
+<td><code>ns.exec py 1 + 1</code></td>
+</tr>
+<tr>
+<td><code>ns.run</code></td>
+<td><code>_ns_run</code></td>
+<td><code>ns.run .\control.ns</code></td>
+</tr>
+<tr>
+<td><code>ns.graph</code></td>
+<td><code>_ns_graph</code></td>
+<td><code>ns.graph .\control.ns</code></td>
+</tr>
+<tr>
+<td><code>ns.status</code></td>
+<td><code>_ns_status</code></td>
+<td><code>ns.status</code></td>
+</tr>
+<tr>
+<td><code>ns.cluster</code></td>
+<td><code>_ns_cluster</code></td>
+<td>Clusterverwaltung</td>
+</tr>
+<tr>
+<td><code>ns.auth</code></td>
+<td><code>_ns_auth</code></td>
+<td>Auth- und Tenantverwaltung</td>
+</tr>
+<tr>
+<td><code>ns.deploy</code></td>
+<td><code>_ns_deploy</code></td>
+<td>Rollout und Deployment</td>
+</tr>
+<tr>
+<td><code>ns.recover</code></td>
+<td><code>_ns_recover</code></td>
+<td>Recovery und Playbooks</td>
+</tr>
+<tr>
+<td><code>ns.control</code></td>
+<td><code>_ns_control</code></td>
+<td>Queue, Scheduler, API, Metrics</td>
+</tr>
+<tr>
+<td><code>ns.snapshot</code></td>
+<td><code>_ns_snapshot</code></td>
+<td><code>ns.snapshot .\snap.json</code></td>
+</tr>
+<tr>
+<td><code>ns.resume</code></td>
+<td><code>_ns_resume</code></td>
+<td><code>ns.resume .\snap.json</code></td>
+</tr>
+</tbody></table>
+<h2 id="testbare-pfade">Testbare Pfade</h2>
+<h3 id="pfad-1-von-shell-ausdruck-zu-tool">Pfad 1: von Shell-Ausdruck zu Tool</h3>
+<pre><code class="language-powershell">py &quot;Hello &quot; + &quot;Nova&quot;
+tool register greet --description &quot;Greet user&quot; --schema &quot;{\&quot;type\&quot;:\&quot;object\&quot;,\&quot;properties\&quot;:{\&quot;name\&quot;:{\&quot;type\&quot;:\&quot;string\&quot;}},\&quot;required\&quot;:[\&quot;name\&quot;]}&quot; --pipeline &quot;py \&quot;Hello \&quot; + {{py:name}}&quot;
+tool call greet name=Nova</code></pre>
+<p>Interne Handler:</p>
+<ul>
+<li><code>_run_python</code></li>
+<li><code>_run_tool</code></li>
+<li><code>_render_tool_pipeline</code></li>
+<li><code>_parse_tool_call_payload</code></li>
+<li><code>_validate_tool_payload</code></li>
+</ul>
+<h3 id="pfad-2-von-text-zu-memory-und-agent">Pfad 2: von Text zu Memory und Agent</h3>
+<pre><code class="language-powershell">memory embed --id intro &quot;Nova-shell combines runtime and AI.&quot;
+memory search &quot;runtime AI&quot;
+agent create helper &quot;Summarize {{input}}&quot; --provider lmstudio --model local-model
+agent run helper &quot;Nova-shell combines runtime and AI.&quot;</code></pre>
+<p>Interne Handler:</p>
+<ul>
+<li><code>_run_memory</code></li>
+<li><code>_resolve_memory_scope</code></li>
+<li><code>_run_agent</code></li>
+<li><code>_render_agent_prompt</code></li>
+<li><code>_run_agent_once</code></li>
+</ul>
+<h3 id="pfad-3-von-datei-zu-deklarativer-runtime">Pfad 3: von Datei zu deklarativer Runtime</h3>
+<pre><code class="language-powershell">ns.graph .\control.ns
+ns.run .\control.ns
+ns.control status</code></pre>
+<p>Interne Handler:</p>
+<ul>
+<li><code>_ns_graph</code></li>
+<li><code>_ns_run</code></li>
+<li><code>_ns_control</code></li>
+<li><code>_active_declarative_runtime</code></li>
+<li><code>_require_declarative_access</code></li>
+</ul>
+<h2 id="pipeline-programmierung">Pipeline-Programmierung</h2>
+<h3 id="wichtige-methoden-in-novashell">Wichtige Methoden in <code>NovaShell</code></h3>
+<ul>
+<li><code>_split_pipeline</code></li>
+<li><code>_build_pipeline_graph</code></li>
+<li><code>_execute_stage</code></li>
+<li><code>_parallel_stage</code></li>
+<li><code>_route_with_input</code></li>
+<li><code>_materialize_if_generator</code></li>
+</ul>
+<h3 id="minimalbeispiel">Minimalbeispiel</h3>
+<pre><code class="language-powershell">sys echo &quot;Nova-shell&quot; | py _.upper()</code></pre>
+<h3 id="strukturierte-daten">Strukturierte Daten</h3>
+<pre><code class="language-powershell">data load sample.csv | py len(_)</code></pre>
+<p>Hier ist <code>_</code> keine Zeichenkette, sondern eine strukturierte Datenmenge.</p>
+<h2 id="wie-man-einen-handler-findet">Wie man einen Handler findet</h2>
+<p>Wenn du ein Kommando auf den Code zurueckfuehren willst:</p>
+<ol>
+<li>suche in <code>nova_shell.py</code> nach <code>self.commands</code></li>
+<li>suche den Handlernamen wie <code>_run_ai</code> oder <code>_ns_run</code></li>
+<li>pruefe, ob Hilfsfunktionen wie <code>_render_agent_prompt</code> oder <code>_execute_stage</code> beteiligt sind</li>
+</ol>
+<h2 id="typische-diagnosefragen">Typische Diagnosefragen</h2>
+<h3 id="welcher-handler-ist-aktiv">Welcher Handler ist aktiv?</h3>
+<p>Suche in <code>nova_shell.py</code> nach:</p>
+<ul>
+<li><code>self.commands</code></li>
+<li>dem Handlernamen wie <code>_run_ai</code></li>
+<li>dem Kommando wie <code>ns.run</code></li>
+</ul>
+<h3 id="warum-kommt-text-statt-strukturierter-daten-zurueck">Warum kommt Text statt strukturierter Daten zurueck?</h3>
+<p>Dann liefert der Handler wahrscheinlich <code>output</code>, aber kein oder nur einfaches <code>data</code>.</p>
+<h3 id="warum-veraendert-ein-kommando-globalen-zustand">Warum veraendert ein Kommando globalen Zustand?</h3>
+<p>Weil einige Handler nicht nur lesen, sondern Memory, Tool-Registry, Agent-Definitionen, Runtime-Kontext oder Queue-Zustaende schreiben.</p>
+<h2 id="lesepfade">Lesepfade</h2>
+<p>Wenn du:</p>
+<ul>
+<li>Kommandos benutzen willst: <a href="NovaCLI.html">NovaCLI</a></li>
+<li>Shell intern verstehen willst: <a href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
+<li>Symbole und Methoden suchen willst: <a href="CodeReferenceIndex.html">CodeReferenceIndex</a></li>
+<li>Runtime-Methoden nachvollziehen willst: <a href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
+</ul>
+<h2 id="verwandte-seiten">Verwandte Seiten</h2>
+<ul>
+<li><a href="NovaCLI.html">NovaCLI</a></li>
+<li><a href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
+<li><a href="CodeReferenceIndex.html">CodeReferenceIndex</a></li>
+<li><a href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
+<li><a href="PageTemplate.html">PageTemplate</a></li>
+</ul>
+        </article>
+        <aside class="wiki-toc">
+          <div class="wiki-toc-card"><h2>On this page</h2><ul>
+<li class="wiki-toc-link"><a href="#zweck">Zweck</a></li>
+<li class="wiki-toc-link"><a href="#kernobjekte">Kernobjekte</a></li>
+<li class="wiki-toc-link"><a href="#ausfuehrungsmodell">Ausfuehrungsmodell</a></li>
+<li class="wiki-toc-link"><a href="#rueckgabeform">Rueckgabeform</a></li>
+<li class="wiki-toc-link"><a href="#kommandofamilien">Kommandofamilien</a></li>
+<li class="wiki-toc-link level-3"><a href="#basis-und-shell-kommandos">Basis- und Shell-Kommandos</a></li>
+<li class="wiki-toc-link level-3"><a href="#compute">Compute</a></li>
+<li class="wiki-toc-link level-3"><a href="#ai-memory-und-tools">AI, Memory und Tools</a></li>
+<li class="wiki-toc-link level-3"><a href="#plattform-und-runtime">Plattform und Runtime</a></li>
+<li class="wiki-toc-link level-3"><a href="#deklarative-runtime">Deklarative Runtime</a></li>
+<li class="wiki-toc-link"><a href="#testbare-pfade">Testbare Pfade</a></li>
+<li class="wiki-toc-link level-3"><a href="#pfad-1-von-shell-ausdruck-zu-tool">Pfad 1: von Shell-Ausdruck zu Tool</a></li>
+<li class="wiki-toc-link level-3"><a href="#pfad-2-von-text-zu-memory-und-agent">Pfad 2: von Text zu Memory und Agent</a></li>
+<li class="wiki-toc-link level-3"><a href="#pfad-3-von-datei-zu-deklarativer-runtime">Pfad 3: von Datei zu deklarativer Runtime</a></li>
+<li class="wiki-toc-link"><a href="#pipeline-programmierung">Pipeline-Programmierung</a></li>
+<li class="wiki-toc-link level-3"><a href="#wichtige-methoden-in-novashell">Wichtige Methoden in `NovaShell`</a></li>
+<li class="wiki-toc-link level-3"><a href="#minimalbeispiel">Minimalbeispiel</a></li>
+<li class="wiki-toc-link level-3"><a href="#strukturierte-daten">Strukturierte Daten</a></li>
+<li class="wiki-toc-link"><a href="#wie-man-einen-handler-findet">Wie man einen Handler findet</a></li>
+<li class="wiki-toc-link"><a href="#typische-diagnosefragen">Typische Diagnosefragen</a></li>
+<li class="wiki-toc-link level-3"><a href="#welcher-handler-ist-aktiv">Welcher Handler ist aktiv?</a></li>
+<li class="wiki-toc-link level-3"><a href="#warum-kommt-text-statt-strukturierter-daten-zurueck">Warum kommt Text statt strukturierter Daten zurueck?</a></li>
+<li class="wiki-toc-link level-3"><a href="#warum-veraendert-ein-kommando-globalen-zustand">Warum veraendert ein Kommando globalen Zustand?</a></li>
+<li class="wiki-toc-link"><a href="#lesepfade">Lesepfade</a></li>
+<li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
+</ul></div>
+        </aside>
+      </div>
+      <footer class="wiki-footer">
+        <p><a href="Home.html">Home</a> | <a href="QuickStart.html">QuickStart</a> | <a href="Architecture.html">Architecture</a> | <a href="NovaCLI.html">NovaCLI</a> | <a href="DevelopmentGuide.html">DevelopmentGuide</a> | <a href="FAQ.html">FAQ</a></p>
+      </footer>
+    </main>
+  </div>
+  <script>
+    window.NOVA_WIKI = {
+      currentPage: "ShellCommandReference.html",
+      searchIndex: "assets/search-index.json"
+    };
+  </script>
+  <script src="assets/wiki.js" defer></script>
+</body>
+</html>

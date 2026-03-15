@@ -27,11 +27,14 @@
 <li><a class="wiki-nav-link" data-nav-href="GermanLanguage.html" href="GermanLanguage.html">GermanLanguage</a></li>
 <li><a class="wiki-nav-link" data-nav-href="QuickStart.html" href="QuickStart.html">QuickStart</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Installation.html" href="Installation.html">Installation</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Nutzung</h2>
 <ul>
 <li><a class="wiki-nav-link" data-nav-href="NovaCLI.html" href="NovaCLI.html">NovaCLI</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ShellCommandReference.html" href="ShellCommandReference.html">ShellCommandReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="APIReference.html" href="APIReference.html">APIReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ExamplesAndRecipes.html" href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Tutorials.html" href="Tutorials.html">Tutorials</a></li>
@@ -54,6 +57,7 @@
 <li><a class="wiki-nav-link" data-nav-href="ParserAndASTReference.html" href="ParserAndASTReference.html">ParserAndASTReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="RuntimeMethodReference.html" href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ClassReference.html" href="ClassReference.html">ClassReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="CodeReferenceIndex.html" href="CodeReferenceIndex.html">CodeReferenceIndex</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Plattformfunktionen</h2>
@@ -102,58 +106,88 @@
       <div class="wiki-layout">
         <article class="wiki-article">
           <h1 id="glossary">Glossary</h1>
+<h2 id="zweck">Zweck</h2>
+<p>Dieses Glossar definiert die zentralen Begriffe der Nova-shell-Plattform. Es soll unklare oder ueberladene Begriffe vereinheitlichen, damit CLI-, Runtime- und Sprachseiten dieselbe Sprache verwenden.</p>
+<h2 id="kernbegriffe">Kernbegriffe</h2>
 <table><thead><tr>
 <th>Begriff</th>
 <th>Bedeutung</th>
 </tr></thead><tbody>
 <tr>
 <td>Agent</td>
-<td>modellgestuetzte Laufzeitinstanz</td>
+<td>modellgestuetzte Laufzeitinstanz, die Modelle, Tools, Memory und Governance kombiniert</td>
 </tr>
 <tr>
 <td>Dataset</td>
-<td>strukturierte Eingabemenge</td>
+<td>strukturierte Eingabemenge oder Datenquelle in einem deklarativen Flow</td>
 </tr>
 <tr>
 <td>Flow</td>
-<td>deklarativer Ablauf</td>
+<td>deklarativer Ablauf, der in einen Execution Graph kompiliert wird</td>
 </tr>
 <tr>
 <td>Tool</td>
-<td>benannte Operation</td>
+<td>benannte Operation, lokal oder verteilt aufrufbar</td>
 </tr>
 <tr>
 <td>Event</td>
-<td>Signal fuer Automation</td>
+<td>Signal fuer Automation und Trigger in der Runtime</td>
 </tr>
 <tr>
 <td>Service</td>
-<td>laufender Dienst in der Plattform</td>
+<td>laufender Dienst in der Plattform, typischerweise mit Route, Probe und Traffic-Regeln</td>
 </tr>
 <tr>
 <td>Package</td>
-<td>installierbares Artefakt</td>
+<td>installierbares Artefakt fuer deklarative oder laufzeitnahe Nutzung</td>
 </tr>
 <tr>
 <td>Mesh</td>
-<td>verteilte Worker-Schicht</td>
+<td>verteilte Worker-Schicht fuer Remote-Ausfuehrung</td>
 </tr>
 <tr>
 <td>Control Plane</td>
-<td>Queue-, Schedule- und API-Ebene</td>
+<td>Queue-, Schedule-, Replay- und API-Ebene der Plattform</td>
 </tr>
 <tr>
 <td>Traffic Plane</td>
-<td>Routing- und Health-Schicht</td>
+<td>Routing-, Probe- und Traffic-Shift-Schicht fuer Services</td>
 </tr>
 <tr>
 <td>Lockfile</td>
-<td>reproduzierbare Modulaufloesung</td>
+<td>reproduzierbare Modul- und Paketaufloesung der Toolchain</td>
+</tr>
+<tr>
+<td>Atheria</td>
+<td>lokales Wissens- und Trainingssystem von Nova-shell</td>
 </tr>
 </tbody></table>
+<h2 id="sprachbegriffe">Sprachbegriffe</h2>
+<ul>
+<li><code>agent</code>: beschreibt Agentenrollen und ihre Ausfuehrungsparameter</li>
+<li><code>dataset</code>: beschreibt Datenquellen oder Datenobjekte</li>
+<li><code>flow</code>: beschreibt ausfuehrbare Graphen</li>
+<li><code>event</code>: beschreibt Trigger und Signale</li>
+<li><code>tool</code>: beschreibt Werkzeuge oder Tool-Bindungen</li>
+<li><code>system</code>: beschreibt System- oder Plattformkontext</li>
+</ul>
+<h2 id="praktische-nutzung">Praktische Nutzung</h2>
+<p>Wenn eine Seite einen Begriff anders verwendet als hier definiert, sollte sie angepasst oder ergaenzt werden. Das Glossar ist besonders wichtig fuer Nutzer, die zwischen Shell-Kommandos und deklarativer Sprache wechseln.</p>
+<h2 id="verwandte-seiten">Verwandte Seiten</h2>
+<ul>
+<li><a href="NovaLanguage.html">NovaLanguage</a></li>
+<li><a href="Architecture.html">Architecture</a></li>
+<li><a href="SystemOverview.html">SystemOverview</a></li>
+</ul>
         </article>
         <aside class="wiki-toc">
-          <div class="wiki-toc-empty">No subheadings on this page.</div>
+          <div class="wiki-toc-card"><h2>On this page</h2><ul>
+<li class="wiki-toc-link"><a href="#zweck">Zweck</a></li>
+<li class="wiki-toc-link"><a href="#kernbegriffe">Kernbegriffe</a></li>
+<li class="wiki-toc-link"><a href="#sprachbegriffe">Sprachbegriffe</a></li>
+<li class="wiki-toc-link"><a href="#praktische-nutzung">Praktische Nutzung</a></li>
+<li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
+</ul></div>
         </aside>
       </div>
       <footer class="wiki-footer">

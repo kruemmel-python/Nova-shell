@@ -27,11 +27,14 @@
 <li><a class="wiki-nav-link" data-nav-href="GermanLanguage.html" href="GermanLanguage.html">GermanLanguage</a></li>
 <li><a class="wiki-nav-link" data-nav-href="QuickStart.html" href="QuickStart.html">QuickStart</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Installation.html" href="Installation.html">Installation</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Nutzung</h2>
 <ul>
 <li><a class="wiki-nav-link" data-nav-href="NovaCLI.html" href="NovaCLI.html">NovaCLI</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ShellCommandReference.html" href="ShellCommandReference.html">ShellCommandReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="APIReference.html" href="APIReference.html">APIReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ExamplesAndRecipes.html" href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Tutorials.html" href="Tutorials.html">Tutorials</a></li>
@@ -54,6 +57,7 @@
 <li><a class="wiki-nav-link" data-nav-href="ParserAndASTReference.html" href="ParserAndASTReference.html">ParserAndASTReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="RuntimeMethodReference.html" href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ClassReference.html" href="ClassReference.html">ClassReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="CodeReferenceIndex.html" href="CodeReferenceIndex.html">CodeReferenceIndex</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Plattformfunktionen</h2>
@@ -102,40 +106,74 @@
       <div class="wiki-layout">
         <article class="wiki-article">
           <h1 id="troubleshooting">Troubleshooting</h1>
+<h2 id="zweck">Zweck</h2>
+<p>Diese Seite sammelt typische Stoerungsbilder in Nova-shell und nennt die ersten sinnvollen Diagnosekommandos.</p>
+<h2 id="erster-diagnoseblock">Erster Diagnoseblock</h2>
+<pre><code class="language-powershell">doctor
+ns.status</code></pre>
+<p>Diese beiden Befehle sollten fast immer zuerst laufen, bevor tiefer in Parser-, Mesh- oder Security-Themen gegangen wird.</p>
 <h2 id="cli-startet-nicht">CLI startet nicht</h2>
 <ul>
 <li>Python-Version pruefen</li>
 <li>Start mit <code>python -m nova_shell</code> versuchen</li>
+<li>Release- oder PATH-Installation pruefen</li>
 </ul>
-<h2 id="nova-shell-nicht-gefunden"><code>nova-shell</code> nicht gefunden</h2>
+<h2 id="nova-shell-oder-ein-kommando-wird-nicht-gefunden"><code>nova-shell</code> oder ein Kommando wird nicht gefunden</h2>
 <ul>
 <li>Installation in der aktiven Umgebung pruefen</li>
+<li>bei Release-Bundles die installierte Version mit <code>doctor</code> gegen die erwartete Version abgleichen</li>
+<li>bei neuen Features wie <code>wiki</code> sicherstellen, dass wirklich der aktuelle Build installiert ist</li>
 </ul>
 <h2 id="ns-datei-laedt-nicht"><code>.ns</code>-Datei laedt nicht</h2>
 <ul>
 <li>Syntax pruefen</li>
 <li>Imports pruefen</li>
 <li>Namen von Flows und Ressourcen pruefen</li>
+<li>mit <code>ns.graph</code> den kompilierten Graph kontrollieren</li>
 </ul>
 <h2 id="api-antwortet-nicht">API antwortet nicht</h2>
 <ul>
 <li>Host und Port pruefen</li>
 <li>Auth-Token pruefen</li>
+<li>Runtime- und Control-Plane-Status mit <code>ns.status</code> pruefen</li>
 </ul>
 <h2 id="mesh-task-laeuft-nicht">Mesh-Task laeuft nicht</h2>
 <ul>
 <li>Worker-Registrierung pruefen</li>
 <li>Capability-Match pruefen</li>
 <li>Trust- und TLS-Anforderungen pruefen</li>
+<li>verifizieren, ob der Task lokal funktioniert, bevor er verteilt wird</li>
+</ul>
+<h2 id="cpp-sandbox-oder-wasm-pfade-scheitern"><code>cpp.sandbox</code> oder WASM-Pfade scheitern</h2>
+<ul>
+<li><code>doctor</code> auf <code>emcc</code> und <code>wasmtime</code> pruefen</li>
+<li>minimalen Test mit <code>cpp.sandbox int main(){ return 0; }</code> ausfuehren</li>
+</ul>
+<h2 id="wiki-befehle-funktionieren-nicht">Wiki-Befehle funktionieren nicht</h2>
+<ul>
+<li>pruefen, ob der installierte Build das <code>wiki</code>-Kommando bereits enthaelt</li>
+<li><code>wiki build</code> im Projektroot ausfuehren</li>
+<li>bei Installer-Problemen Version und MSI-Stand pruefen</li>
+</ul>
+<h2 id="verwandte-seiten">Verwandte Seiten</h2>
+<ul>
+<li><a href="Testing.html">Testing</a></li>
+<li><a href="OperationsAndObservability.html">OperationsAndObservability</a></li>
+<li><a href="NovaCLI.html">NovaCLI</a></li>
 </ul>
         </article>
         <aside class="wiki-toc">
           <div class="wiki-toc-card"><h2>On this page</h2><ul>
+<li class="wiki-toc-link"><a href="#zweck">Zweck</a></li>
+<li class="wiki-toc-link"><a href="#erster-diagnoseblock">Erster Diagnoseblock</a></li>
 <li class="wiki-toc-link"><a href="#cli-startet-nicht">CLI startet nicht</a></li>
-<li class="wiki-toc-link"><a href="#nova-shell-nicht-gefunden">`nova-shell` nicht gefunden</a></li>
+<li class="wiki-toc-link"><a href="#nova-shell-oder-ein-kommando-wird-nicht-gefunden">`nova-shell` oder ein Kommando wird nicht gefunden</a></li>
 <li class="wiki-toc-link"><a href="#ns-datei-laedt-nicht">`.ns`-Datei laedt nicht</a></li>
 <li class="wiki-toc-link"><a href="#api-antwortet-nicht">API antwortet nicht</a></li>
 <li class="wiki-toc-link"><a href="#mesh-task-laeuft-nicht">Mesh-Task laeuft nicht</a></li>
+<li class="wiki-toc-link"><a href="#cpp-sandbox-oder-wasm-pfade-scheitern">`cpp.sandbox` oder WASM-Pfade scheitern</a></li>
+<li class="wiki-toc-link"><a href="#wiki-befehle-funktionieren-nicht">Wiki-Befehle funktionieren nicht</a></li>
+<li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
 </ul></div>
         </aside>
       </div>

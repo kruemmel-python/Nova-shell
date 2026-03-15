@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="Nova-shell wiki builder">
-  <title>Agents and Knowledge | Nova-shell Wiki</title>
+  <title>Agents And Knowledge | Nova-shell Wiki</title>
   <link rel="stylesheet" href="assets/wiki.css">
 </head>
 <body>
@@ -27,11 +27,14 @@
 <li><a class="wiki-nav-link" data-nav-href="GermanLanguage.html" href="GermanLanguage.html">GermanLanguage</a></li>
 <li><a class="wiki-nav-link" data-nav-href="QuickStart.html" href="QuickStart.html">QuickStart</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Installation.html" href="Installation.html">Installation</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Nutzung</h2>
 <ul>
 <li><a class="wiki-nav-link" data-nav-href="NovaCLI.html" href="NovaCLI.html">NovaCLI</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ShellCommandReference.html" href="ShellCommandReference.html">ShellCommandReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="APIReference.html" href="APIReference.html">APIReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ExamplesAndRecipes.html" href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Tutorials.html" href="Tutorials.html">Tutorials</a></li>
@@ -54,6 +57,7 @@
 <li><a class="wiki-nav-link" data-nav-href="ParserAndASTReference.html" href="ParserAndASTReference.html">ParserAndASTReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="RuntimeMethodReference.html" href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ClassReference.html" href="ClassReference.html">ClassReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="CodeReferenceIndex.html" href="CodeReferenceIndex.html">CodeReferenceIndex</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Plattformfunktionen</h2>
@@ -95,28 +99,85 @@
         <button type="button" class="wiki-nav-toggle" data-nav-toggle>Menu</button>
         <div class="wiki-header-copy">
           <span class="wiki-kicker">Nova-shell Documentation</span>
-          <h1>Agents and Knowledge</h1>
+          <h1>Agents And Knowledge</h1>
           <p>Source: AgentsAndKnowledge.md</p>
         </div>
       </header>
       <div class="wiki-layout">
         <article class="wiki-article">
-          <h1 id="agents-and-knowledge">Agents and Knowledge</h1>
-<h2 id="fokus">Fokus</h2>
-<p>Diese Seite ist das Portal fuer Agenten, Prompting, Memory und Wissenspfade.</p>
-<h2 id="kernbereiche">Kernbereiche</h2>
+          <h1 id="agents-and-knowledge">Agents And Knowledge</h1>
+<h2 id="zweck">Zweck</h2>
+<p>Diese Seite ordnet die AI- und Wissensschicht von Nova-shell als zusammenhaengendes System ein. Im Zentrum stehen Agenten, Prompt-Ausfuehrung, Memory, Tooling und Atheria als lokaler Wissenskern.</p>
+<h2 id="kernpunkte">Kernpunkte</h2>
+<ul>
+<li>Agenten sind keine isolierten Chats, sondern Runtime-Objekte mit Provider, Modell, Prompt-Template und optionalem System-Prompt.</li>
+<li>Memory ist als semantischer Speicher mit Namespace- und Projekt-Scope gedacht und kann manuell oder aus Agentlaeufen befuellt werden.</li>
+<li>Atheria ist die lokale Knowledge-Schicht fuer Suche, Training, Chat, Sensorik und Evolutionspfade.</li>
+<li>Tools sind strukturierte, wiederverwendbare Operationen, die aus Shell-, Agent- und Flow-Kontexten aufgerufen werden koennen.</li>
+</ul>
+<h2 id="praktische-nutzung">Praktische Nutzung</h2>
+<ul>
+<li>Nutze <code>ai config</code>, um den aktiven Providerpfad zu validieren, bevor du Agenten anlegst.</li>
+<li>Nutze <code>memory namespace</code> und <code>memory project</code>, bevor du Eintraege einbettest.</li>
+<li>Nutze <code>atheria status</code> und <code>atheria init</code>, wenn Wissens- und Trainingspfade lokal laufen sollen.</li>
+<li>Nutze <code>tool register</code> fuer stabile, schema-validierte Operationen statt Ad-hoc-Shellstrings.</li>
+</ul>
+<h2 id="testbare-einstiege">Testbare Einstiege</h2>
+<h3 id="memory-und-atheria-zusammen-pruefen">Memory und Atheria zusammen pruefen</h3>
+<pre><code class="language-powershell">atheria status
+atheria init
+memory namespace docs
+memory project ai
+memory embed --id agent_core &quot;Nova-shell verbindet CLI, Runtime und AI-OS.&quot;
+memory search &quot;AI-OS Runtime&quot;</code></pre>
+<p>Erwartung:</p>
+<ul>
+<li><code>atheria init</code> meldet einen lauffaehigen lokalen Kern oder einen klaren Fehlerzustand.</li>
+<li><code>memory search</code> liefert Treffer mit Scope-Metadaten und Score.</li>
+</ul>
+<h3 id="werkzeug-und-agent-kombinieren">Werkzeug und Agent kombinieren</h3>
+<pre><code class="language-powershell">tool register greet --description &quot;Greet user&quot; --schema &quot;{\&quot;type\&quot;:\&quot;object\&quot;,\&quot;properties\&quot;:{\&quot;name\&quot;:{\&quot;type\&quot;:\&quot;string\&quot;}},\&quot;required\&quot;:[\&quot;name\&quot;]}&quot; --pipeline &quot;py \&quot;Hello \&quot; + {{py:name}}&quot;
+agent create helper &quot;Nutze {{input}}&quot; --provider lmstudio --model local-model
+agent show helper</code></pre>
+<p>Erwartung:</p>
+<ul>
+<li>Das Tool ist danach ueber <code>tool call greet name=Nova</code> direkt nutzbar.</li>
+<li>Der Agent besitzt eine persistente Definition mit Provider und Modell.</li>
+</ul>
+<h2 id="typische-fragen-und-fehler">Typische Fragen und Fehler</h2>
+<h3 id="agent-run-liefert-keine-antwort"><code>agent run</code> liefert keine Antwort</h3>
+<ul>
+<li>Provider oder Modell sind nicht konfiguriert.</li>
+<li>Lokaler Modellserver oder API-Zugang fehlen.</li>
+<li>Pruefe <code>ai providers</code> und <code>ai config</code>.</li>
+</ul>
+<h3 id="memory-search-findet-nichts"><code>memory search</code> findet nichts</h3>
+<ul>
+<li>Namespace oder Projekt wurden gewechselt.</li>
+<li>Es wurden noch keine Eintraege eingebettet.</li>
+<li>Die Anfrage ist in einem anderen Scope gelandet.</li>
+</ul>
+<h2 id="verwandte-seiten">Verwandte Seiten</h2>
 <ul>
 <li><a href="NovaAgents.html">NovaAgents</a></li>
 <li><a href="NovaMemory.html">NovaMemory</a></li>
 <li><a href="NovaTools.html">NovaTools</a></li>
-<li><a href="NovaSensors.html">NovaSensors</a></li>
-<li><a href="AgentSystems.html">AgentSystems</a></li>
+<li><a href="AIOSConcept.html">AIOSConcept</a></li>
+<li><a href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
 </ul>
         </article>
         <aside class="wiki-toc">
           <div class="wiki-toc-card"><h2>On this page</h2><ul>
-<li class="wiki-toc-link"><a href="#fokus">Fokus</a></li>
-<li class="wiki-toc-link"><a href="#kernbereiche">Kernbereiche</a></li>
+<li class="wiki-toc-link"><a href="#zweck">Zweck</a></li>
+<li class="wiki-toc-link"><a href="#kernpunkte">Kernpunkte</a></li>
+<li class="wiki-toc-link"><a href="#praktische-nutzung">Praktische Nutzung</a></li>
+<li class="wiki-toc-link"><a href="#testbare-einstiege">Testbare Einstiege</a></li>
+<li class="wiki-toc-link level-3"><a href="#memory-und-atheria-zusammen-pruefen">Memory und Atheria zusammen pruefen</a></li>
+<li class="wiki-toc-link level-3"><a href="#werkzeug-und-agent-kombinieren">Werkzeug und Agent kombinieren</a></li>
+<li class="wiki-toc-link"><a href="#typische-fragen-und-fehler">Typische Fragen und Fehler</a></li>
+<li class="wiki-toc-link level-3"><a href="#agent-run-liefert-keine-antwort">`agent run` liefert keine Antwort</a></li>
+<li class="wiki-toc-link level-3"><a href="#memory-search-findet-nichts">`memory search` findet nichts</a></li>
+<li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
 </ul></div>
         </aside>
       </div>
