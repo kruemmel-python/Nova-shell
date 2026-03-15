@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="Nova-shell wiki builder">
+  <title>Class Reference | Nova-shell Wiki</title>
+  <link rel="stylesheet" href="assets/wiki.css">
+</head>
+<body>
+  <div class="wiki-shell">
+    <aside class="wiki-sidebar" data-sidebar>
+      <div class="wiki-brand">
+        <a href="Home.html">Nova-shell Wiki</a>
+        <p>HTML documentation for the Nova-shell platform.</p>
+      </div>
+      <label class="wiki-search">
+        <span>Search</span>
+        <input type="search" placeholder="Find pages, classes, methods..." data-wiki-search>
+      </label>
+      <div class="wiki-search-results" data-search-results></div>
+      <nav class="wiki-nav">
+        <section class="wiki-nav-section">
+<h2>Einstieg</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="Home.html" href="Home.html">Home</a></li>
+<li><a class="wiki-nav-link" data-nav-href="GermanLanguage.html" href="GermanLanguage.html">GermanLanguage</a></li>
+<li><a class="wiki-nav-link" data-nav-href="QuickStart.html" href="QuickStart.html">QuickStart</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Installation.html" href="Installation.html">Installation</a></li>
+</ul></section>
+<section class="wiki-nav-section">
+<h2>Nutzung</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="NovaCLI.html" href="NovaCLI.html">NovaCLI</a></li>
+<li><a class="wiki-nav-link" data-nav-href="APIReference.html" href="APIReference.html">APIReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ExamplesAndRecipes.html" href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Tutorials.html" href="Tutorials.html">Tutorials</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialTechnologyRadar.html" href="TutorialTechnologyRadar.html">TutorialTechnologyRadar</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialMultiAgentCluster.html" href="TutorialMultiAgentCluster.html">TutorialMultiAgentCluster</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialLMStudioIntegration.html" href="TutorialLMStudioIntegration.html">TutorialLMStudioIntegration</a></li>
+</ul></section>
+<section class="wiki-nav-section">
+<h2>Architektur</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="Architecture.html" href="Architecture.html">Architecture</a></li>
+<li><a class="wiki-nav-link" data-nav-href="SystemOverview.html" href="SystemOverview.html">SystemOverview</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ComponentModel.html" href="ComponentModel.html">ComponentModel</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ExecutionModel.html" href="ExecutionModel.html">ExecutionModel</a></li>
+<li><a class="wiki-nav-link" data-nav-href="DataFlow.html" href="DataFlow.html">DataFlow</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaLanguage.html" href="NovaLanguage.html">NovaLanguage</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaRuntime.html" href="NovaRuntime.html">NovaRuntime</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaGraphEngine.html" href="NovaGraphEngine.html">NovaGraphEngine</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaPlanner.html" href="NovaPlanner.html">NovaPlanner</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ParserAndASTReference.html" href="ParserAndASTReference.html">ParserAndASTReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="RuntimeMethodReference.html" href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
+<li><a class="wiki-nav-link active" data-nav-href="ClassReference.html" href="ClassReference.html">ClassReference</a></li>
+</ul></section>
+<section class="wiki-nav-section">
+<h2>Plattformfunktionen</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="NovaAgents.html" href="NovaAgents.html">NovaAgents</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaMesh.html" href="NovaMesh.html">NovaMesh</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaSensors.html" href="NovaSensors.html">NovaSensors</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaMemory.html" href="NovaMemory.html">NovaMemory</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaTools.html" href="NovaTools.html">NovaTools</a></li>
+</ul></section>
+<section class="wiki-nav-section">
+<h2>Entwicklung und Betrieb</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="DevelopmentGuide.html" href="DevelopmentGuide.html">DevelopmentGuide</a></li>
+<li><a class="wiki-nav-link" data-nav-href="PageTemplate.html" href="PageTemplate.html">PageTemplate</a></li>
+<li><a class="wiki-nav-link" data-nav-href="RepositoryStructure.html" href="RepositoryStructure.html">RepositoryStructure</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Testing.html" href="Testing.html">Testing</a></li>
+<li><a class="wiki-nav-link" data-nav-href="BuildAndRelease.html" href="BuildAndRelease.html">BuildAndRelease</a></li>
+<li><a class="wiki-nav-link" data-nav-href="SecurityModel.html" href="SecurityModel.html">SecurityModel</a></li>
+<li><a class="wiki-nav-link" data-nav-href="PerformanceAndScaling.html" href="PerformanceAndScaling.html">PerformanceAndScaling</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Troubleshooting.html" href="Troubleshooting.html">Troubleshooting</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Roadmap.html" href="Roadmap.html">Roadmap</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Contributing.html" href="Contributing.html">Contributing</a></li>
+<li><a class="wiki-nav-link" data-nav-href="License.html" href="License.html">License</a></li>
+</ul></section>
+<section class="wiki-nav-section">
+<h2>Theorie</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="Research.html" href="Research.html">Research</a></li>
+<li><a class="wiki-nav-link" data-nav-href="AIOSConcept.html" href="AIOSConcept.html">AIOSConcept</a></li>
+<li><a class="wiki-nav-link" data-nav-href="AgentSystems.html" href="AgentSystems.html">AgentSystems</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Glossary.html" href="Glossary.html">Glossary</a></li>
+<li><a class="wiki-nav-link" data-nav-href="FAQ.html" href="FAQ.html">FAQ</a></li>
+</ul></section>
+      </nav>
+    </aside>
+    <main class="wiki-main">
+      <header class="wiki-header">
+        <button type="button" class="wiki-nav-toggle" data-nav-toggle>Menu</button>
+        <div class="wiki-header-copy">
+          <span class="wiki-kicker">Nova-shell Documentation</span>
+          <h1>Class Reference</h1>
+          <p>Source: ClassReference.md</p>
+        </div>
+      </header>
+      <div class="wiki-layout">
+        <article class="wiki-article">
+          <h1 id="class-reference">Class Reference</h1>
+<h2 id="zweck">Zweck</h2>
+<p>Diese Seite ist die zentrale Klassenreferenz der Nova-shell-Wiki. Sie ersetzt keine API-Doku, sondern erklaert die wichtigsten Typen nach Verantwortungsbereich, damit Entwickler schnell die richtigen Einstiegspunkte finden.</p>
+<h2 id="kernobjekte">Kernobjekte</h2>
+<h3 id="parser-und-sprachmodell">Parser und Sprachmodell</h3>
+<table><thead><tr>
+<th>Klasse</th>
+<th>Modul</th>
+<th>Zweck</th>
+<th>Typische Nutzung</th>
+</tr></thead><tbody>
+<tr>
+<td><code>NovaParser</code></td>
+<td><code>nova.parser.parser</code></td>
+<td>Liest <code>.ns</code>-Quelltext und erzeugt eine <code>NovaAST</code>.</td>
+<td>Parser fuer Dateien, Strings und Syntax-Erweiterungen</td>
+</tr>
+<tr>
+<td><code>NovaAST</code></td>
+<td><code>nova.parser.ast</code></td>
+<td>Oberster AST-Knoten eines Nova-Programms.</td>
+<td>Uebergabe an Compiler und Toolchain</td>
+</tr>
+<tr>
+<td><code>ImportDeclaration</code></td>
+<td><code>nova.parser.ast</code></td>
+<td>Repraesentiert <code>import</code>-Anweisungen.</td>
+<td>Modulaufloesung und Lockfile-Erstellung</td>
+</tr>
+<tr>
+<td><code>AgentDeclaration</code></td>
+<td><code>nova.parser.ast</code></td>
+<td>Beschreibt einen Agenten-Block.</td>
+<td>Agent-Definitionen in <code>.ns</code></td>
+</tr>
+<tr>
+<td><code>DatasetDeclaration</code></td>
+<td><code>nova.parser.ast</code></td>
+<td>Beschreibt ein Dataset.</td>
+<td>Data- und Sensor-Pipelines</td>
+</tr>
+<tr>
+<td><code>ToolDeclaration</code></td>
+<td><code>nova.parser.ast</code></td>
+<td>Deklarative Tool-Definition.</td>
+<td>Tool-Routing in Runtime und Agenten</td>
+</tr>
+<tr>
+<td><code>ServiceDeclaration</code></td>
+<td><code>nova.parser.ast</code></td>
+<td>Deklarative Service-Beschreibung.</td>
+<td>Service Fabric und Traffic Plane</td>
+</tr>
+<tr>
+<td><code>PackageDeclaration</code></td>
+<td><code>nova.parser.ast</code></td>
+<td>Paketmetadaten fuer Module und Distribution.</td>
+<td>Toolchain, Registry, Dependencies</td>
+</tr>
+<tr>
+<td><code>FlowDeclaration</code></td>
+<td><code>nova.parser.ast</code></td>
+<td>Enthaelt einen Ausfuehrungsfluss.</td>
+<td>DAG-Compiler und Scheduler</td>
+</tr>
+<tr>
+<td><code>FlowStep</code></td>
+<td><code>nova.parser.ast</code></td>
+<td>Ein einzelner Schritt in einem Flow.</td>
+<td>Kanten- und Node-Erzeugung</td>
+</tr>
+</tbody></table>
+<h3 id="beispiel">Beispiel</h3>
+<pre><code class="language-python">from nova.parser.parser import NovaParser
+
+source = &quot;&quot;&quot;
+agent researcher {
+  model: llama3
+}
+
+flow radar {
+  researcher summarize tech_rss
+}
+&quot;&quot;&quot;
+
+parser = NovaParser()
+ast = parser.parse(source, source_name=&quot;radar.ns&quot;)
+print(ast.flows[0].name)</code></pre>
+<h3 id="graph-und-kompilierung">Graph und Kompilierung</h3>
+<table><thead><tr>
+<th>Klasse</th>
+<th>Modul</th>
+<th>Zweck</th>
+<th>Typische Nutzung</th>
+</tr></thead><tbody>
+<tr>
+<td><code>NovaGraphCompiler</code></td>
+<td><code>nova.graph.compiler</code></td>
+<td>Uebersetzt <code>NovaAST</code> in einen <code>ExecutionGraph</code>.</td>
+<td>Vor jeder deklarativen Ausfuehrung</td>
+</tr>
+<tr>
+<td><code>ExecutionGraph</code></td>
+<td><code>nova.graph.model</code></td>
+<td>Enthaelt Knoten, Kanten und Metadaten eines Programms.</td>
+<td>Scheduler, Visualisierung, Analyse</td>
+</tr>
+<tr>
+<td><code>ExecutionEdge</code></td>
+<td><code>nova.graph.model</code></td>
+<td>Verbindet Knoten im Graph.</td>
+<td>Daten- und Kontrollfluss</td>
+</tr>
+<tr>
+<td><code>AgentNode</code></td>
+<td><code>nova.graph.model</code></td>
+<td>Graph-Repraesentation eines Agenten.</td>
+<td>Agent-Orchestrierung</td>
+</tr>
+<tr>
+<td><code>DatasetNode</code></td>
+<td><code>nova.graph.model</code></td>
+<td>Graph-Repraesentation eines Datasets.</td>
+<td>Eingabe- und Persistenzknoten</td>
+</tr>
+<tr>
+<td><code>ToolNode</code></td>
+<td><code>nova.graph.model</code></td>
+<td>Graph-Repraesentation eines Tools.</td>
+<td>Externe Aktionen und Executor-Routing</td>
+</tr>
+<tr>
+<td><code>ServiceNode</code></td>
+<td><code>nova.graph.model</code></td>
+<td>Repraesentiert einen Service in der Service Fabric.</td>
+<td>Deployment und Routing</td>
+</tr>
+<tr>
+<td><code>PackageNode</code></td>
+<td><code>nova.graph.model</code></td>
+<td>Repraesentiert ein Paket im Graph.</td>
+<td>Registry und Abhaengigkeiten</td>
+</tr>
+<tr>
+<td><code>FlowNode</code></td>
+<td><code>nova.graph.model</code></td>
+<td>Steuert Flow-spezifische Ausfuehrung.</td>
+<td>Entry-Points und Flow-Steuerung</td>
+</tr>
+<tr>
+<td><code>EventNode</code></td>
+<td><code>nova.graph.model</code></td>
+<td>Reagiert auf Bus- oder Runtime-Ereignisse.</td>
+<td>Event-gesteuerte Automatisierung</td>
+</tr>
+</tbody></table>
+<h3 id="beispiel">Beispiel</h3>
+<pre><code class="language-python">from nova.parser.parser import NovaParser
+from nova.graph.compiler import NovaGraphCompiler
+
+parser = NovaParser()
+ast = parser.parse_file(&quot;examples/market_radar.ns&quot;)
+graph = NovaGraphCompiler().compile(ast)
+
+for node in graph.nodes:
+    print(node.kind, node.name)</code></pre>
+<h3 id="runtime-und-control-plane">Runtime und Control Plane</h3>
+<table><thead><tr>
+<th>Klasse</th>
+<th>Modul</th>
+<th>Zweck</th>
+<th>Typische Nutzung</th>
+</tr></thead><tbody>
+<tr>
+<td><code>NovaRuntime</code></td>
+<td><code>nova.runtime.runtime</code></td>
+<td>Zentrale deklarative Runtime.</td>
+<td>Laden, Kompilieren, Ausfuehren, API, Scheduling</td>
+</tr>
+<tr>
+<td><code>RuntimeContext</code></td>
+<td><code>nova.runtime.context</code></td>
+<td>Buendelt Services der Runtime.</td>
+<td>Dependency Injection</td>
+</tr>
+<tr>
+<td><code>CompiledNovaProgram</code></td>
+<td><code>nova.runtime.runtime</code></td>
+<td>Haelt AST, Graph und Zusatzmetadaten.</td>
+<td>Zwischenschritt zwischen Parser und Laufzeit</td>
+</tr>
+<tr>
+<td><code>NovaRuntimeResult</code></td>
+<td><code>nova.runtime.runtime</code></td>
+<td>Ergebnisobjekt einer Ausfuehrung.</td>
+<td>Status, Outputs, Fehler</td>
+</tr>
+<tr>
+<td><code>BackendRouter</code></td>
+<td><code>nova.runtime.backends</code></td>
+<td>Mappt Tool- oder Executor-Aufrufe auf Backends.</td>
+<td><code>py/cpp/gpu/wasm/ai/system</code></td>
+</tr>
+<tr>
+<td><code>DurableControlPlane</code></td>
+<td><code>nova.runtime.control_plane</code></td>
+<td>Queue, Scheduler, Replay und durable Task-Steuerung.</td>
+<td>Hintergrundarbeit und Wiederanlauf</td>
+</tr>
+<tr>
+<td><code>ControlPlaneConsensus</code></td>
+<td><code>nova.runtime.consensus</code></td>
+<td>Konsens- und Replikationsschicht.</td>
+<td>Multi-Node Ownership und Commit</td>
+</tr>
+<tr>
+<td><code>NovaControlPlaneAPIServer</code></td>
+<td><code>nova.runtime.api</code></td>
+<td>HTTP-API fuer Verwaltung und Observability.</td>
+<td>Control Plane, Automatisierung, Integrationen</td>
+</tr>
+<tr>
+<td><code>RuntimeOperations</code></td>
+<td><code>nova.runtime.operations</code></td>
+<td>Backup, Restore, Failpoints, Lasttests.</td>
+<td>Betriebsreife und Recovery</td>
+</tr>
+<tr>
+<td><code>RuntimeObservability</code></td>
+<td><code>nova.runtime.observability</code></td>
+<td>Traces, Audit, Event-Historie.</td>
+<td>Debugging und Diagnose</td>
+</tr>
+</tbody></table>
+<h3 id="beispiel">Beispiel</h3>
+<pre><code class="language-python">from nova.runtime.runtime import NovaRuntime
+
+runtime = NovaRuntime()
+program = runtime.load(&quot;examples/control_plane_runtime.ns&quot;)
+result = runtime.run(program)
+
+print(result.status)</code></pre>
+<h3 id="agents-memory-und-ai-laufzeit">Agents, Memory und AI-Laufzeit</h3>
+<table><thead><tr>
+<th>Klasse</th>
+<th>Modul</th>
+<th>Zweck</th>
+<th>Typische Nutzung</th>
+</tr></thead><tbody>
+<tr>
+<td><code>AgentRuntime</code></td>
+<td><code>nova.agents.runtime</code></td>
+<td>Fuehrt Agentenaufgaben mit Modellen, Tools und Memory aus.</td>
+<td>Agent-Tasks im Graph</td>
+</tr>
+<tr>
+<td><code>AgentSpecification</code></td>
+<td><code>nova.agents.runtime</code></td>
+<td>Konfiguration eines Agenten.</td>
+<td>Registrierung und Steuerung</td>
+</tr>
+<tr>
+<td><code>AgentTask</code></td>
+<td><code>nova.agents.runtime</code></td>
+<td>Ein einzelner Agentenauftrag.</td>
+<td>Laufzeit-Dispatch</td>
+</tr>
+<tr>
+<td><code>AgentExecutionResult</code></td>
+<td><code>nova.agents.runtime</code></td>
+<td>Ergebnis eines Agentenlaufs.</td>
+<td>Protokollierung und Folgefluesse</td>
+</tr>
+<tr>
+<td><code>PromptRegistry</code></td>
+<td><code>nova.agents.prompts</code></td>
+<td>Versioniert Prompt-Staende.</td>
+<td>Governance und Rollout</td>
+</tr>
+<tr>
+<td><code>DistributedMemoryStore</code></td>
+<td><code>nova.agents.memory</code></td>
+<td>Verteilter Agenten-Speicher.</td>
+<td>Kontextsuche und Wiederverwendung</td>
+</tr>
+<tr>
+<td><code>AgentEvalStore</code></td>
+<td><code>nova.agents.evals</code></td>
+<td>Speichert Eval-Laeufe und Resultate.</td>
+<td>Modellvergleich und Regressionserkennung</td>
+</tr>
+<tr>
+<td><code>ToolSandbox</code></td>
+<td><code>nova.agents.sandbox</code></td>
+<td>Begrenzte Tool-Ausfuehrung fuer Agenten.</td>
+<td>Sichere Tool-Nutzung</td>
+</tr>
+</tbody></table>
+<h3 id="beispiel">Beispiel</h3>
+<pre><code class="language-python">from nova.agents.runtime import AgentRuntime, AgentSpecification, AgentTask
+
+runtime = AgentRuntime()
+runtime.register(AgentSpecification(name=&quot;researcher&quot;, model=&quot;gpt-4o-mini&quot;))
+result = runtime.execute(AgentTask(agent=&quot;researcher&quot;, objective=&quot;Summarize the feed&quot;))
+print(result.output)</code></pre>
+<h3 id="mesh-worker-und-executor">Mesh, Worker und Executor</h3>
+<table><thead><tr>
+<th>Klasse</th>
+<th>Modul</th>
+<th>Zweck</th>
+<th>Typische Nutzung</th>
+</tr></thead><tbody>
+<tr>
+<td><code>MeshRegistry</code></td>
+<td><code>nova.mesh.registry</code></td>
+<td>Verwaltet Worker-Knoten und Routing.</td>
+<td>Remote-Ausfuehrung</td>
+</tr>
+<tr>
+<td><code>WorkerNode</code></td>
+<td><code>nova.mesh.registry</code></td>
+<td>Beschreibt einen Worker mit Capabilities.</td>
+<td>Registrierung und Scheduling</td>
+</tr>
+<tr>
+<td><code>ExecutorTask</code></td>
+<td><code>nova.mesh.protocol</code></td>
+<td>Standardisierte Remote-Aufgabe.</td>
+<td>Executor-Protokoll</td>
+</tr>
+<tr>
+<td><code>ExecutorResult</code></td>
+<td><code>nova.mesh.protocol</code></td>
+<td>Standardisierte Antwort eines Workers.</td>
+<td>Ergebnisuebergabe</td>
+</tr>
+<tr>
+<td><code>NativeExecutorManager</code></td>
+<td><code>nova.runtime.executors</code></td>
+<td>Startet und verwaltet Backend-Executors.</td>
+<td>Native <code>py/cpp/gpu/wasm/ai</code>-Pfad</td>
+</tr>
+<tr>
+<td><code>ExecutorDaemon</code></td>
+<td><code>nova.runtime.executor_daemon</code></td>
+<td>Daemon fuer isolierte Ausfuehrung.</td>
+<td>Subprozess-Isolation</td>
+</tr>
+</tbody></table>
+<h3 id="beispiel">Beispiel</h3>
+<pre><code class="language-python">from nova.mesh.registry import MeshRegistry, WorkerNode
+
+mesh = MeshRegistry()
+mesh.register(
+    WorkerNode(
+        node_id=&quot;worker-1&quot;,
+        endpoint=&quot;http://127.0.0.1:9040&quot;,
+        capabilities={&quot;py&quot;, &quot;gpu&quot;, &quot;ai&quot;},
+    )
+)</code></pre>
+<h3 id="toolchain-und-entwicklerschnittstellen">Toolchain und Entwicklerschnittstellen</h3>
+<table><thead><tr>
+<th>Klasse</th>
+<th>Modul</th>
+<th>Zweck</th>
+<th>Typische Nutzung</th>
+</tr></thead><tbody>
+<tr>
+<td><code>NovaModuleLoader</code></td>
+<td><code>nova.toolchain.loader</code></td>
+<td>Loest Module und Imports auf.</td>
+<td>Multi-Datei-Programme</td>
+</tr>
+<tr>
+<td><code>ResolvedNovaModule</code></td>
+<td><code>nova.toolchain.loader</code></td>
+<td>Repraesentiert ein geladenes Modul.</td>
+<td>Toolchain-Analyse</td>
+</tr>
+<tr>
+<td><code>LoadedNovaProgram</code></td>
+<td><code>nova.toolchain.loader</code></td>
+<td>Vollstaendig geladenes Programm inkl. Abhaengigkeiten.</td>
+<td>Kompilierung und Tests</td>
+</tr>
+<tr>
+<td><code>NovaPackageRegistry</code></td>
+<td><code>nova.toolchain.registry</code></td>
+<td>Paketpublikation und -aufloesung.</td>
+<td>Wiederverwendbare Module</td>
+</tr>
+<tr>
+<td><code>NovaFormatter</code></td>
+<td><code>nova.toolchain.formatter</code></td>
+<td>Formatiert <code>.ns</code>-Quelltext.</td>
+<td>Style-Konsistenz</td>
+</tr>
+<tr>
+<td><code>NovaLinter</code></td>
+<td><code>nova.toolchain.linter</code></td>
+<td>Statische Diagnosen fuer <code>.ns</code>.</td>
+<td>Qualitaetspruefung</td>
+</tr>
+<tr>
+<td><code>NovaLanguageServerFacade</code></td>
+<td><code>nova.toolchain.lsp</code></td>
+<td>Editor-nahe Informationen wie Hover und Symbole.</td>
+<td>IDE-Integration</td>
+</tr>
+<tr>
+<td><code>NovaTestRunner</code></td>
+<td><code>nova.toolchain.testing</code></td>
+<td>Fuehrt deklarative Programmtets aus.</td>
+<td>Projektweite <code>.ns</code>-Tests</td>
+</tr>
+<tr>
+<td><code>NovaTestSuiteResult</code></td>
+<td><code>nova.toolchain.testing</code></td>
+<td>Zusammenfassung eines Testlaufs.</td>
+<td>CI und Regressionen</td>
+</tr>
+</tbody></table>
+<h3 id="beispiel">Beispiel</h3>
+<pre><code class="language-python">from nova.toolchain.loader import NovaModuleLoader
+from nova.toolchain.testing import NovaTestRunner
+
+loader = NovaModuleLoader()
+program = loader.load(&quot;examples/distributed_pipeline.ns&quot;)
+
+runner = NovaTestRunner()
+result = runner.run(program)
+print(result.passed)</code></pre>
+<h3 id="legacy-und-shell-klassen">Legacy- und Shell-Klassen</h3>
+<p>Die Datei <code>nova_shell.py</code> enthaelt weiterhin die interaktive Shell, Engines und Integrationsschichten. Die wichtigsten Einstiegspunkte sind:</p>
+<table><thead><tr>
+<th>Klasse</th>
+<th>Modul</th>
+<th>Zweck</th>
+</tr></thead><tbody>
+<tr>
+<td><code>NovaShell</code></td>
+<td><code>nova_shell</code></td>
+<td>Interaktive Shell und Kommandorouter</td>
+</tr>
+<tr>
+<td><code>NovaShellCommandExecutor</code></td>
+<td><code>nova_shell</code></td>
+<td>Fuehrt Shell-Kommandos aus</td>
+</tr>
+<tr>
+<td><code>PythonEngine</code></td>
+<td><code>nova_shell</code></td>
+<td>Python-Ausfuehrung fuer die klassische Runtime</td>
+</tr>
+<tr>
+<td><code>CppEngine</code></td>
+<td><code>nova_shell</code></td>
+<td>C++-Build- und Laufpfad</td>
+</tr>
+<tr>
+<td><code>GPUEngine</code></td>
+<td><code>nova_shell</code></td>
+<td>GPU-bezogene Operationen</td>
+</tr>
+<tr>
+<td><code>WasmEngine</code></td>
+<td><code>nova_shell</code></td>
+<td>WASM- und Sandbox-Ausfuehrung</td>
+</tr>
+<tr>
+<td><code>RemoteEngine</code></td>
+<td><code>nova_shell</code></td>
+<td>Remote-Compute und Mesh-Bruecke</td>
+</tr>
+<tr>
+<td><code>NovaAtheriaRuntime</code></td>
+<td><code>nova_shell</code></td>
+<td>Atheria-Integration im Shell-Pfad</td>
+</tr>
+<tr>
+<td><code>NovaAIProviderRuntime</code></td>
+<td><code>nova_shell</code></td>
+<td>Provider-Bruecke fuer AI-Aufrufe</td>
+</tr>
+</tbody></table>
+<h2 id="methoden-und-schnittstellen">Methoden und Schnittstellen</h2>
+<p>Diese Seite dokumentiert vor allem Typen. Methodendetails stehen in den spezialisierten Referenzseiten:</p>
+<ul>
+<li><a href="ParserAndASTReference.html">ParserAndASTReference</a></li>
+<li><a href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
+<li><a href="APIReference.html">APIReference</a></li>
+</ul>
+<h2 id="cli">CLI</h2>
+<p>Shell-Klassen werden ueber die interaktive CLI sichtbar. Runtime- und Toolchain-Klassen werden ueber <code>ns.*</code>, Tests und API-Pfade genutzt.</p>
+<h2 id="api">API</h2>
+<p>Die API-relevanten Klassen sind vor allem:</p>
+<ul>
+<li><code>NovaControlPlaneAPIServer</code></li>
+<li><code>DurableControlPlane</code></li>
+<li><code>ControlPlaneConsensus</code></li>
+</ul>
+<h2 id="beispiele">Beispiele</h2>
+<p>Die Codebeispiele in den einzelnen Abschnitten zeigen typische Konstruktion und Nutzung.</p>
+<h2 id="verwandte-seiten">Verwandte Seiten</h2>
+<ul>
+<li>Parser und Sprache: <a href="ParserAndASTReference.html">ParserAndASTReference</a></li>
+<li>Runtime-Methoden: <a href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
+<li>Nutzungsbeispiele: <a href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
+<li><a href="PageTemplate.html">PageTemplate</a></li>
+</ul>
+        </article>
+        <aside class="wiki-toc">
+          <div class="wiki-toc-card"><h2>On this page</h2><ul>
+<li class="wiki-toc-link"><a href="#zweck">Zweck</a></li>
+<li class="wiki-toc-link"><a href="#kernobjekte">Kernobjekte</a></li>
+<li class="wiki-toc-link level-3"><a href="#parser-und-sprachmodell">Parser und Sprachmodell</a></li>
+<li class="wiki-toc-link level-3"><a href="#beispiel">Beispiel</a></li>
+<li class="wiki-toc-link level-3"><a href="#graph-und-kompilierung">Graph und Kompilierung</a></li>
+<li class="wiki-toc-link level-3"><a href="#beispiel">Beispiel</a></li>
+<li class="wiki-toc-link level-3"><a href="#runtime-und-control-plane">Runtime und Control Plane</a></li>
+<li class="wiki-toc-link level-3"><a href="#beispiel">Beispiel</a></li>
+<li class="wiki-toc-link level-3"><a href="#agents-memory-und-ai-laufzeit">Agents, Memory und AI-Laufzeit</a></li>
+<li class="wiki-toc-link level-3"><a href="#beispiel">Beispiel</a></li>
+<li class="wiki-toc-link level-3"><a href="#mesh-worker-und-executor">Mesh, Worker und Executor</a></li>
+<li class="wiki-toc-link level-3"><a href="#beispiel">Beispiel</a></li>
+<li class="wiki-toc-link level-3"><a href="#toolchain-und-entwicklerschnittstellen">Toolchain und Entwicklerschnittstellen</a></li>
+<li class="wiki-toc-link level-3"><a href="#beispiel">Beispiel</a></li>
+<li class="wiki-toc-link level-3"><a href="#legacy-und-shell-klassen">Legacy- und Shell-Klassen</a></li>
+<li class="wiki-toc-link"><a href="#methoden-und-schnittstellen">Methoden und Schnittstellen</a></li>
+<li class="wiki-toc-link"><a href="#cli">CLI</a></li>
+<li class="wiki-toc-link"><a href="#api">API</a></li>
+<li class="wiki-toc-link"><a href="#beispiele">Beispiele</a></li>
+<li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
+</ul></div>
+        </aside>
+      </div>
+      <footer class="wiki-footer">
+        <p><a href="Home.html">Home</a> | <a href="QuickStart.html">QuickStart</a> | <a href="Architecture.html">Architecture</a> | <a href="NovaCLI.html">NovaCLI</a> | <a href="DevelopmentGuide.html">DevelopmentGuide</a> | <a href="FAQ.html">FAQ</a></p>
+      </footer>
+    </main>
+  </div>
+  <script>
+    window.NOVA_WIKI = {
+      currentPage: "ClassReference.html",
+      searchIndex: "assets/search-index.json"
+    };
+  </script>
+  <script src="assets/wiki.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="Nova-shell wiki builder">
+  <title>Examples and Recipes | Nova-shell Wiki</title>
+  <link rel="stylesheet" href="assets/wiki.css">
+</head>
+<body>
+  <div class="wiki-shell">
+    <aside class="wiki-sidebar" data-sidebar>
+      <div class="wiki-brand">
+        <a href="Home.html">Nova-shell Wiki</a>
+        <p>HTML documentation for the Nova-shell platform.</p>
+      </div>
+      <label class="wiki-search">
+        <span>Search</span>
+        <input type="search" placeholder="Find pages, classes, methods..." data-wiki-search>
+      </label>
+      <div class="wiki-search-results" data-search-results></div>
+      <nav class="wiki-nav">
+        <section class="wiki-nav-section">
+<h2>Einstieg</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="Home.html" href="Home.html">Home</a></li>
+<li><a class="wiki-nav-link" data-nav-href="GermanLanguage.html" href="GermanLanguage.html">GermanLanguage</a></li>
+<li><a class="wiki-nav-link" data-nav-href="QuickStart.html" href="QuickStart.html">QuickStart</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Installation.html" href="Installation.html">Installation</a></li>
+</ul></section>
+<section class="wiki-nav-section">
+<h2>Nutzung</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="NovaCLI.html" href="NovaCLI.html">NovaCLI</a></li>
+<li><a class="wiki-nav-link" data-nav-href="APIReference.html" href="APIReference.html">APIReference</a></li>
+<li><a class="wiki-nav-link active" data-nav-href="ExamplesAndRecipes.html" href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Tutorials.html" href="Tutorials.html">Tutorials</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialTechnologyRadar.html" href="TutorialTechnologyRadar.html">TutorialTechnologyRadar</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialMultiAgentCluster.html" href="TutorialMultiAgentCluster.html">TutorialMultiAgentCluster</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialLMStudioIntegration.html" href="TutorialLMStudioIntegration.html">TutorialLMStudioIntegration</a></li>
+</ul></section>
+<section class="wiki-nav-section">
+<h2>Architektur</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="Architecture.html" href="Architecture.html">Architecture</a></li>
+<li><a class="wiki-nav-link" data-nav-href="SystemOverview.html" href="SystemOverview.html">SystemOverview</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ComponentModel.html" href="ComponentModel.html">ComponentModel</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ExecutionModel.html" href="ExecutionModel.html">ExecutionModel</a></li>
+<li><a class="wiki-nav-link" data-nav-href="DataFlow.html" href="DataFlow.html">DataFlow</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaLanguage.html" href="NovaLanguage.html">NovaLanguage</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaRuntime.html" href="NovaRuntime.html">NovaRuntime</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaGraphEngine.html" href="NovaGraphEngine.html">NovaGraphEngine</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaPlanner.html" href="NovaPlanner.html">NovaPlanner</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ParserAndASTReference.html" href="ParserAndASTReference.html">ParserAndASTReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="RuntimeMethodReference.html" href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ClassReference.html" href="ClassReference.html">ClassReference</a></li>
+</ul></section>
+<section class="wiki-nav-section">
+<h2>Plattformfunktionen</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="NovaAgents.html" href="NovaAgents.html">NovaAgents</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaMesh.html" href="NovaMesh.html">NovaMesh</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaSensors.html" href="NovaSensors.html">NovaSensors</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaMemory.html" href="NovaMemory.html">NovaMemory</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaTools.html" href="NovaTools.html">NovaTools</a></li>
+</ul></section>
+<section class="wiki-nav-section">
+<h2>Entwicklung und Betrieb</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="DevelopmentGuide.html" href="DevelopmentGuide.html">DevelopmentGuide</a></li>
+<li><a class="wiki-nav-link" data-nav-href="PageTemplate.html" href="PageTemplate.html">PageTemplate</a></li>
+<li><a class="wiki-nav-link" data-nav-href="RepositoryStructure.html" href="RepositoryStructure.html">RepositoryStructure</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Testing.html" href="Testing.html">Testing</a></li>
+<li><a class="wiki-nav-link" data-nav-href="BuildAndRelease.html" href="BuildAndRelease.html">BuildAndRelease</a></li>
+<li><a class="wiki-nav-link" data-nav-href="SecurityModel.html" href="SecurityModel.html">SecurityModel</a></li>
+<li><a class="wiki-nav-link" data-nav-href="PerformanceAndScaling.html" href="PerformanceAndScaling.html">PerformanceAndScaling</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Troubleshooting.html" href="Troubleshooting.html">Troubleshooting</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Roadmap.html" href="Roadmap.html">Roadmap</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Contributing.html" href="Contributing.html">Contributing</a></li>
+<li><a class="wiki-nav-link" data-nav-href="License.html" href="License.html">License</a></li>
+</ul></section>
+<section class="wiki-nav-section">
+<h2>Theorie</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="Research.html" href="Research.html">Research</a></li>
+<li><a class="wiki-nav-link" data-nav-href="AIOSConcept.html" href="AIOSConcept.html">AIOSConcept</a></li>
+<li><a class="wiki-nav-link" data-nav-href="AgentSystems.html" href="AgentSystems.html">AgentSystems</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Glossary.html" href="Glossary.html">Glossary</a></li>
+<li><a class="wiki-nav-link" data-nav-href="FAQ.html" href="FAQ.html">FAQ</a></li>
+</ul></section>
+      </nav>
+    </aside>
+    <main class="wiki-main">
+      <header class="wiki-header">
+        <button type="button" class="wiki-nav-toggle" data-nav-toggle>Menu</button>
+        <div class="wiki-header-copy">
+          <span class="wiki-kicker">Nova-shell Documentation</span>
+          <h1>Examples and Recipes</h1>
+          <p>Source: ExamplesAndRecipes.md</p>
+        </div>
+      </header>
+      <div class="wiki-layout">
+        <article class="wiki-article">
+          <h1 id="examples-and-recipes">Examples and Recipes</h1>
+<h2 id="zweck">Zweck</h2>
+<p>Diese Seite sammelt kurze, konkrete Beispiele. Sie soll zeigen, wie Nova-shell in der Praxis benutzt wird, ohne dass man sich zuerst durch alle Architekturtexte arbeiten muss.</p>
+<h2 id="kernobjekte">Kernobjekte</h2>
+<p>Die Beispiele nutzen vor allem diese Einstiegspunkte:</p>
+<ul>
+<li><code>NovaRuntime</code></li>
+<li><code>NovaParser</code></li>
+<li><code>NovaGraphCompiler</code></li>
+<li><code>AgentRuntime</code></li>
+<li><code>MeshRegistry</code></li>
+<li><code>NovaModuleLoader</code></li>
+</ul>
+<h2 id="methoden-und-schnittstellen">Methoden und Schnittstellen</h2>
+<p>Die Rezepte drehen sich vor allem um:</p>
+<ul>
+<li><code>run</code></li>
+<li><code>compile</code></li>
+<li><code>enqueue_flow</code></li>
+<li><code>start_control_api</code></li>
+<li><code>deploy_service</code></li>
+<li><code>format_source</code></li>
+<li><code>lint_source</code></li>
+<li><code>run_program_tests</code></li>
+</ul>
+<h2 id="cli">CLI</h2>
+<p>Hauefige Beispielkommandos:</p>
+<ul>
+<li><code>ns.run</code></li>
+<li><code>ns.graph</code></li>
+<li><code>ns.control</code></li>
+<li><code>mesh.*</code></li>
+<li><code>ns.format</code></li>
+<li><code>ns.lint</code></li>
+<li><code>ns.test</code></li>
+</ul>
+<h2 id="api">API</h2>
+<p>Mehrere Beispiele fuehren zur HTTP-Control-Plane. Die zugehoerigen Endpunkte sind in <a href="APIReference.html">APIReference</a> beschrieben.</p>
+<h2 id="beispiele">Beispiele</h2>
+<h3 id="1-erstes-ns-programm-ausfuehren">1. Erstes <code>.ns</code>-Programm ausfuehren</h3>
+<p>Datei <code>radar.ns</code>:</p>
+<pre><code class="language-nova">dataset tech_rss {
+  source: rss
+}
+
+agent researcher {
+  model: gpt-4o-mini
+}
+
+flow radar {
+  rss.fetch tech_rss
+  researcher summarize tech_rss
+}</code></pre>
+<p>CLI:</p>
+<pre><code class="language-powershell">ns.run radar.ns</code></pre>
+<p>Python:</p>
+<pre><code class="language-python">from nova.runtime.runtime import NovaRuntime
+
+runtime = NovaRuntime()
+program = runtime.load(&quot;radar.ns&quot;)
+result = runtime.run(program)
+print(result.status)</code></pre>
+<h3 id="2-ein-programm-nur-kompilieren-und-den-graph-inspizieren">2. Ein Programm nur kompilieren und den Graph inspizieren</h3>
+<pre><code class="language-python">from nova.parser.parser import NovaParser
+from nova.graph.compiler import NovaGraphCompiler
+
+parser = NovaParser()
+ast = parser.parse_file(&quot;examples/market_radar.ns&quot;)
+graph = NovaGraphCompiler().compile(ast)
+
+print(&quot;Nodes:&quot;, len(graph.nodes))
+print(&quot;Edges:&quot;, len(graph.edges))</code></pre>
+<p>Typischer Zweck:</p>
+<ul>
+<li>neue Flows verstehen</li>
+<li>Toolchain oder Linter erweitern</li>
+<li>Scheduling und Knotenaufbau debuggen</li>
+</ul>
+<h3 id="3-agent-registrieren-und-ausfuehren">3. Agent registrieren und ausfuehren</h3>
+<pre><code class="language-python">from nova.agents.runtime import AgentRuntime, AgentSpecification, AgentTask
+
+agents = AgentRuntime()
+agents.register(
+    AgentSpecification(
+        name=&quot;researcher&quot;,
+        model=&quot;gpt-4o-mini&quot;,
+        tools=[&quot;web.search&quot;, &quot;atheria.embed&quot;],
+    )
+)
+
+result = agents.execute(
+    AgentTask(
+        agent=&quot;researcher&quot;,
+        objective=&quot;Summarize the latest technical feed&quot;,
+    )
+)
+print(result.output)</code></pre>
+<h3 id="4-einen-flow-in-die-durable-queue-legen">4. Einen Flow in die durable Queue legen</h3>
+<pre><code class="language-python">from nova.runtime.runtime import NovaRuntime
+
+runtime = NovaRuntime()
+program = runtime.load(&quot;examples/control_plane_runtime.ns&quot;)
+runtime.enqueue_flow(&quot;cluster_radar&quot;, program=program, priority=&quot;high&quot;)
+runtime.scheduler_tick()
+runtime.run_pending_tasks()</code></pre>
+<h3 id="5-control-plane-api-starten">5. Control-Plane-API starten</h3>
+<pre><code class="language-python">from nova.runtime.runtime import NovaRuntime
+
+runtime = NovaRuntime()
+status = runtime.start_control_api(host=&quot;127.0.0.1&quot;, port=9850)
+print(status)</code></pre>
+<p>Danach koennen HTTP-Clients gegen die API arbeiten:</p>
+<pre><code class="language-powershell">curl http://127.0.0.1:9850/status</code></pre>
+<h3 id="6-service-deployen-und-skalieren">6. Service deployen und skalieren</h3>
+<pre><code class="language-python">from nova.runtime.runtime import NovaRuntime
+
+runtime = NovaRuntime()
+runtime.install_package(&quot;analytics&quot;, source=&quot;./packages/analytics&quot;, version=&quot;1.0.0&quot;)
+runtime.deploy_service(&quot;analytics-api&quot;, package=&quot;analytics&quot;, replicas=2)
+runtime.scale_service(&quot;analytics-api&quot;, 4)</code></pre>
+<h3 id="7-mesh-worker-registrieren">7. Mesh-Worker registrieren</h3>
+<pre><code class="language-python">from nova.mesh.registry import MeshRegistry, WorkerNode
+
+mesh = MeshRegistry()
+mesh.register(
+    WorkerNode(
+        node_id=&quot;worker-gpu-1&quot;,
+        endpoint=&quot;http://127.0.0.1:9040&quot;,
+        capabilities={&quot;gpu&quot;, &quot;py&quot;, &quot;ai&quot;},
+    )
+)</code></pre>
+<p>CLI-Beispiel:</p>
+<pre><code class="language-powershell">mesh.add http://127.0.0.1:9040 --capabilities gpu,py,ai
+mesh.list</code></pre>
+<h3 id="8-module-und-imports-nutzen">8. Module und Imports nutzen</h3>
+<p>Datei <code>main.ns</code>:</p>
+<pre><code class="language-nova">import &quot;agents/research.ns&quot;
+import &quot;flows/radar.ns&quot;</code></pre>
+<p>Toolchain:</p>
+<pre><code class="language-python">from nova.toolchain.loader import NovaModuleLoader
+
+loader = NovaModuleLoader()
+program = loader.load(&quot;main.ns&quot;)
+loader.write_lockfile(&quot;nova.lock&quot;)</code></pre>
+<h3 id="9-formatieren-linten-und-testen">9. Formatieren, linten und testen</h3>
+<pre><code class="language-python">from nova.runtime.runtime import NovaRuntime
+
+runtime = NovaRuntime()
+formatted = runtime.format_source(&quot;examples/market_radar.ns&quot;)
+diagnostics = runtime.lint_source(&quot;examples/market_radar.ns&quot;)
+tests = runtime.run_program_tests(&quot;examples/market_radar.ns&quot;)
+
+print(formatted)
+print(diagnostics)
+print(tests)</code></pre>
+<p>CLI:</p>
+<pre><code class="language-powershell">ns.format examples\market_radar.ns
+ns.lint examples\market_radar.ns
+ns.test examples\market_radar.ns</code></pre>
+<h3 id="10-backup-und-restore">10. Backup und Restore</h3>
+<pre><code class="language-python">from nova.runtime.runtime import NovaRuntime
+
+runtime = NovaRuntime()
+runtime.create_backup(&quot;.nova/backups/backup-001&quot;)
+runtime.restore_backup(&quot;.nova/backups/backup-001&quot;)</code></pre>
+<h3 id="11-atheria-und-memory-nutzen">11. Atheria und Memory nutzen</h3>
+<pre><code class="language-python">from nova.runtime.runtime import NovaRuntime
+
+runtime = NovaRuntime()
+runtime.emit(&quot;new_information&quot;, {&quot;topic&quot;: &quot;gpu_runtime&quot;})
+matches = runtime.search_agent_memory(&quot;researcher&quot;, &quot;gpu runtime&quot;)
+print(matches)</code></pre>
+<h3 id="12-minimaler-multi-agent-flow">12. Minimaler Multi-Agent-Flow</h3>
+<pre><code class="language-nova">agent collector {
+  model: gpt-4o-mini
+}
+
+agent reviewer {
+  model: gpt-4o-mini
+}
+
+dataset findings {
+  source: memory
+}
+
+flow review_loop {
+  collector summarize findings
+  reviewer critique findings
+}</code></pre>
+<h3 id="13-service-mit-traffic-shift-vorbereiten">13. Service mit Traffic-Shift vorbereiten</h3>
+<pre><code class="language-python">from nova.runtime.runtime import NovaRuntime
+
+runtime = NovaRuntime()
+runtime.deploy_service(&quot;frontend-blue&quot;, image=&quot;frontend:blue&quot;, replicas=2)
+runtime.deploy_service(&quot;frontend-green&quot;, image=&quot;frontend:green&quot;, replicas=2)
+runtime.start_traffic_proxy(host=&quot;127.0.0.1&quot;, port=9900)</code></pre>
+<h3 id="14-typische-entwicklungsrezepte">14. Typische Entwicklungsrezepte</h3>
+<h4 id="neue-sprachsyntax-testen">Neue Sprachsyntax testen</h4>
+<ol>
+<li><code>.ns</code>-Beispiel erstellen</li>
+<li>mit <code>NovaParser.parse</code> parsen</li>
+<li>AST in <code>ParserAndASTReference</code> gegenpruefen</li>
+<li>Graph mit <code>NovaGraphCompiler.compile</code> inspizieren</li>
+<li>Runtime-Test mit <code>NovaTestRunner</code> schreiben</li>
+</ol>
+<h4 id="neue-runtime-funktion-dokumentieren">Neue Runtime-Funktion dokumentieren</h4>
+<ol>
+<li>Methode in <code>NovaRuntime</code> oder Subsystem identifizieren</li>
+<li>Referenzseite aktualisieren</li>
+<li>mindestens ein kurzes Beispiel in diese Seite aufnehmen</li>
+</ol>
+<h3 id="15-die-wiki-als-html-site-bauen-und-oeffnen">15. Die Wiki als HTML-Site bauen und oeffnen</h3>
+<pre><code class="language-powershell">wiki build
+wiki serve --open</code></pre>
+<p>Mit expliziten Pfaden:</p>
+<pre><code class="language-powershell">wiki build --source WIKI --output .nova\wiki-site
+wiki open Home --source WIKI --output .nova\wiki-site --port 8767</code></pre>
+<h2 id="verwandte-seiten">Verwandte Seiten</h2>
+<ul>
+<li><a href="ClassReference.html">ClassReference</a></li>
+<li><a href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
+<li><a href="NovaCLI.html">NovaCLI</a></li>
+<li><a href="Tutorials.html">Tutorials</a></li>
+<li><a href="PageTemplate.html">PageTemplate</a></li>
+</ul>
+        </article>
+        <aside class="wiki-toc">
+          <div class="wiki-toc-card"><h2>On this page</h2><ul>
+<li class="wiki-toc-link"><a href="#zweck">Zweck</a></li>
+<li class="wiki-toc-link"><a href="#kernobjekte">Kernobjekte</a></li>
+<li class="wiki-toc-link"><a href="#methoden-und-schnittstellen">Methoden und Schnittstellen</a></li>
+<li class="wiki-toc-link"><a href="#cli">CLI</a></li>
+<li class="wiki-toc-link"><a href="#api">API</a></li>
+<li class="wiki-toc-link"><a href="#beispiele">Beispiele</a></li>
+<li class="wiki-toc-link level-3"><a href="#1-erstes-ns-programm-ausfuehren">1. Erstes `.ns`-Programm ausfuehren</a></li>
+<li class="wiki-toc-link level-3"><a href="#2-ein-programm-nur-kompilieren-und-den-graph-inspizieren">2. Ein Programm nur kompilieren und den Graph inspizieren</a></li>
+<li class="wiki-toc-link level-3"><a href="#3-agent-registrieren-und-ausfuehren">3. Agent registrieren und ausfuehren</a></li>
+<li class="wiki-toc-link level-3"><a href="#4-einen-flow-in-die-durable-queue-legen">4. Einen Flow in die durable Queue legen</a></li>
+<li class="wiki-toc-link level-3"><a href="#5-control-plane-api-starten">5. Control-Plane-API starten</a></li>
+<li class="wiki-toc-link level-3"><a href="#6-service-deployen-und-skalieren">6. Service deployen und skalieren</a></li>
+<li class="wiki-toc-link level-3"><a href="#7-mesh-worker-registrieren">7. Mesh-Worker registrieren</a></li>
+<li class="wiki-toc-link level-3"><a href="#8-module-und-imports-nutzen">8. Module und Imports nutzen</a></li>
+<li class="wiki-toc-link level-3"><a href="#9-formatieren-linten-und-testen">9. Formatieren, linten und testen</a></li>
+<li class="wiki-toc-link level-3"><a href="#10-backup-und-restore">10. Backup und Restore</a></li>
+<li class="wiki-toc-link level-3"><a href="#11-atheria-und-memory-nutzen">11. Atheria und Memory nutzen</a></li>
+<li class="wiki-toc-link level-3"><a href="#12-minimaler-multi-agent-flow">12. Minimaler Multi-Agent-Flow</a></li>
+<li class="wiki-toc-link level-3"><a href="#13-service-mit-traffic-shift-vorbereiten">13. Service mit Traffic-Shift vorbereiten</a></li>
+<li class="wiki-toc-link level-3"><a href="#14-typische-entwicklungsrezepte">14. Typische Entwicklungsrezepte</a></li>
+<li class="wiki-toc-link level-3"><a href="#15-die-wiki-als-html-site-bauen-und-oeffnen">15. Die Wiki als HTML-Site bauen und oeffnen</a></li>
+<li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
+</ul></div>
+        </aside>
+      </div>
+      <footer class="wiki-footer">
+        <p><a href="Home.html">Home</a> | <a href="QuickStart.html">QuickStart</a> | <a href="Architecture.html">Architecture</a> | <a href="NovaCLI.html">NovaCLI</a> | <a href="DevelopmentGuide.html">DevelopmentGuide</a> | <a href="FAQ.html">FAQ</a></p>
+      </footer>
+    </main>
+  </div>
+  <script>
+    window.NOVA_WIKI = {
+      currentPage: "ExamplesAndRecipes.html",
+      searchIndex: "assets/search-index.json"
+    };
+  </script>
+  <script src="assets/wiki.js" defer></script>
+</body>
+</html>

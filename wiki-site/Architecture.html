@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="Nova-shell wiki builder">
+  <title>Architecture | Nova-shell Wiki</title>
+  <link rel="stylesheet" href="assets/wiki.css">
+</head>
+<body>
+  <div class="wiki-shell">
+    <aside class="wiki-sidebar" data-sidebar>
+      <div class="wiki-brand">
+        <a href="Home.html">Nova-shell Wiki</a>
+        <p>HTML documentation for the Nova-shell platform.</p>
+      </div>
+      <label class="wiki-search">
+        <span>Search</span>
+        <input type="search" placeholder="Find pages, classes, methods..." data-wiki-search>
+      </label>
+      <div class="wiki-search-results" data-search-results></div>
+      <nav class="wiki-nav">
+        <section class="wiki-nav-section">
+<h2>Einstieg</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="Home.html" href="Home.html">Home</a></li>
+<li><a class="wiki-nav-link" data-nav-href="GermanLanguage.html" href="GermanLanguage.html">GermanLanguage</a></li>
+<li><a class="wiki-nav-link" data-nav-href="QuickStart.html" href="QuickStart.html">QuickStart</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Installation.html" href="Installation.html">Installation</a></li>
+</ul></section>
+<section class="wiki-nav-section">
+<h2>Nutzung</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="NovaCLI.html" href="NovaCLI.html">NovaCLI</a></li>
+<li><a class="wiki-nav-link" data-nav-href="APIReference.html" href="APIReference.html">APIReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ExamplesAndRecipes.html" href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Tutorials.html" href="Tutorials.html">Tutorials</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialTechnologyRadar.html" href="TutorialTechnologyRadar.html">TutorialTechnologyRadar</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialMultiAgentCluster.html" href="TutorialMultiAgentCluster.html">TutorialMultiAgentCluster</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialLMStudioIntegration.html" href="TutorialLMStudioIntegration.html">TutorialLMStudioIntegration</a></li>
+</ul></section>
+<section class="wiki-nav-section">
+<h2>Architektur</h2>
+<ul>
+<li><a class="wiki-nav-link active" data-nav-href="Architecture.html" href="Architecture.html">Architecture</a></li>
+<li><a class="wiki-nav-link" data-nav-href="SystemOverview.html" href="SystemOverview.html">SystemOverview</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ComponentModel.html" href="ComponentModel.html">ComponentModel</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ExecutionModel.html" href="ExecutionModel.html">ExecutionModel</a></li>
+<li><a class="wiki-nav-link" data-nav-href="DataFlow.html" href="DataFlow.html">DataFlow</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaLanguage.html" href="NovaLanguage.html">NovaLanguage</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaRuntime.html" href="NovaRuntime.html">NovaRuntime</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaGraphEngine.html" href="NovaGraphEngine.html">NovaGraphEngine</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaPlanner.html" href="NovaPlanner.html">NovaPlanner</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ParserAndASTReference.html" href="ParserAndASTReference.html">ParserAndASTReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="RuntimeMethodReference.html" href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ClassReference.html" href="ClassReference.html">ClassReference</a></li>
+</ul></section>
+<section class="wiki-nav-section">
+<h2>Plattformfunktionen</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="NovaAgents.html" href="NovaAgents.html">NovaAgents</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaMesh.html" href="NovaMesh.html">NovaMesh</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaSensors.html" href="NovaSensors.html">NovaSensors</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaMemory.html" href="NovaMemory.html">NovaMemory</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaTools.html" href="NovaTools.html">NovaTools</a></li>
+</ul></section>
+<section class="wiki-nav-section">
+<h2>Entwicklung und Betrieb</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="DevelopmentGuide.html" href="DevelopmentGuide.html">DevelopmentGuide</a></li>
+<li><a class="wiki-nav-link" data-nav-href="PageTemplate.html" href="PageTemplate.html">PageTemplate</a></li>
+<li><a class="wiki-nav-link" data-nav-href="RepositoryStructure.html" href="RepositoryStructure.html">RepositoryStructure</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Testing.html" href="Testing.html">Testing</a></li>
+<li><a class="wiki-nav-link" data-nav-href="BuildAndRelease.html" href="BuildAndRelease.html">BuildAndRelease</a></li>
+<li><a class="wiki-nav-link" data-nav-href="SecurityModel.html" href="SecurityModel.html">SecurityModel</a></li>
+<li><a class="wiki-nav-link" data-nav-href="PerformanceAndScaling.html" href="PerformanceAndScaling.html">PerformanceAndScaling</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Troubleshooting.html" href="Troubleshooting.html">Troubleshooting</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Roadmap.html" href="Roadmap.html">Roadmap</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Contributing.html" href="Contributing.html">Contributing</a></li>
+<li><a class="wiki-nav-link" data-nav-href="License.html" href="License.html">License</a></li>
+</ul></section>
+<section class="wiki-nav-section">
+<h2>Theorie</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="Research.html" href="Research.html">Research</a></li>
+<li><a class="wiki-nav-link" data-nav-href="AIOSConcept.html" href="AIOSConcept.html">AIOSConcept</a></li>
+<li><a class="wiki-nav-link" data-nav-href="AgentSystems.html" href="AgentSystems.html">AgentSystems</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Glossary.html" href="Glossary.html">Glossary</a></li>
+<li><a class="wiki-nav-link" data-nav-href="FAQ.html" href="FAQ.html">FAQ</a></li>
+</ul></section>
+      </nav>
+    </aside>
+    <main class="wiki-main">
+      <header class="wiki-header">
+        <button type="button" class="wiki-nav-toggle" data-nav-toggle>Menu</button>
+        <div class="wiki-header-copy">
+          <span class="wiki-kicker">Nova-shell Documentation</span>
+          <h1>Architecture</h1>
+          <p>Source: Architecture.md</p>
+        </div>
+      </header>
+      <div class="wiki-layout">
+        <article class="wiki-article">
+          <h1 id="architecture">Architecture</h1>
+<h2 id="zweck">Zweck</h2>
+<p>Nova-shell ist als mehrschichtige Plattform aufgebaut. Der wichtigste Architekturpunkt ist die Trennung zwischen:</p>
+<ul>
+<li>interaktiver Shell- und Befehlsruntime</li>
+<li>deklarativer Nova-Language-Toolchain</li>
+<li>AI-OS- und Control-Plane-Schicht</li>
+</ul>
+<h2 id="kernobjekte">Kernobjekte</h2>
+<pre><code class="language-text">User
+  ↓
+CLI / Nova Language
+  ↓
+Parser / Module Loader / Toolchain
+  ↓
+Graph Compiler
+  ↓
+Runtime
+  ├ Execution Engines
+  ├ Agent Runtime
+  ├ Event Bus
+  ├ Memory and Atheria
+  ├ Mesh and Executors
+  ├ Service Fabric
+  ├ Traffic Plane
+  ├ Security and Policy
+  └ Observability and Operations</code></pre>
+<p>Wichtige Architekturkomponenten:</p>
+<ul>
+<li><code>NovaShell</code></li>
+<li><code>NovaParser</code></li>
+<li><code>NovaGraphCompiler</code></li>
+<li><code>NovaRuntime</code></li>
+<li><code>AgentRuntime</code></li>
+<li><code>MeshRegistry</code></li>
+<li><code>NovaControlPlaneAPIServer</code></li>
+<li><code>ServiceFabric</code></li>
+<li><code>ServiceTrafficPlane</code></li>
+</ul>
+<h2 id="methoden-und-schnittstellen">Methoden und Schnittstellen</h2>
+<h3 id="die-zwei-laufzeitpfade">Die zwei Laufzeitpfade</h3>
+<h4 id="shell-runtime">Shell-Runtime</h4>
+<p>Die Shell-Runtime in <code>nova_shell.py</code> stellt die interaktive Ausfuehrung bereit. Sie enthaelt unter anderem:</p>
+<ul>
+<li><code>PythonEngine</code></li>
+<li><code>CppEngine</code></li>
+<li><code>GPUEngine</code></li>
+<li><code>WasmEngine</code></li>
+<li><code>EventBus</code></li>
+<li><code>MeshScheduler</code></li>
+<li><code>NovaVectorMemory</code></li>
+<li><code>NovaAtheriaRuntime</code></li>
+<li><code>NovaAIProviderRuntime</code></li>
+<li><code>NovaShell</code></li>
+</ul>
+<h4 id="deklarative-nova-runtime">Deklarative Nova-Runtime</h4>
+<p>Die neue Schicht unter <code>nova/</code> ist fuer <code>.ns</code>-Programme gebaut. Ihr Kernpfad lautet:</p>
+<pre><code class="language-text">NovaParser
+  ↓
+NovaAST
+  ↓
+NovaGraphCompiler
+  ↓
+ExecutionGraph
+  ↓
+NovaRuntime</code></pre>
+<h3 id="schichten-im-detail">Schichten im Detail</h3>
+<h4 id="1-frontend-schicht">1. Frontend-Schicht</h4>
+<p>Besteht aus:</p>
+<ul>
+<li>CLI-Kommandos</li>
+<li><code>.ns</code>-Quelldateien</li>
+<li>Toolchain-Komponenten wie Loader, Formatter, Linter und LSP</li>
+</ul>
+<h4 id="2-modell-und-compiler-schicht">2. Modell- und Compiler-Schicht</h4>
+<p>Diese Schicht beschreibt Ressourcen und baut daraus einen gerichteten Ausfuehrungsgraphen.</p>
+<p>Wichtige Klassen:</p>
+<ul>
+<li><code>NovaParser</code></li>
+<li><code>NovaAST</code></li>
+<li><code>AgentDeclaration</code></li>
+<li><code>DatasetDeclaration</code></li>
+<li><code>FlowDeclaration</code></li>
+<li><code>EventDeclaration</code></li>
+<li><code>ExecutionGraph</code></li>
+<li><code>NovaGraphCompiler</code></li>
+</ul>
+<h4 id="3-runtime-schicht">3. Runtime-Schicht</h4>
+<p>Die Runtime laedt Programme, registriert Ressourcen, fuehrt Flows aus, emittiert Events und betreibt Plattformdienste.</p>
+<p>Wichtige Klasse:</p>
+<ul>
+<li><code>NovaRuntime</code></li>
+</ul>
+<h4 id="4-agent-und-knowledge-schicht">4. Agent- und Knowledge-Schicht</h4>
+<p>Diese Schicht fuehrt modellgestuetzte Aufgaben aus und verbindet sie mit Memory, Prompt-Registry, Evaluationsdaten und Atheria.</p>
+<h4 id="5-mesh-und-executor-schicht">5. Mesh- und Executor-Schicht</h4>
+<p>Diese Schicht erlaubt lokale und entfernte Ausfuehrung.</p>
+<h4 id="6-plattform-und-control-plane-schicht">6. Plattform- und Control-Plane-Schicht</h4>
+<p>Diese Schicht macht Nova-shell zu einer Betriebsplattform und nicht nur zu einem Agent-Framework.</p>
+<h2 id="cli">CLI</h2>
+<p>Architekturrelevante CLI-Einstiege:</p>
+<ul>
+<li><code>ns.run</code></li>
+<li><code>ns.graph</code></li>
+<li><code>ns.control</code></li>
+<li><code>mesh</code></li>
+<li><code>agent</code></li>
+<li><code>service</code></li>
+</ul>
+<h2 id="api">API</h2>
+<p>Architekturrelevante HTTP-Schicht:</p>
+<ul>
+<li><code>NovaControlPlaneAPIServer</code></li>
+<li>Status-, Queue-, Service-, Traffic- und Metrics-Endpunkte</li>
+</ul>
+<h2 id="beispiele">Beispiele</h2>
+<p>Minimales Architekturbeispiel:</p>
+<pre><code class="language-text">market_radar.ns
+  -&gt; NovaParser
+  -&gt; NovaGraphCompiler
+  -&gt; NovaRuntime.run()
+  -&gt; AgentRuntime / BackendRouter / MeshRegistry</code></pre>
+<h2 id="verwandte-seiten">Verwandte Seiten</h2>
+<ul>
+<li><a href="SystemOverview.html">SystemOverview</a></li>
+<li><a href="ComponentModel.html">ComponentModel</a></li>
+<li><a href="NovaLanguage.html">NovaLanguage</a></li>
+<li><a href="NovaRuntime.html">NovaRuntime</a></li>
+<li><a href="ClassReference.html">ClassReference</a></li>
+<li><a href="PageTemplate.html">PageTemplate</a></li>
+</ul>
+<h2 id="architekturprinzipien">Architekturprinzipien</h2>
+<ul>
+<li>deklarative Systembeschreibung statt rein imperativer Loops</li>
+<li>graphbasierte Ausfuehrung statt linearer Skriptketten</li>
+<li>agent-native Workflows</li>
+<li>eventgetriebene Automation</li>
+<li>modulare Backends fuer lokale und verteilte Ausfuehrung</li>
+<li>Plattformzustaende persistent unter <code>.nova/</code></li>
+</ul>
+        </article>
+        <aside class="wiki-toc">
+          <div class="wiki-toc-card"><h2>On this page</h2><ul>
+<li class="wiki-toc-link"><a href="#zweck">Zweck</a></li>
+<li class="wiki-toc-link"><a href="#kernobjekte">Kernobjekte</a></li>
+<li class="wiki-toc-link"><a href="#methoden-und-schnittstellen">Methoden und Schnittstellen</a></li>
+<li class="wiki-toc-link level-3"><a href="#die-zwei-laufzeitpfade">Die zwei Laufzeitpfade</a></li>
+<li class="wiki-toc-link level-3"><a href="#schichten-im-detail">Schichten im Detail</a></li>
+<li class="wiki-toc-link"><a href="#cli">CLI</a></li>
+<li class="wiki-toc-link"><a href="#api">API</a></li>
+<li class="wiki-toc-link"><a href="#beispiele">Beispiele</a></li>
+<li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
+<li class="wiki-toc-link"><a href="#architekturprinzipien">Architekturprinzipien</a></li>
+</ul></div>
+        </aside>
+      </div>
+      <footer class="wiki-footer">
+        <p><a href="Home.html">Home</a> | <a href="QuickStart.html">QuickStart</a> | <a href="Architecture.html">Architecture</a> | <a href="NovaCLI.html">NovaCLI</a> | <a href="DevelopmentGuide.html">DevelopmentGuide</a> | <a href="FAQ.html">FAQ</a></p>
+      </footer>
+    </main>
+  </div>
+  <script>
+    window.NOVA_WIKI = {
+      currentPage: "Architecture.html",
+      searchIndex: "assets/search-index.json"
+    };
+  </script>
+  <script src="assets/wiki.js" defer></script>
+</body>
+</html>
