@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="Nova-shell wiki builder">
+  <title>nsPatterns | Nova-shell Wiki</title>
+  <link rel="stylesheet" href="assets/wiki.css">
+</head>
+<body>
+  <div class="wiki-shell">
+    <aside class="wiki-sidebar" data-sidebar>
+      <div class="wiki-brand">
+        <a href="Home.html">Nova-shell Wiki</a>
+        <p>HTML documentation for the Nova-shell platform.</p>
+      </div>
+      <label class="wiki-search">
+        <span>Search</span>
+        <input type="search" placeholder="Find pages, classes, methods..." data-wiki-search>
+      </label>
+      <div class="wiki-search-results" data-search-results></div>
+      <nav class="wiki-nav">
+        <section class="wiki-nav-section">
+<h2>Einstieg</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="Home.html" href="Home.html">Home</a></li>
+<li><a class="wiki-nav-link" data-nav-href="GermanLanguage.html" href="GermanLanguage.html">GermanLanguage</a></li>
+<li><a class="wiki-nav-link" data-nav-href="QuickStart.html" href="QuickStart.html">QuickStart</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Installation.html" href="Installation.html">Installation</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
+<li><a class="wiki-nav-link" data-nav-href="nsCreate.html" href="nsCreate.html">nsCreate</a></li>
+<li><a class="wiki-nav-link" data-nav-href="nsReference.html" href="nsReference.html">nsReference</a></li>
+<li><a class="wiki-nav-link active" data-nav-href="nsPatterns.html" href="nsPatterns.html">nsPatterns</a></li>
+</ul></section>
+<section class="wiki-nav-section">
+<h2>Nutzung</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="NovaCLI.html" href="NovaCLI.html">NovaCLI</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ShellCommandReference.html" href="ShellCommandReference.html">ShellCommandReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="APIReference.html" href="APIReference.html">APIReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ExamplesAndRecipes.html" href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Tutorials.html" href="Tutorials.html">Tutorials</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialTechnologyRadar.html" href="TutorialTechnologyRadar.html">TutorialTechnologyRadar</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialMultiAgentCluster.html" href="TutorialMultiAgentCluster.html">TutorialMultiAgentCluster</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialLMStudioIntegration.html" href="TutorialLMStudioIntegration.html">TutorialLMStudioIntegration</a></li>
+</ul></section>
+<section class="wiki-nav-section">
+<h2>Architektur</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="Architecture.html" href="Architecture.html">Architecture</a></li>
+<li><a class="wiki-nav-link" data-nav-href="SystemOverview.html" href="SystemOverview.html">SystemOverview</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ComponentModel.html" href="ComponentModel.html">ComponentModel</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ExecutionModel.html" href="ExecutionModel.html">ExecutionModel</a></li>
+<li><a class="wiki-nav-link" data-nav-href="DataFlow.html" href="DataFlow.html">DataFlow</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaLanguage.html" href="NovaLanguage.html">NovaLanguage</a></li>
+<li><a class="wiki-nav-link" data-nav-href="nsCreate.html" href="nsCreate.html">nsCreate</a></li>
+<li><a class="wiki-nav-link" data-nav-href="nsReference.html" href="nsReference.html">nsReference</a></li>
+<li><a class="wiki-nav-link active" data-nav-href="nsPatterns.html" href="nsPatterns.html">nsPatterns</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaRuntime.html" href="NovaRuntime.html">NovaRuntime</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaGraphEngine.html" href="NovaGraphEngine.html">NovaGraphEngine</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaPlanner.html" href="NovaPlanner.html">NovaPlanner</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ParserAndASTReference.html" href="ParserAndASTReference.html">ParserAndASTReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="RuntimeMethodReference.html" href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ClassReference.html" href="ClassReference.html">ClassReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="CodeReferenceIndex.html" href="CodeReferenceIndex.html">CodeReferenceIndex</a></li>
+</ul></section>
+<section class="wiki-nav-section">
+<h2>Plattformfunktionen</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="NovaAgents.html" href="NovaAgents.html">NovaAgents</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaMesh.html" href="NovaMesh.html">NovaMesh</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaSensors.html" href="NovaSensors.html">NovaSensors</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaMemory.html" href="NovaMemory.html">NovaMemory</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaTools.html" href="NovaTools.html">NovaTools</a></li>
+</ul></section>
+<section class="wiki-nav-section">
+<h2>Entwicklung und Betrieb</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="DevelopmentGuide.html" href="DevelopmentGuide.html">DevelopmentGuide</a></li>
+<li><a class="wiki-nav-link" data-nav-href="PageTemplate.html" href="PageTemplate.html">PageTemplate</a></li>
+<li><a class="wiki-nav-link" data-nav-href="RepositoryStructure.html" href="RepositoryStructure.html">RepositoryStructure</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Testing.html" href="Testing.html">Testing</a></li>
+<li><a class="wiki-nav-link" data-nav-href="BuildAndRelease.html" href="BuildAndRelease.html">BuildAndRelease</a></li>
+<li><a class="wiki-nav-link" data-nav-href="SecurityModel.html" href="SecurityModel.html">SecurityModel</a></li>
+<li><a class="wiki-nav-link" data-nav-href="PerformanceAndScaling.html" href="PerformanceAndScaling.html">PerformanceAndScaling</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Troubleshooting.html" href="Troubleshooting.html">Troubleshooting</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Roadmap.html" href="Roadmap.html">Roadmap</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Contributing.html" href="Contributing.html">Contributing</a></li>
+<li><a class="wiki-nav-link" data-nav-href="License.html" href="License.html">License</a></li>
+</ul></section>
+<section class="wiki-nav-section">
+<h2>Theorie</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="Research.html" href="Research.html">Research</a></li>
+<li><a class="wiki-nav-link" data-nav-href="AIOSConcept.html" href="AIOSConcept.html">AIOSConcept</a></li>
+<li><a class="wiki-nav-link" data-nav-href="AgentSystems.html" href="AgentSystems.html">AgentSystems</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Glossary.html" href="Glossary.html">Glossary</a></li>
+<li><a class="wiki-nav-link" data-nav-href="FAQ.html" href="FAQ.html">FAQ</a></li>
+</ul></section>
+      </nav>
+    </aside>
+    <main class="wiki-main">
+      <header class="wiki-header">
+        <button type="button" class="wiki-nav-toggle" data-nav-toggle>Menu</button>
+        <div class="wiki-header-copy">
+          <span class="wiki-kicker">Nova-shell Documentation</span>
+          <h1>nsPatterns</h1>
+          <p>Source: nsPatterns.md</p>
+        </div>
+      </header>
+      <div class="wiki-layout">
+        <article class="wiki-article">
+          <h1 id="nspatterns">nsPatterns</h1>
+<h2 id="zweck">Zweck</h2>
+<p>Diese Seite zeigt gute und schlechte Muster fuer Nova-Language-Programme. Sie ist nicht die reine Syntaxreferenz, sondern ein Leitfaden fuer Struktur, Lesbarkeit, Wartbarkeit und sinnvolle Zerlegung groesserer <code>.ns</code>-Programme.</p>
+<p>Wenn du die Sprache erst lernen willst, beginne mit <a href="nsCreate.html">nsCreate</a>. Wenn du nur Syntax nachschlagen willst, lies <a href="nsReference.html">nsReference</a>.</p>
+<h2 id="gute-grundmuster">Gute Grundmuster</h2>
+<h2 id="muster-1-klarer-aufbau">Muster 1: klarer Aufbau</h2>
+<p>Ein gutes <code>.ns</code>-Programm trennt Grundkontext, Ressourcen und aktive Logik:</p>
+<pre><code class="language-ns">system local_control {
+  mode: local
+}
+
+state research_memory {
+  namespace: market_radar
+}
+
+agent researcher {
+  model: llama3
+  memory: research_memory
+}
+
+dataset tech_rss {
+  source: rss
+  path: sample_news.json
+}
+
+flow radar {
+  rss.fetch tech_rss -&gt; fresh_news
+  researcher summarize tech_rss -&gt; briefing
+}</code></pre>
+<p>Warum gut:</p>
+<ul>
+<li>erst Kontext</li>
+<li>dann Daten und Akteure</li>
+<li>dann Ausfuehrung</li>
+</ul>
+<h2 id="muster-2-zwischenergebnisse-benennen">Muster 2: Zwischenergebnisse benennen</h2>
+<pre><code class="language-ns">flow enrich {
+  rss.fetch tech_rss -&gt; fetched
+  atheria.embed tech_rss -&gt; embedded
+  researcher summarize tech_rss -&gt; summary
+}</code></pre>
+<p>Warum gut:</p>
+<ul>
+<li>Aliase machen den Ablauf lesbar</li>
+<li>Debugging und Graph-Verstaendnis werden einfacher</li>
+</ul>
+<h2 id="muster-3-reaktive-programme-mit-event">Muster 3: Reaktive Programme mit <code>event</code></h2>
+<pre><code class="language-ns">event new_information {
+  on: new_information
+  flow: radar
+}</code></pre>
+<p>Warum gut:</p>
+<ul>
+<li>Reaktivitaet ist explizit dokumentiert</li>
+<li>Flow und Trigger sind klar gekoppelt</li>
+</ul>
+<h2 id="muster-4-dateien-aufteilen">Muster 4: Dateien aufteilen</h2>
+<pre><code class="language-ns">import &quot;systems/local.ns&quot;
+import &quot;datasets/news.ns&quot;
+import &quot;agents/research.ns&quot;
+import &quot;flows/radar.ns&quot;</code></pre>
+<p>Warum gut:</p>
+<ul>
+<li>Programme wachsen modular</li>
+<li>Wiederverwendung wird einfacher</li>
+</ul>
+<h2 id="muster-5-plattformaspekte-nur-dort-nutzen-wo-sie-wirklich-gebraucht-werden">Muster 5: Plattformaspekte nur dort nutzen, wo sie wirklich gebraucht werden</h2>
+<pre><code class="language-ns">system control_plane {
+  mode: mesh
+  tenant: ops
+}
+
+service backend {
+  package: base_sdk
+  replicas: 2
+}</code></pre>
+<p>Warum gut:</p>
+<ul>
+<li>Plattformlogik ist sichtbar</li>
+<li>einfache Flows werden nicht mit unnötiger Komplexitaet belastet</li>
+</ul>
+<h2 id="schlechte-muster">Schlechte Muster</h2>
+<h2 id="anti-muster-1-alles-in-einen-einzigen-flow-werfen">Anti-Muster 1: alles in einen einzigen Flow werfen</h2>
+<pre><code class="language-ns">flow giant_flow {
+  rss.fetch tech_rss -&gt; x1
+  atheria.embed tech_rss -&gt; x2
+  researcher summarize tech_rss -&gt; x3
+  reviewer critique tech_rss -&gt; x4
+  system.log x4
+  event.emit done x4
+}</code></pre>
+<p>Warum schlecht:</p>
+<ul>
+<li>keine semantischen Zwischenstufen</li>
+<li>schlecht teilbar</li>
+<li>schwer testbar</li>
+</ul>
+<p>Besser:</p>
+<ul>
+<li>Zwischenschritte sinnvoll benennen</li>
+<li>grosse Flows in mehrere kleinere Flows oder Tools zerlegen</li>
+</ul>
+<h2 id="anti-muster-2-kryptische-namen">Anti-Muster 2: kryptische Namen</h2>
+<pre><code class="language-ns">agent a1 {
+  model: llama3
+}
+
+dataset d1 {
+  source: rss
+}</code></pre>
+<p>Warum schlecht:</p>
+<ul>
+<li>spaetere Pflege wird unnoetig schwer</li>
+<li>Graph und Doku verlieren an Lesbarkeit</li>
+</ul>
+<p>Besser:</p>
+<pre><code class="language-ns">agent researcher {
+  model: llama3
+}
+
+dataset tech_rss {
+  source: rss
+}</code></pre>
+<h2 id="anti-muster-3-system-fuer-alles-verwenden">Anti-Muster 3: <code>system</code> fuer alles verwenden</h2>
+<p>Wenn jeder Aspekt einer Datei in <code>system</code> gequetscht wird, wird das Modell unklar.</p>
+<p>Besser:</p>
+<ul>
+<li><code>system</code> nur fuer Laufzeit-, Tenant-, Policy- oder Placement-Kontext</li>
+<li><code>state</code> fuer Zustand</li>
+<li><code>agent</code>, <code>dataset</code>, <code>tool</code>, <code>service</code> fuer ihre jeweilige Rolle</li>
+</ul>
+<h2 id="anti-muster-4-zu-frueh-plattformkomplexitaet-einbauen">Anti-Muster 4: zu frueh Plattformkomplexitaet einbauen</h2>
+<p>Nicht jedes erste Beispiel braucht sofort:</p>
+<ul>
+<li><code>service</code></li>
+<li><code>package</code></li>
+<li><code>tenant</code></li>
+<li><code>selector</code></li>
+<li><code>require_tls</code></li>
+</ul>
+<p>Besser:</p>
+<ol>
+<li>erst lokal korrekt</li>
+<li>dann modular</li>
+<li>dann verteilt</li>
+<li>dann plattformweit</li>
+</ol>
+<h2 id="anti-muster-5-ns-run-ohne-ns-graph">Anti-Muster 5: <code>ns.run</code> ohne <code>ns.graph</code></h2>
+<p>Direkt auszufuehren ist moeglich, aber als Arbeitsweise schwach.</p>
+<p>Besser:</p>
+<pre><code class="language-powershell">ns.graph datei.ns
+ns.run datei.ns</code></pre>
+<h2 id="strukturmuster-fuer-wachsende-programme">Strukturmuster fuer wachsende Programme</h2>
+<h2 id="klein">Klein</h2>
+<p>Eine Datei:</p>
+<pre><code class="language-text">hello.ns</code></pre>
+<p>Geeignet fuer:</p>
+<ul>
+<li>Lernen</li>
+<li>Mini-Beispiele</li>
+<li>erste Experimente</li>
+</ul>
+<h2 id="mittel">Mittel</h2>
+<p>Mehrere Dateien:</p>
+<pre><code class="language-text">systems/
+agents/
+datasets/
+flows/
+main.ns</code></pre>
+<p>Geeignet fuer:</p>
+<ul>
+<li>wiederverwendbare Projektbeispiele</li>
+<li>saubere Trennung von Rollen</li>
+</ul>
+<h2 id="gross">Gross</h2>
+<p>Zusatzlich:</p>
+<pre><code class="language-text">services/
+packages/
+tests/</code></pre>
+<p>Geeignet fuer:</p>
+<ul>
+<li>plattformnahe Workflows</li>
+<li>Service- und Package-Definitionen</li>
+<li>umfangreiche Programme mit mehreren Flows</li>
+</ul>
+<h2 id="empfohlener-schreibworkflow">Empfohlener Schreibworkflow</h2>
+<ol>
+<li>Datei klein beginnen</li>
+<li>Namen sauber waehlen</li>
+<li><code>ns.graph</code> benutzen</li>
+<li><code>ns.format</code> und <code>ns.lint</code> laufen lassen</li>
+<li>erst dann <code>ns.run</code></li>
+<li>bei Wachstum per <code>import</code> zerlegen</li>
+</ol>
+<h2 id="typische-muster-nach-ziel">Typische Muster nach Ziel</h2>
+<h3 id="daten-plus-agent">Daten plus Agent</h3>
+<ul>
+<li><code>dataset</code></li>
+<li><code>agent</code></li>
+<li><code>flow</code></li>
+</ul>
+<h3 id="reaktive-automation">Reaktive Automation</h3>
+<ul>
+<li><code>flow</code></li>
+<li><code>event</code></li>
+<li><code>state</code></li>
+</ul>
+<h3 id="plattformprogramm">Plattformprogramm</h3>
+<ul>
+<li><code>system</code></li>
+<li><code>tool</code></li>
+<li><code>service</code></li>
+<li><code>package</code></li>
+<li><code>flow</code></li>
+</ul>
+<h2 id="verwandte-seiten">Verwandte Seiten</h2>
+<ul>
+<li><a href="nsCreate.html">nsCreate</a></li>
+<li><a href="nsReference.html">nsReference</a></li>
+<li><a href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
+<li><a href="NovaLanguage.html">NovaLanguage</a></li>
+<li><a href="ComponentModel.html">ComponentModel</a></li>
+</ul>
+        </article>
+        <aside class="wiki-toc">
+          <div class="wiki-toc-card"><h2>On this page</h2><ul>
+<li class="wiki-toc-link"><a href="#zweck">Zweck</a></li>
+<li class="wiki-toc-link"><a href="#gute-grundmuster">Gute Grundmuster</a></li>
+<li class="wiki-toc-link"><a href="#muster-1-klarer-aufbau">Muster 1: klarer Aufbau</a></li>
+<li class="wiki-toc-link"><a href="#muster-2-zwischenergebnisse-benennen">Muster 2: Zwischenergebnisse benennen</a></li>
+<li class="wiki-toc-link"><a href="#muster-3-reaktive-programme-mit-event">Muster 3: Reaktive Programme mit `event`</a></li>
+<li class="wiki-toc-link"><a href="#muster-4-dateien-aufteilen">Muster 4: Dateien aufteilen</a></li>
+<li class="wiki-toc-link"><a href="#muster-5-plattformaspekte-nur-dort-nutzen-wo-sie-wirklich-gebraucht-werden">Muster 5: Plattformaspekte nur dort nutzen, wo sie wirklich gebraucht werden</a></li>
+<li class="wiki-toc-link"><a href="#schlechte-muster">Schlechte Muster</a></li>
+<li class="wiki-toc-link"><a href="#anti-muster-1-alles-in-einen-einzigen-flow-werfen">Anti-Muster 1: alles in einen einzigen Flow werfen</a></li>
+<li class="wiki-toc-link"><a href="#anti-muster-2-kryptische-namen">Anti-Muster 2: kryptische Namen</a></li>
+<li class="wiki-toc-link"><a href="#anti-muster-3-system-fuer-alles-verwenden">Anti-Muster 3: `system` fuer alles verwenden</a></li>
+<li class="wiki-toc-link"><a href="#anti-muster-4-zu-frueh-plattformkomplexitaet-einbauen">Anti-Muster 4: zu frueh Plattformkomplexitaet einbauen</a></li>
+<li class="wiki-toc-link"><a href="#anti-muster-5-ns-run-ohne-ns-graph">Anti-Muster 5: `ns.run` ohne `ns.graph`</a></li>
+<li class="wiki-toc-link"><a href="#strukturmuster-fuer-wachsende-programme">Strukturmuster fuer wachsende Programme</a></li>
+<li class="wiki-toc-link"><a href="#klein">Klein</a></li>
+<li class="wiki-toc-link"><a href="#mittel">Mittel</a></li>
+<li class="wiki-toc-link"><a href="#gross">Gross</a></li>
+<li class="wiki-toc-link"><a href="#empfohlener-schreibworkflow">Empfohlener Schreibworkflow</a></li>
+<li class="wiki-toc-link"><a href="#typische-muster-nach-ziel">Typische Muster nach Ziel</a></li>
+<li class="wiki-toc-link level-3"><a href="#daten-plus-agent">Daten plus Agent</a></li>
+<li class="wiki-toc-link level-3"><a href="#reaktive-automation">Reaktive Automation</a></li>
+<li class="wiki-toc-link level-3"><a href="#plattformprogramm">Plattformprogramm</a></li>
+<li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
+</ul></div>
+        </aside>
+      </div>
+      <footer class="wiki-footer">
+        <p><a href="Home.html">Home</a> | <a href="QuickStart.html">QuickStart</a> | <a href="Architecture.html">Architecture</a> | <a href="NovaCLI.html">NovaCLI</a> | <a href="DevelopmentGuide.html">DevelopmentGuide</a> | <a href="FAQ.html">FAQ</a></p>
+      </footer>
+    </main>
+  </div>
+  <script>
+    window.NOVA_WIKI = {
+      currentPage: "nsPatterns.html",
+      searchIndex: "assets/search-index.json"
+    };
+  </script>
+  <script src="assets/wiki.js" defer></script>
+</body>
+</html>

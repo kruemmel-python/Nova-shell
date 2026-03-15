@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="Nova-shell wiki builder">
+  <title>nsReference | Nova-shell Wiki</title>
+  <link rel="stylesheet" href="assets/wiki.css">
+</head>
+<body>
+  <div class="wiki-shell">
+    <aside class="wiki-sidebar" data-sidebar>
+      <div class="wiki-brand">
+        <a href="Home.html">Nova-shell Wiki</a>
+        <p>HTML documentation for the Nova-shell platform.</p>
+      </div>
+      <label class="wiki-search">
+        <span>Search</span>
+        <input type="search" placeholder="Find pages, classes, methods..." data-wiki-search>
+      </label>
+      <div class="wiki-search-results" data-search-results></div>
+      <nav class="wiki-nav">
+        <section class="wiki-nav-section">
+<h2>Einstieg</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="Home.html" href="Home.html">Home</a></li>
+<li><a class="wiki-nav-link" data-nav-href="GermanLanguage.html" href="GermanLanguage.html">GermanLanguage</a></li>
+<li><a class="wiki-nav-link" data-nav-href="QuickStart.html" href="QuickStart.html">QuickStart</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Installation.html" href="Installation.html">Installation</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
+<li><a class="wiki-nav-link" data-nav-href="nsCreate.html" href="nsCreate.html">nsCreate</a></li>
+<li><a class="wiki-nav-link active" data-nav-href="nsReference.html" href="nsReference.html">nsReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="nsPatterns.html" href="nsPatterns.html">nsPatterns</a></li>
+</ul></section>
+<section class="wiki-nav-section">
+<h2>Nutzung</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="NovaCLI.html" href="NovaCLI.html">NovaCLI</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ShellCommandReference.html" href="ShellCommandReference.html">ShellCommandReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="APIReference.html" href="APIReference.html">APIReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ExamplesAndRecipes.html" href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Tutorials.html" href="Tutorials.html">Tutorials</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialTechnologyRadar.html" href="TutorialTechnologyRadar.html">TutorialTechnologyRadar</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialMultiAgentCluster.html" href="TutorialMultiAgentCluster.html">TutorialMultiAgentCluster</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialLMStudioIntegration.html" href="TutorialLMStudioIntegration.html">TutorialLMStudioIntegration</a></li>
+</ul></section>
+<section class="wiki-nav-section">
+<h2>Architektur</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="Architecture.html" href="Architecture.html">Architecture</a></li>
+<li><a class="wiki-nav-link" data-nav-href="SystemOverview.html" href="SystemOverview.html">SystemOverview</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ComponentModel.html" href="ComponentModel.html">ComponentModel</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ExecutionModel.html" href="ExecutionModel.html">ExecutionModel</a></li>
+<li><a class="wiki-nav-link" data-nav-href="DataFlow.html" href="DataFlow.html">DataFlow</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaLanguage.html" href="NovaLanguage.html">NovaLanguage</a></li>
+<li><a class="wiki-nav-link" data-nav-href="nsCreate.html" href="nsCreate.html">nsCreate</a></li>
+<li><a class="wiki-nav-link active" data-nav-href="nsReference.html" href="nsReference.html">nsReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="nsPatterns.html" href="nsPatterns.html">nsPatterns</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaRuntime.html" href="NovaRuntime.html">NovaRuntime</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaGraphEngine.html" href="NovaGraphEngine.html">NovaGraphEngine</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaPlanner.html" href="NovaPlanner.html">NovaPlanner</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ParserAndASTReference.html" href="ParserAndASTReference.html">ParserAndASTReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="RuntimeMethodReference.html" href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ClassReference.html" href="ClassReference.html">ClassReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="CodeReferenceIndex.html" href="CodeReferenceIndex.html">CodeReferenceIndex</a></li>
+</ul></section>
+<section class="wiki-nav-section">
+<h2>Plattformfunktionen</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="NovaAgents.html" href="NovaAgents.html">NovaAgents</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaMesh.html" href="NovaMesh.html">NovaMesh</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaSensors.html" href="NovaSensors.html">NovaSensors</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaMemory.html" href="NovaMemory.html">NovaMemory</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaTools.html" href="NovaTools.html">NovaTools</a></li>
+</ul></section>
+<section class="wiki-nav-section">
+<h2>Entwicklung und Betrieb</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="DevelopmentGuide.html" href="DevelopmentGuide.html">DevelopmentGuide</a></li>
+<li><a class="wiki-nav-link" data-nav-href="PageTemplate.html" href="PageTemplate.html">PageTemplate</a></li>
+<li><a class="wiki-nav-link" data-nav-href="RepositoryStructure.html" href="RepositoryStructure.html">RepositoryStructure</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Testing.html" href="Testing.html">Testing</a></li>
+<li><a class="wiki-nav-link" data-nav-href="BuildAndRelease.html" href="BuildAndRelease.html">BuildAndRelease</a></li>
+<li><a class="wiki-nav-link" data-nav-href="SecurityModel.html" href="SecurityModel.html">SecurityModel</a></li>
+<li><a class="wiki-nav-link" data-nav-href="PerformanceAndScaling.html" href="PerformanceAndScaling.html">PerformanceAndScaling</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Troubleshooting.html" href="Troubleshooting.html">Troubleshooting</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Roadmap.html" href="Roadmap.html">Roadmap</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Contributing.html" href="Contributing.html">Contributing</a></li>
+<li><a class="wiki-nav-link" data-nav-href="License.html" href="License.html">License</a></li>
+</ul></section>
+<section class="wiki-nav-section">
+<h2>Theorie</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="Research.html" href="Research.html">Research</a></li>
+<li><a class="wiki-nav-link" data-nav-href="AIOSConcept.html" href="AIOSConcept.html">AIOSConcept</a></li>
+<li><a class="wiki-nav-link" data-nav-href="AgentSystems.html" href="AgentSystems.html">AgentSystems</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Glossary.html" href="Glossary.html">Glossary</a></li>
+<li><a class="wiki-nav-link" data-nav-href="FAQ.html" href="FAQ.html">FAQ</a></li>
+</ul></section>
+      </nav>
+    </aside>
+    <main class="wiki-main">
+      <header class="wiki-header">
+        <button type="button" class="wiki-nav-toggle" data-nav-toggle>Menu</button>
+        <div class="wiki-header-copy">
+          <span class="wiki-kicker">Nova-shell Documentation</span>
+          <h1>nsReference</h1>
+          <p>Source: nsReference.md</p>
+        </div>
+      </header>
+      <div class="wiki-layout">
+        <article class="wiki-article">
+          <h1 id="nsreference">nsReference</h1>
+<h2 id="zweck">Zweck</h2>
+<p>Diese Seite ist die kompakte Sprachreferenz fuer Nova Language. Sie ist nicht als Lernpfad gedacht, sondern als Nachschlagewerk fuer Syntax, Bausteine, typische Felder und den praktischen Einsatz einzelner Konstrukte.</p>
+<p>Wenn du <code>.ns</code> erst lernen willst, beginne mit <a href="nsCreate.html">nsCreate</a>.</p>
+<h2 id="grundform-einer-deklaration">Grundform einer Deklaration</h2>
+<p>Nova Language besteht aus benannten Bloecken:</p>
+<pre><code class="language-ns">agent researcher {
+  model: llama3
+}</code></pre>
+<p>Allgemeines Muster:</p>
+<pre><code class="language-text">keyword name {
+  property: value
+}</code></pre>
+<h2 id="sprachbausteine-im-ueberblick">Sprachbausteine im Ueberblick</h2>
+<table><thead><tr>
+<th>Baustein</th>
+<th>Zweck</th>
+<th>Typische Felder</th>
+</tr></thead><tbody>
+<tr>
+<td><code>import</code></td>
+<td>bindet andere Dateien oder Module ein</td>
+<td>Pfad oder Registryziel</td>
+</tr>
+<tr>
+<td><code>system</code></td>
+<td>legt Runtime- oder Plattformkontext fest</td>
+<td><code>mode</code>, <code>tenant</code>, <code>cluster</code>, <code>observability</code></td>
+</tr>
+<tr>
+<td><code>state</code></td>
+<td>beschreibt Zustand oder Namespaces</td>
+<td><code>namespace</code>, <code>backend</code></td>
+</tr>
+<tr>
+<td><code>agent</code></td>
+<td>beschreibt modellgestuetzte Akteure</td>
+<td><code>provider</code>, <code>model</code>, <code>tools</code>, <code>memory</code></td>
+</tr>
+<tr>
+<td><code>dataset</code></td>
+<td>beschreibt Datenquellen oder Datenobjekte</td>
+<td><code>source</code>, <code>path</code>, <code>format</code>, <code>items</code></td>
+</tr>
+<tr>
+<td><code>tool</code></td>
+<td>beschreibt benannte Aktionen</td>
+<td><code>command</code>, <code>capability</code>, <code>system</code></td>
+</tr>
+<tr>
+<td><code>flow</code></td>
+<td>beschreibt die eigentliche Ausfuehrungslogik</td>
+<td>Schritte und optionale Eigenschaften</td>
+</tr>
+<tr>
+<td><code>event</code></td>
+<td>verbindet Signale mit Flows</td>
+<td><code>on</code>, <code>flow</code></td>
+</tr>
+<tr>
+<td><code>package</code></td>
+<td>beschreibt installierbare Artefakte</td>
+<td><code>version</code>, <code>source</code>, <code>entrypoint</code></td>
+</tr>
+<tr>
+<td><code>service</code></td>
+<td>beschreibt laufende Dienste</td>
+<td><code>package</code>, <code>replicas</code>, <code>ingress</code></td>
+</tr>
+</tbody></table>
+<h2 id="werte-und-literale">Werte und Literale</h2>
+<p>Nova Language verwendet typischerweise:</p>
+<ul>
+<li>Strings</li>
+<li>Zahlen</li>
+<li>Booleans</li>
+<li>Listen</li>
+<li>Maps</li>
+</ul>
+<h3 id="string">String</h3>
+<pre><code class="language-ns">model: &quot;gpt-4o-mini&quot;</code></pre>
+<p>oder kuerzer:</p>
+<pre><code class="language-ns">model: llama3</code></pre>
+<h3 id="zahl">Zahl</h3>
+<pre><code class="language-ns">replicas: 2</code></pre>
+<h3 id="boolean">Boolean</h3>
+<pre><code class="language-ns">leader: true</code></pre>
+<h3 id="liste">Liste</h3>
+<pre><code class="language-ns">tools: [atheria.embed, system.log]</code></pre>
+<h3 id="map">Map</h3>
+<pre><code class="language-ns">configs: {backend_cfg: {mode: &quot;prod&quot;, cache: &quot;enabled&quot;}}</code></pre>
+<h2 id="import"><code>import</code></h2>
+<p>Bindet weitere <code>.ns</code>-Dateien ein.</p>
+<pre><code class="language-ns">import &quot;agents/research.ns&quot;
+import &quot;flows/radar.ns&quot;</code></pre>
+<p>Typischer Einsatz:</p>
+<ul>
+<li>grosse Programme aufteilen</li>
+<li>Agenten, Datasets und Flows getrennt organisieren</li>
+</ul>
+<h2 id="system"><code>system</code></h2>
+<p>Legt System- oder Plattformkontext fest.</p>
+<pre><code class="language-ns">system control_plane {
+  mode: mesh
+  tenant: ops
+  cluster: nova-edge
+  observability: enabled
+}</code></pre>
+<p>Typische Felder:</p>
+<ul>
+<li><code>mode</code></li>
+<li><code>tenant</code></li>
+<li><code>namespace</code></li>
+<li><code>cluster</code></li>
+<li><code>node_id</code></li>
+<li><code>leader</code></li>
+<li><code>capability</code></li>
+<li><code>observability</code></li>
+</ul>
+<h2 id="state"><code>state</code></h2>
+<p>Beschreibt Laufzeitzustand oder einen Namensraum.</p>
+<pre><code class="language-ns">state mission {
+  namespace: ai_os_cluster
+}</code></pre>
+<p>oder:</p>
+<pre><code class="language-ns">state research_memory {
+  backend: atheria
+  namespace: market_radar
+}</code></pre>
+<h2 id="agent"><code>agent</code></h2>
+<p>Beschreibt einen Agenten.</p>
+<pre><code class="language-ns">agent strategist {
+  provider: atheria
+  model: atheria-core
+  tools: [publish_signal, atheria.embed]
+  memory: mission
+}</code></pre>
+<p>Typische Felder:</p>
+<ul>
+<li><code>provider</code></li>
+<li><code>providers</code></li>
+<li><code>model</code></li>
+<li><code>tools</code></li>
+<li><code>memory</code></li>
+<li><code>embeddings</code></li>
+<li><code>system_prompt</code></li>
+<li><code>prompts</code></li>
+<li><code>prompt_version</code></li>
+<li><code>governance</code></li>
+</ul>
+<h2 id="dataset"><code>dataset</code></h2>
+<p>Beschreibt Daten.</p>
+<pre><code class="language-ns">dataset signals {
+  source: rss
+  path: sample_news.json
+  knowledge: atheria
+}</code></pre>
+<p>oder direkt eingebettet:</p>
+<pre><code class="language-ns">dataset incidents {
+  items: [{title: &quot;GPU cluster drift&quot;}, {title: &quot;Worker restart storm&quot;}]
+}</code></pre>
+<p>Typische Felder:</p>
+<ul>
+<li><code>source</code></li>
+<li><code>path</code></li>
+<li><code>format</code></li>
+<li><code>items</code></li>
+<li><code>knowledge</code></li>
+</ul>
+<h2 id="tool"><code>tool</code></h2>
+<p>Beschreibt eine benannte Aktion.</p>
+<pre><code class="language-ns">tool publish_signal {
+  command: system.log {{value0}}
+  capability: cpu
+  system: control_plane
+}</code></pre>
+<p>Typische Felder:</p>
+<ul>
+<li><code>command</code></li>
+<li><code>capability</code></li>
+<li><code>system</code></li>
+<li><code>selector</code></li>
+</ul>
+<h2 id="flow"><code>flow</code></h2>
+<p>Der wichtigste aktive Baustein.</p>
+<pre><code class="language-ns">flow daily_ops {
+  rss.fetch signals -&gt; fresh_signals
+  strategist prioritize signals -&gt; action_plan
+  publish_signal action_plan
+}</code></pre>
+<h3 id="schrittform">Schrittform</h3>
+<p>Grundmuster:</p>
+<pre><code class="language-text">operation argument1 argument2 -&gt; alias</code></pre>
+<p>Beispiele:</p>
+<pre><code class="language-ns">rss.fetch tech_rss -&gt; fresh_news
+atheria.embed tech_rss -&gt; embedded_news
+researcher summarize tech_rss -&gt; briefing</code></pre>
+<h3 id="typische-flow-eigenschaften">Typische Flow-Eigenschaften</h3>
+<p>Je nach Beispiel oder Runtimepfad koennen zusaetzliche Properties existieren, etwa:</p>
+<ul>
+<li><code>entry</code></li>
+<li><code>system</code></li>
+<li><code>tenant</code></li>
+<li><code>required_roles</code></li>
+<li><code>selector</code></li>
+</ul>
+<h2 id="event"><code>event</code></h2>
+<p>Verbindet Signale mit Flows.</p>
+<pre><code class="language-ns">event scheduler {
+  on: schedule.tick
+  flow: daily_ops
+}</code></pre>
+<p>Typische Felder:</p>
+<ul>
+<li><code>on</code></li>
+<li><code>flow</code></li>
+</ul>
+<h2 id="package"><code>package</code></h2>
+<p>Beschreibt installierbare Artefakte.</p>
+<pre><code class="language-ns">package base_sdk {
+  version: 1.0.0
+  source: &quot;./dist/base-sdk.tar&quot;
+}</code></pre>
+<h2 id="service"><code>service</code></h2>
+<p>Beschreibt laufende Dienste.</p>
+<pre><code class="language-ns">service backend {
+  package: base_sdk
+  replicas: 2
+  ingress: [{host: &quot;backend.local&quot;, path: &quot;/api&quot;, target_port: 8080}]
+}</code></pre>
+<p>Typische Felder:</p>
+<ul>
+<li><code>package</code></li>
+<li><code>replicas</code></li>
+<li><code>configs</code></li>
+<li><code>volumes</code></li>
+<li><code>ingress</code></li>
+<li><code>autoscale</code></li>
+</ul>
+<h2 id="testbare-arbeitsfolge">Testbare Arbeitsfolge</h2>
+<pre><code class="language-powershell">ns.graph datei.ns
+ns.format datei.ns
+ns.lint datei.ns
+ns.run datei.ns
+ns.test datei.ns</code></pre>
+<h2 id="typische-referenzfragen">Typische Referenzfragen</h2>
+<h3 id="wie-sieht-ein-gueltiger-flow-schritt-aus">Wie sieht ein gueltiger Flow-Schritt aus?</h3>
+<p>Als Operation mit Argumenten und optionalem Alias.</p>
+<h3 id="wann-brauche-ich-system">Wann brauche ich <code>system</code>?</h3>
+<p>Wenn Runtime-, Tenant-, Placement- oder Plattformverhalten explizit im Programm beschrieben werden soll.</p>
+<h3 id="wann-teile-ich-dateien-mit-import">Wann teile ich Dateien mit <code>import</code>?</h3>
+<p>Sobald Agenten, Datasets, Flows und Services nicht mehr uebersichtlich in einer einzigen Datei bleiben.</p>
+<h2 id="verwandte-seiten">Verwandte Seiten</h2>
+<ul>
+<li><a href="nsCreate.html">nsCreate</a></li>
+<li><a href="nsPatterns.html">nsPatterns</a></li>
+<li><a href="NovaLanguage.html">NovaLanguage</a></li>
+<li><a href="ComponentModel.html">ComponentModel</a></li>
+<li><a href="ParserAndASTReference.html">ParserAndASTReference</a></li>
+</ul>
+        </article>
+        <aside class="wiki-toc">
+          <div class="wiki-toc-card"><h2>On this page</h2><ul>
+<li class="wiki-toc-link"><a href="#zweck">Zweck</a></li>
+<li class="wiki-toc-link"><a href="#grundform-einer-deklaration">Grundform einer Deklaration</a></li>
+<li class="wiki-toc-link"><a href="#sprachbausteine-im-ueberblick">Sprachbausteine im Ueberblick</a></li>
+<li class="wiki-toc-link"><a href="#werte-und-literale">Werte und Literale</a></li>
+<li class="wiki-toc-link level-3"><a href="#string">String</a></li>
+<li class="wiki-toc-link level-3"><a href="#zahl">Zahl</a></li>
+<li class="wiki-toc-link level-3"><a href="#boolean">Boolean</a></li>
+<li class="wiki-toc-link level-3"><a href="#liste">Liste</a></li>
+<li class="wiki-toc-link level-3"><a href="#map">Map</a></li>
+<li class="wiki-toc-link"><a href="#import">`import`</a></li>
+<li class="wiki-toc-link"><a href="#system">`system`</a></li>
+<li class="wiki-toc-link"><a href="#state">`state`</a></li>
+<li class="wiki-toc-link"><a href="#agent">`agent`</a></li>
+<li class="wiki-toc-link"><a href="#dataset">`dataset`</a></li>
+<li class="wiki-toc-link"><a href="#tool">`tool`</a></li>
+<li class="wiki-toc-link"><a href="#flow">`flow`</a></li>
+<li class="wiki-toc-link level-3"><a href="#schrittform">Schrittform</a></li>
+<li class="wiki-toc-link level-3"><a href="#typische-flow-eigenschaften">Typische Flow-Eigenschaften</a></li>
+<li class="wiki-toc-link"><a href="#event">`event`</a></li>
+<li class="wiki-toc-link"><a href="#package">`package`</a></li>
+<li class="wiki-toc-link"><a href="#service">`service`</a></li>
+<li class="wiki-toc-link"><a href="#testbare-arbeitsfolge">Testbare Arbeitsfolge</a></li>
+<li class="wiki-toc-link"><a href="#typische-referenzfragen">Typische Referenzfragen</a></li>
+<li class="wiki-toc-link level-3"><a href="#wie-sieht-ein-gueltiger-flow-schritt-aus">Wie sieht ein gueltiger Flow-Schritt aus?</a></li>
+<li class="wiki-toc-link level-3"><a href="#wann-brauche-ich-system">Wann brauche ich `system`?</a></li>
+<li class="wiki-toc-link level-3"><a href="#wann-teile-ich-dateien-mit-import">Wann teile ich Dateien mit `import`?</a></li>
+<li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
+</ul></div>
+        </aside>
+      </div>
+      <footer class="wiki-footer">
+        <p><a href="Home.html">Home</a> | <a href="QuickStart.html">QuickStart</a> | <a href="Architecture.html">Architecture</a> | <a href="NovaCLI.html">NovaCLI</a> | <a href="DevelopmentGuide.html">DevelopmentGuide</a> | <a href="FAQ.html">FAQ</a></p>
+      </footer>
+    </main>
+  </div>
+  <script>
+    window.NOVA_WIKI = {
+      currentPage: "nsReference.html",
+      searchIndex: "assets/search-index.json"
+    };
+  </script>
+  <script src="assets/wiki.js" defer></script>
+</body>
+</html>
