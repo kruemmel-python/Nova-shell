@@ -7,6 +7,46 @@ import time
 from pathlib import Path
 from typing import Any
 
+MAX_MEMORY_TEXT_CHARS = 8192
+MAX_MEMORY_SEARCH_TEXT_CHARS = 4096
+MAX_MEMORY_METADATA_DEPTH = 4
+MAX_MEMORY_METADATA_ITEMS = 16
+MAX_MEMORY_METADATA_STRING_CHARS = 1024
+
+
+def _truncate_text(value: str, *, limit: int) -> str:
+    if len(value) <= limit:
+        return value
+    overflow = len(value) - limit
+    return f"{value[:limit].rstrip()}... [truncated {overflow} chars]"
+
+
+def _sanitize_metadata(value: Any, *, depth: int = MAX_MEMORY_METADATA_DEPTH) -> Any:
+    if depth <= 0:
+        return "..."
+    match value:
+        case None | bool() | int() | float():
+            return value
+        case str():
+            return _truncate_text(value, limit=MAX_MEMORY_METADATA_STRING_CHARS)
+        case list() | tuple():
+            items = [_sanitize_metadata(item, depth=depth - 1) for item in list(value)[:MAX_MEMORY_METADATA_ITEMS]]
+            overflow = len(value) - len(items)
+            if overflow > 0:
+                items.append(f"... ({overflow} more)")
+            return items
+        case dict():
+            result: dict[str, Any] = {}
+            items = list(value.items())
+            for key, item in items[:MAX_MEMORY_METADATA_ITEMS]:
+                result[str(key)] = _sanitize_metadata(item, depth=depth - 1)
+            overflow = len(items) - len(result)
+            if overflow > 0:
+                result["..."] = f"{overflow} more"
+            return result
+        case _:
+            return _truncate_text(str(value), limit=MAX_MEMORY_METADATA_STRING_CHARS)
+
 
 class DistributedMemoryStore:
     """Shard-aware persistent memory store with simple semantic search."""
@@ -42,25 +82,39 @@ class DistributedMemoryStore:
 
     def append(self, scope: str, text_value: str, *, shard: str = "0", metadata: dict[str, Any] | None = None) -> dict[str, Any]:
         now = time.time()
+        normalized_text = _truncate_text(str(text_value), limit=MAX_MEMORY_TEXT_CHARS)
+        normalized_metadata = _sanitize_metadata(metadata or {})
         with self._lock, self._conn:
             cursor = self._conn.execute(
                 "INSERT INTO memory_records(scope, shard, text_value, metadata_json, created_at) VALUES(?, ?, ?, ?, ?)",
-                (scope, shard, text_value, json.dumps(metadata or {}, ensure_ascii=False), now),
+                (scope, shard, normalized_text, json.dumps(normalized_metadata, ensure_ascii=False), now),
             )
-        return {"record_id": int(cursor.lastrowid), "scope": scope, "shard": shard, "text": text_value, "metadata": metadata or {}, "created_at": now}
+        return {"record_id": int(cursor.lastrowid), "scope": scope, "shard": shard, "text": normalized_text, "metadata": normalized_metadata, "created_at": now}
 
     def search(self, scope: str, query: str, *, top_k: int = 5) -> list[dict[str, Any]]:
         tokens = {token.lower() for token in query.split() if token.strip()}
         with self._lock:
             rows = self._conn.execute(
-                "SELECT record_id, scope, shard, text_value, metadata_json, created_at FROM memory_records WHERE scope LIKE ? ORDER BY record_id DESC LIMIT 200",
-                (f"{scope}%",),
+                """
+                SELECT record_id, scope, shard, substr(text_value, 1, ?), metadata_json, created_at
+                FROM memory_records
+                WHERE scope LIKE ?
+                ORDER BY record_id DESC
+                LIMIT 200
+                """,
+                (MAX_MEMORY_SEARCH_TEXT_CHARS, f"{scope}%"),
             ).fetchall()
         scored: list[tuple[int, dict[str, Any]]] = []
         for row in rows:
             text = str(row[3])
             record_tokens = {token.lower() for token in text.split() if token.strip()}
             score = len(tokens.intersection(record_tokens))
+            metadata: dict[str, Any]
+            try:
+                decoded = json.loads(row[4])
+                metadata = decoded if isinstance(decoded, dict) else {"value": decoded}
+            except Exception:
+                metadata = {}
             scored.append(
                 (
                     score,
@@ -69,7 +123,7 @@ class DistributedMemoryStore:
                         "scope": row[1],
                         "shard": row[2],
                         "text": text,
-                        "metadata": json.loads(row[4]),
+                        "metadata": metadata,
                         "created_at": row[5],
                     },
                 )

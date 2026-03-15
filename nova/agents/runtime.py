@@ -57,6 +57,11 @@ class AgentExecutionResult:
 class AgentRuntime:
     """Generic agent runtime with explicit model/tool/memory configuration."""
 
+    MAX_PROVIDER_PROMPT_CHARS = 12000
+    MAX_PROVIDER_PROMPT_CONTEXT_CHARS = 3000
+    MAX_PROVIDER_MEMORY_SNIPPET_CHARS = 512
+    MAX_STORED_OUTPUT_CHARS = 8192
+
     def __init__(self) -> None:
         self._agents: dict[str, AgentSpecification] = {}
 
@@ -128,12 +133,20 @@ class AgentRuntime:
         action = task.action or str(specification.config.get("default_action", "run"))
         prompt_version = str(task.metadata.get("prompt_version") or specification.prompt_version or "default")
         prompt_text = context.prompt_registry.resolve(specification.name, prompt_version) or specification.prompts.get(prompt_version, specification.system_prompt)
-        memory_context = context.memory_store.search(memory_scope.rsplit(":shard:", 1)[0], json.dumps(task.inputs, ensure_ascii=False), top_k=int(specification.config.get("memory_top_k") or 5))
+        memory_query = self._bounded_text(json.dumps(task.inputs, ensure_ascii=False), self.MAX_PROVIDER_PROMPT_CONTEXT_CHARS)
+        memory_context = self._compact_memory_context(
+            context.memory_store.search(
+                memory_scope.rsplit(":shard:", 1)[0],
+                memory_query,
+                top_k=int(specification.config.get("memory_top_k") or 5),
+            )
+        )
         output, provider_name, model_name = self._provider_output(specification, action, task.inputs, context, prompt_text, memory_context) or (
             self._render_output(specification, action, task.inputs, prompt_text),
             "local",
             specification.model,
         )
+        stored_output = self._bounded_text(output, self.MAX_STORED_OUTPUT_CHARS)
 
         context.agent_memory.setdefault(memory_scope, []).append(
             {
@@ -142,7 +155,7 @@ class AgentRuntime:
                 "model": model_name,
                 "provider": provider_name,
                 "prompt_version": prompt_version,
-                "output": output,
+                "output": stored_output,
             }
         )
         context.agent_memory.setdefault("__agent_evaluations__", []).append(
@@ -158,7 +171,7 @@ class AgentRuntime:
         )
         memory_record = context.memory_store.append(
             memory_scope,
-            output,
+            stored_output,
             shard=memory_scope.split(":shard:")[-1] if ":shard:" in memory_scope else "0",
             metadata={
                 "agent": specification.name,
@@ -173,7 +186,7 @@ class AgentRuntime:
             provider=provider_name,
             model=model_name,
             prompt_version=prompt_version,
-            output_text=output,
+            output_text=stored_output,
             metadata={"memory_scope": memory_scope, "tool_session": sandbox_session, "memory_matches": memory_context},
         )
 
@@ -229,9 +242,10 @@ class AgentRuntime:
     ) -> tuple[str, str, str] | None:
         prompt = self._render_output(specification, action, inputs, prompt_text)
         if prompt_text:
-            prompt = f"{prompt_text}\n\nTask:\n{prompt}"
+            prompt = f"{self._bounded_text(prompt_text, self.MAX_PROVIDER_PROMPT_CONTEXT_CHARS)}\n\nTask:\n{prompt}"
         if memory_context:
-            prompt += "\n\nMemory:\n" + "\n".join(item["text"] for item in memory_context[:3])
+            prompt += "\n\nMemory:\n" + "\n".join(self._bounded_text(str(item["text"]), self.MAX_PROVIDER_MEMORY_SNIPPET_CHARS) for item in memory_context[:3])
+        prompt = self._bounded_text(prompt, self.MAX_PROVIDER_PROMPT_CHARS)
         routed = context.provider_registry.execute(specification, prompt, inputs, context)
         if routed is None:
             return None
@@ -279,3 +293,21 @@ class AgentRuntime:
                 return compact[:120]
             case _:
                 return str(value)
+
+    def _bounded_text(self, value: Any, limit: int) -> str:
+        text = str(value)
+        if len(text) <= limit:
+            return text
+        overflow = len(text) - limit
+        return f"{text[:limit].rstrip()}... [truncated {overflow} chars]"
+
+    def _compact_memory_context(self, records: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        compacted: list[dict[str, Any]] = []
+        for record in records:
+            compacted.append(
+                {
+                    **record,
+                    "text": self._bounded_text(record.get("text", ""), self.MAX_PROVIDER_MEMORY_SNIPPET_CHARS),
+                }
+            )
+        return compacted

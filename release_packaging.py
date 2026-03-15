@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import uuid
 from dataclasses import dataclass
@@ -156,7 +157,12 @@ def stable_guid(value: str) -> str:
 
 
 def render_wix_source(metadata: ReleaseMetadata, version: str, bundle_dir: Path, executable_name: str) -> str:
-    files = sorted(path for path in bundle_dir.rglob("*") if path.is_file())
+    files: list[Path] = []
+    for root, _, names in os.walk(bundle_dir):
+        root_path = Path(root)
+        for name in names:
+            files.append(root_path / name)
+    files.sort(key=lambda path: path.relative_to(bundle_dir).as_posix())
     rel_dir_set = {Path(".")}
     for file_path in files:
         parent = file_path.relative_to(bundle_dir).parent

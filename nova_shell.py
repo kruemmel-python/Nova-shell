@@ -59,7 +59,7 @@ except ImportError:  # pragma: no cover - platform dependent
     readline = None
 
 
-__version__ = "0.8.11"
+__version__ = "0.8.12"
 SIDELOAD_PACKAGE_DIR = "vendor-py"
 RUNTIME_CONFIG_FILE = "nova-shell-runtime.json"
 BRIEFING_REPORT_FILES: tuple[tuple[str, str, str], ...] = (
@@ -6180,7 +6180,7 @@ class NovaShell:
             source_dir = Path(options["source"] or self._default_wiki_source_dir()).resolve(strict=False)
             output_dir = Path(options["output"] or self._default_wiki_output_dir()).resolve(strict=False)
             host = str(options["host"] or "127.0.0.1")
-            port = int(options["port"] or 8767)
+            port = 8767 if options["port"] is None else int(options["port"])
 
             if subcommand == "help":
                 return CommandResult(

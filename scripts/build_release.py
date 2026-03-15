@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import contextlib
 import faulthandler
+import fnmatch
 import hashlib
 import importlib.metadata as importlib_metadata
 import importlib.util
@@ -525,7 +526,8 @@ def archive_bundle(bundle_dir: Path, archive_base: Path, *, source_date_epoch: i
                 info.compress_type = zipfile.ZIP_DEFLATED
                 info.external_attr = (path.stat().st_mode & 0xFFFF) << 16
                 with path.open("rb") as handle:
-                    zf.writestr(info, handle.read())
+                    with zf.open(info, "w") as archive_handle:
+                        shutil.copyfileobj(handle, archive_handle, length=1024 * 1024)
         return archive_path
 
     archive_path = archive_base.with_suffix(".tar.gz")
@@ -660,18 +662,95 @@ def require_tool(name: str, guidance: str) -> str:
 def copytree_clean(src: Path, dst: Path) -> None:
     if dst.exists():
         shutil.rmtree(dst)
-    shutil.copytree(src, dst, symlinks=True)
+    safe_copytree(src, dst)
+
+
+def ignored_names(names: list[str], patterns: tuple[str, ...]) -> set[str]:
+    ignored: set[str] = set()
+    for name in names:
+        if any(fnmatch.fnmatch(name, pattern) for pattern in patterns):
+            ignored.add(name)
+    return ignored
+
+
+def safe_copytree(src: Path, dst: Path, *, ignore_patterns: tuple[str, ...] = ()) -> None:
+    if dst.exists():
+        shutil.rmtree(dst)
+    src = src.resolve()
+    dst.mkdir(parents=True, exist_ok=True)
+    if os.name == "nt":
+        command = [
+            "robocopy",
+            str(src),
+            str(dst),
+            "/E",
+            "/COPY:DAT",
+            "/DCOPY:DAT",
+            "/R:2",
+            "/W:1",
+            "/XJ",
+            "/NFL",
+            "/NDL",
+            "/NJH",
+            "/NJS",
+            "/NP",
+        ]
+        exclude_dirs = [pattern for pattern in ignore_patterns if "*" not in pattern and "?" not in pattern and not pattern.startswith("*.")]
+        exclude_files = [pattern for pattern in ignore_patterns if pattern not in exclude_dirs]
+        if exclude_dirs:
+            command.append("/XD")
+            command.extend(exclude_dirs)
+        if exclude_files:
+            command.append("/XF")
+            command.extend(exclude_files)
+        completed = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=False)
+        if completed.returncode > 7:
+            raise SystemExit(
+                f"robocopy failed while copying '{src}' to '{dst}' with exit code {completed.returncode}.\n"
+                f"stdout:\n{completed.stdout}\n"
+                f"stderr:\n{completed.stderr}"
+            )
+        return
+    for root, dirs, files in os.walk(src):
+        root_path = Path(root)
+        relative_root = root_path.relative_to(src)
+        target_root = dst / relative_root
+        target_root.mkdir(parents=True, exist_ok=True)
+
+        ignored_dirs = ignored_names(dirs, ignore_patterns)
+        dirs[:] = [name for name in dirs if name not in ignored_dirs]
+        ignored_files = ignored_names(files, ignore_patterns)
+
+        for directory_name in list(dirs):
+            source_dir = root_path / directory_name
+            target_dir = target_root / directory_name
+            if source_dir.is_symlink():
+                target_dir.parent.mkdir(parents=True, exist_ok=True)
+                try:
+                    os.symlink(os.readlink(source_dir), target_dir, target_is_directory=True)
+                    dirs.remove(directory_name)
+                    continue
+                except OSError:
+                    pass
+            target_dir.mkdir(parents=True, exist_ok=True)
+
+        for file_name in files:
+            if file_name in ignored_files:
+                continue
+            source_file = root_path / file_name
+            target_file = target_root / file_name
+            target_file.parent.mkdir(parents=True, exist_ok=True)
+            if source_file.is_symlink():
+                try:
+                    os.symlink(os.readlink(source_file), target_file)
+                    continue
+                except OSError:
+                    pass
+            shutil.copy2(source_file, target_file)
 
 
 def copytree_filtered(src: Path, dst: Path) -> None:
-    if dst.exists():
-        shutil.rmtree(dst)
-    shutil.copytree(
-        src,
-        dst,
-        symlinks=True,
-        ignore=shutil.ignore_patterns("__pycache__", "*.pyc", "*.pyo"),
-    )
+    safe_copytree(src, dst, ignore_patterns=("__pycache__", "*.pyc", "*.pyo"))
 
 
 def copy_file_filtered(src: Path, dst: Path) -> None:
@@ -1046,12 +1125,7 @@ def stage_minimal_python_runtime(target_root: Path) -> None:
     dll_source = python_root / "DLLs"
     dll_target = target_root / "DLLs"
     if dll_source.exists():
-        shutil.copytree(
-            dll_source,
-            dll_target,
-            symlinks=True,
-            ignore=shutil.ignore_patterns("__pycache__", "*.pyc", "*.pyo"),
-        )
+        safe_copytree(dll_source, dll_target, ignore_patterns=("__pycache__", "*.pyc", "*.pyo"))
 
     lib_root = python_root / "Lib"
     stdlib_zip = target_root / f"{version_tag}.zip"
@@ -1081,11 +1155,11 @@ def stage_minimal_node_runtime(cache_dir: Path, target_root: Path) -> None:
 
 def stage_emsdk_runtime_subset(cache_dir: Path, target_root: Path) -> None:
     subset_dirs = [
-        ("upstream/bin", shutil.ignore_patterns("__pycache__", "*.pyc", "*.pyo", ".git", ".github")),
-        ("upstream/lib", shutil.ignore_patterns("__pycache__", "*.pyc", "*.pyo", ".git", ".github")),
+        ("upstream/bin", ("__pycache__", "*.pyc", "*.pyo", ".git", ".github")),
+        ("upstream/lib", ("__pycache__", "*.pyc", "*.pyo", ".git", ".github")),
         (
             "upstream/emscripten",
-            shutil.ignore_patterns(
+            (
                 "__pycache__",
                 "*.pyc",
                 "*.pyo",
@@ -1101,11 +1175,11 @@ def stage_emsdk_runtime_subset(cache_dir: Path, target_root: Path) -> None:
             ),
         ),
     ]
-    for relative_path, ignore in subset_dirs:
+    for relative_path, ignore_patterns in subset_dirs:
         source = cache_dir / relative_path
         if not source.exists():
             continue
-        shutil.copytree(source, target_root / relative_path, symlinks=True, ignore=ignore)
+        safe_copytree(source, target_root / relative_path, ignore_patterns=ignore_patterns)
     stage_minimal_node_runtime(cache_dir, target_root / "node")
     stage_minimal_python_runtime(target_root / PYTHON_RUNTIME_DIR)
 
