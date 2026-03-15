@@ -3,43 +3,46 @@
 ## Zweck
 
 Nova Mesh ist die verteilte Ausfuehrungsschicht von Nova-shell.
-Sie verbindet:
-
-- Worker-Registrierung
-- Capability-basierten Dispatch
-- lokale und entfernte Executor-Pfade
-- Heartbeats und Health
-- verteilte Aufgabenverteilung
+Sie verbindet Worker-Registrierung, Capability-basierten Dispatch, lokale und entfernte Executor-Pfade, Health-Signale und standardisierte Aufgabenverteilung.
 
 ## Kernobjekte
 
 | Klasse | Rolle |
 | --- | --- |
-| `WorkerNode` | Repräsentation eines Workers |
-| `MeshRegistry` | Registry und Dispatch-Logik |
-| `PersistentMeshControlPlane` | persistente Mesh-Task-Historie |
+| `WorkerNode` | Repräsentation eines Workers mit Endpoint, Capabilities und Metadaten |
+| `MeshRegistry` | Registry, Auswahl und Dispatch-Logik |
+| `PersistentMeshControlPlane` | persistente Mesh-Task- und Worker-Historie |
 | `ExecutorTask` | standardisierte Arbeitsanforderung |
 | `ExecutorResult` | standardisiertes Ergebnis |
-| `MeshWorkerServer` | lokaler Worker-Prozess in der CLI-Runtime |
-| `NativeExecutorManager` | lokale Executor-Verwaltung |
+| `MeshWorkerServer` | Worker-Prozess in der CLI-Runtime |
+| `NativeExecutorManager` | Verwaltung lokaler nativer Executor |
+
+## Worker-Lebenszyklus
+
+```text
+register
+  ->
+heartbeat
+  ->
+capability match
+  ->
+task dispatch
+  ->
+result / status / retry
+```
 
 ## Methoden und Schnittstellen
 
-Wichtige Registry- und Worker-Schnittstellen:
+Wichtige Mesh-Operationen:
 
 - Worker registrieren
 - Heartbeats senden
 - Capabilities matchen
 - Tasks dispatchen
-- Executor-Ergebnisse zurueckgeben
+- Ergebnisse zurueckgeben
+- Health und Status auswerten
 
-### Worker-Lebenszyklus
-
-```text
-register -> heartbeat -> capability match -> task dispatch -> result
-```
-
-### Capability-Modell
+## Capability-Modell
 
 Typische Capabilities:
 
@@ -48,6 +51,8 @@ Typische Capabilities:
 - `gpu`
 - `wasm`
 - `ai`
+
+Diese Capabilities steuern, welche Worker fuer welche Aufgaben in Frage kommen.
 
 ## CLI
 
@@ -60,27 +65,29 @@ mesh intelligent-run py 1 + 1
 mesh stop-worker
 ```
 
+Je nach Aufbau kann zusaetzlich mit `mesh add`, `mesh list` oder Control-Plane-Kommandos gearbeitet werden.
+
 ## API
 
-Mesh-relevante API-Bereiche:
+Mesh-relevante API-Bereiche umfassen:
 
+- Worker- und Registry-Zustaende
 - Konsens- und Peer-Endpunkte
 - Executor-Status
-- Replikationsstatus
+- Replikations- und Dispatch-Status
 
-## Beispiele
+Details stehen in [APIReference](./APIReference.md).
 
-### Declarative Runtime und Mesh
+## Testbare Beispiele
 
-Relevante Metadaten fuer Placement:
+### Worker lokal starten
 
-- `capability`
-- `selector`
-- `tenant`
-- `namespace`
-- `require_tls`
+```powershell
+mesh start-worker --caps py,gpu
+mesh beat
+```
 
-### Python-Beispiel
+### Registry aus Python pruefen
 
 ```python
 from nova.mesh.registry import MeshRegistry, WorkerNode
@@ -95,9 +102,36 @@ registry.register(
 )
 ```
 
+### Deklarative Platzierungsmetadaten
+
+Relevante Metadaten in `.ns`-Programmen:
+
+- `capability`
+- `selector`
+- `tenant`
+- `namespace`
+- `require_tls`
+
+## Typische Fehler und Fragen
+
+### Warum wird ein Task nicht verteilt?
+
+Oft passt keine Capability, der Worker ist nicht registriert oder Policy- und Trust-Anforderungen verhindern den Dispatch.
+
+### Wann ist Mesh ueberhaupt relevant?
+
+Sobald Last, Spezialisierung oder Isolation nicht mehr nur lokal abgebildet werden sollen.
+
+### Was pruefe ich zuerst?
+
+1. Worker-Status
+2. Heartbeats
+3. Capability-Match
+4. Trust- und TLS-Anforderungen
+
 ## Verwandte Seiten
 
-- [ClassReference](./ClassReference.md)
+- [MeshAndDistributedExecution](./MeshAndDistributedExecution.md)
 - [NovaRuntime](./NovaRuntime.md)
+- [SecurityAndTrust](./SecurityAndTrust.md)
 - [APIReference](./APIReference.md)
-- [PageTemplate](./PageTemplate.md)

@@ -6,10 +6,16 @@
 - [GermanLanguage](./GermanLanguage.md)
 - [QuickStart](./QuickStart.md)
 - [Installation](./Installation.md)
+- [ProgrammingWithNovaShell](./ProgrammingWithNovaShell.md)
+- [nsCreate](./nsCreate.md)
+- [nsReference](./nsReference.md)
+- [nsPatterns](./nsPatterns.md)
 
 ## Nutzung
 
 - [NovaCLI](./NovaCLI.md)
+- [ProgrammingWithNovaShell](./ProgrammingWithNovaShell.md)
+- [ShellCommandReference](./ShellCommandReference.md)
 - [APIReference](./APIReference.md)
 - [ExamplesAndRecipes](./ExamplesAndRecipes.md)
 - [Tutorials](./Tutorials.md)
@@ -25,12 +31,16 @@
 - [ExecutionModel](./ExecutionModel.md)
 - [DataFlow](./DataFlow.md)
 - [NovaLanguage](./NovaLanguage.md)
+- [nsCreate](./nsCreate.md)
+- [nsReference](./nsReference.md)
+- [nsPatterns](./nsPatterns.md)
 - [NovaRuntime](./NovaRuntime.md)
 - [NovaGraphEngine](./NovaGraphEngine.md)
 - [NovaPlanner](./NovaPlanner.md)
 - [ParserAndASTReference](./ParserAndASTReference.md)
 - [RuntimeMethodReference](./RuntimeMethodReference.md)
 - [ClassReference](./ClassReference.md)
+- [CodeReferenceIndex](./CodeReferenceIndex.md)
 
 ## Plattformfunktionen
 

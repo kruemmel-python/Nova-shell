@@ -3,7 +3,8 @@
 ## Zweck
 
 Die Nova Language beschreibt Ressourcen als benannte Deklarationen.
-Diese werden spaeter in AST-Knoten und Graph-Knoten ueberfuehrt.
+Diese werden spaeter in AST-Knoten, Graph-Knoten und Runtime-Objekte ueberfuehrt.
+Diese Seite erklaert die semantischen Bausteine des Systems.
 
 ## Kernobjekte
 
@@ -71,11 +72,9 @@ installierbares Artefakt fuer Services oder Plattformteile.
 Rolle:
 uebergeordnete Runtime-, Security- oder Placement-Konfiguration.
 
-## Methoden und Schnittstellen
+## Zuordnung zu AST und Graph
 
-### Zuordnung zu AST und Graph
-
-| Sprachbaustein | AST-Klasse | Graph-Klasse |
+| Sprachbaustein | AST-Klasse | Graph-Klasse oder Laufzeitrolle |
 | --- | --- | --- |
 | `agent` | `AgentDeclaration` | `AgentNode` |
 | `dataset` | `DatasetDeclaration` | `DatasetNode` |
@@ -85,24 +84,39 @@ uebergeordnete Runtime-, Security- oder Placement-Konfiguration.
 | `flow` | `FlowDeclaration` | `FlowNode` |
 | `event` | `EventDeclaration` | `EventNode` |
 | `state` | `StateDeclaration` | Zustand in `RuntimeContext` |
-| `system` | `SystemDeclaration` | Metadaten fuer Placement und Policy |
+| `system` | `SystemDeclaration` | Metadaten fuer Placement, Policy und Runtime |
+
+## Modell vom Quelltext bis zur Laufzeit
+
+```text
+Declaration
+  ->
+AST Node
+  ->
+Graph Node oder Runtime Metadata
+  ->
+Execution / State / Service / Event
+```
 
 ## CLI
 
-Typische Kommandos, die auf diesen Bausteinen aufsetzen:
+Typische Kommandos, die direkt auf diesen Bausteinen aufsetzen:
 
 - `ns.exec`
 - `ns.run`
 - `ns.graph`
 - `ns.format`
+- `ns.lint`
 
 ## API
 
 Die Bausteine wirken indirekt auf die API, weil sie spaeter als Runtime-, Queue-, Service- und Agentenobjekte sichtbar werden.
 
-## Beispiele
+## Testbare Beispiele
 
-```nova
+### Minimales Modell
+
+```ns
 agent reviewer {
   model: gpt-4o-mini
 }
@@ -116,9 +130,36 @@ flow review {
 }
 ```
 
+### Erweiterte Komponenten
+
+```ns
+state mission {
+  namespace: ops
+}
+
+event scheduler {
+  on: schedule.tick
+  flow: daily_ops
+}
+```
+
+## Typische Fragen
+
+### Ist `flow` nur eine Liste von Befehlen?
+
+Nein. Ein `flow` ist die deklarative Quelle fuer einen Graph mit Knoten, Kanten und Laufzeitbedeutung.
+
+### Ist `system` nur Konfiguration?
+
+Nicht nur. `system` beeinflusst oft Placement, Policy, Tenant- oder Runtime-Verhalten.
+
+### Wo sieht man die technische Umsetzung?
+
+In [ParserAndASTReference](./ParserAndASTReference.md), [NovaGraphEngine](./NovaGraphEngine.md) und [NovaRuntime](./NovaRuntime.md).
+
 ## Verwandte Seiten
 
 - [NovaLanguage](./NovaLanguage.md)
 - [ParserAndASTReference](./ParserAndASTReference.md)
+- [NovaGraphEngine](./NovaGraphEngine.md)
 - [NovaRuntime](./NovaRuntime.md)
-- [PageTemplate](./PageTemplate.md)

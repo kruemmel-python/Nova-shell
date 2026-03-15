@@ -1,16 +1,43 @@
 # Nova Graph Engine
 
-## Rolle
+## Zweck
 
-Die Graph Engine verbindet AST und Runtime.
+Die Graph-Engine ist die Schicht, die deklarative Programme in ausfuehrbare Knoten- und Kantenstrukturen ueberfuehrt.
 
-## Funktionen
+## Kernpunkte
 
-- Knoten und Kanten erzeugen
-- Flow-Schliessungen bestimmen
-- topologische Ordnung berechnen
-- Agent-, Tool-, Service- und Package-Knoten darstellen
+- Graphknoten repraesentieren Agenten, Datasets, Tools, Flows, Events oder Systemoperationen.
+- Kanten repraesentieren Datenfluss oder Kontrollfluss.
+- Der Graph ist auf deterministische Ausfuehrung und Diagnostik ausgelegt, nicht auf dekorative Visualisierung.
+- `ns.graph` ist der wichtigste Einstieg, um diese Schicht sichtbar zu machen.
 
-## Nutzen
+## Praktische Nutzung
 
-Sie macht aus deklarativen Programmen planbare und nachvollziehbare Ausfuehrungsgrafen.
+- Pruefe neue `.ns`-Programme zuerst mit `ns.graph`.
+- Verwende die Graphsicht, um Reihenfolge- oder Abhaengigkeitsfehler von Laufzeitproblemen zu trennen.
+
+## Testbare Einstiege
+
+### Graph eines Programms anzeigen
+
+```powershell
+ns.graph .\examples\market_radar.ns
+```
+
+Erwartung:
+
+- Der kompilierte Graph zeigt Flows und beteiligte Knoten.
+
+## Typische Fragen und Fehler
+
+### Graphaufbau scheitert
+
+- Die Datei ist kein gueltiges deklaratives Nova-Programm.
+- Eine Deklaration ist syntaktisch oder strukturell unvollstaendig.
+
+## Verwandte Seiten
+
+- [NovaLanguage](./NovaLanguage.md)
+- [ParserAndASTReference](./ParserAndASTReference.md)
+- [RuntimeMethodReference](./RuntimeMethodReference.md)
+- [ComponentModel](./ComponentModel.md)

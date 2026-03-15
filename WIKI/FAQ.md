@@ -1,9 +1,11 @@
 # FAQ
 
+## Zweck
+
 Die FAQ ist die Kurzfassung fuer wiederkehrende Fragen.
 Die eigentliche Projektdokumentation liegt in den Architektur-, Referenz- und Beispielseiten dieser Wiki.
 
-Schnelle Einstiege:
+## Schnelle Einstiege
 
 - [Home](./Home.md)
 - [ExamplesAndRecipes](./ExamplesAndRecipes.md)
@@ -22,7 +24,7 @@ Mehr dazu:
 ## Muss ich `.ns` benutzen?
 
 Nein. Die CLI kann auch ohne deklarative Programme genutzt werden.
-Fuer deklarative Flows, Services und Agenten ist `.ns` aber der zentrale Pfad.
+Fuer reproduzierbare Flows, Services und Agenten ist `.ns` aber der zentrale Pfad.
 
 Mehr dazu:
 
@@ -63,3 +65,41 @@ In der Referenzschicht der Wiki:
 - [ClassReference](./ClassReference.md)
 - [ParserAndASTReference](./ParserAndASTReference.md)
 - [RuntimeMethodReference](./RuntimeMethodReference.md)
+- [CodeReferenceIndex](./CodeReferenceIndex.md)
+
+## Wie pruefe ich schnell, ob meine Installation gesund ist?
+
+Mit:
+
+```powershell
+doctor
+```
+
+## Wie beginne ich mit einem ersten echten Ablauf?
+
+Mit:
+
+```powershell
+ns.graph examples\market_radar.ns
+ns.run examples\market_radar.ns
+```
+
+Danach weiter mit:
+
+- [QuickStart](./QuickStart.md)
+- [Tutorials](./Tutorials.md)
+
+## Warum funktioniert `ns.graph`, aber `ns.run` nicht?
+
+Dann ist die Syntax meist korrekt und das Problem liegt eher in Runtime, Tool, Provider oder Datenpfad.
+
+Mehr dazu:
+
+- [NovaRuntime](./NovaRuntime.md)
+- [Troubleshooting](./Troubleshooting.md)
+
+## Verwandte Seiten
+
+- [QuickStart](./QuickStart.md)
+- [Troubleshooting](./Troubleshooting.md)
+- [GeneralLinks](./GeneralLinks.md)

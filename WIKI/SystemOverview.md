@@ -3,70 +3,87 @@
 ## Zweck
 
 Diese Seite ordnet die wichtigsten Subsysteme von Nova-shell ein.
-Sie ist die kompakte technische Uebersicht fuer Leser, die zunaechst die Systemschichten und ihre Rollen verstehen wollen.
+Sie ist die kompakte technische Uebersicht fuer Leser, die zuerst die Systemschichten, ihre Rollen und ihre Beziehungen verstehen wollen.
 
-## Kernobjekte
+## Schichten des Systems
 
-### Subsysteme im Projekt
-
-| Bereich | Rolle | Zentrale Klassen |
+| Schicht | Rolle | Typische Einstiegspunkte |
 | --- | --- | --- |
-| CLI | interaktive Nutzung, Routing und lokale Befehle | `NovaShell`, `CommandResult` |
-| Engines | lokale Ausfuehrung fuer Compute und Daten | `PythonEngine`, `CppEngine`, `GPUEngine`, `WasmEngine`, `DataEngine`, `SystemEngine` |
-| Sprache | deklarative Beschreibung von Ressourcen und Flows | `NovaParser`, `NovaAST` |
+| CLI | interaktive Nutzung, lokales Routing, Shell-Kommandos | `nova_shell.py`, `NovaShell`, `ShellCommandReference` |
+| Engines | lokale Compute- und Datenausfuehrung | `py`, `cpp`, `gpu`, `wasm`, `data`, `sys` |
+| Sprache | deklarative Beschreibung von Ressourcen, Flows und Systemzustand | `NovaParser`, `NovaAST`, `.ns`-Dateien |
 | Graph Engine | AST-zu-DAG-Kompilation | `NovaGraphCompiler`, `ExecutionGraph` |
-| Runtime | Flow-Ausfuehrung und Zustand | `NovaRuntime`, `RuntimeContext` |
-| Agents | modellgestuetzte Aufgaben | `AgentRuntime`, `AgentSpecification`, `AgentTask` |
-| Memory | Wissens- und Suchschicht | `NovaVectorMemory`, `DistributedMemoryStore` |
-| Mesh | verteilte Worker | `MeshRegistry`, `MeshWorkerServer` |
-| Control Plane | Queue, Scheduling, API | `DurableControlPlane`, `NovaControlPlaneAPIServer` |
-| Service Fabric | Services und Packages | `ServiceFabric`, `ServiceTrafficPlane` |
-| Security | Rollen, Secrets, TLS | `SecurityPlane`, `RuntimePolicy` |
+| Runtime | Laden, Kompilieren, Ausfuehren, Events, Snapshots | `NovaRuntime`, `RuntimeContext` |
+| Agents | modellgestuetzte Aufgaben mit Tools, Memory und Governance | `AgentRuntime`, `AgentSpecification`, `AgentTask` |
+| Memory und Knowledge | lokales Wissen, Suche, Sharding, Embeddings | `Atheria`, `DistributedMemoryStore`, `NovaVectorMemory` |
+| Mesh | verteilte Worker, Dispatch, Capabilities, Remote-Ausfuehrung | `MeshRegistry`, `WorkerNode`, `MeshWorkerServer` |
+| Control Plane | Queue, Schedules, Replay, API, Status | `DurableControlPlane`, `NovaControlPlaneAPIServer` |
+| Service Fabric | Services, Packages, Revisionen, Traffic | `ServiceFabric`, `ServiceTrafficPlane` |
+| Security | Rollen, Namespaces, Secrets, TLS, Trust | `SecurityPlane`, `RuntimePolicy` |
 
-## Methoden und Schnittstellen
-
-### Betriebsmodi
-
-- interaktive Shell-Nutzung
-- deklarative `.ns`-Programmausfuehrung
-- lokale AI- und Agentenausfuehrung
-- verteilte Worker-Ausfuehrung
-- Service- und Traffic-Steuerung
-- API- und Control-Plane-Betrieb
-
-### Daten- und Kontrollfluesse
-
-#### Datenfluss
+## Wie die Schichten zusammenwirken
 
 ```text
-Dataset -> Tool -> Agent -> Output -> Memory
+CLI oder .ns-Datei
+  ->
+Parser und AST
+  ->
+Graph Compiler
+  ->
+Runtime
+  ->
+Tools / Agents / Memory / Mesh / Services
+  ->
+Status, Events, API, Traces
 ```
 
-#### Kontrollfluss
+## Betriebsmodi
+
+Nova-shell kann in mehreren Modi benutzt werden:
+
+- als interaktive Compute- und AI-Shell
+- als deklarative `.ns`-Runtime
+- als lokale Agent- und Knowledge-Laufzeit
+- als verteilte Worker- und Mesh-Plattform
+- als Service- und Traffic-Steuerungsschicht
+- als API- und Control-Plane-Prozess
+
+## Typische Daten- und Kontrollfluesse
+
+### Datenfluss
 
 ```text
-Event -> Flow -> Graph Closure -> Node Execution -> Event
+Dataset -> Tool -> Agent -> Memory -> Result
 ```
 
-## CLI
+### Kontrollfluss
 
-Subsysteme werden in der Praxis vor allem ueber diese Kommandos sichtbar:
+```text
+Event -> Flow -> Graph -> Node Execution -> Event / State / Service Action
+```
 
-- `py`, `cpp`, `gpu`, `wasm`
-- `agent`
-- `atheria`
-- `mesh`
-- `ns.run`
-- `ns.control`
+## Testbare Einstiege
 
-## API
+### Installations- und Systemfaehigkeiten pruefen
 
-Die HTTP-Control-Plane exponiert Runtime-, Queue-, Service-, Mesh- und Observability-Zustaende.
-Details stehen in [APIReference](./APIReference.md).
+```powershell
+doctor
+```
 
-## Beispiele
+### Deklarativen Graph ansehen
 
-### Wichtige Einstiegspunkte
+```powershell
+ns.graph examples\market_radar.ns
+```
+
+### Runtime- und Plattformstatus ansehen
+
+```powershell
+ns.status
+ns.control
+```
+
+## Wichtige Startpunkte im Code
 
 - `nova_shell.py`
 - `nova/parser/parser.py`
@@ -76,9 +93,28 @@ Details stehen in [APIReference](./APIReference.md).
 - `nova/agents/runtime.py`
 - `nova/mesh/registry.py`
 
+## Typische Fragen
+
+### Ist Nova-shell nur eine Shell?
+
+Nein. Die Shell ist nur eine Schicht. Darunter liegen Sprache, Graph, Runtime, Agenten, Mesh und Plattformdienste.
+
+### Wo beginne ich, wenn ich einen Fehler suche?
+
+Zuerst:
+
+1. `doctor`
+2. `ns.status`
+3. die passende Fachseite der betroffenen Schicht
+
+### Wo beginne ich, wenn ich entwickeln will?
+
+Mit [DevelopmentGuide](./DevelopmentGuide.md), [RepositoryStructure](./RepositoryStructure.md) und der passenden Referenzseite.
+
 ## Verwandte Seiten
 
 - [Architecture](./Architecture.md)
 - [ComponentModel](./ComponentModel.md)
+- [NovaRuntime](./NovaRuntime.md)
+- [Subsystems](./Subsystems.md)
 - [ClassReference](./ClassReference.md)
-- [PageTemplate](./PageTemplate.md)

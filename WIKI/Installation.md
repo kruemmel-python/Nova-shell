@@ -1,33 +1,37 @@
 # Installation
 
+## Zweck
+
+Diese Seite beschreibt die saubere Installation von Nova-shell fuer Entwicklung, lokale Nutzung und Windows-Release-Betrieb.
+
 ## Anforderungen
 
 - Python `3.12+`
 - Windows oder Linux
+- fuer bestimmte Pfade optional: C++-Toolchain, WASM-Tooling, GPU- oder AI-Provider
 
-## Installation aus dem Quellbaum
+## Installationsarten
 
-```bash
+### Installation aus dem Quellbaum
+
+```powershell
 git clone <repository-url>
 cd Nova-shell-main
 python -m pip install -e .
 ```
 
-## Direkter Start ohne Paketinstallation
+Das ist der beste Weg fuer Entwicklung und direkte Arbeit am Repo.
 
-```bash
+### Direkter Start ohne Paketinstallation
+
+```powershell
 python -m nova_shell
 ```
 
-## Paketinstallation
+### Paketinstallation
 
-```bash
+```powershell
 python -m pip install .
-```
-
-Danach:
-
-```bash
 nova-shell
 ```
 
@@ -43,12 +47,12 @@ Das Projekt bietet optionale Feature-Sets fuer:
 - Atheria
 - Release
 
-## Windows MSI Upgrade
+Je nach Profil sind nicht alle Extras noetig. Welche Faehigkeiten wirklich verfuegbar sind, zeigt `doctor`.
 
-Fuer eine bestehende Installation unter `C:\Program Files\Nova-shell` gibt es
-einen Upgrade-Helper. Er stoppt laufende `nova_shell.exe`-Prozesse, sichert
-Runtime-Daten wie `Atheria`, spielt das neue MSI per Reinstall ein und prueft
-danach `doctor`, `wiki help` und `wiki build`.
+## Windows-MSI und Upgrade
+
+Fuer bestehende Installationen unter `C:\Program Files\Nova-shell` gibt es einen Upgrade-Helper.
+Er stoppt laufende `nova_shell.exe`-Prozesse, sichert Runtime-Daten wie `Atheria`, spielt das neue MSI per Reinstall ein und prueft danach `doctor`, `wiki help` und `wiki build`.
 
 Aus dem Repository:
 
@@ -70,6 +74,42 @@ powershell -ExecutionPolicy Bypass -File scripts\upgrade_windows_install.ps1 -Dr
 
 ## Verifikation
 
-```bash
+### Minimaler Starttest
+
+```powershell
 nova-shell --no-plugins -c "py 1 + 1"
 ```
+
+### Vollere Diagnose
+
+```powershell
+doctor
+wiki build
+```
+
+### Deklarative Runtime pruefen
+
+```powershell
+ns.graph examples\market_radar.ns
+```
+
+## Typische Fehler
+
+### `nova-shell` wird nicht gefunden
+
+Dann entweder `python -m nova_shell` verwenden oder die Paketinstallation pruefen.
+
+### `doctor` zeigt fehlende Faehigkeiten
+
+Dann ist oft nur ein optionales Modul nicht vorhanden, nicht die gesamte Installation kaputt.
+
+### Neues Feature wie `wiki` fehlt nach Update
+
+Dann laeuft oft noch eine aeltere installierte Version, nicht der aktuelle Build.
+
+## Verwandte Seiten
+
+- [QuickStart](./QuickStart.md)
+- [Troubleshooting](./Troubleshooting.md)
+- [BuildAndRelease](./BuildAndRelease.md)
+- [NovaCLI](./NovaCLI.md)

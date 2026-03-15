@@ -1,15 +1,45 @@
 # Nova Planner
 
-## Rolle
+## Zweck
 
-Die Planungslogik verteilt sich ueber mehrere Ebenen:
+Der Planner ist die Schicht hinter `ai plan`. Er versucht, aus einer natuerlichen Aufgabenbeschreibung eine handhabbare Nova-shell-Aktion oder Pipeline abzuleiten.
 
-- Graph-Planung
-- Queue- und Scheduler-Planung
-- Agent-Workflow-Planung
-- Service- und Traffic-Planung
-- Backend- und Worker-Auswahl
+## Kernpunkte
 
-## Ergebnis
+- Der Planner kann heuristisch oder providerbasiert arbeiten.
+- Heuristische Plaene greifen bevorzugt auf registrierte Tools und bekannte Muster zurueck.
+- Providerbasierte Plaene koennen JSON- oder Pipeline-Vorschlaege liefern.
+- Der Planner ist ein Uebersetzer zwischen Prompt und operativer Ausfuehrung, kein Ersatz fuer `.ns`-Programme.
 
-Der Planner bestimmt, wann, wo und in welcher Form eine Aufgabe ausgefuehrt wird.
+## Praktische Nutzung
+
+- Nutze `ai plan`, wenn du aus einer Aufgabenbeschreibung einen ersten Shell- oder Toolpfad ableiten willst.
+- Nutze `ai plan --run`, wenn du den Vorschlag unmittelbar ausfuehren willst.
+
+## Testbare Einstiege
+
+### Heuristischen Toolplan pruefen
+
+```powershell
+tool register csv_average --description "calculate csv average from file" --schema "{\"type\":\"object\",\"properties\":{\"file\":{\"type\":\"string\"}}}" --pipeline "data load {{file}} | py sum(float(r[\"A\"]) for r in _) / len(_)"
+ai plan "calculate csv average"
+```
+
+Erwartung:
+
+- Der Planner bevorzugt das registrierte Tool.
+- Die Rueckgabe ist ein konkreter, ausfuehrbarer Vorschlag.
+
+## Typische Fragen und Fehler
+
+### Ein Plan ist zu allgemein
+
+- Es fehlt ein registriertes Tool oder ein aktiver Provider.
+- Die Eingabe beschreibt kein klar zuordenbares Muster.
+
+## Verwandte Seiten
+
+- [NovaCLI](./NovaCLI.md)
+- [NovaTools](./NovaTools.md)
+- [ProgrammingWithNovaShell](./ProgrammingWithNovaShell.md)
+- [ExamplesAndRecipes](./ExamplesAndRecipes.md)

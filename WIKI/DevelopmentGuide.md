@@ -3,14 +3,9 @@
 ## Zweck
 
 Diese Seite richtet sich an Entwickler, die Nova-shell erweitern oder warten.
+Sie verbindet Projektstruktur, typische Aenderungspfade, Tests und Dokumentationspflichten.
 
-## Kernobjekte
-
-Die wichtigsten Entwicklungszonen sind Module und Verzeichnisse.
-
-## Methoden und Schnittstellen
-
-### Projektzonen
+## Projektzonen
 
 | Bereich | Ort | Verantwortung |
 | --- | --- | --- |
@@ -23,9 +18,9 @@ Die wichtigsten Entwicklungszonen sind Module und Verzeichnisse.
 | Mesh | `nova/mesh/` | Registry, Protokoll und verteilte Ausfuehrung |
 | Toolchain | `nova/toolchain/` | Imports, Lockfiles, Formatter, Tests |
 
-### Typische Erweiterungspunkte
+## Typische Erweiterungspunkte
 
-#### Neue Sprachbausteine
+### Neue Sprachbausteine
 
 - `nova/parser/parser.py`
 - `nova/parser/ast.py`
@@ -33,12 +28,12 @@ Die wichtigsten Entwicklungszonen sind Module und Verzeichnisse.
 - `nova/graph/model.py`
 - `nova/runtime/runtime.py`
 
-#### Neue API-Endpunkte
+### Neue API-Endpunkte
 
 - `nova/runtime/api.py`
 - `nova/runtime/runtime.py`
 
-#### Neue Agent-Features
+### Neue Agent-Features
 
 - `nova/agents/runtime.py`
 - `nova/agents/providers.py`
@@ -47,7 +42,7 @@ Die wichtigsten Entwicklungszonen sind Module und Verzeichnisse.
 - `nova/agents/evals.py`
 - `nova/agents/sandbox.py`
 
-#### Neue Toolchain-Funktionen
+### Neue Toolchain-Funktionen
 
 - `nova/toolchain/loader.py`
 - `nova/toolchain/registry.py`
@@ -55,6 +50,14 @@ Die wichtigsten Entwicklungszonen sind Module und Verzeichnisse.
 - `nova/toolchain/linter.py`
 - `nova/toolchain/lsp.py`
 - `nova/toolchain/testing.py`
+
+## Entwicklungsablauf
+
+1. Fachseite der betroffenen Schicht lesen
+2. Referenzseite fuer Klassen oder Methoden aufschlagen
+3. Implementierung aendern
+4. Tests ausfuehren
+5. Dokumentation aktualisieren
 
 ## CLI
 
@@ -72,17 +75,29 @@ Entwicklungsnahe Kommandos:
 Fuer Integrations- und Plattformtests ist vor allem die Control-Plane-API relevant.
 Details stehen in [APIReference](./APIReference.md).
 
-## Beispiele
+## Testbare Befehle
 
-### Testen
+### Kernsuite
 
-```bash
+```powershell
+python -m unittest discover -s tests -p "test_*.py"
+```
+
+### Teilmengen
+
+```powershell
 python -m unittest tests.test_build_release
 python -m unittest tests.test_nova_language
 python -m unittest tests.test_nova_shell
 ```
 
-### Dokumentationspflicht fuer neue Features
+### Syntaxpruefung
+
+```powershell
+python -m compileall nova nova_shell.py
+```
+
+## Dokumentationspflicht fuer neue Features
 
 Wenn neue Kernfeatures dazukommen, aktualisiere mindestens:
 
@@ -91,10 +106,26 @@ Wenn neue Kernfeatures dazukommen, aktualisiere mindestens:
 - [ClassReference](./ClassReference.md)
 - [ExamplesAndRecipes](./ExamplesAndRecipes.md)
 
+Wenn neue Sprachelemente dazukommen, zusaetzlich:
+
+- [NovaLanguage](./NovaLanguage.md)
+- [ComponentModel](./ComponentModel.md)
+- [ParserAndASTReference](./ParserAndASTReference.md)
+
+## Typische Fehler
+
+### Nur der Code ist aktualisiert, nicht die Wiki
+
+Dann fehlt den Nutzern meist genau der praktische Einstieg, selbst wenn die Implementierung korrekt ist.
+
+### Parser geaendert, Runtime nicht
+
+Dann sieht `ns.graph` oft gut aus, aber `ns.run` nicht.
+
 ## Verwandte Seiten
 
 - [RepositoryStructure](./RepositoryStructure.md)
+- [Testing](./Testing.md)
 - [ClassReference](./ClassReference.md)
 - [ParserAndASTReference](./ParserAndASTReference.md)
 - [RuntimeMethodReference](./RuntimeMethodReference.md)
-- [PageTemplate](./PageTemplate.md)

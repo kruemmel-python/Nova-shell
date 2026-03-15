@@ -1,16 +1,44 @@
 # Nova Sensors
 
-## Rolle
+## Zweck
 
-Sensoren erzeugen Daten und Ereignisse fuer die Runtime.
+Sensoren sind in Nova-shell die Schicht fuer strukturierte Informationsaufnahme. Im aktuellen Projekt sind sie vor allem ueber Atheria-Sensorpfade sichtbar.
 
-## Typische Quellen
+## Kernpunkte
 
-- RSS
-- Dateibeobachtung
-- Runtime-Events
-- Wissens- und Monitoring-Signale
+- Sensoren liefern strukturierte Eingangsdaten fuer Wissen, Beobachtung und Trainingspfade.
+- Die Sensorik ist pluginartig organisiert und kann gezeigt, geladen und ausgefuehrt werden.
+- Sensoren sind kein Ersatz fuer allgemeine Shell-Kommandos, sondern ein semantischer Erfassungspfad.
 
-## Nutzen
+## Praktische Nutzung
 
-Sensoren sind die Eingangsschicht fuer Radar-, Trend- und Briefing-Workflows.
+- Nutze `atheria sensor gallery` und `atheria sensor list`, um vorhandene Sensoren zu entdecken.
+- Nutze Sensoren, wenn du systematische Beobachtung statt einzelner Ad-hoc-Abfragen brauchst.
+
+## Testbare Einstiege
+
+### Atheria-Sensoren erkunden
+
+```powershell
+atheria sensor gallery
+atheria sensor list
+```
+
+Erwartung:
+
+- Die Gallery zeigt verfuegbare Sensortypen.
+- Die Liste zeigt bereits registrierte oder installierte Sensorpfade.
+
+## Typische Fragen und Fehler
+
+### Ein Sensor fehlt
+
+- Das Plugin wurde nicht geladen oder existiert lokal nicht.
+- Atheria wurde noch nicht korrekt initialisiert.
+
+## Verwandte Seiten
+
+- [AgentsAndKnowledge](./AgentsAndKnowledge.md)
+- [NovaMemory](./NovaMemory.md)
+- [TutorialTechnologyRadar](./TutorialTechnologyRadar.md)
+- [NovaAgents](./NovaAgents.md)

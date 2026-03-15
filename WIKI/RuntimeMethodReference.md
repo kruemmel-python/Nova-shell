@@ -5,6 +5,8 @@
 Diese Seite fasst die wichtigsten Methoden von `NovaRuntime` zusammen.
 Sie ist keine automatische API-Generierung, sondern eine handkuratierte Referenz fuer die Methoden, die fuer Ausfuehrung, Betrieb und Erweiterung relevant sind.
 
+Fuer die vollstaendige Symbolsuche ueber alle Runtime-Module hinweg siehe [CodeReferenceIndex](./CodeReferenceIndex.md).
+
 Modul: `nova.runtime.runtime`
 
 ## Kernobjekte
@@ -204,6 +206,8 @@ print(runtime.export_metrics())
 ## Verwandte Seiten
 
 - [ClassReference](./ClassReference.md)
+- [CodeReferenceIndex](./CodeReferenceIndex.md)
+- [ShellCommandReference](./ShellCommandReference.md)
 - [APIReference](./APIReference.md)
 - [ExamplesAndRecipes](./ExamplesAndRecipes.md)
 - [PageTemplate](./PageTemplate.md)

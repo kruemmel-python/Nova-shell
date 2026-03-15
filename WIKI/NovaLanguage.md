@@ -3,32 +3,24 @@
 ## Zweck
 
 Nova Language ist die deklarative Sprache von Nova-shell.
-Sie beschreibt Ressourcen, Flows, Events, Services und Packages in `.ns`-Dateien.
+Sie beschreibt Ressourcen, Flows, Events, Services und Packages in `.ns`-Dateien und bildet damit den sprachlichen Eingang in Parser, Graph-Compiler, Runtime und Toolchain.
 
-Die Sprache dient als Eingang fuer:
+## Sprachbausteine
 
-- Parser
-- AST
-- Modul-Loader
-- Lockfiles
-- Graph-Compiler
-- Runtime
-- Test-Runner
+| Baustein | Rolle |
+| --- | --- |
+| `import` | bindet weitere Dateien oder Registry-Module ein |
+| `agent` | beschreibt Agentenrollen, Modelle, Tools und Memory |
+| `dataset` | beschreibt Datenquellen oder Datenobjekte |
+| `tool` | beschreibt aufrufbare Werkzeuge |
+| `flow` | beschreibt ausfuehrbare Graphen |
+| `event` | beschreibt Trigger und ihre Ziel-Flows |
+| `state` | beschreibt Laufzeitzustand oder Namespaces |
+| `service` | beschreibt laufende Dienste |
+| `package` | beschreibt installierbare Artefakte |
+| `system` | beschreibt Runtime-, Policy- oder Placement-Kontext |
 
-## Kernobjekte
-
-- `import`
-- `agent`
-- `dataset`
-- `tool`
-- `flow`
-- `event`
-- `state`
-- `service`
-- `package`
-- `system`
-
-Zentrale Klassen:
+## Zentrale Klassen
 
 - `NovaParser`
 - `NovaAST`
@@ -38,6 +30,24 @@ Zentrale Klassen:
 - `ToolDeclaration`
 - `FlowDeclaration`
 - `EventDeclaration`
+- `ServiceDeclaration`
+- `PackageDeclaration`
+
+## Sprachmodell
+
+Nova Language ist keine lose Sammlung von Textbloecken, sondern wird schrittweise verarbeitet:
+
+```text
+.ns Source
+  ->
+Parser
+  ->
+AST
+  ->
+Graph Compiler
+  ->
+Runtime
+```
 
 ## Methoden und Schnittstellen
 
@@ -47,11 +57,14 @@ Wichtige Parser-Methoden:
 - `parse_file`
 - `register_extension`
 
-Wichtige Sprachschnittstellen:
+Wichtige Toolchain-Schnittstellen:
 
 - Dateiimporte
 - Registry-Importe
-- Flow-Schritte mit optionalem Alias `->`
+- Lockfiles
+- Formatierung
+- Linting
+- `.ns`-Tests
 
 ## CLI
 
@@ -67,9 +80,9 @@ Typische Sprachpfade in der CLI:
 ## API
 
 Direkte HTTP-Endpunkte fuer den Parser gibt es nicht.
-Die Sprache wirkt ueber Runtime, Toolchain und Control-Plane indirekt in die API hinein.
+Die Sprache wirkt ueber Runtime, Toolchain und Control Plane indirekt in die API hinein.
 
-## Beispiele
+## Testbare Beispiele
 
 ### Grundsyntax
 
@@ -87,21 +100,17 @@ flow boot {
 }
 ```
 
-### Flows
-
-`flow` ist der wichtigste aktive Baustein.
-Ein Flow besteht aus Properties und Schritten.
+### Flow mit Aliasen
 
 ```ns
 flow radar {
-  entry: true
   rss.fetch tech_rss -> fetched
   researcher summarize tech_rss -> summary
   event.emit dataset.updated
 }
 ```
 
-Ein Flow-Schritt besteht aus:
+Ein Flow-Schritt besteht typischerweise aus:
 
 - Operation
 - Argumenten
@@ -109,24 +118,9 @@ Ein Flow-Schritt besteht aus:
 
 ### Imports und Module
 
-Nova Language unterstuetzt:
-
-- Dateiimporte
-- Registry-Importe
-
-Diese werden ueber `NovaModuleLoader` aufgeloest.
-
-### Agent plus Flow
-
 ```ns
-agent reviewer {
-  provider: openai
-  model: gpt-4o-mini
-}
-
-flow review {
-  reviewer summarize report -> result
-}
+import "agents/research.ns"
+import "flows/radar.ns"
 ```
 
 ### Eventgetriebene Automation
@@ -143,7 +137,7 @@ event refresh_on_update {
 ```ns
 package analytics_pkg {
   version: 1.0.0
-  entrypoint: examples/service_package_platform.ns
+  source: "./dist/analytics.tar"
 }
 
 service analytics_api {
@@ -152,10 +146,31 @@ service analytics_api {
 }
 ```
 
+## Typische Fehler und Fragen
+
+### Wann benutze ich `.ns` statt direkter CLI-Befehle?
+
+Wenn der Ablauf reproduzierbar, versionierbar oder graphbasiert sein soll.
+
+### Wo sehe ich, ob mein Programm syntaktisch korrekt ist?
+
+Am schnellsten mit:
+
+```powershell
+ns.graph datei.ns
+```
+
+### Wo beginnt die Fehlersuche bei Imports?
+
+Bei Modulpfad, Lockfile, Loader-Kontext und Toolchain.
+
 ## Verwandte Seiten
 
+- [nsCreate](./nsCreate.md)
+- [nsReference](./nsReference.md)
+- [nsPatterns](./nsPatterns.md)
 - [ParserAndASTReference](./ParserAndASTReference.md)
 - [ComponentModel](./ComponentModel.md)
-- [RuntimeMethodReference](./RuntimeMethodReference.md)
+- [NovaGraphEngine](./NovaGraphEngine.md)
+- [ToolchainAndTesting](./ToolchainAndTesting.md)
 - [ExamplesAndRecipes](./ExamplesAndRecipes.md)
-- [PageTemplate](./PageTemplate.md)

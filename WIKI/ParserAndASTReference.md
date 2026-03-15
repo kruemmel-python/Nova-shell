@@ -274,6 +274,7 @@ Die Toolchain nutzt Parser und AST an mehreren Stellen:
 ## Verwandte Seiten
 
 - [ClassReference](./ClassReference.md)
+- [CodeReferenceIndex](./CodeReferenceIndex.md)
 - [RuntimeMethodReference](./RuntimeMethodReference.md)
 - [NovaLanguage](./NovaLanguage.md)
 - [PageTemplate](./PageTemplate.md)

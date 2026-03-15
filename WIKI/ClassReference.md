@@ -5,6 +5,8 @@
 Diese Seite ist die zentrale Klassenreferenz der Nova-shell-Wiki.
 Sie ersetzt keine API-Doku, sondern erklaert die wichtigsten Typen nach Verantwortungsbereich, damit Entwickler schnell die richtigen Einstiegspunkte finden.
 
+Fuer die vollstaendige Symbolabdeckung aller Module, Klassen und Methoden gibt es zusaetzlich [CodeReferenceIndex](./CodeReferenceIndex.md).
+
 ## Kernobjekte
 
 ### Parser und Sprachmodell
@@ -223,5 +225,7 @@ Die Codebeispiele in den einzelnen Abschnitten zeigen typische Konstruktion und 
 
 - Parser und Sprache: [ParserAndASTReference](./ParserAndASTReference.md)
 - Runtime-Methoden: [RuntimeMethodReference](./RuntimeMethodReference.md)
+- Vollindex: [CodeReferenceIndex](./CodeReferenceIndex.md)
+- Shell-Router: [ShellCommandReference](./ShellCommandReference.md)
 - Nutzungsbeispiele: [ExamplesAndRecipes](./ExamplesAndRecipes.md)
 - [PageTemplate](./PageTemplate.md)

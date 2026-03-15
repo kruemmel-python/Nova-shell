@@ -3,25 +3,35 @@
 ## Zweck
 
 `NovaRuntime` ist die zentrale Laufzeit fuer deklarative `.ns`-Programme.
-Sie kompiliert, laedt, fuehrt aus, emittiert Events und stellt Plattformdienste bereit.
+Sie laedt Programme, kompiliert Graphen, fuehrt Flows aus, emittiert Events und bindet Plattformdienste wie Queue, Control Plane, Services und Observability zusammen.
 
 ## Kernobjekte
 
-- `NovaRuntime`
-- `RuntimeContext`
-- `CompiledNovaProgram`
-- `NovaRuntimeResult`
-- `BackendRouter`
-- `DurableControlPlane`
-- `NovaControlPlaneAPIServer`
+| Objekt | Rolle |
+| --- | --- |
+| `NovaRuntime` | zentrale Laufzeitinstanz |
+| `RuntimeContext` | gebuendelter Kontext fuer Agents, State, Control Plane, Security und Services |
+| `CompiledNovaProgram` | geladene und kompilierte Programmdarstellung |
+| `NovaRuntimeResult` | Ergebnis einer Programmausfuehrung |
+| `BackendRouter` | Zuweisung von Ausfuehrungen auf passende lokale oder native Backends |
+| `DurableControlPlane` | Queue, Schedules, Replay und Status |
+| `NovaControlPlaneAPIServer` | HTTP-API fuer die Plattform |
 
-## Methoden und Schnittstellen
-
-### Lebenszyklus
+## Lebenszyklus
 
 ```text
-compile -> load -> execute_flow / run / emit -> snapshot / resume -> close
+parse / load
+  ->
+compile
+  ->
+execute_flow / run / emit
+  ->
+state, events, services, traces
+  ->
+snapshot / resume / close
 ```
+
+## Methoden und Schnittstellen
 
 ### Programm und Kontext
 
@@ -65,7 +75,9 @@ compile -> load -> execute_flow / run / emit -> snapshot / resume -> close
 - `list_packages()`
 - `discover_service(...)`
 
-### Eingebaute Toolpfade
+## Eingebaute Toolpfade
+
+Die Runtime kennt eingebaute Pfade, die in Flows direkt auftauchen koennen:
 
 - `rss.fetch`
 - `atheria.embed`
@@ -98,12 +110,16 @@ Die Runtime kann die HTTP-Control-Plane direkt bereitstellen:
 - `control_api_status()`
 - `export_metrics(...)`
 
-## Beispiele
+Details stehen in [APIReference](./APIReference.md).
+
+## Testbare Beispiele
+
+### Ein Programm aus Python laufen lassen
 
 ```python
 from nova.runtime.runtime import NovaRuntime
 
-source = \"\"\"
+source = """
 agent helper {
   model: local
 }
@@ -115,17 +131,46 @@ dataset notes {
 flow boot {
   helper summarize notes -> summary
 }
-\"\"\"
+"""
 
 with NovaRuntime() as runtime:
     result = runtime.run(source)
     print(result.context_snapshot)
 ```
 
+### Ein bestehendes Beispiel ueber die CLI ausfuehren
+
+```powershell
+ns.graph examples\market_radar.ns
+ns.run examples\market_radar.ns
+ns.status
+```
+
+### Snapshot schreiben und laden
+
+```powershell
+ns.snapshot
+ns.resume
+```
+
+## Typische Fehler und Fragen
+
+### Wann ist ein Problem ein Parser- und wann ein Runtime-Problem?
+
+Wenn `ns.graph` funktioniert, aber `ns.run` nicht, ist die Syntax meist korrekt und der Fehler liegt spaeter im Laufzeitpfad.
+
+### Wo fuehrt die Runtime Agenten aus?
+
+Nicht isoliert von allem anderen, sondern im `RuntimeContext` zusammen mit State, Events, Services und Mesh.
+
+### Wo beginnt man bei Plattformfehlern?
+
+Mit `ns.status`, `ns.control` und den API- oder Trace-Pfaden.
+
 ## Verwandte Seiten
 
 - [RuntimeMethodReference](./RuntimeMethodReference.md)
 - [APIReference](./APIReference.md)
+- [RuntimeAndControlPlane](./RuntimeAndControlPlane.md)
 - [NovaAgents](./NovaAgents.md)
 - [NovaMesh](./NovaMesh.md)
-- [PageTemplate](./PageTemplate.md)

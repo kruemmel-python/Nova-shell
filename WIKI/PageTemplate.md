@@ -1,9 +1,18 @@
 # Wiki Page Template
 
-Diese Seite definiert das bevorzugte Format fuer technische Wiki-Seiten in Nova-shell.
-Nicht jede Seite braucht jeden Abschnitt, aber die Reihenfolge soll moeglichst stabil bleiben.
+## Zweck
 
-## Standardschema
+Diese Seite definiert das bevorzugte Format fuer Wiki-Seiten in Nova-shell.
+Sie ist die redaktionelle Vorlage, mit der die Dokumentation konsistent, technisch brauchbar und testbar bleibt.
+
+## Grundprinzipien
+
+- Jede technische Seite braucht einen klaren Zweck.
+- Jede Seite soll zeigen, wie etwas benutzt wird, nicht nur was es ist.
+- Jede Fachseite soll mindestens ein konkretes Beispiel oder einen testbaren Einstieg enthalten.
+- Jede Seite soll sinnvoll auf naechste Seiten verweisen.
+
+## Standardschema fuer technische Fachseiten
 
 ```text
 # Seitentitel
@@ -26,13 +35,78 @@ Falls es direkte HTTP- oder Programmierschnittstellen gibt.
 ## Beispiele
 Kurze, echte Anwendungsbeispiele.
 
+## Typische Fehler oder Fragen
+Die ersten sinnvollen Diagnose- oder Denkpfade.
+
 ## Verwandte Seiten
 Nahe Architektur-, Referenz- oder Tutorialseiten.
 ```
 
-## Hinweise
+## Schema fuer Tutorial-Seiten
 
-- Portal-Seiten wie `Home`, `README`, `GermanLanguage` oder `FAQ` duerfen kompakter bleiben.
-- Tutorial-Seiten duerfen statt `Kernobjekte` einen Abschnitt `Ziel` und `Schritte` haben.
-- Referenzseiten sollen Tabellen fuer Klassen, Methoden und Endpunkte bevorzugen.
-- Jede technische Seite sollte mindestens ein konkretes Beispiel enthalten.
+```text
+# Tutorialtitel
+
+## Ziel
+
+## Voraussetzungen
+
+## Schritte
+
+## Ergebnispruefung
+
+## Typische Fehler
+
+## Verwandte Seiten
+```
+
+## Schema fuer Portal- und Navigationsseiten
+
+```text
+# Seitentitel
+
+## Zweck
+
+## Startpunkte oder Bereiche
+
+## Empfohlene Lesepfade
+
+## Verwandte Seiten
+```
+
+## Schema fuer FAQ- oder Troubleshooting-Seiten
+
+```text
+# Seitentitel
+
+## Zweck
+
+## Erster Diagnoseblock
+
+## Fragen oder Fehlerbilder
+
+## Verwandte Seiten
+```
+
+## Redaktionsregeln
+
+- keine reine Schlagwortliste ohne Erklaerung
+- keine leeren Kommandotabellen ohne Beispiel
+- keine Verweise auf externe Projekt-Markdown-Dateien als Ersatz fuer Inhalt
+- keine Theorie ohne Bezug zu realen Kommandos, Klassen oder Ablaufen
+
+## Qualitaetscheck fuer neue Seiten
+
+Eine Seite ist erst dann fertig, wenn sie:
+
+1. ihren Zweck klar benennt
+2. mindestens einen realistischen Einstieg nennt
+3. intern sinnvoll verlinkt ist
+4. nicht nur Features aufzaehlt, sondern deren Rolle erklaert
+5. fuer Nutzer oder Entwickler eine erkennbare naechste Handlung anbietet
+
+## Verwandte Seiten
+
+- [README](./README.md)
+- [DevelopmentGuide](./DevelopmentGuide.md)
+- [ReviewsAndReadingPaths](./ReviewsAndReadingPaths.md)

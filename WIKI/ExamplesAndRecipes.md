@@ -5,9 +5,9 @@
 Diese Seite sammelt kurze, konkrete Beispiele.
 Sie soll zeigen, wie Nova-shell in der Praxis benutzt wird, ohne dass man sich zuerst durch alle Architekturtexte arbeiten muss.
 
-## Kernobjekte
+## Einstiegspunkte
 
-Die Beispiele nutzen vor allem diese Einstiegspunkte:
+Die Rezepte nutzen vor allem diese Objekte und Systeme:
 
 - `NovaRuntime`
 - `NovaParser`
@@ -16,7 +16,7 @@ Die Beispiele nutzen vor allem diese Einstiegspunkte:
 - `MeshRegistry`
 - `NovaModuleLoader`
 
-## Methoden und Schnittstellen
+## Typische Methoden und Schnittstellen
 
 Die Rezepte drehen sich vor allem um:
 
@@ -40,19 +40,20 @@ Hauefige Beispielkommandos:
 - `ns.format`
 - `ns.lint`
 - `ns.test`
+- `wiki.*`
 
 ## API
 
 Mehrere Beispiele fuehren zur HTTP-Control-Plane.
 Die zugehoerigen Endpunkte sind in [APIReference](./APIReference.md) beschrieben.
 
-## Beispiele
+## Rezepte
 
 ### 1. Erstes `.ns`-Programm ausfuehren
 
 Datei `radar.ns`:
 
-```nova
+```ns
 dataset tech_rss {
   source: rss
 }
@@ -71,17 +72,6 @@ CLI:
 
 ```powershell
 ns.run radar.ns
-```
-
-Python:
-
-```python
-from nova.runtime.runtime import NovaRuntime
-
-runtime = NovaRuntime()
-program = runtime.load("radar.ns")
-result = runtime.run(program)
-print(result.status)
 ```
 
 ### 2. Ein Programm nur kompilieren und den Graph inspizieren
@@ -104,7 +94,17 @@ Typischer Zweck:
 - Toolchain oder Linter erweitern
 - Scheduling und Knotenaufbau debuggen
 
-### 3. Agent registrieren und ausfuehren
+### 3. Laufzeit direkt aus Python verwenden
+
+```python
+from nova.runtime.runtime import NovaRuntime
+
+runtime = NovaRuntime()
+result = runtime.run("examples/market_radar.ns")
+print(result.status)
+```
+
+### 4. Agent registrieren und ausfuehren
 
 ```python
 from nova.agents.runtime import AgentRuntime, AgentSpecification, AgentTask
@@ -114,7 +114,7 @@ agents.register(
     AgentSpecification(
         name="researcher",
         model="gpt-4o-mini",
-        tools=["web.search", "atheria.embed"],
+        tools=["system.log"],
     )
 )
 
@@ -127,7 +127,7 @@ result = agents.execute(
 print(result.output)
 ```
 
-### 4. Einen Flow in die durable Queue legen
+### 5. Einen Flow in die durable Queue legen
 
 ```python
 from nova.runtime.runtime import NovaRuntime
@@ -139,7 +139,7 @@ runtime.scheduler_tick()
 runtime.run_pending_tasks()
 ```
 
-### 5. Control-Plane-API starten
+### 6. Control-Plane-API starten
 
 ```python
 from nova.runtime.runtime import NovaRuntime
@@ -149,13 +149,13 @@ status = runtime.start_control_api(host="127.0.0.1", port=9850)
 print(status)
 ```
 
-Danach koennen HTTP-Clients gegen die API arbeiten:
+Danach:
 
 ```powershell
 curl http://127.0.0.1:9850/status
 ```
 
-### 6. Service deployen und skalieren
+### 7. Service deployen und skalieren
 
 ```python
 from nova.runtime.runtime import NovaRuntime
@@ -166,7 +166,7 @@ runtime.deploy_service("analytics-api", package="analytics", replicas=2)
 runtime.scale_service("analytics-api", 4)
 ```
 
-### 7. Mesh-Worker registrieren
+### 8. Mesh-Worker registrieren
 
 ```python
 from nova.mesh.registry import MeshRegistry, WorkerNode
@@ -188,11 +188,11 @@ mesh.add http://127.0.0.1:9040 --capabilities gpu,py,ai
 mesh.list
 ```
 
-### 8. Module und Imports nutzen
+### 9. Module und Imports nutzen
 
 Datei `main.ns`:
 
-```nova
+```ns
 import "agents/research.ns"
 import "flows/radar.ns"
 ```
@@ -207,22 +207,7 @@ program = loader.load("main.ns")
 loader.write_lockfile("nova.lock")
 ```
 
-### 9. Formatieren, linten und testen
-
-```python
-from nova.runtime.runtime import NovaRuntime
-
-runtime = NovaRuntime()
-formatted = runtime.format_source("examples/market_radar.ns")
-diagnostics = runtime.lint_source("examples/market_radar.ns")
-tests = runtime.run_program_tests("examples/market_radar.ns")
-
-print(formatted)
-print(diagnostics)
-print(tests)
-```
-
-CLI:
+### 10. Formatieren, linten und testen
 
 ```powershell
 ns.format examples\market_radar.ns
@@ -230,7 +215,7 @@ ns.lint examples\market_radar.ns
 ns.test examples\market_radar.ns
 ```
 
-### 10. Backup und Restore
+### 11. Backup und Restore
 
 ```python
 from nova.runtime.runtime import NovaRuntime
@@ -240,7 +225,7 @@ runtime.create_backup(".nova/backups/backup-001")
 runtime.restore_backup(".nova/backups/backup-001")
 ```
 
-### 11. Atheria und Memory nutzen
+### 12. Atheria und Memory nutzen
 
 ```python
 from nova.runtime.runtime import NovaRuntime
@@ -251,9 +236,9 @@ matches = runtime.search_agent_memory("researcher", "gpu runtime")
 print(matches)
 ```
 
-### 12. Minimaler Multi-Agent-Flow
+### 13. Minimaler Multi-Agent-Flow
 
-```nova
+```ns
 agent collector {
   model: gpt-4o-mini
 }
@@ -272,7 +257,7 @@ flow review_loop {
 }
 ```
 
-### 13. Service mit Traffic-Shift vorbereiten
+### 14. Service mit Traffic-Shift vorbereiten
 
 ```python
 from nova.runtime.runtime import NovaRuntime
@@ -282,22 +267,6 @@ runtime.deploy_service("frontend-blue", image="frontend:blue", replicas=2)
 runtime.deploy_service("frontend-green", image="frontend:green", replicas=2)
 runtime.start_traffic_proxy(host="127.0.0.1", port=9900)
 ```
-
-### 14. Typische Entwicklungsrezepte
-
-#### Neue Sprachsyntax testen
-
-1. `.ns`-Beispiel erstellen
-2. mit `NovaParser.parse` parsen
-3. AST in `ParserAndASTReference` gegenpruefen
-4. Graph mit `NovaGraphCompiler.compile` inspizieren
-5. Runtime-Test mit `NovaTestRunner` schreiben
-
-#### Neue Runtime-Funktion dokumentieren
-
-1. Methode in `NovaRuntime` oder Subsystem identifizieren
-2. Referenzseite aktualisieren
-3. mindestens ein kurzes Beispiel in diese Seite aufnehmen
 
 ### 15. Die Wiki als HTML-Site bauen und oeffnen
 
@@ -312,10 +281,19 @@ Mit expliziten Pfaden:
 wiki build --source WIKI --output .nova\wiki-site
 wiki open Home --source WIKI --output .nova\wiki-site --port 8767
 ```
+
+## Wann diese Seite benutzt werden sollte
+
+Diese Seite ist ideal, wenn du:
+
+- ein neues Subsystem schnell ausprobieren willst
+- eine Beispielbasis fuer Tests oder Doku brauchst
+- einen realistischen Startpunkt vor der tieferen Referenz suchst
+
 ## Verwandte Seiten
 
+- [NovaCLI](./NovaCLI.md)
+- [ProgrammingWithNovaShell](./ProgrammingWithNovaShell.md)
 - [ClassReference](./ClassReference.md)
 - [RuntimeMethodReference](./RuntimeMethodReference.md)
-- [NovaCLI](./NovaCLI.md)
 - [Tutorials](./Tutorials.md)
-- [PageTemplate](./PageTemplate.md)
