@@ -1,0 +1,14 @@
+Nova-shell Windows upgrade helper
+================================
+
+This helper reinstalls the current MSI over an existing
+C:\Program Files\Nova-shell installation, stops running nova_shell.exe
+instances, optionally backs up runtime data, and verifies that `wiki`
+works after the upgrade.
+
+Run from the repository root:
+
+  powershell -ExecutionPolicy Bypass -File scripts\upgrade_windows_install.ps1
+
+Or run the copy that is staged next to the MSI in the release installers
+directory.

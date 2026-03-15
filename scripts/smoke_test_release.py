@@ -5,6 +5,7 @@ import json
 import os
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 
@@ -87,17 +88,33 @@ def main(argv: list[str] | None = None) -> int:
             raise SystemExit("doctor atheria availability check failed for enterprise profile")
     if bool(atheria_payload.get("available")):
         run_check([str(executable), "--no-plugins", "-c", "atheria init"], cwd=executable.parent)
+    wiki_stdout = run_check([str(executable), "--no-plugins", "-c", "wiki build"], cwd=executable.parent)
+    wiki_payload = json.loads(wiki_stdout)
+    if int(wiki_payload.get("page_count") or 0) <= 0:
+        raise SystemExit("wiki build did not generate any pages")
+    wiki_output_dir = Path(str(wiki_payload.get("output_dir") or ""))
+    if not wiki_output_dir.is_dir():
+        raise SystemExit(f"wiki output directory missing: {wiki_output_dir}")
+    if not (wiki_output_dir / "Home.html").exists() and not (wiki_output_dir / "index.html").exists():
+        raise SystemExit("wiki build did not produce a home page")
     if sys.platform.startswith("win"):
         sandbox_env = os.environ.copy()
-        sandbox_cache = executable.parent / "toolchains" / "emsdk-cache"
-        sandbox_cache.mkdir(parents=True, exist_ok=True)
-        sandbox_env["EM_CACHE"] = str(sandbox_cache)
-        run_check(
-            [str(executable), "--no-plugins", "-c", "cpp.sandbox int main(){ return 0; }"],
-            cwd=executable.parent,
-            expected_stdout="sandbox executed",
-            env=sandbox_env,
-        )
+        temp_root = executable.parent / ".smoke-temp"
+        temp_root.mkdir(parents=True, exist_ok=True)
+        with tempfile.TemporaryDirectory(dir=str(temp_root)) as tmp:
+            sandbox_root = Path(tmp)
+            sandbox_cache = sandbox_root / "emsdk-cache"
+            sandbox_cache.mkdir(parents=True, exist_ok=True)
+            sandbox_env["EM_CACHE"] = str(sandbox_cache)
+            sandbox_env["TMP"] = str(sandbox_root)
+            sandbox_env["TEMP"] = str(sandbox_root)
+            sandbox_env["TMPDIR"] = str(sandbox_root)
+            run_check(
+                [str(executable), "--no-plugins", "-c", "cpp.sandbox int main(){ return 0; }"],
+                cwd=executable.parent,
+                expected_stdout="sandbox executed",
+                env=sandbox_env,
+            )
 
     print(f"smoke tests passed for {executable}")
     return 0

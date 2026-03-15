@@ -234,7 +234,7 @@ def render_wix_source(metadata: ReleaseMetadata, version: str, bundle_dir: Path,
            Scope="perMachine"
            InstallerVersion="500"
            Compressed="yes">
-    <MajorUpgrade DowngradeErrorMessage="A newer version of {escape(metadata.package_name)} is already installed." />
+    <MajorUpgrade AllowSameVersionUpgrades="yes" DowngradeErrorMessage="A newer version of {escape(metadata.package_name)} is already installed." />
     <MediaTemplate EmbedCab="yes" />
     <SummaryInformation Description="{escape(metadata.description)}" Manufacturer="{escape(metadata.publisher)}" />
 

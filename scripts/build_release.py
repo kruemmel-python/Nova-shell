@@ -71,7 +71,7 @@ PROFILE_NUITKA_MODULES = {
 PROFILE_NUITKA_NOFOLLOW = {
     "arrow": ["pyarrow.tests", "pyarrow.vendored"],
 }
-LOCAL_RUNTIME_DIRS = ["Atheria"]
+LOCAL_RUNTIME_DIRS = ["Atheria", "WIKI"]
 LOCAL_RUNTIME_FILES = [
     "industry_scanner.py",
     "trend_rss_sensor.py",
@@ -81,6 +81,10 @@ LOCAL_RUNTIME_FILES = [
     "sample_news.json",
     "beispiel_rss.md",
     "morning_briefing.md",
+]
+WINDOWS_INSTALLER_SUPPORT_FILES = [
+    "scripts/upgrade_windows_install.ps1",
+    "scripts/upgrade_windows_install.README.txt",
 ]
 HEAVY_SIDELOAD_DISTRIBUTIONS = {"torch"}
 HEARTBEAT_SECONDS = 30
@@ -630,7 +634,7 @@ def smoke_test_executable(python_exe: str, executable: Path, profile: str) -> No
 
 
 def prune_bundle_runtime_state(bundle_dir: Path) -> None:
-    for relative in (".nova_lens",):
+    for relative in (".nova_lens", "toolchains/emsdk-cache"):
         target = bundle_dir / relative
         if target.exists():
             remove_tree(target)
@@ -1177,6 +1181,7 @@ def build_windows_installers(
         verify_windows_artifact(msi_path, signtool=signing_config["signtool"])
 
     artifacts = [msi_path]
+    artifacts.extend(stage_windows_installer_support_files(installer_root, build_context=build_context))
     if base_download_url:
         installer_url = base_download_url.rstrip("/") + "/" + msi_name
         winget_manifests = render_winget_manifests(
@@ -1201,6 +1206,26 @@ def build_windows_installers(
             artifacts.append(path)
 
     return artifacts
+
+
+def stage_windows_installer_support_files(installer_root: Path, *, build_context: BuildContext) -> list[Path]:
+    staged: list[Path] = []
+    for relative_name in WINDOWS_INSTALLER_SUPPORT_FILES:
+        source = (ROOT / relative_name).resolve()
+        if not source.exists() or not source.is_file():
+            continue
+        target = installer_root / source.name
+        shutil.copy2(source, target)
+        with contextlib.suppress(FileNotFoundError):
+            os.utime(
+                target,
+                (
+                    build_context.source_date_epoch or target.stat().st_mtime,
+                    build_context.source_date_epoch or target.stat().st_mtime,
+                ),
+            )
+        staged.append(target)
+    return staged
 
 
 def prepare_linux_appdir(bundle_dir: Path, executable: Path, work_root: Path, *, build_context: BuildContext) -> Path:

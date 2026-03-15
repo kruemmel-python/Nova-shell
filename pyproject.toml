@@ -58,7 +58,7 @@ release = [
 nova-shell = "nova_shell:main"
 
 [tool.setuptools]
-packages = ["nova", "nova.parser", "nova.runtime", "nova.graph", "nova.agents", "nova.events", "nova.mesh"]
+packages = ["nova", "nova.parser", "nova.runtime", "nova.graph", "nova.agents", "nova.events", "nova.mesh", "nova.toolchain", "nova.wiki"]
 py-modules = ["nova_shell", "novascript", "release_packaging", "release_notes", "release_signing", "release_sbom"]
 include-package-data = true
 

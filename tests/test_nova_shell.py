@@ -164,9 +164,71 @@ class NovaShellTests(unittest.TestCase):
         self.assertIn("gpu", result.output)
         self.assertIn("data", result.output)
         self.assertIn("events", result.output)
+        self.assertIn("wiki", result.output)
         self.assertIn("ns.exec", result.output)
         self.assertIn("ns.run", result.output)
         self.assertIn("watch", result.output)
+
+    def test_wiki_build_generates_html_site(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            wiki_dir = Path(tmp) / "WIKI"
+            output_dir = Path(tmp) / "site"
+            wiki_dir.mkdir(parents=True, exist_ok=True)
+            (wiki_dir / "_Sidebar.md").write_text(
+                "# Wiki Navigation\n\n## Einstieg\n- [Home](./Home.md)\n- [API](./API.md)\n",
+                encoding="utf-8",
+            )
+            (wiki_dir / "_Footer.md").write_text("Built with [Nova-shell](./Home.md)", encoding="utf-8")
+            (wiki_dir / "Home.md").write_text(
+                "# Home\n\n## Zweck\n\nWelcome to the [API](./API.md).\n",
+                encoding="utf-8",
+            )
+            (wiki_dir / "API.md").write_text(
+                "# API\n\n## Zweck\n\nReference page.\n",
+                encoding="utf-8",
+            )
+
+            result = self.shell.route(f'wiki build --source "{wiki_dir}" --output "{output_dir}"')
+            self.assertIsNone(result.error)
+            payload = json.loads(result.output)
+            self.assertEqual(payload["page_count"], 2)
+            self.assertTrue((output_dir / "Home.html").is_file())
+            self.assertTrue((output_dir / "index.html").is_file())
+            self.assertTrue((output_dir / "assets" / "wiki.css").is_file())
+            self.assertTrue((output_dir / "assets" / "wiki.js").is_file())
+            self.assertTrue((output_dir / "assets" / "search-index.json").is_file())
+            home_html = (output_dir / "Home.html").read_text(encoding="utf-8")
+            self.assertIn("API.html", home_html)
+            self.assertIn("Nova-shell Wiki", home_html)
+
+    def test_wiki_serve_and_stop(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            wiki_dir = Path(tmp) / "WIKI"
+            output_dir = Path(tmp) / "site"
+            wiki_dir.mkdir(parents=True, exist_ok=True)
+            (wiki_dir / "_Sidebar.md").write_text(
+                "# Wiki Navigation\n\n## Einstieg\n- [Home](./Home.md)\n",
+                encoding="utf-8",
+            )
+            (wiki_dir / "Home.md").write_text(
+                "# Home\n\n## Zweck\n\nHTML wiki runtime.\n",
+                encoding="utf-8",
+            )
+
+            serve = self.shell.route(
+                f'wiki serve --source "{wiki_dir}" --output "{output_dir}" --host 127.0.0.1 --port 0'
+            )
+            self.assertIsNone(serve.error)
+            payload = json.loads(serve.output)
+            self.assertTrue(payload["server"]["running"])
+            body = urllib.request.urlopen(payload["url"]).read().decode("utf-8")
+            self.assertIn("Nova-shell Wiki", body)
+            self.assertIn("HTML wiki runtime.", body)
+
+            stop = self.shell.route("wiki stop")
+            self.assertIsNone(stop.error)
+            stop_payload = json.loads(stop.output)
+            self.assertFalse(stop_payload["server"]["running"])
 
     def test_doctor_json(self) -> None:
         result = self.shell.route("doctor json")

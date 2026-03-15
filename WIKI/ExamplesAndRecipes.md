@@ -299,6 +299,19 @@ runtime.start_traffic_proxy(host="127.0.0.1", port=9900)
 2. Referenzseite aktualisieren
 3. mindestens ein kurzes Beispiel in diese Seite aufnehmen
 
+### 15. Die Wiki als HTML-Site bauen und oeffnen
+
+```powershell
+wiki build
+wiki serve --open
+```
+
+Mit expliziten Pfaden:
+
+```powershell
+wiki build --source WIKI --output .nova\wiki-site
+wiki open Home --source WIKI --output .nova\wiki-site --port 8767
+```
 ## Verwandte Seiten
 
 - [ClassReference](./ClassReference.md)

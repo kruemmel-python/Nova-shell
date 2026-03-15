@@ -73,6 +73,7 @@ nova-shell --no-plugins -c "py 1 + 1"
 | Kommando | Zweck |
 | --- | --- |
 | `mesh` | Worker und verteilte Ausfuehrung |
+| `wiki` | Markdown-Wiki nach HTML bauen, lokal serven und im Browser oeffnen |
 | `remote` | Remote-Ausfuehrung |
 | `vision` | Web- und UI-Flaechen |
 | `guard` | Sicherheits- und Sandbox-Pfade |
@@ -93,6 +94,7 @@ memory search "distributed execution"
 mesh start-worker --caps py,gpu
 ns.run examples/market_radar.ns
 ns.control daemon start
+wiki serve --open
 ```
 
 ## Verwandte Seiten

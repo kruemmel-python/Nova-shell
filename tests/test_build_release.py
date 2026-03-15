@@ -275,6 +275,28 @@ class BuildReleaseTests(unittest.TestCase):
             self.assertTrue((bundle_dir / "Atheria" / "atheria_core.py").exists())
             self.assertFalse((bundle_dir / "Atheria" / "__pycache__").exists())
 
+    def test_stage_local_runtime_directories_copies_wiki_tree(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source_dir = root / "WIKI"
+            source_dir.mkdir()
+            (source_dir / "Home.md").write_text("# Home\n", encoding="utf-8")
+
+            bundle_dir = root / "bundle"
+            bundle_dir.mkdir()
+
+            with patch.object(build_release, "collect_local_runtime_directories", return_value=[source_dir]):
+                build_release.stage_local_runtime_directories(
+                    bundle_dir,
+                    build_context=build_release.BuildContext(
+                        source_date_epoch=None,
+                        timestamp_utc="2026-03-08T00:00:00+00:00",
+                        env={},
+                    ),
+                )
+
+            self.assertTrue((bundle_dir / "WIKI" / "Home.md").exists())
+
     def test_stage_bundled_emsdk_writes_wrapper_and_runtime_config(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -364,6 +386,37 @@ class BuildReleaseTests(unittest.TestCase):
 
             self.assertFalse(lens_dir.exists())
             self.assertTrue(keep_file.exists())
+
+    def test_prune_bundle_runtime_state_removes_emsdk_cache_directory(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            bundle_dir = Path(tmp)
+            cache_dir = bundle_dir / "toolchains" / "emsdk-cache"
+            cache_dir.mkdir(parents=True)
+            (cache_dir / "cache.db").write_text("cache", encoding="utf-8")
+
+            build_release.prune_bundle_runtime_state(bundle_dir)
+
+            self.assertFalse(cache_dir.exists())
+
+    def test_stage_windows_installer_support_files_copies_upgrade_helper(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            installer_root = Path(tmp) / "installers"
+            installer_root.mkdir()
+
+            staged = build_release.stage_windows_installer_support_files(
+                installer_root,
+                build_context=build_release.BuildContext(
+                    source_date_epoch=1700000000,
+                    timestamp_utc="2024-01-01T00:00:00+00:00",
+                    env={},
+                ),
+            )
+
+            names = {path.name for path in staged}
+            self.assertIn("upgrade_windows_install.ps1", names)
+            self.assertIn("upgrade_windows_install.README.txt", names)
+            self.assertTrue((installer_root / "upgrade_windows_install.ps1").exists())
+            self.assertTrue((installer_root / "upgrade_windows_install.README.txt").exists())
 
     def test_safe_platform_helpers_avoid_windows_wmi_path(self) -> None:
         with (

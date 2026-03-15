@@ -37,6 +37,7 @@ import sys
 import urllib.error
 import urllib.parse
 import urllib.request
+import webbrowser
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from enum import Enum
@@ -48,6 +49,7 @@ from nova import NovaRuntime as DeclarativeNovaRuntime, WorkerNode
 from nova.events.bus import Event as DeclarativeEvent
 from nova.mesh.protocol import ExecutorResult, ExecutorTask
 from nova.runtime.context import CommandExecution as DeclarativeCommandExecution
+from nova.wiki import NovaWikiSiteBuilder, NovaWikiSiteServer
 from novascript import Assignment as NSAssignment, Command as NSCommand, NovaInterpreter, NovaJITCompiler, NovaParser as LegacyNovaParser, WatchHook as NSWatchHook
 from mycelia_runtime import MyceliaRuntime
 
@@ -57,7 +59,7 @@ except ImportError:  # pragma: no cover - platform dependent
     readline = None
 
 
-__version__ = "0.8.10"
+__version__ = "0.8.11"
 SIDELOAD_PACKAGE_DIR = "vendor-py"
 RUNTIME_CONFIG_FILE = "nova-shell-runtime.json"
 BRIEFING_REPORT_FILES: tuple[tuple[str, str, str], ...] = (
@@ -83,6 +85,19 @@ def safe_system_name() -> str:
         return "Linux"
     value = platform.system().strip()
     return value or sys.platform
+
+
+def cleanup_temp_tree(path: Path, *, attempts: int = 8, delay_seconds: float = 0.2) -> None:
+    for attempt in range(attempts):
+        try:
+            shutil.rmtree(path)
+            return
+        except FileNotFoundError:
+            return
+        except OSError:
+            if attempt == attempts - 1:
+                raise
+            time.sleep(delay_seconds)
 
 
 def safe_machine_name() -> str:
@@ -785,9 +800,10 @@ class CppEngine:
             )
 
     def compile_to_wasm_and_run(self, code: str, pipeline_input: str = "") -> CommandResult:
-        with tempfile.TemporaryDirectory() as tmp:
-            source = Path(tmp) / "program.cpp"
-            wasm = Path(tmp) / "program.wasm"
+        tmp_path = Path(tempfile.mkdtemp())
+        try:
+            source = tmp_path / "program.cpp"
+            wasm = tmp_path / "program.wasm"
             source.write_text(code, encoding="utf-8")
             has_wasmtime = False
             with contextlib.suppress(Exception):
@@ -816,9 +832,9 @@ class CppEngine:
                 return CommandResult(output="", error="wasmtime is required for cpp sandbox mode")
 
             try:
-                stdin_file = Path(tmp) / "stdin.txt"
-                stdout_file = Path(tmp) / "stdout.txt"
-                stderr_file = Path(tmp) / "stderr.txt"
+                stdin_file = tmp_path / "stdin.txt"
+                stdout_file = tmp_path / "stdout.txt"
+                stderr_file = tmp_path / "stderr.txt"
                 stdin_file.write_text(pipeline_input, encoding="utf-8")
                 stdout_file.write_text("", encoding="utf-8")
                 stderr_file.write_text("", encoding="utf-8")
@@ -850,6 +866,9 @@ class CppEngine:
                 )
             except Exception as exc:
                 return CommandResult(output="", error=f"sandbox runtime error: {exc}")
+        finally:
+            with contextlib.suppress(Exception):
+                cleanup_temp_tree(tmp_path)
 
 
 class GPUEngine:
@@ -5410,6 +5429,7 @@ class NovaShell:
         self.rag_watchers: dict[str, AutoRAGWatcherSpec] = {}
         self.mesh_log_dir = Path(tempfile.gettempdir()) / "nova-shell-mesh-workers"
         self.mesh_log_dir.mkdir(parents=True, exist_ok=True)
+        self._wiki_site_server: NovaWikiSiteServer | None = None
 
         self.commands: dict[str, Callable[[str, str, Any], CommandResult]] = {
             "py": self._run_python,
@@ -5456,6 +5476,7 @@ class NovaShell:
             "observe": self._run_observe,
             "studio": self._run_studio,
             "watch": self._watch,
+            "wiki": self._run_wiki,
             "sys": self._run_system,
             "cd": self._cd,
             "pwd": self._pwd,
@@ -5522,6 +5543,9 @@ class NovaShell:
             self.memory.close()
         with contextlib.suppress(Exception):
             self.atheria.close()
+        with contextlib.suppress(Exception):
+            if self._wiki_site_server is not None:
+                self._wiki_site_server.stop()
         with contextlib.suppress(Exception):
             if self._declarative_nova is not None:
                 self._declarative_nova.close()
@@ -5598,6 +5622,109 @@ class NovaShell:
             if (candidate / "morning_briefing.ns").is_file():
                 return candidate
         return Path(__file__).resolve().parent
+
+    def _default_wiki_source_dir(self) -> Path:
+        candidates = [
+            self.cwd / "WIKI",
+            self._resource_root() / "WIKI",
+            Path(__file__).resolve().parent / "WIKI",
+        ]
+        seen: set[str] = set()
+        for candidate in candidates:
+            resolved = candidate.resolve(strict=False)
+            key = str(resolved)
+            if key in seen:
+                continue
+            seen.add(key)
+            if resolved.is_dir():
+                return resolved
+        return (self.cwd / "WIKI").resolve(strict=False)
+
+    def _default_wiki_output_dir(self) -> Path:
+        target = (Path.home() / ".nova" / "wiki-site").resolve(strict=False)
+        target.mkdir(parents=True, exist_ok=True)
+        return target
+
+    def _normalize_wiki_page(self, raw: str | None) -> str:
+        value = (raw or "").strip().strip('"').strip("'")
+        if not value:
+            return "Home.html"
+        if value.lower() in {"home", "index"}:
+            return "Home.html"
+        if value.lower().endswith(".md"):
+            return value[:-3] + ".html"
+        if not value.lower().endswith(".html"):
+            return value + ".html"
+        return value
+
+    def _parse_wiki_options(self, parts: list[str], *, start_index: int = 1) -> tuple[list[str], dict[str, Any]]:
+        options: dict[str, Any] = {
+            "source": None,
+            "output": None,
+            "host": "127.0.0.1",
+            "port": 8767,
+            "open": False,
+        }
+        positionals: list[str] = []
+        index = start_index
+        while index < len(parts):
+            token = parts[index]
+            if token == "--source" and index + 1 < len(parts):
+                options["source"] = self._resolve_path(parts[index + 1])
+                index += 2
+                continue
+            if token == "--output" and index + 1 < len(parts):
+                options["output"] = self._resolve_path(parts[index + 1])
+                index += 2
+                continue
+            if token == "--host" and index + 1 < len(parts):
+                options["host"] = parts[index + 1]
+                index += 2
+                continue
+            if token == "--port" and index + 1 < len(parts):
+                options["port"] = int(parts[index + 1])
+                index += 2
+                continue
+            if token == "--open":
+                options["open"] = True
+                index += 1
+                continue
+            positionals.append(token)
+            index += 1
+        return positionals, options
+
+    def _build_wiki_payload(self, *, source_dir: Path, output_dir: Path) -> dict[str, Any]:
+        result = NovaWikiSiteBuilder(source_dir, output_dir).build()
+        return result.to_dict()
+
+    def _wiki_status_payload(self, *, source_dir: Path, output_dir: Path) -> dict[str, Any]:
+        built_pages = sorted(path.name for path in output_dir.glob("*.html")) if output_dir.exists() else []
+        server_payload = self._wiki_site_server.status() if self._wiki_site_server is not None else {
+            "running": False,
+            "host": "127.0.0.1",
+            "port": 8767,
+            "output_dir": str(output_dir),
+            "url": "",
+        }
+        return {
+            "source_dir": str(source_dir),
+            "output_dir": str(output_dir),
+            "built": (output_dir / "Home.html").is_file() or (output_dir / "index.html").is_file(),
+            "pages": built_pages,
+            "server": server_payload,
+        }
+
+    def _ensure_wiki_server(self, *, output_dir: Path, host: str, port: int) -> dict[str, Any]:
+        normalized_output = output_dir.resolve(strict=False)
+        if self._wiki_site_server is not None:
+            current_status = self._wiki_site_server.status()
+            current_output = Path(current_status.get("output_dir") or output_dir).resolve(strict=False)
+            if current_output != normalized_output or current_status.get("host") != host or (port != 0 and int(current_status.get("port") or 0) != port):
+                self._wiki_site_server.stop()
+                self._wiki_site_server = None
+        if self._wiki_site_server is None:
+            self._wiki_site_server = NovaWikiSiteServer(normalized_output, host=host, port=port)
+        return self._wiki_site_server.start()
 
     def _default_briefing_feeds(self, topic: str) -> str:
         normalized = topic.strip() or "AI infrastructure agent runtime"
@@ -6042,6 +6169,87 @@ class NovaShell:
         if output:
             output += "\n"
         return CommandResult(output=output, data=selected, data_type=PipelineType.TEXT_STREAM)
+
+    def _run_wiki(self, args: str, _: str, __: Any) -> CommandResult:
+        parts = split_command(args)
+        if not parts:
+            parts = ["status"]
+        subcommand = parts[0]
+        try:
+            positionals, options = self._parse_wiki_options(parts)
+            source_dir = Path(options["source"] or self._default_wiki_source_dir()).resolve(strict=False)
+            output_dir = Path(options["output"] or self._default_wiki_output_dir()).resolve(strict=False)
+            host = str(options["host"] or "127.0.0.1")
+            port = int(options["port"] or 8767)
+
+            if subcommand == "help":
+                return CommandResult(
+                    output=(
+                        "usage: wiki [status|build|serve|open|stop]\n"
+                        "  wiki status [--source DIR] [--output DIR]\n"
+                        "  wiki build [--source DIR] [--output DIR]\n"
+                        "  wiki serve [--source DIR] [--output DIR] [--host HOST] [--port PORT] [--open]\n"
+                        "  wiki open [PAGE] [--source DIR] [--output DIR] [--host HOST] [--port PORT]\n"
+                        "  wiki stop\n"
+                    )
+                )
+
+            if subcommand == "status":
+                return self._json_command_result(self._wiki_status_payload(source_dir=source_dir, output_dir=output_dir))
+
+            if subcommand == "stop":
+                payload = self._wiki_site_server.stop() if self._wiki_site_server is not None else {
+                    "running": False,
+                    "host": host,
+                    "port": port,
+                    "output_dir": str(output_dir),
+                    "url": "",
+                }
+                self._wiki_site_server = None
+                return self._json_command_result({"server": payload})
+
+            if subcommand == "build":
+                payload = self._build_wiki_payload(source_dir=source_dir, output_dir=output_dir)
+                return self._json_command_result(payload)
+
+            if subcommand == "serve":
+                build_payload = self._build_wiki_payload(source_dir=source_dir, output_dir=output_dir)
+                server_payload = self._ensure_wiki_server(output_dir=output_dir, host=host, port=port)
+                url = self._wiki_site_server.url("Home.html") if self._wiki_site_server is not None else ""
+                browser_opened = False
+                if bool(options["open"]) and url:
+                    with contextlib.suppress(Exception):
+                        browser_opened = bool(webbrowser.open(url))
+                return self._json_command_result(
+                    {
+                        "build": build_payload,
+                        "server": server_payload,
+                        "url": url,
+                        "browser_opened": browser_opened,
+                    }
+                )
+
+            if subcommand == "open":
+                page = self._normalize_wiki_page(positionals[0] if positionals else "Home")
+                build_payload = self._build_wiki_payload(source_dir=source_dir, output_dir=output_dir)
+                server_payload = self._ensure_wiki_server(output_dir=output_dir, host=host, port=port)
+                url = self._wiki_site_server.url(page) if self._wiki_site_server is not None else ""
+                browser_opened = False
+                with contextlib.suppress(Exception):
+                    browser_opened = bool(webbrowser.open(url))
+                return self._json_command_result(
+                    {
+                        "build": build_payload,
+                        "server": server_payload,
+                        "page": page,
+                        "url": url,
+                        "browser_opened": browser_opened,
+                    }
+                )
+
+            return CommandResult(output="", error="usage: wiki [status|build|serve|open|stop]")
+        except Exception as exc:
+            return CommandResult(output="", error=str(exc))
 
     def _normalize_inline_script(self, source: str) -> str:
         flattened = source.replace(";", "\n")
@@ -11707,7 +11915,7 @@ class NovaShell:
     def repl(self) -> None:
         print(f"NovaShell {__version__} Compute Runtime")
         print(
-            "Commands: py | cpp | gpu | wasm | jit_wasm | data | data.load | remote | mesh | ai | atheria | mycelia | agent | memory | tool | event | vision | fabric | guard | secure | flow | sync | lens | studio | on | pack | observe | watch | parallel | events | ns.exec | ns.run | ns.graph | ns.status | ns.cluster | ns.auth | ns.deploy | ns.recover | ns.control | ns.snapshot | ns.resume | sys | cd | pwd | clear | cls | doctor | help | exit"
+            "Commands: py | cpp | gpu | wasm | jit_wasm | data | data.load | remote | mesh | ai | atheria | mycelia | agent | memory | tool | event | vision | fabric | guard | secure | flow | sync | lens | studio | on | pack | observe | watch | wiki | parallel | events | ns.exec | ns.run | ns.graph | ns.status | ns.cluster | ns.auth | ns.deploy | ns.recover | ns.control | ns.snapshot | ns.resume | sys | cd | pwd | clear | cls | doctor | help | exit"
         )
         print("Pipelines: cmd | watch file | parallel py ...\n")
 
