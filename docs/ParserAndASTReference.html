@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="Nova-shell wiki builder">
+  <title>Parser and AST Reference | Nova-shell Wiki</title>
+  <link rel="stylesheet" href="assets/wiki.css">
+</head>
+<body>
+  <div class="wiki-shell">
+    <aside class="wiki-sidebar" data-sidebar>
+      <div class="wiki-brand">
+        <a href="Home.html">Nova-shell Wiki</a>
+        <p>HTML documentation for the Nova-shell platform.</p>
+      </div>
+      <label class="wiki-search">
+        <span>Search</span>
+        <input type="search" placeholder="Find pages, classes, methods..." data-wiki-search>
+      </label>
+      <div class="wiki-search-results" data-search-results></div>
+      <nav class="wiki-nav">
+        <section class="wiki-nav-section">
+<h2>Einstieg</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="Home.html" href="Home.html">Home</a></li>
+<li><a class="wiki-nav-link" data-nav-href="GermanLanguage.html" href="GermanLanguage.html">GermanLanguage</a></li>
+<li><a class="wiki-nav-link" data-nav-href="QuickStart.html" href="QuickStart.html">QuickStart</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Installation.html" href="Installation.html">Installation</a></li>
+</ul></section>
+<section class="wiki-nav-section">
+<h2>Nutzung</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="NovaCLI.html" href="NovaCLI.html">NovaCLI</a></li>
+<li><a class="wiki-nav-link" data-nav-href="APIReference.html" href="APIReference.html">APIReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ExamplesAndRecipes.html" href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Tutorials.html" href="Tutorials.html">Tutorials</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialTechnologyRadar.html" href="TutorialTechnologyRadar.html">TutorialTechnologyRadar</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialMultiAgentCluster.html" href="TutorialMultiAgentCluster.html">TutorialMultiAgentCluster</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialLMStudioIntegration.html" href="TutorialLMStudioIntegration.html">TutorialLMStudioIntegration</a></li>
+</ul></section>
+<section class="wiki-nav-section">
+<h2>Architektur</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="Architecture.html" href="Architecture.html">Architecture</a></li>
+<li><a class="wiki-nav-link" data-nav-href="SystemOverview.html" href="SystemOverview.html">SystemOverview</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ComponentModel.html" href="ComponentModel.html">ComponentModel</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ExecutionModel.html" href="ExecutionModel.html">ExecutionModel</a></li>
+<li><a class="wiki-nav-link" data-nav-href="DataFlow.html" href="DataFlow.html">DataFlow</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaLanguage.html" href="NovaLanguage.html">NovaLanguage</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaRuntime.html" href="NovaRuntime.html">NovaRuntime</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaGraphEngine.html" href="NovaGraphEngine.html">NovaGraphEngine</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaPlanner.html" href="NovaPlanner.html">NovaPlanner</a></li>
+<li><a class="wiki-nav-link active" data-nav-href="ParserAndASTReference.html" href="ParserAndASTReference.html">ParserAndASTReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="RuntimeMethodReference.html" href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ClassReference.html" href="ClassReference.html">ClassReference</a></li>
+</ul></section>
+<section class="wiki-nav-section">
+<h2>Plattformfunktionen</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="NovaAgents.html" href="NovaAgents.html">NovaAgents</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaMesh.html" href="NovaMesh.html">NovaMesh</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaSensors.html" href="NovaSensors.html">NovaSensors</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaMemory.html" href="NovaMemory.html">NovaMemory</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaTools.html" href="NovaTools.html">NovaTools</a></li>
+</ul></section>
+<section class="wiki-nav-section">
+<h2>Entwicklung und Betrieb</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="DevelopmentGuide.html" href="DevelopmentGuide.html">DevelopmentGuide</a></li>
+<li><a class="wiki-nav-link" data-nav-href="PageTemplate.html" href="PageTemplate.html">PageTemplate</a></li>
+<li><a class="wiki-nav-link" data-nav-href="RepositoryStructure.html" href="RepositoryStructure.html">RepositoryStructure</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Testing.html" href="Testing.html">Testing</a></li>
+<li><a class="wiki-nav-link" data-nav-href="BuildAndRelease.html" href="BuildAndRelease.html">BuildAndRelease</a></li>
+<li><a class="wiki-nav-link" data-nav-href="SecurityModel.html" href="SecurityModel.html">SecurityModel</a></li>
+<li><a class="wiki-nav-link" data-nav-href="PerformanceAndScaling.html" href="PerformanceAndScaling.html">PerformanceAndScaling</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Troubleshooting.html" href="Troubleshooting.html">Troubleshooting</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Roadmap.html" href="Roadmap.html">Roadmap</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Contributing.html" href="Contributing.html">Contributing</a></li>
+<li><a class="wiki-nav-link" data-nav-href="License.html" href="License.html">License</a></li>
+</ul></section>
+<section class="wiki-nav-section">
+<h2>Theorie</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="Research.html" href="Research.html">Research</a></li>
+<li><a class="wiki-nav-link" data-nav-href="AIOSConcept.html" href="AIOSConcept.html">AIOSConcept</a></li>
+<li><a class="wiki-nav-link" data-nav-href="AgentSystems.html" href="AgentSystems.html">AgentSystems</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Glossary.html" href="Glossary.html">Glossary</a></li>
+<li><a class="wiki-nav-link" data-nav-href="FAQ.html" href="FAQ.html">FAQ</a></li>
+</ul></section>
+      </nav>
+    </aside>
+    <main class="wiki-main">
+      <header class="wiki-header">
+        <button type="button" class="wiki-nav-toggle" data-nav-toggle>Menu</button>
+        <div class="wiki-header-copy">
+          <span class="wiki-kicker">Nova-shell Documentation</span>
+          <h1>Parser and AST Reference</h1>
+          <p>Source: ParserAndASTReference.md</p>
+        </div>
+      </header>
+      <div class="wiki-layout">
+        <article class="wiki-article">
+          <h1 id="parser-and-ast-reference">Parser and AST Reference</h1>
+<h2 id="zweck">Zweck</h2>
+<p>Diese Seite dokumentiert die Sprachvorderseite von Nova-shell: Parsing, Modulaufloesung, AST-Struktur und den Uebergang in den Graph-Compiler.</p>
+<h2 id="kernobjekte">Kernobjekte</h2>
+<h3 id="uebersicht">Uebersicht</h3>
+<p>Der typische Pfad sieht so aus:</p>
+<pre><code class="language-text">.ns source
+  -&gt; NovaParser
+  -&gt; NovaAST
+  -&gt; NovaGraphCompiler
+  -&gt; ExecutionGraph
+  -&gt; NovaRuntime</code></pre>
+<h3 id="novaparser"><code>NovaParser</code></h3>
+<p>Modul: <code>nova.parser.parser</code></p>
+<p><code>NovaParser</code> ist der Einstiegspunkt fuer das Einlesen von <code>.ns</code>-Programmen. Die Klasse unterstuetzt sowohl Dateien als auch In-Memory-Strings und kann Syntax-Erweiterungen registrieren.</p>
+<h3 id="wichtige-methoden">Wichtige Methoden</h3>
+<table><thead><tr>
+<th>Methode</th>
+<th>Zweck</th>
+</tr></thead><tbody>
+<tr>
+<td><code>parse(source, source_name=&quot;...&quot;)</code></td>
+<td>Parst einen Text und liefert <code>NovaAST</code>.</td>
+</tr>
+<tr>
+<td><code>parse_file(path)</code></td>
+<td>Liest eine Datei und liefert <code>NovaAST</code>.</td>
+</tr>
+<tr>
+<td><code>register_extension(name, handler)</code></td>
+<td>Registriert parserseitige Erweiterungen.</td>
+</tr>
+</tbody></table>
+<h3 id="beispiel">Beispiel</h3>
+<pre><code class="language-python">from nova.parser.parser import NovaParser
+
+parser = NovaParser()
+ast = parser.parse(
+    &quot;&quot;&quot;
+    dataset tech_rss {
+      source: rss
+    }
+    &quot;&quot;&quot;,
+    source_name=&quot;inline.ns&quot;,
+)
+print(ast.datasets[0].name)</code></pre>
+<h3 id="ast-root-novaast">AST-Root: <code>NovaAST</code></h3>
+<p>Modul: <code>nova.parser.ast</code></p>
+<p><code>NovaAST</code> sammelt alle Deklarationen eines Programms. Wichtige Sammlungen sind:</p>
+<ul>
+<li><code>imports</code></li>
+<li><code>agents</code></li>
+<li><code>datasets</code></li>
+<li><code>tools</code></li>
+<li><code>services</code></li>
+<li><code>packages</code></li>
+<li><code>states</code></li>
+<li><code>systems</code></li>
+<li><code>events</code></li>
+<li><code>flows</code></li>
+</ul>
+<h3 id="deklarationsknoten">Deklarationsknoten</h3>
+<h3 id="importdeclaration"><code>ImportDeclaration</code></h3>
+<p>Repraesentiert <code>import</code>-Anweisungen fuer modulare Programme.</p>
+<p>Beispiel:</p>
+<pre><code class="language-nova">import &quot;platform/base.ns&quot;
+import &quot;agents/research.ns&quot;</code></pre>
+<h3 id="agentdeclaration"><code>AgentDeclaration</code></h3>
+<p>Beschreibt einen Agenten und seine Eigenschaften.</p>
+<p>Typische Felder:</p>
+<ul>
+<li><code>name</code></li>
+<li><code>attributes</code></li>
+<li><code>span</code></li>
+</ul>
+<p>Beispiel:</p>
+<pre><code class="language-nova">agent researcher {
+  model: gpt-4o-mini
+  memory: shared
+}</code></pre>
+<h3 id="datasetdeclaration"><code>DatasetDeclaration</code></h3>
+<p>Beschreibt eine Datenquelle oder ein persistentes Dataset.</p>
+<p>Beispiel:</p>
+<pre><code class="language-nova">dataset tech_rss {
+  source: rss
+  url: https://example.com/feed.xml
+}</code></pre>
+<h3 id="tooldeclaration"><code>ToolDeclaration</code></h3>
+<p>Deklariert Tools, die in Flows oder Agenten genutzt werden koennen.</p>
+<p>Beispiel:</p>
+<pre><code class="language-nova">tool embedder {
+  backend: ai.embed
+}</code></pre>
+<h3 id="servicedeclaration"><code>ServiceDeclaration</code></h3>
+<p>Beschreibt deploybare Services in der Service Fabric.</p>
+<p>Beispiel:</p>
+<pre><code class="language-nova">service api {
+  image: nova-api:latest
+  port: 8080
+}</code></pre>
+<h3 id="packagedeclaration"><code>PackageDeclaration</code></h3>
+<p>Beschreibt paketierbare oder wiederverwendbare Komponenten.</p>
+<p>Beispiel:</p>
+<pre><code class="language-nova">package analytics {
+  version: 1.0.0
+  source: ./analytics
+}</code></pre>
+<h3 id="statedeclaration"><code>StateDeclaration</code></h3>
+<p>Definiert persistente oder flussbezogene Zustandsbereiche.</p>
+<h3 id="systemdeclaration"><code>SystemDeclaration</code></h3>
+<p>Beschreibt Systemkonfigurationen, Policies oder Infrastrukturbloecke.</p>
+<h3 id="eventdeclaration"><code>EventDeclaration</code></h3>
+<p>Definiert benannte Events oder Trigger.</p>
+<h3 id="flowdeclaration"><code>FlowDeclaration</code></h3>
+<p>Enthaelt einen ausfuehrbaren Flow mit <code>FlowStep</code>-Eintraegen.</p>
+<p>Beispiel:</p>
+<pre><code class="language-nova">flow radar {
+  rss.fetch tech_rss
+  atheria.embed tech_rss
+  researcher summarize tech_rss
+}</code></pre>
+<h3 id="flowstep"><code>FlowStep</code></h3>
+<p>Ein <code>FlowStep</code> repraesentiert genau eine deklarative Aktion im Flow. Im Compiler wird daraus je nach Inhalt ein Tool-, Agenten- oder Systemschritt.</p>
+<p>Typische Informationen:</p>
+<ul>
+<li>Verb oder Aktion</li>
+<li>Zielobjekt</li>
+<li>Argumente</li>
+<li>Quellposition</li>
+</ul>
+<h3 id="sourcespan"><code>SourceSpan</code></h3>
+<p>Jeder AST-Knoten kann eine <code>SourceSpan</code> tragen. Sie dient fuer:</p>
+<ul>
+<li>klare Fehlermeldungen</li>
+<li>LSP-Hover und Positionsmapping</li>
+<li>Linter-Diagnosen</li>
+</ul>
+<h2 id="methoden-und-schnittstellen">Methoden und Schnittstellen</h2>
+<h3 id="fehlermodell">Fehlermodell</h3>
+<p>Parserfehler werden ueber die Fehlerklassen in <code>nova.parser.errors</code> gemeldet. Die Fehlermeldungen sollen immer mindestens enthalten:</p>
+<ul>
+<li>Quelldatei</li>
+<li>Zeile</li>
+<li>Spalte</li>
+<li>kurze strukturelle Ursache</li>
+</ul>
+<h3 id="von-ast-zu-graph">Von AST zu Graph</h3>
+<p>Nach dem Parsing uebersetzt <code>NovaGraphCompiler</code> die Deklarationen in Laufzeitknoten.</p>
+<table><thead><tr>
+<th>AST-Knoten</th>
+<th>Graph-Knoten</th>
+</tr></thead><tbody>
+<tr>
+<td><code>AgentDeclaration</code></td>
+<td><code>AgentNode</code></td>
+</tr>
+<tr>
+<td><code>DatasetDeclaration</code></td>
+<td><code>DatasetNode</code></td>
+</tr>
+<tr>
+<td><code>ToolDeclaration</code></td>
+<td><code>ToolNode</code></td>
+</tr>
+<tr>
+<td><code>ServiceDeclaration</code></td>
+<td><code>ServiceNode</code></td>
+</tr>
+<tr>
+<td><code>PackageDeclaration</code></td>
+<td><code>PackageNode</code></td>
+</tr>
+<tr>
+<td><code>EventDeclaration</code></td>
+<td><code>EventNode</code></td>
+</tr>
+<tr>
+<td><code>FlowDeclaration</code></td>
+<td><code>FlowNode</code> plus <code>ExecutionEdge</code></td>
+</tr>
+</tbody></table>
+<h2 id="cli">CLI</h2>
+<p>Parser und AST werden indirekt ueber diese Kommandos genutzt:</p>
+<ul>
+<li><code>ns.exec</code></li>
+<li><code>ns.run</code></li>
+<li><code>ns.graph</code></li>
+<li><code>ns.format</code></li>
+<li><code>ns.lint</code></li>
+<li><code>ns.test</code></li>
+</ul>
+<h2 id="api">API</h2>
+<p>Es gibt keine direkte Parser-HTTP-API. Der Parser wirkt ueber Runtime und Toolchain in die Plattform hinein.</p>
+<h2 id="beispiele">Beispiele</h2>
+<h3 id="praktisches-parsing-beispiel">Praktisches Parsing-Beispiel</h3>
+<pre><code class="language-python">from nova.parser.parser import NovaParser
+from nova.graph.compiler import NovaGraphCompiler
+
+parser = NovaParser()
+ast = parser.parse_file(&quot;examples/market_radar.ns&quot;)
+
+print(&quot;Agents:&quot;, [agent.name for agent in ast.agents])
+print(&quot;Flows:&quot;, [flow.name for flow in ast.flows])
+
+graph = NovaGraphCompiler().compile(ast)
+print(&quot;Node count:&quot;, len(graph.nodes))
+print(&quot;Edge count:&quot;, len(graph.edges))</code></pre>
+<h2 id="toolchain-bezug">Toolchain-Bezug</h2>
+<p>Die Toolchain nutzt Parser und AST an mehreren Stellen:</p>
+<ul>
+<li><code>NovaModuleLoader</code> fuer Imports und Modulgraphen</li>
+<li><code>NovaFormatter</code> fuer strukturbasiertes Formatieren</li>
+<li><code>NovaLinter</code> fuer Diagnosen</li>
+<li><code>NovaLanguageServerFacade</code> fuer Editorfunktionen</li>
+<li><code>NovaTestRunner</code> fuer deklarative Programmtests</li>
+</ul>
+<h2 id="verwandte-seiten">Verwandte Seiten</h2>
+<ul>
+<li><a href="ClassReference.html">ClassReference</a></li>
+<li><a href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
+<li><a href="NovaLanguage.html">NovaLanguage</a></li>
+<li><a href="PageTemplate.html">PageTemplate</a></li>
+</ul>
+        </article>
+        <aside class="wiki-toc">
+          <div class="wiki-toc-card"><h2>On this page</h2><ul>
+<li class="wiki-toc-link"><a href="#zweck">Zweck</a></li>
+<li class="wiki-toc-link"><a href="#kernobjekte">Kernobjekte</a></li>
+<li class="wiki-toc-link level-3"><a href="#uebersicht">Uebersicht</a></li>
+<li class="wiki-toc-link level-3"><a href="#novaparser">`NovaParser`</a></li>
+<li class="wiki-toc-link level-3"><a href="#wichtige-methoden">Wichtige Methoden</a></li>
+<li class="wiki-toc-link level-3"><a href="#beispiel">Beispiel</a></li>
+<li class="wiki-toc-link level-3"><a href="#ast-root-novaast">AST-Root: `NovaAST`</a></li>
+<li class="wiki-toc-link level-3"><a href="#deklarationsknoten">Deklarationsknoten</a></li>
+<li class="wiki-toc-link level-3"><a href="#importdeclaration">`ImportDeclaration`</a></li>
+<li class="wiki-toc-link level-3"><a href="#agentdeclaration">`AgentDeclaration`</a></li>
+<li class="wiki-toc-link level-3"><a href="#datasetdeclaration">`DatasetDeclaration`</a></li>
+<li class="wiki-toc-link level-3"><a href="#tooldeclaration">`ToolDeclaration`</a></li>
+<li class="wiki-toc-link level-3"><a href="#servicedeclaration">`ServiceDeclaration`</a></li>
+<li class="wiki-toc-link level-3"><a href="#packagedeclaration">`PackageDeclaration`</a></li>
+<li class="wiki-toc-link level-3"><a href="#statedeclaration">`StateDeclaration`</a></li>
+<li class="wiki-toc-link level-3"><a href="#systemdeclaration">`SystemDeclaration`</a></li>
+<li class="wiki-toc-link level-3"><a href="#eventdeclaration">`EventDeclaration`</a></li>
+<li class="wiki-toc-link level-3"><a href="#flowdeclaration">`FlowDeclaration`</a></li>
+<li class="wiki-toc-link level-3"><a href="#flowstep">`FlowStep`</a></li>
+<li class="wiki-toc-link level-3"><a href="#sourcespan">`SourceSpan`</a></li>
+<li class="wiki-toc-link"><a href="#methoden-und-schnittstellen">Methoden und Schnittstellen</a></li>
+<li class="wiki-toc-link level-3"><a href="#fehlermodell">Fehlermodell</a></li>
+<li class="wiki-toc-link level-3"><a href="#von-ast-zu-graph">Von AST zu Graph</a></li>
+<li class="wiki-toc-link"><a href="#cli">CLI</a></li>
+<li class="wiki-toc-link"><a href="#api">API</a></li>
+<li class="wiki-toc-link"><a href="#beispiele">Beispiele</a></li>
+<li class="wiki-toc-link level-3"><a href="#praktisches-parsing-beispiel">Praktisches Parsing-Beispiel</a></li>
+<li class="wiki-toc-link"><a href="#toolchain-bezug">Toolchain-Bezug</a></li>
+<li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
+</ul></div>
+        </aside>
+      </div>
+      <footer class="wiki-footer">
+        <p><a href="Home.html">Home</a> | <a href="QuickStart.html">QuickStart</a> | <a href="Architecture.html">Architecture</a> | <a href="NovaCLI.html">NovaCLI</a> | <a href="DevelopmentGuide.html">DevelopmentGuide</a> | <a href="FAQ.html">FAQ</a></p>
+      </footer>
+    </main>
+  </div>
+  <script>
+    window.NOVA_WIKI = {
+      currentPage: "ParserAndASTReference.html",
+      searchIndex: "assets/search-index.json"
+    };
+  </script>
+  <script src="assets/wiki.js" defer></script>
+</body>
+</html>
