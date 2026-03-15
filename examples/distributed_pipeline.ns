@@ -1,0 +1,39 @@
+system edge_mesh {
+  mode: mesh
+  capability: gpu
+}
+
+state ops_memory {
+  backend: atheria
+  namespace: distributed_pipeline
+}
+
+tool publish_report {
+  command: system.log {{value0}}
+  capability: cpu
+  system: edge_mesh
+}
+
+agent planner {
+  model: llama3
+  tools: [publish_report]
+  memory: ops_memory
+  embeddings: atheria
+  system: edge_mesh
+}
+
+dataset incident_feed {
+  source: rss
+  items: [{title: "GPU saturation warning", source: "edge-cluster"}, {title: "New model rollout", source: "planner"}]
+}
+
+flow incident_response {
+  rss.fetch incident_feed -> incident_snapshot
+  planner triage incident_feed -> triage_report
+  publish_report triage_report
+}
+
+event manual_tick {
+  on: schedule.tick
+  flow: incident_response
+}

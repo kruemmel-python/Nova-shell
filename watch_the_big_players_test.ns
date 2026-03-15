@@ -1,0 +1,20 @@
+# Schnelle Testvariante ohne Langzeitschleife
+atheria init
+atheria train file "Whitepaper.md" --category "core_architecture"
+atheria train file "Dokumentation.md" --category "command_logic"
+memory namespace "watch_big_players"
+memory project "architectural_resonance"
+
+atheria sensor load "industry_scanner.py" --name "BigPlayerWatcher"
+
+watch resonance_detected:
+    match_data = flow state get "last_match"
+    py print("TEST ALARM:", $match_data)
+    event emit "ARCH_RESONANCE_FOUND" $match_data
+
+current_scan = atheria sensor run "BigPlayerWatcher"
+py print("SCAN RESULT:", $current_scan)
+if float(current_scan.score) >= 0.0:
+    flow state set "last_match" $current_scan
+    ns.emit resonance_detected "TRUE"
+sys sleep 1

@@ -1,0 +1,26 @@
+system replica_plane {
+  tenant: platform
+  namespace: sync
+  daemon_autostart: true
+  api_autostart: true
+  api_host: 127.0.0.1
+  api_port: 8782
+  replication: [
+    {name: west, endpoint: http://127.0.0.1:8792, auth_token: replica-secret},
+    {name: east, endpoint: http://127.0.0.1:8793, auth_token: replica-secret}
+  ]
+  trust_policies: [
+    {name: secure-workers, tenant: platform, namespace: sync, require_tls: true, labels: {role: secure}, capabilities: [py, ai]}
+  ]
+}
+
+flow synchronize {
+  system.log "cluster-payload" -> payload
+  state.set replicated_state payload
+  event.emit replicated_event payload
+}
+
+event replay_sync {
+  on: cluster.sync
+  flow: synchronize
+}

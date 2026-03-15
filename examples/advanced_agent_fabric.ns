@@ -1,0 +1,43 @@
+system production_core {
+  tenant: platform
+  namespace: prod
+  alerts: [{name: "flow-p95", metric: "flow_p95_ms", threshold: 50}]
+}
+
+package base_sdk {
+  version: 1.0.0
+  source: "./dist/base-sdk.tar"
+}
+
+service backend {
+  package: base_sdk
+  replicas: 2
+  configs: {backend_cfg: {mode: "prod", cache: "enabled"}}
+  volumes: {backend_data: {type: "persistent", mount: "/var/lib/nova"}}
+  ingress: [{host: "backend.local", path: "/api", target_port: 8080}]
+  autoscale: {metric: "cpu", scale_out_threshold: 0.8, scale_in_threshold: 0.2, min_replicas: 2, max_replicas: 6, step: 1}
+}
+
+agent analyst {
+  model: llama3
+  provider: shell
+  providers: [shell, atheria]
+  tools: [atheria.search]
+  prompts: {
+    v1: "Summarize events."
+    v2: "Summarize events and emit risk tags."
+  }
+  prompt_version: v2
+  memory: analyst_mem
+  memory_shards: 4
+  governance: {allowed_models: [llama3], max_input_chars: 4000}
+}
+
+dataset incidents {
+  items: [{title: "GPU cluster drift"}, {title: "Worker restart storm"}]
+}
+
+flow review {
+  analyst summarize incidents -> briefing
+  service.status backend -> backend_status
+}

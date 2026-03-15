@@ -1,0 +1,29 @@
+system orchestrator {
+  cluster: local-control-plane
+  node_id: orchestrator-a
+  daemon_autostart: false
+  schedules: [
+    {
+      job: hourly_refresh,
+      kind: flow,
+      flow: refresh_metrics,
+      interval_seconds: 3600,
+      queue: default
+    }
+  ]
+}
+
+dataset metrics {
+  items: [{value: 10}, {value: 12}, {value: 18}]
+}
+
+flow refresh_metrics {
+  py.exec "sum(item['value'] for item in _)" metrics -> total
+  state.set latest_total total
+  event.emit metrics.refreshed total
+}
+
+event control_tick {
+  on: scheduler.tick
+  flow: refresh_metrics
+}

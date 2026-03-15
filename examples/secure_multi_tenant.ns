@@ -1,0 +1,35 @@
+system secure_plane {
+  tenant: ops
+  cluster: secure-edge
+  node_id: orchestrator-secure-a
+  auth_required: true
+  tenant_isolation: true
+  mesh_tls_required: true
+  admin_roles: [admin]
+  operator_roles: [ops, admin]
+}
+
+tool remote_py {
+  capability: py
+  selector: {role: secure}
+  require_tls: true
+  required_roles: [ops]
+}
+
+dataset metrics {
+  items: [{value: 7}, {value: 9}]
+}
+
+flow secure_compute {
+  system: secure_plane
+  tenant: ops
+  required_roles: [ops]
+  py.exec "sum(item['value'] for item in _)" metrics -> total
+  state.set secure_total total
+  event.emit secure.completed total
+}
+
+event secure_tick {
+  on: secure.tick
+  flow: secure_compute
+}

@@ -1,0 +1,51 @@
+system control_plane {
+  mode: mesh
+  capability: py
+  observability: enabled
+  tenant: ops
+  cluster: nova-edge
+  node_id: orchestrator-a
+  leader: true
+  lease_seconds: 60
+  secrets: {ath_key: local-dev-secret}
+}
+
+state mission {
+  namespace: ai_os_cluster
+}
+
+tool publish_signal {
+  command: system.log {{value0}}
+  capability: cpu
+  system: control_plane
+}
+
+agent strategist {
+  provider: atheria
+  model: atheria-core
+  tools: [publish_signal, atheria.embed]
+  memory: mission
+  embeddings: atheria
+  system_prompt: "Du bist der operative Orchestrator eines KI-Betriebssystems."
+}
+
+dataset signals {
+  source: rss
+  path: sample_news.json
+  knowledge: atheria
+}
+
+flow daily_ops {
+  rss.fetch signals -> fresh_signals
+  atheria.embed signals -> signal_vectors
+  py.exec "len(_)" signals -> signal_count
+  state.set latest_signal_count signal_count
+  strategist prioritize signals -> action_plan
+  publish_signal action_plan
+  event.emit daily_ops_ready action_plan
+}
+
+event scheduler {
+  on: schedule.tick
+  flow: daily_ops
+}

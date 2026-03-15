@@ -1,0 +1,56 @@
+system cluster_core {
+  tenant: platform
+  namespace: prod
+  cluster: nova-global
+  node_id: node-a
+  consensus_enabled: true
+  consensus_peers: [
+    {
+      name: node-b
+      endpoint: "http://127.0.0.1:8782"
+      auth_token: "cluster-secret"
+    }
+  ]
+  certificate_authorities: [
+    {
+      name: mesh-root
+      common_name: "Nova Mesh Root"
+      validity_days: 3650
+    }
+  ]
+  trust_policies: [
+    {
+      name: secure-workers
+      tenant: platform
+      namespace: prod
+      require_tls: true
+      labels: {role: worker}
+      capabilities: [py, cpp, gpu, wasm, ai]
+    }
+  ]
+}
+
+package core_sdk {
+  version: 2.0.0
+  source: "./dist/core-sdk.tar"
+  auto_install: true
+}
+
+service api_gateway {
+  package: core_sdk
+  image: nova:gateway
+  replicas: 3
+  strategy: canary
+  health: {path: "/health", expected: 200}
+  auto_deploy: true
+}
+
+dataset prompts {
+  items: [{prompt: "summarize latest incidents"}]
+}
+
+flow bootstrap {
+  py.exec "len(_)" prompts -> prompt_count
+  state.set prompt_count prompt_count
+  service.status api_gateway -> gateway_status
+}

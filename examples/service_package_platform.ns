@@ -1,0 +1,31 @@
+system package_plane {
+  tenant: platform
+  namespace: prod
+  daemon_autostart: true
+  api_autostart: true
+  api_host: 127.0.0.1
+  api_port: 8781
+  quotas: {max_queue_tasks: 32, max_services: 8, max_packages: 8, max_state_keys: 64}
+}
+
+package core_sdk {
+  version: 1.0.0
+  source: ./dist/core-sdk.tar
+  auto_install: true
+}
+
+service api {
+  package: core_sdk
+  image: nova:api
+  replicas: 3
+  strategy: blue_green
+  selector: {tier: control, region: eu-central}
+  health: {path: /healthz, max_error_rate: 0.02}
+  auto_deploy: true
+}
+
+flow verify {
+  package.status core_sdk -> pkg
+  service.status api -> svc
+  state.set last_service_status svc
+}

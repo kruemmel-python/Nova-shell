@@ -1,0 +1,188 @@
+name: Release
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build:
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+      artifact-metadata: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            profile: core
+            install: python -m pip install -e . build nuitka
+          - os: ubuntu-latest
+            profile: enterprise
+            install: python -m pip install -e . build nuitka psutil PyYAML pyarrow wasmtime
+          - os: windows-latest
+            profile: core
+            install: python -m pip install -e . build nuitka
+          - os: windows-latest
+            profile: enterprise
+            install: python -m pip install -e . build nuitka psutil PyYAML pyarrow wasmtime
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Compute SOURCE_DATE_EPOCH
+        shell: bash
+        run: echo "SOURCE_DATE_EPOCH=$(git log -1 --format=%ct)" >> "$GITHUB_ENV"
+
+      - name: Install Linux standalone dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y patchelf desktop-file-utils dpkg-dev
+
+      - name: Install appimagetool
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          curl -L "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage" -o appimagetool
+          chmod +x appimagetool
+          sudo mv appimagetool /usr/local/bin/appimagetool
+
+      - name: Install WiX Toolset
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          dotnet tool install --global wix --version 4.*
+          "$HOME/.dotnet/tools" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+      - name: Prepare Windows signing certificate
+        if: runner.os == 'Windows' && secrets.WINDOWS_SIGN_CERT_BASE64 != ''
+        shell: pwsh
+        run: |
+          $certPath = Join-Path $env:RUNNER_TEMP "nova-shell-signing-cert.pfx"
+          [IO.File]::WriteAllBytes($certPath, [Convert]::FromBase64String("${{ secrets.WINDOWS_SIGN_CERT_BASE64 }}"))
+          "WINDOWS_SIGN_CERT_FILE=$certPath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Install build dependencies
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip
+          ${{ matrix.install }}
+
+      - name: Build release artifacts
+        shell: bash
+        run: |
+          BASE_URL=""
+          if [[ "${GITHUB_REF_TYPE:-}" == "tag" ]]; then
+            BASE_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${GITHUB_REF_NAME}"
+          fi
+          SIGN_ARGS=()
+          if [[ "${RUNNER_OS}" == "Windows" && -n "${WINDOWS_SIGN_CERT_FILE:-}" ]]; then
+            SIGN_ARGS+=(--windows-sign --windows-cert-file "${WINDOWS_SIGN_CERT_FILE}" --windows-cert-password "${WINDOWS_SIGN_CERT_PASSWORD}")
+          elif [[ "${RUNNER_OS}" == "Windows" && -n "${WINDOWS_SIGN_SUBJECT_NAME:-}" ]]; then
+            SIGN_ARGS+=(--windows-sign --windows-subject-name "${WINDOWS_SIGN_SUBJECT_NAME}")
+          fi
+          if [[ -n "${BASE_URL}" ]]; then
+            python scripts/build_release.py --profile "${{ matrix.profile }}" --mode all --clean --base-download-url "${BASE_URL}" "${SIGN_ARGS[@]}"
+          else
+            python scripts/build_release.py --profile "${{ matrix.profile }}" --mode all --clean "${SIGN_ARGS[@]}"
+          fi
+        env:
+          WINDOWS_SIGN_CERT_PASSWORD: ${{ secrets.WINDOWS_SIGN_CERT_PASSWORD }}
+          WINDOWS_SIGN_SUBJECT_NAME: ${{ secrets.WINDOWS_SIGN_SUBJECT_NAME }}
+
+      - name: Resolve attestation subjects
+        id: attestation_subjects
+        shell: bash
+        run: |
+          checksums="$(find dist/release -name '*-subjects.checksums.txt' -print -quit)"
+          sbom="$(find dist/release -name '*.sbom.cyclonedx.json' -print -quit)"
+          if [[ -z "${checksums}" || -z "${sbom}" ]]; then
+            echo "failed to resolve attestation inputs" >&2
+            exit 1
+          fi
+          printf 'checksums=%s\n' "${checksums}" >> "$GITHUB_OUTPUT"
+          printf 'sbom=%s\n' "${sbom}" >> "$GITHUB_OUTPUT"
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v3
+        with:
+          subject-checksums: ${{ steps.attestation_subjects.outputs.checksums }}
+
+      - name: Attest CycloneDX SBOM
+        uses: actions/attest-sbom@v3
+        with:
+          subject-checksums: ${{ steps.attestation_subjects.outputs.checksums }}
+          sbom-path: ${{ steps.attestation_subjects.outputs.sbom }}
+
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: nova-shell-${{ matrix.os }}-${{ matrix.profile }}
+          path: dist/release/**
+          if-no-files-found: error
+
+  publish:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+
+      - name: Generate release notes
+        run: python scripts/generate_release_notes.py --root release-artifacts --output release-artifacts/release-notes.md
+
+      - name: Import GPG key
+        if: secrets.RELEASE_GPG_PRIVATE_KEY_BASE64 != ''
+        env:
+          RELEASE_GPG_PRIVATE_KEY_BASE64: ${{ secrets.RELEASE_GPG_PRIVATE_KEY_BASE64 }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/gnupg"
+          chmod 700 "$RUNNER_TEMP/gnupg"
+          echo "$RELEASE_GPG_PRIVATE_KEY_BASE64" | base64 -d > "$RUNNER_TEMP/release-private-key.asc"
+          gpg --batch --homedir "$RUNNER_TEMP/gnupg" --import "$RUNNER_TEMP/release-private-key.asc"
+
+      - name: Create detached signatures
+        if: secrets.RELEASE_GPG_PRIVATE_KEY_BASE64 != ''
+        env:
+          RELEASE_GPG_PASSPHRASE: ${{ secrets.RELEASE_GPG_PASSPHRASE }}
+        run: |
+          python scripts/sign_release.py --root release-artifacts --gpg-homedir "$RUNNER_TEMP/gnupg" --gpg-passphrase "$RELEASE_GPG_PASSPHRASE" --verify
+
+      - name: Publish GitHub release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1; then
+            gh release edit "${GITHUB_REF_NAME}" --notes-file release-artifacts/release-notes.md
+          else
+            gh release create "${GITHUB_REF_NAME}" --title "${GITHUB_REF_NAME}" --notes-file release-artifacts/release-notes.md
+          fi
+          find release-artifacts -type f | while read -r file; do
+            gh release upload "${GITHUB_REF_NAME}" "$file" --clobber
+          done

@@ -1,0 +1,34 @@
+system local_control {
+  mode: local
+  observability: structured
+}
+
+state research_memory {
+  backend: atheria
+  namespace: market_radar
+}
+
+agent researcher {
+  model: llama3
+  tools: [atheria.embed, system.log]
+  memory: research_memory
+  embeddings: atheria
+}
+
+dataset tech_rss {
+  source: rss
+  path: sample_news.json
+  format: json
+  knowledge: atheria
+}
+
+flow radar {
+  rss.fetch tech_rss -> fresh_news
+  atheria.embed tech_rss -> embedded_news
+  researcher summarize tech_rss -> briefing
+}
+
+event new_information {
+  on: new_information
+  flow: radar
+}

@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+
+jobs:
+  test-and-package:
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install build dependencies
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e . build
+
+      - name: Run unit tests
+        shell: bash
+        run: python -m unittest discover -s tests -v
+
+      - name: Compile release tooling
+        shell: bash
+        run: python -m py_compile nova_shell.py novascript.py release_packaging.py release_notes.py release_signing.py scripts/build_release.py scripts/generate_release_notes.py scripts/sign_release.py scripts/smoke_test_release.py
+
+      - name: Build sdist and wheel
+        shell: bash
+        run: python -m build --sdist --wheel
+
+      - name: Build Python release bundle metadata
+        shell: bash
+        run: python scripts/build_release.py --profile core --mode python --skip-tests --clean
+
+      - name: Smoke test module CLI
+        shell: bash
+        run: |
+          python -m nova_shell --version
+          python -m nova_shell --no-plugins -c "py 1 + 1"
+          python -m nova_shell --no-plugins -c "doctor json"
