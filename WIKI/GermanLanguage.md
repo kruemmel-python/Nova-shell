@@ -13,6 +13,7 @@ Dies ist das deutschsprachige Portal der Nova-shell-Wiki.
 - [NovaCLI](./NovaCLI.md)
 - [Tutorials](./Tutorials.md)
 - [APIReference](./APIReference.md)
+- [ExamplesAndRecipes](./ExamplesAndRecipes.md)
 
 ## Architektur und Plattform
 
@@ -21,6 +22,9 @@ Dies ist das deutschsprachige Portal der Nova-shell-Wiki.
 - [NovaAgents](./NovaAgents.md)
 - [NovaMesh](./NovaMesh.md)
 - [SecurityModel](./SecurityModel.md)
+- [ClassReference](./ClassReference.md)
+- [ParserAndASTReference](./ParserAndASTReference.md)
+- [RuntimeMethodReference](./RuntimeMethodReference.md)
 
 ## Entwicklung und Theorie
 

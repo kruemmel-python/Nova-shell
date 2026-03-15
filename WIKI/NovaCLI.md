@@ -1,50 +1,103 @@
 # Nova CLI
 
-## Hauptgruppen
+## Zweck
 
-### Compute
+Die CLI ist die praktische Eintrittsschicht in Nova-shell.
+Sie deckt sowohl die bestehende Shell-Runtime als auch den deklarativen Nova-Runtimepfad ab.
 
-- `py`
-- `cpp`
-- `gpu`
-- `wasm`
-- `sys`
+## Kernobjekte
 
-### Daten und Flows
+- `NovaShell`
+- `NovaShellCommandExecutor`
+- `CommandResult`
+- `MeshWorkerServer`
+- `VisionServer`
 
-- `data`
-- `data.load`
-- `flow`
-- `event`
-- `watch`
-- `sync`
+## Methoden und Schnittstellen
 
-### AI und Knowledge
+Die CLI ist kommandozentriert.
+Die wichtigsten Schnittstellen sind Kommandogruppen, Subkommandos und Shell-Integrationen.
 
-- `ai`
-- `atheria`
-- `agent`
-- `memory`
-- `tool`
+## CLI
 
-### Plattform
+### Grundform
 
-- `mesh`
-- `remote`
-- `vision`
-- `pack`
-- `guard`
+Interaktive Nutzung:
 
-### Deklarative Runtime
+```bash
+nova-shell
+```
 
-- `ns.exec`
-- `ns.run`
-- `ns.graph`
-- `ns.status`
-- `ns.cluster`
-- `ns.auth`
-- `ns.deploy`
-- `ns.recover`
-- `ns.control`
-- `ns.snapshot`
-- `ns.resume`
+Einzelkommando:
+
+```bash
+nova-shell --no-plugins -c "py 1 + 1"
+```
+
+### Kommandogruppen
+
+#### Compute
+
+| Kommando | Zweck | Beispiel |
+| --- | --- | --- |
+| `py` | Python-Ausdruecke und Code | `py 1 + 1` |
+| `cpp` | native C++-Ausfuehrung | `cpp.sandbox int main(){ return 0; }` |
+| `gpu` | GPU/OpenCL-Pfade | `gpu graph show` |
+| `wasm` | WebAssembly-Ausfuehrung | `wasm run program.wasm` |
+| `sys` | Shell-/Systemaufrufe | `sys dir` |
+
+#### AI und Knowledge
+
+| Kommando | Zweck |
+| --- | --- |
+| `ai` | Provider, Modelle und Prompts |
+| `atheria` | lokales Wissens- und Trainingssystem |
+| `agent` | Agenten, Instanzen und Graphen |
+| `memory` | Vector Memory und Namespaces |
+| `tool` | Tool-Registrierung und Tool-Aufrufe |
+
+#### Deklarative Runtime
+
+| Kommando | Zweck |
+| --- | --- |
+| `ns.exec` | Inline-Ausfuehrung von Nova-Quelltext |
+| `ns.run` | `.ns`-Datei ausfuehren |
+| `ns.graph` | kompilierten Graph zeigen |
+| `ns.status` | Runtime- und Plattformstatus |
+| `ns.control` | Queue, API, Replay, Metrics |
+| `ns.snapshot` | Snapshot schreiben |
+| `ns.resume` | Snapshot wieder laden |
+
+#### Plattform
+
+| Kommando | Zweck |
+| --- | --- |
+| `mesh` | Worker und verteilte Ausfuehrung |
+| `remote` | Remote-Ausfuehrung |
+| `vision` | Web- und UI-Flaechen |
+| `guard` | Sicherheits- und Sandbox-Pfade |
+
+## API
+
+Die CLI spricht nicht nur lokal, sondern kann Plattformfunktionen ueber die Control-Plane-API begleiten.
+Fuer HTTP-Endpunkte siehe [APIReference](./APIReference.md).
+
+## Beispiele
+
+### Beispielmuster
+
+```text
+ai providers
+atheria init
+memory search "distributed execution"
+mesh start-worker --caps py,gpu
+ns.run examples/market_radar.ns
+ns.control daemon start
+```
+
+## Verwandte Seiten
+
+- [ExamplesAndRecipes](./ExamplesAndRecipes.md)
+- [APIReference](./APIReference.md)
+- [ClassReference](./ClassReference.md)
+- [PageTemplate](./PageTemplate.md)
