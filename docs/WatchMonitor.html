@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="Nova-shell wiki builder">
-  <title>Data And Execution Engines | Nova-shell Wiki</title>
+  <title>Watch Monitor | Nova-shell Wiki</title>
   <link rel="stylesheet" href="assets/wiki.css">
 </head>
 <body>
@@ -40,7 +40,7 @@
 <li><a class="wiki-nav-link" data-nav-href="ShellCommandReference.html" href="ShellCommandReference.html">ShellCommandReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="APIReference.html" href="APIReference.html">APIReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ExamplesAndRecipes.html" href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
-<li><a class="wiki-nav-link" data-nav-href="WatchMonitor.html" href="WatchMonitor.html">WatchMonitor</a></li>
+<li><a class="wiki-nav-link active" data-nav-href="WatchMonitor.html" href="WatchMonitor.html">WatchMonitor</a></li>
 <li><a class="wiki-nav-link" data-nav-href="WatchMonitorQuickStart.html" href="WatchMonitorQuickStart.html">WatchMonitorQuickStart</a></li>
 <li><a class="wiki-nav-link" data-nav-href="WatchMonitorReportReference.html" href="WatchMonitorReportReference.html">WatchMonitorReportReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="WatchMonitorAutomationAndAI.html" href="WatchMonitorAutomationAndAI.html">WatchMonitorAutomationAndAI</a></li>
@@ -87,7 +87,7 @@
 <li><a class="wiki-nav-link" data-nav-href="RepositoryStructure.html" href="RepositoryStructure.html">RepositoryStructure</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Testing.html" href="Testing.html">Testing</a></li>
 <li><a class="wiki-nav-link" data-nav-href="BuildAndRelease.html" href="BuildAndRelease.html">BuildAndRelease</a></li>
-<li><a class="wiki-nav-link" data-nav-href="WatchMonitor.html" href="WatchMonitor.html">WatchMonitor</a></li>
+<li><a class="wiki-nav-link active" data-nav-href="WatchMonitor.html" href="WatchMonitor.html">WatchMonitor</a></li>
 <li><a class="wiki-nav-link" data-nav-href="WatchMonitorReportReference.html" href="WatchMonitorReportReference.html">WatchMonitorReportReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="WatchMonitorAutomationAndAI.html" href="WatchMonitorAutomationAndAI.html">WatchMonitorAutomationAndAI</a></li>
 <li><a class="wiki-nav-link" data-nav-href="SecurityModel.html" href="SecurityModel.html">SecurityModel</a></li>
@@ -113,65 +113,152 @@
         <button type="button" class="wiki-nav-toggle" data-nav-toggle>Menu</button>
         <div class="wiki-header-copy">
           <span class="wiki-kicker">Nova-shell Documentation</span>
-          <h1>Data And Execution Engines</h1>
-          <p>Source: DataAndExecutionEngines.md</p>
+          <h1>Watch Monitor</h1>
+          <p>Source: WatchMonitor.md</p>
         </div>
       </header>
       <div class="wiki-layout">
         <article class="wiki-article">
-          <h1 id="data-and-execution-engines">Data And Execution Engines</h1>
+          <h1 id="watch-monitor">Watch Monitor</h1>
 <h2 id="zweck">Zweck</h2>
-<p>Nova-shell fuehrt nicht nur Python aus. Die Daten- und Execution-Schicht fasst mehrere Backends zusammen, die je nach Aufgabe unterschiedlich geeignet sind.</p>
-<h2 id="kernpunkte">Kernpunkte</h2>
+<p>Der Watch Monitor ist ein selbstbootstrappender Nova-shell-Projektwaechter. Er wird als <code>.ns</code>-Datei in einen Projektordner kopiert und dort direkt mit <code>ns.run</code> ausgefuehrt.</p>
+<p>Sein Zweck ist nicht nur Dateibeobachtung, sondern eine kombinierte Betriebsfunktion:</p>
 <ul>
-<li><code>py</code> deckt schnellen Ausdrucks- und Skriptbetrieb ab.</li>
-<li><code>cpp</code> und <code>cpp.sandbox</code> adressieren nativen bzw. sandboxed C++-Code.</li>
-<li><code>gpu</code> adressiert OpenCL-basierte GPU-Ausfuehrung, wenn <code>pyopencl</code> und <code>numpy</code> verfuegbar sind.</li>
-<li><code>wasm</code> und <code>jit_wasm</code> adressieren portable bzw. Emscripten-basierte Ausfuehrungspfade.</li>
-<li><code>data</code> und <code>data.load</code> liefern strukturierte Datenverarbeitung und Dateieinbindung.</li>
+<li>Aenderungen im Projektbaum erkennen</li>
+<li>Zeilen-Diffs pro Datei aufzeichnen</li>
+<li>HTML- und JSON-Berichte laufend aktualisieren</li>
+<li>Build- und Testkommandos nach Aenderungen ausfuehren</li>
+<li>Aenderungen durch Heuristik, Atheria oder externe AI bewerten</li>
 </ul>
-<h2 id="praktische-nutzung">Praktische Nutzung</h2>
+<h2 id="kernobjekte">Kernobjekte</h2>
 <ul>
-<li>Nutze <code>py</code> fuer den Standardfall.</li>
-<li>Nutze <code>cpp.sandbox</code>, wenn du isolierten nativen Code in einer kontrollierten Laufzeit ausprobieren willst.</li>
-<li>Nutze <code>gpu</code>, wenn OpenCL-Gerate und passende Laufzeitmodule vorhanden sind.</li>
-<li>Nutze <code>data.load</code> und anschliessend <code>py</code>, wenn du tabellarische oder JSON-Daten in Pipelines brauchst.</li>
+<li><code>nova_project_monitor.ns</code></li>
+<li><code>.nova_project_monitor/project_monitor_report.html</code></li>
+<li><code>.nova_project_monitor/project_monitor_analysis.json</code></li>
+<li><code>.nova_project_monitor/history.json</code></li>
+<li><code>.nova_project_monitor/latest_status.json</code></li>
+<li><code>.nova_project_monitor/files/*.html</code></li>
 </ul>
-<h2 id="testbare-einstiege">Testbare Einstiege</h2>
-<h3 id="ein-einfacher-compute-check">Ein einfacher Compute-Check</h3>
-<pre><code class="language-powershell">py 1 + 1
-cpp.sandbox int main(){ return 0; }
-doctor</code></pre>
+<h2 id="methoden-und-schnittstellen">Methoden und Schnittstellen</h2>
+<p>Der Monitor wird ueber die normale deklarative Runtime gestartet:</p>
+<pre><code class="language-powershell">cd F:\DeCoG-TRI
+ns.run nova_project_monitor.ns</code></pre>
+<p>Wichtige Steuerung erfolgt ueber Umgebungsvariablen:</p>
+<ul>
+<li><code>NOVA_PROJECT_MONITOR_WATCH_MODE</code></li>
+<li><code>NOVA_PROJECT_MONITOR_INTERVAL</code></li>
+<li><code>NOVA_PROJECT_MONITOR_DEBOUNCE</code></li>
+<li><code>NOVA_PROJECT_MONITOR_AUTOMATION</code></li>
+<li><code>NOVA_PROJECT_MONITOR_AUTOMATION_TIMEOUT</code></li>
+<li><code>NOVA_PROJECT_MONITOR_AI_MODE</code></li>
+<li><code>NOVA_PROJECT_MONITOR_AI_MODEL</code></li>
+<li><code>NOVA_PROJECT_MONITOR_OPEN</code></li>
+<li><code>NOVA_PROJECT_MONITOR_ONESHOT</code></li>
+</ul>
+<h2 id="betriebsmodell">Betriebsmodell</h2>
+<h3 id="1-baseline">1. Baseline</h3>
+<p>Beim ersten Lauf scannt der Monitor den Projektbaum rekursiv und schreibt eine Baseline in <code>snapshot.json</code>. Das erste Ereignis in <code>history.json</code> ist deshalb typischerweise <code>baseline</code>.</p>
+<h3 id="2-change-event">2. Change Event</h3>
+<p>Sobald spaeter Dateien hinzukommen, veraendert oder geloescht werden, erzeugt der Monitor ein Ereignis vom Typ <code>change</code>. Dieses Ereignis enthaelt:</p>
+<ul>
+<li>betroffene Dateien</li>
+<li>hinzugefuegte und entfernte Zeilen</li>
+<li>Diff-Hunks</li>
+<li>Review-Ergebnis</li>
+<li>Build-/Test-Ergebnis</li>
+</ul>
+<h3 id="3-report-update">3. Report-Update</h3>
+<p>Nach jedem Scan oder Event werden mindestens diese Artefakte neu geschrieben:</p>
+<ul>
+<li><code>project_monitor_report.html</code></li>
+<li><code>project_monitor_analysis.json</code></li>
+<li><code>latest_status.json</code></li>
+</ul>
+<h3 id="4-detailseiten">4. Detailseiten</h3>
+<p>Fuer geaenderte Dateien entstehen eigene HTML-Detailseiten unter <code>.nova_project_monitor/files/</code>. Dort sieht man Vorher/Nachher und einen kompletten Unified Diff.</p>
+<h2 id="cli">CLI</h2>
+<h3 id="standardstart">Standardstart</h3>
+<pre><code class="language-powershell">cd F:\DeCoG-TRI
+ns.run nova_project_monitor.ns</code></pre>
+<h3 id="einmaliger-scan">Einmaliger Scan</h3>
+<pre><code class="language-powershell">$env:NOVA_PROJECT_MONITOR_ONESHOT = &quot;1&quot;
+$env:NOVA_PROJECT_MONITOR_OPEN = &quot;0&quot;
+ns.run nova_project_monitor.ns
+Remove-Item Env:NOVA_PROJECT_MONITOR_ONESHOT
+Remove-Item Env:NOVA_PROJECT_MONITOR_OPEN</code></pre>
+<h3 id="watchdog-erzwingen">Watchdog erzwingen</h3>
+<pre><code class="language-powershell">$env:NOVA_PROJECT_MONITOR_WATCH_MODE = &quot;watchdog&quot;
+ns.run nova_project_monitor.ns</code></pre>
+<h3 id="polling-erzwingen">Polling erzwingen</h3>
+<pre><code class="language-powershell">$env:NOVA_PROJECT_MONITOR_WATCH_MODE = &quot;poll&quot;
+ns.run nova_project_monitor.ns</code></pre>
+<h2 id="api">API</h2>
+<p>Der Monitor ist kein eigener HTTP-Dienst. Er arbeitet dateibasiert und laeuft innerhalb der Nova-shell-Runtime.</p>
+<p>Seine maschinenlesbaren Schnittstellen sind deshalb die erzeugten JSON-Dateien:</p>
+<ul>
+<li><code>snapshot.json</code></li>
+<li><code>history.json</code></li>
+<li><code>latest_status.json</code></li>
+<li><code>project_monitor_analysis.json</code></li>
+</ul>
+<h2 id="beispiele">Beispiele</h2>
+<h3 id="projektordner-ueberwachen">Projektordner ueberwachen</h3>
+<pre><code class="language-powershell">cd F:\DeCoG-TRI
+ns.run nova_project_monitor.ns</code></pre>
 <p>Erwartung:</p>
 <ul>
-<li><code>py</code> liefert direkt ein Ergebnis.</li>
-<li><code>cpp.sandbox</code> meldet im Erfolgsfall <code>sandbox executed</code>.</li>
-<li><code>doctor</code> zeigt, welche Runtime-Module wirklich verfuegbar sind.</li>
+<li><code>.nova_project_monitor/</code> wird angelegt</li>
+<li>der HTML-Report oeffnet sich einmalig im Browser, sofern <code>NOVA_PROJECT_MONITOR_OPEN</code> nicht auf <code>0</code> steht</li>
+<li>jede relevante Codeaenderung aktualisiert den Report</li>
 </ul>
-<h2 id="typische-fragen-und-fehler">Typische Fragen und Fehler</h2>
-<h3 id="gpu-oder-wasm-laufen-nicht">GPU oder WASM laufen nicht</h3>
+<h3 id="report-gezielt-ohne-browser-erzeugen">Report gezielt ohne Browser erzeugen</h3>
+<pre><code class="language-powershell">$env:NOVA_PROJECT_MONITOR_ONESHOT = &quot;1&quot;
+$env:NOVA_PROJECT_MONITOR_OPEN = &quot;0&quot;
+ns.run nova_project_monitor.ns</code></pre>
+<p>Erwartung:</p>
 <ul>
-<li><code>doctor</code> zeigt die benoetigten Module als <code>missing</code>.</li>
-<li>Toolchain oder Runtime fehlen im aktuellen Profil.</li>
-<li>Nutze zuerst den Minimaltest ueber <code>doctor</code> und <code>cpp.sandbox</code>.</li>
+<li>keine Browseroeffnung</li>
+<li>aktualisierte HTML- und JSON-Dateien</li>
+</ul>
+<h2 id="typische-einsatzfaelle">Typische Einsatzfaelle</h2>
+<ul>
+<li>lokaler Projektwaechter fuer aktive Codebasen</li>
+<li>Aenderungsreport fuer Solo-Entwicklung</li>
+<li>visuelle Churn-Analyse fuer Teamrepos</li>
+<li>schnelle Build-/Test-Rueckmeldung nach Dateiupdates</li>
+<li>Review-Hilfe fuer Ordner mit vielen parallelen Aenderungen</li>
 </ul>
 <h2 id="verwandte-seiten">Verwandte Seiten</h2>
 <ul>
-<li><a href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
+<li><a href="WatchMonitorQuickStart.html">WatchMonitorQuickStart</a></li>
+<li><a href="WatchMonitorReportReference.html">WatchMonitorReportReference</a></li>
+<li><a href="WatchMonitorAutomationAndAI.html">WatchMonitorAutomationAndAI</a></li>
+<li><a href="TutorialProjectWatchMonitor.html">TutorialProjectWatchMonitor</a></li>
 <li><a href="NovaCLI.html">NovaCLI</a></li>
-<li><a href="ExecutionModel.html">ExecutionModel</a></li>
-<li><a href="PerformanceAndScaling.html">PerformanceAndScaling</a></li>
+<li><a href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
+<li><a href="OperationsAndObservability.html">OperationsAndObservability</a></li>
 </ul>
         </article>
         <aside class="wiki-toc">
           <div class="wiki-toc-card"><h2>On this page</h2><ul>
 <li class="wiki-toc-link"><a href="#zweck">Zweck</a></li>
-<li class="wiki-toc-link"><a href="#kernpunkte">Kernpunkte</a></li>
-<li class="wiki-toc-link"><a href="#praktische-nutzung">Praktische Nutzung</a></li>
-<li class="wiki-toc-link"><a href="#testbare-einstiege">Testbare Einstiege</a></li>
-<li class="wiki-toc-link level-3"><a href="#ein-einfacher-compute-check">Ein einfacher Compute-Check</a></li>
-<li class="wiki-toc-link"><a href="#typische-fragen-und-fehler">Typische Fragen und Fehler</a></li>
-<li class="wiki-toc-link level-3"><a href="#gpu-oder-wasm-laufen-nicht">GPU oder WASM laufen nicht</a></li>
+<li class="wiki-toc-link"><a href="#kernobjekte">Kernobjekte</a></li>
+<li class="wiki-toc-link"><a href="#methoden-und-schnittstellen">Methoden und Schnittstellen</a></li>
+<li class="wiki-toc-link"><a href="#betriebsmodell">Betriebsmodell</a></li>
+<li class="wiki-toc-link level-3"><a href="#1-baseline">1. Baseline</a></li>
+<li class="wiki-toc-link level-3"><a href="#2-change-event">2. Change Event</a></li>
+<li class="wiki-toc-link level-3"><a href="#3-report-update">3. Report-Update</a></li>
+<li class="wiki-toc-link level-3"><a href="#4-detailseiten">4. Detailseiten</a></li>
+<li class="wiki-toc-link"><a href="#cli">CLI</a></li>
+<li class="wiki-toc-link level-3"><a href="#standardstart">Standardstart</a></li>
+<li class="wiki-toc-link level-3"><a href="#einmaliger-scan">Einmaliger Scan</a></li>
+<li class="wiki-toc-link level-3"><a href="#watchdog-erzwingen">Watchdog erzwingen</a></li>
+<li class="wiki-toc-link level-3"><a href="#polling-erzwingen">Polling erzwingen</a></li>
+<li class="wiki-toc-link"><a href="#api">API</a></li>
+<li class="wiki-toc-link"><a href="#beispiele">Beispiele</a></li>
+<li class="wiki-toc-link level-3"><a href="#projektordner-ueberwachen">Projektordner ueberwachen</a></li>
+<li class="wiki-toc-link level-3"><a href="#report-gezielt-ohne-browser-erzeugen">Report gezielt ohne Browser erzeugen</a></li>
+<li class="wiki-toc-link"><a href="#typische-einsatzfaelle">Typische Einsatzfaelle</a></li>
 <li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
 </ul></div>
         </aside>
@@ -183,7 +270,7 @@ doctor</code></pre>
   </div>
   <script>
     window.NOVA_WIKI = {
-      currentPage: "DataAndExecutionEngines.html",
+      currentPage: "WatchMonitor.html",
       searchIndex: "assets/search-index.json"
     };
   </script>

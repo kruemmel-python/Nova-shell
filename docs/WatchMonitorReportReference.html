@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="Nova-shell wiki builder">
-  <title>Data And Execution Engines | Nova-shell Wiki</title>
+  <title>WatchMonitor Report Reference | Nova-shell Wiki</title>
   <link rel="stylesheet" href="assets/wiki.css">
 </head>
 <body>
@@ -42,7 +42,7 @@
 <li><a class="wiki-nav-link" data-nav-href="ExamplesAndRecipes.html" href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
 <li><a class="wiki-nav-link" data-nav-href="WatchMonitor.html" href="WatchMonitor.html">WatchMonitor</a></li>
 <li><a class="wiki-nav-link" data-nav-href="WatchMonitorQuickStart.html" href="WatchMonitorQuickStart.html">WatchMonitorQuickStart</a></li>
-<li><a class="wiki-nav-link" data-nav-href="WatchMonitorReportReference.html" href="WatchMonitorReportReference.html">WatchMonitorReportReference</a></li>
+<li><a class="wiki-nav-link active" data-nav-href="WatchMonitorReportReference.html" href="WatchMonitorReportReference.html">WatchMonitorReportReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="WatchMonitorAutomationAndAI.html" href="WatchMonitorAutomationAndAI.html">WatchMonitorAutomationAndAI</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Tutorials.html" href="Tutorials.html">Tutorials</a></li>
 <li><a class="wiki-nav-link" data-nav-href="TutorialTechnologyRadar.html" href="TutorialTechnologyRadar.html">TutorialTechnologyRadar</a></li>
@@ -88,7 +88,7 @@
 <li><a class="wiki-nav-link" data-nav-href="Testing.html" href="Testing.html">Testing</a></li>
 <li><a class="wiki-nav-link" data-nav-href="BuildAndRelease.html" href="BuildAndRelease.html">BuildAndRelease</a></li>
 <li><a class="wiki-nav-link" data-nav-href="WatchMonitor.html" href="WatchMonitor.html">WatchMonitor</a></li>
-<li><a class="wiki-nav-link" data-nav-href="WatchMonitorReportReference.html" href="WatchMonitorReportReference.html">WatchMonitorReportReference</a></li>
+<li><a class="wiki-nav-link active" data-nav-href="WatchMonitorReportReference.html" href="WatchMonitorReportReference.html">WatchMonitorReportReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="WatchMonitorAutomationAndAI.html" href="WatchMonitorAutomationAndAI.html">WatchMonitorAutomationAndAI</a></li>
 <li><a class="wiki-nav-link" data-nav-href="SecurityModel.html" href="SecurityModel.html">SecurityModel</a></li>
 <li><a class="wiki-nav-link" data-nav-href="PerformanceAndScaling.html" href="PerformanceAndScaling.html">PerformanceAndScaling</a></li>
@@ -113,65 +113,205 @@
         <button type="button" class="wiki-nav-toggle" data-nav-toggle>Menu</button>
         <div class="wiki-header-copy">
           <span class="wiki-kicker">Nova-shell Documentation</span>
-          <h1>Data And Execution Engines</h1>
-          <p>Source: DataAndExecutionEngines.md</p>
+          <h1>WatchMonitor Report Reference</h1>
+          <p>Source: WatchMonitorReportReference.md</p>
         </div>
       </header>
       <div class="wiki-layout">
         <article class="wiki-article">
-          <h1 id="data-and-execution-engines">Data And Execution Engines</h1>
+          <h1 id="watchmonitor-report-reference">WatchMonitor Report Reference</h1>
 <h2 id="zweck">Zweck</h2>
-<p>Nova-shell fuehrt nicht nur Python aus. Die Daten- und Execution-Schicht fasst mehrere Backends zusammen, die je nach Aufgabe unterschiedlich geeignet sind.</p>
-<h2 id="kernpunkte">Kernpunkte</h2>
+<p>Diese Seite beschreibt den inhaltlichen Aufbau des Watch-Monitor-Reports. Sie ist die Referenz fuer HTML-Ansicht, Detailseiten und JSON-Dateien.</p>
+<h2 id="kernobjekte">Kernobjekte</h2>
 <ul>
-<li><code>py</code> deckt schnellen Ausdrucks- und Skriptbetrieb ab.</li>
-<li><code>cpp</code> und <code>cpp.sandbox</code> adressieren nativen bzw. sandboxed C++-Code.</li>
-<li><code>gpu</code> adressiert OpenCL-basierte GPU-Ausfuehrung, wenn <code>pyopencl</code> und <code>numpy</code> verfuegbar sind.</li>
-<li><code>wasm</code> und <code>jit_wasm</code> adressieren portable bzw. Emscripten-basierte Ausfuehrungspfade.</li>
-<li><code>data</code> und <code>data.load</code> liefern strukturierte Datenverarbeitung und Dateieinbindung.</li>
+<li><code>project_monitor_report.html</code></li>
+<li><code>project_monitor_analysis.json</code></li>
+<li><code>history.json</code></li>
+<li><code>latest_status.json</code></li>
+<li><code>files/*.html</code></li>
 </ul>
-<h2 id="praktische-nutzung">Praktische Nutzung</h2>
+<h2 id="html-hauptreport">HTML-Hauptreport</h2>
+<p>Der Hauptreport ist die operative Oberflaeche des Monitors. Er wird nach jedem Scan neu geschrieben.</p>
+<h3 id="kopfbereich">Kopfbereich</h3>
+<p>Der Kopfbereich zeigt:</p>
 <ul>
-<li>Nutze <code>py</code> fuer den Standardfall.</li>
-<li>Nutze <code>cpp.sandbox</code>, wenn du isolierten nativen Code in einer kontrollierten Laufzeit ausprobieren willst.</li>
-<li>Nutze <code>gpu</code>, wenn OpenCL-Gerate und passende Laufzeitmodule vorhanden sind.</li>
-<li>Nutze <code>data.load</code> und anschliessend <code>py</code>, wenn du tabellarische oder JSON-Daten in Pipelines brauchst.</li>
+<li>Projektname</li>
+<li>Reportpfad</li>
+<li>Analysepfad</li>
+<li>aktuelle Laufzeitkennung</li>
 </ul>
-<h2 id="testbare-einstiege">Testbare Einstiege</h2>
-<h3 id="ein-einfacher-compute-check">Ein einfacher Compute-Check</h3>
-<pre><code class="language-powershell">py 1 + 1
-cpp.sandbox int main(){ return 0; }
-doctor</code></pre>
-<p>Erwartung:</p>
+<h3 id="zusammenfassungskarten">Zusammenfassungskarten</h3>
+<p>Typische Karten:</p>
 <ul>
-<li><code>py</code> liefert direkt ein Ergebnis.</li>
-<li><code>cpp.sandbox</code> meldet im Erfolgsfall <code>sandbox executed</code>.</li>
-<li><code>doctor</code> zeigt, welche Runtime-Module wirklich verfuegbar sind.</li>
+<li>Projektordner</li>
+<li>letzter Scan</li>
+<li>ueberwachte Dateien</li>
+<li>Historienlaenge</li>
+<li>Watch-Modus</li>
 </ul>
-<h2 id="typische-fragen-und-fehler">Typische Fragen und Fehler</h2>
-<h3 id="gpu-oder-wasm-laufen-nicht">GPU oder WASM laufen nicht</h3>
+<h3 id="review-agent">Review-Agent</h3>
+<p>Die Review-Karte bewertet die letzte relevante Aenderung. Sie enthaelt:</p>
 <ul>
-<li><code>doctor</code> zeigt die benoetigten Module als <code>missing</code>.</li>
-<li>Toolchain oder Runtime fehlen im aktuellen Profil.</li>
-<li>Nutze zuerst den Minimaltest ueber <code>doctor</code> und <code>cpp.sandbox</code>.</li>
+<li><code>severity</code></li>
+<li><code>score</code></li>
+<li><code>headline</code></li>
+<li><code>summary</code></li>
+<li><code>findings</code></li>
+<li><code>recommendations</code></li>
+<li>betroffene Pfade</li>
+<li>Quelle, Provider, Modell und Modus</li>
+</ul>
+<h3 id="build-und-tests">Build und Tests</h3>
+<p>Dieser Block zeigt die Ergebnisse der Automationskommandos:</p>
+<ul>
+<li>erkannte Kommandos</li>
+<li>Exit-Code</li>
+<li>Laufzeit</li>
+<li><code>stdout</code></li>
+<li><code>stderr</code></li>
+</ul>
+<h3 id="analyse">Analyse</h3>
+<p>Die Analyse kombiniert heuristische Verdichtungen aus der Historie:</p>
+<ul>
+<li>Warnungen</li>
+<li>Einsichten</li>
+<li>Dateitypranking</li>
+<li>Datei-Hotspots</li>
+<li>Ordner-Hotspots</li>
+</ul>
+<h3 id="aenderungshistorie">Aenderungshistorie</h3>
+<p>Jedes Ereignis zeigt:</p>
+<ul>
+<li>Zusammenfassung</li>
+<li>Zeitstempel</li>
+<li>Event-Typ</li>
+<li>Review-Zusammenfassung</li>
+<li>optionales Automations-Resultat</li>
+<li>neue Dateien</li>
+<li>entfernte Dateien</li>
+<li>geaenderte Dateien mit Hunk-Ansicht</li>
+</ul>
+<h2 id="detailseiten-pro-datei">Detailseiten pro Datei</h2>
+<p>Fuer jede geaenderte Datei erzeugt der Monitor eine eigene HTML-Seite unter <code>.nova_project_monitor/files/</code>.</p>
+<p>Eine Detailseite enthaelt:</p>
+<ul>
+<li>Pfad der Datei</li>
+<li>Event-ID</li>
+<li>Zeitpunkt</li>
+<li>Groesse vorher/nachher</li>
+<li>Review-Kontext</li>
+<li>Vorher-Textansicht</li>
+<li>Nachher-Textansicht</li>
+<li>kompletten Unified Diff</li>
+</ul>
+<h2 id="json-dateien">JSON-Dateien</h2>
+<h3 id="latest-status-json"><code>latest_status.json</code></h3>
+<p>Schnellster maschinenlesbarer Einstieg fuer Integrationen.</p>
+<p>Typische Felder:</p>
+<ul>
+<li><code>generated_at</code></li>
+<li><code>changed</code></li>
+<li><code>event</code></li>
+<li><code>review_agent</code></li>
+<li><code>automation</code></li>
+<li><code>runtime</code></li>
+<li><code>tracked_files</code></li>
+<li><code>report_path</code></li>
+<li><code>analysis_path</code></li>
+</ul>
+<h3 id="history-json"><code>history.json</code></h3>
+<p>Persistierte Ereignisliste. Hier steht die langfristige Aenderungshistorie des Projekts.</p>
+<p>Typische Event-Felder:</p>
+<ul>
+<li><code>id</code></li>
+<li><code>kind</code></li>
+<li><code>summary</code></li>
+<li><code>timestamp</code></li>
+<li><code>created</code></li>
+<li><code>modified</code></li>
+<li><code>deleted</code></li>
+<li><code>stats</code></li>
+<li><code>review_agent</code></li>
+<li><code>automation</code></li>
+</ul>
+<h3 id="project-monitor-analysis-json"><code>project_monitor_analysis.json</code></h3>
+<p>Verdichtete Sicht ueber die Historie.</p>
+<p>Typische Felder:</p>
+<ul>
+<li><code>warnings</code></li>
+<li><code>insights</code></li>
+<li><code>hotspots</code></li>
+<li><code>file_hotspots</code></li>
+<li><code>directory_hotspots</code></li>
+<li><code>extension_ranking</code></li>
+<li><code>recent_change_count</code></li>
+</ul>
+<h2 id="beispiele">Beispiele</h2>
+<h3 id="hauptreport-lesen">Hauptreport lesen</h3>
+<pre><code class="language-powershell">Start-Process .\.nova_project_monitor\project_monitor_report.html</code></pre>
+<h3 id="json-status-auslesen">JSON-Status auslesen</h3>
+<pre><code class="language-powershell">Get-Content .\.nova_project_monitor\latest_status.json | ConvertFrom-Json</code></pre>
+<h3 id="letzte-event-zusammenfassung-lesen">Letzte Event-Zusammenfassung lesen</h3>
+<pre><code class="language-powershell">$status = Get-Content .\.nova_project_monitor\latest_status.json | ConvertFrom-Json
+$status.status_line</code></pre>
+<h3 id="review-daten-pruefen">Review-Daten pruefen</h3>
+<pre><code class="language-powershell">$status = Get-Content .\.nova_project_monitor\latest_status.json | ConvertFrom-Json
+$status.review_agent | Format-List</code></pre>
+<h2 id="interpretation">Interpretation</h2>
+<h3 id="viele-hotspots-in-einer-datei">Viele Hotspots in einer Datei</h3>
+<p>Das spricht meist fuer:</p>
+<ul>
+<li>instabile Kernlogik</li>
+<li>Umbau eines Moduls</li>
+<li>fehlende Zerlegung</li>
+</ul>
+<h3 id="viele-geaenderte-zeilen-bei-wenigen-dateien">Viele geaenderte Zeilen bei wenigen Dateien</h3>
+<p>Das spricht eher fuer:</p>
+<ul>
+<li>tiefe Refactorings</li>
+<li>API-Umbauten</li>
+<li>groessere Build- oder Konfigurationsaenderungen</li>
+</ul>
+<h3 id="viele-dateien-mit-wenig-churn">Viele Dateien mit wenig Churn</h3>
+<p>Das spricht eher fuer:</p>
+<ul>
+<li>Querschnittsaenderungen</li>
+<li>Formatierungslaeufe</li>
+<li>Versions- oder Importanpassungen</li>
 </ul>
 <h2 id="verwandte-seiten">Verwandte Seiten</h2>
 <ul>
-<li><a href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
-<li><a href="NovaCLI.html">NovaCLI</a></li>
-<li><a href="ExecutionModel.html">ExecutionModel</a></li>
-<li><a href="PerformanceAndScaling.html">PerformanceAndScaling</a></li>
+<li><a href="WatchMonitor.html">WatchMonitor</a></li>
+<li><a href="WatchMonitorQuickStart.html">WatchMonitorQuickStart</a></li>
+<li><a href="WatchMonitorAutomationAndAI.html">WatchMonitorAutomationAndAI</a></li>
+<li><a href="OperationsAndObservability.html">OperationsAndObservability</a></li>
 </ul>
         </article>
         <aside class="wiki-toc">
           <div class="wiki-toc-card"><h2>On this page</h2><ul>
 <li class="wiki-toc-link"><a href="#zweck">Zweck</a></li>
-<li class="wiki-toc-link"><a href="#kernpunkte">Kernpunkte</a></li>
-<li class="wiki-toc-link"><a href="#praktische-nutzung">Praktische Nutzung</a></li>
-<li class="wiki-toc-link"><a href="#testbare-einstiege">Testbare Einstiege</a></li>
-<li class="wiki-toc-link level-3"><a href="#ein-einfacher-compute-check">Ein einfacher Compute-Check</a></li>
-<li class="wiki-toc-link"><a href="#typische-fragen-und-fehler">Typische Fragen und Fehler</a></li>
-<li class="wiki-toc-link level-3"><a href="#gpu-oder-wasm-laufen-nicht">GPU oder WASM laufen nicht</a></li>
+<li class="wiki-toc-link"><a href="#kernobjekte">Kernobjekte</a></li>
+<li class="wiki-toc-link"><a href="#html-hauptreport">HTML-Hauptreport</a></li>
+<li class="wiki-toc-link level-3"><a href="#kopfbereich">Kopfbereich</a></li>
+<li class="wiki-toc-link level-3"><a href="#zusammenfassungskarten">Zusammenfassungskarten</a></li>
+<li class="wiki-toc-link level-3"><a href="#review-agent">Review-Agent</a></li>
+<li class="wiki-toc-link level-3"><a href="#build-und-tests">Build und Tests</a></li>
+<li class="wiki-toc-link level-3"><a href="#analyse">Analyse</a></li>
+<li class="wiki-toc-link level-3"><a href="#aenderungshistorie">Aenderungshistorie</a></li>
+<li class="wiki-toc-link"><a href="#detailseiten-pro-datei">Detailseiten pro Datei</a></li>
+<li class="wiki-toc-link"><a href="#json-dateien">JSON-Dateien</a></li>
+<li class="wiki-toc-link level-3"><a href="#latest-status-json">`latest_status.json`</a></li>
+<li class="wiki-toc-link level-3"><a href="#history-json">`history.json`</a></li>
+<li class="wiki-toc-link level-3"><a href="#project-monitor-analysis-json">`project_monitor_analysis.json`</a></li>
+<li class="wiki-toc-link"><a href="#beispiele">Beispiele</a></li>
+<li class="wiki-toc-link level-3"><a href="#hauptreport-lesen">Hauptreport lesen</a></li>
+<li class="wiki-toc-link level-3"><a href="#json-status-auslesen">JSON-Status auslesen</a></li>
+<li class="wiki-toc-link level-3"><a href="#letzte-event-zusammenfassung-lesen">Letzte Event-Zusammenfassung lesen</a></li>
+<li class="wiki-toc-link level-3"><a href="#review-daten-pruefen">Review-Daten pruefen</a></li>
+<li class="wiki-toc-link"><a href="#interpretation">Interpretation</a></li>
+<li class="wiki-toc-link level-3"><a href="#viele-hotspots-in-einer-datei">Viele Hotspots in einer Datei</a></li>
+<li class="wiki-toc-link level-3"><a href="#viele-geaenderte-zeilen-bei-wenigen-dateien">Viele geaenderte Zeilen bei wenigen Dateien</a></li>
+<li class="wiki-toc-link level-3"><a href="#viele-dateien-mit-wenig-churn">Viele Dateien mit wenig Churn</a></li>
 <li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
 </ul></div>
         </aside>
@@ -183,7 +323,7 @@ doctor</code></pre>
   </div>
   <script>
     window.NOVA_WIKI = {
-      currentPage: "DataAndExecutionEngines.html",
+      currentPage: "WatchMonitorReportReference.html",
       searchIndex: "assets/search-index.json"
     };
   </script>

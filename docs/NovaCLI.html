@@ -40,10 +40,15 @@
 <li><a class="wiki-nav-link" data-nav-href="ShellCommandReference.html" href="ShellCommandReference.html">ShellCommandReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="APIReference.html" href="APIReference.html">APIReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ExamplesAndRecipes.html" href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
+<li><a class="wiki-nav-link" data-nav-href="WatchMonitor.html" href="WatchMonitor.html">WatchMonitor</a></li>
+<li><a class="wiki-nav-link" data-nav-href="WatchMonitorQuickStart.html" href="WatchMonitorQuickStart.html">WatchMonitorQuickStart</a></li>
+<li><a class="wiki-nav-link" data-nav-href="WatchMonitorReportReference.html" href="WatchMonitorReportReference.html">WatchMonitorReportReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="WatchMonitorAutomationAndAI.html" href="WatchMonitorAutomationAndAI.html">WatchMonitorAutomationAndAI</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Tutorials.html" href="Tutorials.html">Tutorials</a></li>
 <li><a class="wiki-nav-link" data-nav-href="TutorialTechnologyRadar.html" href="TutorialTechnologyRadar.html">TutorialTechnologyRadar</a></li>
 <li><a class="wiki-nav-link" data-nav-href="TutorialMultiAgentCluster.html" href="TutorialMultiAgentCluster.html">TutorialMultiAgentCluster</a></li>
 <li><a class="wiki-nav-link" data-nav-href="TutorialLMStudioIntegration.html" href="TutorialLMStudioIntegration.html">TutorialLMStudioIntegration</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialProjectWatchMonitor.html" href="TutorialProjectWatchMonitor.html">TutorialProjectWatchMonitor</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Architektur</h2>
@@ -82,6 +87,9 @@
 <li><a class="wiki-nav-link" data-nav-href="RepositoryStructure.html" href="RepositoryStructure.html">RepositoryStructure</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Testing.html" href="Testing.html">Testing</a></li>
 <li><a class="wiki-nav-link" data-nav-href="BuildAndRelease.html" href="BuildAndRelease.html">BuildAndRelease</a></li>
+<li><a class="wiki-nav-link" data-nav-href="WatchMonitor.html" href="WatchMonitor.html">WatchMonitor</a></li>
+<li><a class="wiki-nav-link" data-nav-href="WatchMonitorReportReference.html" href="WatchMonitorReportReference.html">WatchMonitorReportReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="WatchMonitorAutomationAndAI.html" href="WatchMonitorAutomationAndAI.html">WatchMonitorAutomationAndAI</a></li>
 <li><a class="wiki-nav-link" data-nav-href="SecurityModel.html" href="SecurityModel.html">SecurityModel</a></li>
 <li><a class="wiki-nav-link" data-nav-href="PerformanceAndScaling.html" href="PerformanceAndScaling.html">PerformanceAndScaling</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Troubleshooting.html" href="Troubleshooting.html">Troubleshooting</a></li>
@@ -328,6 +336,17 @@ nova-shell --no-plugins -c &quot;ai providers&quot; | ConvertFrom-Json</code></p
 <td>JSON mit Policies und eBPF-Profilen</td>
 </tr>
 </tbody></table>
+<h4 id="watch-monitor-als-ns-betriebspfad">Watch Monitor als <code>.ns</code>-Betriebspfad</h4>
+<p>Der Projektmonitor ist kein eigenes Top-Level-Kommando. Er wird ueber <code>ns.run</code> gestartet und arbeitet dann als langlebiger Beobachter im Projektordner.</p>
+<p>Direkt testbares Beispiel:</p>
+<pre><code class="language-powershell">cd F:\DeCoG-TRI
+ns.run nova_project_monitor.ns</code></pre>
+<p>Erwartung:</p>
+<ul>
+<li><code>.nova_project_monitor/</code> wird aufgebaut</li>
+<li>der HTML-Report aktualisiert sich nach Projektänderungen</li>
+<li>je nach Konfiguration laufen Build, Tests und Review-Agent mit</li>
+</ul>
 <h2 id="api">API</h2>
 <p>Die CLI spricht nicht nur lokal. Mit <code>ns.control api start</code> stellt sie eine HTTP-Control-Plane bereit. Fuer Endpunkte, Payloads und HTTP-Aufrufe siehe <a href="APIReference.html">APIReference</a>.</p>
 <h2 id="beispiele">Beispiele</h2>
@@ -735,6 +754,8 @@ cpp.sandbox int main(){ return 0; }</code></pre>
 <li><a href="NovaRuntime.html">NovaRuntime</a></li>
 <li><a href="ClassReference.html">ClassReference</a></li>
 <li><a href="PageTemplate.html">PageTemplate</a></li>
+<li><a href="WatchMonitor.html">WatchMonitor</a></li>
+<li><a href="WatchMonitorAutomationAndAI.html">WatchMonitorAutomationAndAI</a></li>
 </ul>
         </article>
         <aside class="wiki-toc">

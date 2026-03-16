@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="Nova-shell wiki builder">
-  <title>Data And Execution Engines | Nova-shell Wiki</title>
+  <title>WatchMonitor Quick Start | Nova-shell Wiki</title>
   <link rel="stylesheet" href="assets/wiki.css">
 </head>
 <body>
@@ -41,7 +41,7 @@
 <li><a class="wiki-nav-link" data-nav-href="APIReference.html" href="APIReference.html">APIReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ExamplesAndRecipes.html" href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
 <li><a class="wiki-nav-link" data-nav-href="WatchMonitor.html" href="WatchMonitor.html">WatchMonitor</a></li>
-<li><a class="wiki-nav-link" data-nav-href="WatchMonitorQuickStart.html" href="WatchMonitorQuickStart.html">WatchMonitorQuickStart</a></li>
+<li><a class="wiki-nav-link active" data-nav-href="WatchMonitorQuickStart.html" href="WatchMonitorQuickStart.html">WatchMonitorQuickStart</a></li>
 <li><a class="wiki-nav-link" data-nav-href="WatchMonitorReportReference.html" href="WatchMonitorReportReference.html">WatchMonitorReportReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="WatchMonitorAutomationAndAI.html" href="WatchMonitorAutomationAndAI.html">WatchMonitorAutomationAndAI</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Tutorials.html" href="Tutorials.html">Tutorials</a></li>
@@ -113,65 +113,125 @@
         <button type="button" class="wiki-nav-toggle" data-nav-toggle>Menu</button>
         <div class="wiki-header-copy">
           <span class="wiki-kicker">Nova-shell Documentation</span>
-          <h1>Data And Execution Engines</h1>
-          <p>Source: DataAndExecutionEngines.md</p>
+          <h1>WatchMonitor Quick Start</h1>
+          <p>Source: WatchMonitorQuickStart.md</p>
         </div>
       </header>
       <div class="wiki-layout">
         <article class="wiki-article">
-          <h1 id="data-and-execution-engines">Data And Execution Engines</h1>
+          <h1 id="watchmonitor-quick-start">WatchMonitor Quick Start</h1>
 <h2 id="zweck">Zweck</h2>
-<p>Nova-shell fuehrt nicht nur Python aus. Die Daten- und Execution-Schicht fasst mehrere Backends zusammen, die je nach Aufgabe unterschiedlich geeignet sind.</p>
-<h2 id="kernpunkte">Kernpunkte</h2>
+<p>Diese Seite zeigt den kuerzesten belastbaren Weg, um den Nova-shell Watch Monitor in einem Projekt produktiv zu starten.</p>
+<h2 id="voraussetzungen">Voraussetzungen</h2>
 <ul>
-<li><code>py</code> deckt schnellen Ausdrucks- und Skriptbetrieb ab.</li>
-<li><code>cpp</code> und <code>cpp.sandbox</code> adressieren nativen bzw. sandboxed C++-Code.</li>
-<li><code>gpu</code> adressiert OpenCL-basierte GPU-Ausfuehrung, wenn <code>pyopencl</code> und <code>numpy</code> verfuegbar sind.</li>
-<li><code>wasm</code> und <code>jit_wasm</code> adressieren portable bzw. Emscripten-basierte Ausfuehrungspfade.</li>
-<li><code>data</code> und <code>data.load</code> liefern strukturierte Datenverarbeitung und Dateieinbindung.</li>
+<li>Nova-shell ist installiert und <code>ns.run</code> funktioniert</li>
+<li>der Projektordner enthaelt Schreibrechte</li>
+<li>optional <code>watchdog</code> fuer echte Dateisystemevents</li>
 </ul>
-<h2 id="praktische-nutzung">Praktische Nutzung</h2>
-<ul>
-<li>Nutze <code>py</code> fuer den Standardfall.</li>
-<li>Nutze <code>cpp.sandbox</code>, wenn du isolierten nativen Code in einer kontrollierten Laufzeit ausprobieren willst.</li>
-<li>Nutze <code>gpu</code>, wenn OpenCL-Gerate und passende Laufzeitmodule vorhanden sind.</li>
-<li>Nutze <code>data.load</code> und anschliessend <code>py</code>, wenn du tabellarische oder JSON-Daten in Pipelines brauchst.</li>
-</ul>
-<h2 id="testbare-einstiege">Testbare Einstiege</h2>
-<h3 id="ein-einfacher-compute-check">Ein einfacher Compute-Check</h3>
-<pre><code class="language-powershell">py 1 + 1
-cpp.sandbox int main(){ return 0; }
-doctor</code></pre>
+<p>Wenn <code>watchdog</code> nicht vorhanden ist, faellt der Monitor automatisch auf Polling zurueck.</p>
+<h2 id="schnellstart">Schnellstart</h2>
+<h3 id="1-monitor-datei-in-den-projektordner-legen">1. Monitor-Datei in den Projektordner legen</h3>
+<p>Dateiname:</p>
+<pre><code class="language-text">nova_project_monitor.ns</code></pre>
+<h3 id="2-in-den-projektordner-wechseln">2. In den Projektordner wechseln</h3>
+<pre><code class="language-powershell">cd F:\DeCoG-TRI</code></pre>
+<h3 id="3-monitor-starten">3. Monitor starten</h3>
+<pre><code class="language-powershell">ns.run nova_project_monitor.ns</code></pre>
 <p>Erwartung:</p>
 <ul>
-<li><code>py</code> liefert direkt ein Ergebnis.</li>
-<li><code>cpp.sandbox</code> meldet im Erfolgsfall <code>sandbox executed</code>.</li>
-<li><code>doctor</code> zeigt, welche Runtime-Module wirklich verfuegbar sind.</li>
+<li><code>.nova_project_monitor/</code> wird angelegt</li>
+<li>eine Baseline wird erzeugt</li>
+<li><code>project_monitor_report.html</code> wird geschrieben</li>
+<li>der Monitor bleibt aktiv und beobachtet weitere Aenderungen</li>
 </ul>
-<h2 id="typische-fragen-und-fehler">Typische Fragen und Fehler</h2>
-<h3 id="gpu-oder-wasm-laufen-nicht">GPU oder WASM laufen nicht</h3>
+<h2 id="sicherer-erstlauf">Sicherer Erstlauf</h2>
+<p>Wenn du den Monitor zuerst ohne Browser und ohne Dauerlauf pruefen willst:</p>
+<pre><code class="language-powershell">$env:NOVA_PROJECT_MONITOR_ONESHOT = &quot;1&quot;
+$env:NOVA_PROJECT_MONITOR_OPEN = &quot;0&quot;
+ns.run nova_project_monitor.ns
+Remove-Item Env:NOVA_PROJECT_MONITOR_ONESHOT
+Remove-Item Env:NOVA_PROJECT_MONITOR_OPEN</code></pre>
+<h2 id="sinnvolle-erste-einstellungen">Sinnvolle erste Einstellungen</h2>
+<h3 id="live-events-bevorzugen">Live-Events bevorzugen</h3>
+<pre><code class="language-powershell">$env:NOVA_PROJECT_MONITOR_WATCH_MODE = &quot;auto&quot;</code></pre>
+<h3 id="build-und-testchecks-aktivieren">Build- und Testchecks aktivieren</h3>
+<pre><code class="language-powershell">$env:NOVA_PROJECT_MONITOR_AUTOMATION = &quot;auto&quot;</code></pre>
+<h3 id="atheria-priorisieren">Atheria priorisieren</h3>
+<pre><code class="language-powershell">$env:NOVA_PROJECT_MONITOR_AI_MODE = &quot;auto&quot;</code></pre>
+<p><code>auto</code> bedeutet:</p>
+<ol>
+<li>zuerst Atheria</li>
+<li>danach OpenAI-kompatible Provider</li>
+<li>danach Ollama</li>
+</ol>
+<h2 id="minimaler-produktiver-start">Minimaler produktiver Start</h2>
+<pre><code class="language-powershell">cd F:\DeCoG-TRI
+$env:NOVA_PROJECT_MONITOR_WATCH_MODE = &quot;auto&quot;
+$env:NOVA_PROJECT_MONITOR_AUTOMATION = &quot;auto&quot;
+$env:NOVA_PROJECT_MONITOR_AI_MODE = &quot;auto&quot;
+ns.run nova_project_monitor.ns</code></pre>
+<h2 id="wichtige-ausgabedateien">Wichtige Ausgabedateien</h2>
+<p>Nach dem ersten Lauf findest du:</p>
 <ul>
-<li><code>doctor</code> zeigt die benoetigten Module als <code>missing</code>.</li>
-<li>Toolchain oder Runtime fehlen im aktuellen Profil.</li>
-<li>Nutze zuerst den Minimaltest ueber <code>doctor</code> und <code>cpp.sandbox</code>.</li>
+<li><code>.nova_project_monitor/project_monitor_report.html</code></li>
+<li><code>.nova_project_monitor/project_monitor_analysis.json</code></li>
+<li><code>.nova_project_monitor/history.json</code></li>
+<li><code>.nova_project_monitor/latest_status.json</code></li>
 </ul>
+<h2 id="typische-erste-pruefung">Typische erste Pruefung</h2>
+<ol>
+<li>Datei im Projekt aendern</li>
+<li>speichern</li>
+<li>Report im Browser neu laden</li>
+</ol>
+<p>Im Report sollten jetzt sichtbar sein:</p>
+<ul>
+<li>betroffene Datei</li>
+<li>Zeilen-Hunks</li>
+<li>aktualisierte Hotspots</li>
+<li>optional Build-/Testergebnis</li>
+<li>optional Review-Agent-Ergebnis</li>
+</ul>
+<h2 id="haeufige-startprobleme">Haeufige Startprobleme</h2>
+<h3 id="der-monitor-beendet-sich-sofort">Der Monitor beendet sich sofort</h3>
+<p>Pruefe:</p>
+<pre><code class="language-powershell">ns.graph nova_project_monitor.ns</code></pre>
+<h3 id="der-browser-soll-nicht-automatisch-aufgehen">Der Browser soll nicht automatisch aufgehen</h3>
+<pre><code class="language-powershell">$env:NOVA_PROJECT_MONITOR_OPEN = &quot;0&quot;</code></pre>
+<h3 id="es-werden-keine-live-events-erkannt">Es werden keine Live-Events erkannt</h3>
+<p>Pruefe den Watch-Modus:</p>
+<pre><code class="language-powershell">$env:NOVA_PROJECT_MONITOR_WATCH_MODE = &quot;poll&quot;
+ns.run nova_project_monitor.ns</code></pre>
+<p>Wenn Polling funktioniert und <code>watchdog</code> nicht, fehlt meist die Event-Bibliothek in der konkreten Installation.</p>
 <h2 id="verwandte-seiten">Verwandte Seiten</h2>
 <ul>
-<li><a href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
-<li><a href="NovaCLI.html">NovaCLI</a></li>
-<li><a href="ExecutionModel.html">ExecutionModel</a></li>
-<li><a href="PerformanceAndScaling.html">PerformanceAndScaling</a></li>
+<li><a href="WatchMonitor.html">WatchMonitor</a></li>
+<li><a href="TutorialProjectWatchMonitor.html">TutorialProjectWatchMonitor</a></li>
+<li><a href="WatchMonitorReportReference.html">WatchMonitorReportReference</a></li>
+<li><a href="WatchMonitorAutomationAndAI.html">WatchMonitorAutomationAndAI</a></li>
+<li><a href="Troubleshooting.html">Troubleshooting</a></li>
 </ul>
         </article>
         <aside class="wiki-toc">
           <div class="wiki-toc-card"><h2>On this page</h2><ul>
 <li class="wiki-toc-link"><a href="#zweck">Zweck</a></li>
-<li class="wiki-toc-link"><a href="#kernpunkte">Kernpunkte</a></li>
-<li class="wiki-toc-link"><a href="#praktische-nutzung">Praktische Nutzung</a></li>
-<li class="wiki-toc-link"><a href="#testbare-einstiege">Testbare Einstiege</a></li>
-<li class="wiki-toc-link level-3"><a href="#ein-einfacher-compute-check">Ein einfacher Compute-Check</a></li>
-<li class="wiki-toc-link"><a href="#typische-fragen-und-fehler">Typische Fragen und Fehler</a></li>
-<li class="wiki-toc-link level-3"><a href="#gpu-oder-wasm-laufen-nicht">GPU oder WASM laufen nicht</a></li>
+<li class="wiki-toc-link"><a href="#voraussetzungen">Voraussetzungen</a></li>
+<li class="wiki-toc-link"><a href="#schnellstart">Schnellstart</a></li>
+<li class="wiki-toc-link level-3"><a href="#1-monitor-datei-in-den-projektordner-legen">1. Monitor-Datei in den Projektordner legen</a></li>
+<li class="wiki-toc-link level-3"><a href="#2-in-den-projektordner-wechseln">2. In den Projektordner wechseln</a></li>
+<li class="wiki-toc-link level-3"><a href="#3-monitor-starten">3. Monitor starten</a></li>
+<li class="wiki-toc-link"><a href="#sicherer-erstlauf">Sicherer Erstlauf</a></li>
+<li class="wiki-toc-link"><a href="#sinnvolle-erste-einstellungen">Sinnvolle erste Einstellungen</a></li>
+<li class="wiki-toc-link level-3"><a href="#live-events-bevorzugen">Live-Events bevorzugen</a></li>
+<li class="wiki-toc-link level-3"><a href="#build-und-testchecks-aktivieren">Build- und Testchecks aktivieren</a></li>
+<li class="wiki-toc-link level-3"><a href="#atheria-priorisieren">Atheria priorisieren</a></li>
+<li class="wiki-toc-link"><a href="#minimaler-produktiver-start">Minimaler produktiver Start</a></li>
+<li class="wiki-toc-link"><a href="#wichtige-ausgabedateien">Wichtige Ausgabedateien</a></li>
+<li class="wiki-toc-link"><a href="#typische-erste-pruefung">Typische erste Pruefung</a></li>
+<li class="wiki-toc-link"><a href="#haeufige-startprobleme">Haeufige Startprobleme</a></li>
+<li class="wiki-toc-link level-3"><a href="#der-monitor-beendet-sich-sofort">Der Monitor beendet sich sofort</a></li>
+<li class="wiki-toc-link level-3"><a href="#der-browser-soll-nicht-automatisch-aufgehen">Der Browser soll nicht automatisch aufgehen</a></li>
+<li class="wiki-toc-link level-3"><a href="#es-werden-keine-live-events-erkannt">Es werden keine Live-Events erkannt</a></li>
 <li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
 </ul></div>
         </aside>
@@ -183,7 +243,7 @@ doctor</code></pre>
   </div>
   <script>
     window.NOVA_WIKI = {
-      currentPage: "DataAndExecutionEngines.html",
+      currentPage: "WatchMonitorQuickStart.html",
       searchIndex: "assets/search-index.json"
     };
   </script>

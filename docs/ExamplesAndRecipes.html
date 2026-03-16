@@ -40,10 +40,15 @@
 <li><a class="wiki-nav-link" data-nav-href="ShellCommandReference.html" href="ShellCommandReference.html">ShellCommandReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="APIReference.html" href="APIReference.html">APIReference</a></li>
 <li><a class="wiki-nav-link active" data-nav-href="ExamplesAndRecipes.html" href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
+<li><a class="wiki-nav-link" data-nav-href="WatchMonitor.html" href="WatchMonitor.html">WatchMonitor</a></li>
+<li><a class="wiki-nav-link" data-nav-href="WatchMonitorQuickStart.html" href="WatchMonitorQuickStart.html">WatchMonitorQuickStart</a></li>
+<li><a class="wiki-nav-link" data-nav-href="WatchMonitorReportReference.html" href="WatchMonitorReportReference.html">WatchMonitorReportReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="WatchMonitorAutomationAndAI.html" href="WatchMonitorAutomationAndAI.html">WatchMonitorAutomationAndAI</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Tutorials.html" href="Tutorials.html">Tutorials</a></li>
 <li><a class="wiki-nav-link" data-nav-href="TutorialTechnologyRadar.html" href="TutorialTechnologyRadar.html">TutorialTechnologyRadar</a></li>
 <li><a class="wiki-nav-link" data-nav-href="TutorialMultiAgentCluster.html" href="TutorialMultiAgentCluster.html">TutorialMultiAgentCluster</a></li>
 <li><a class="wiki-nav-link" data-nav-href="TutorialLMStudioIntegration.html" href="TutorialLMStudioIntegration.html">TutorialLMStudioIntegration</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialProjectWatchMonitor.html" href="TutorialProjectWatchMonitor.html">TutorialProjectWatchMonitor</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Architektur</h2>
@@ -82,6 +87,9 @@
 <li><a class="wiki-nav-link" data-nav-href="RepositoryStructure.html" href="RepositoryStructure.html">RepositoryStructure</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Testing.html" href="Testing.html">Testing</a></li>
 <li><a class="wiki-nav-link" data-nav-href="BuildAndRelease.html" href="BuildAndRelease.html">BuildAndRelease</a></li>
+<li><a class="wiki-nav-link" data-nav-href="WatchMonitor.html" href="WatchMonitor.html">WatchMonitor</a></li>
+<li><a class="wiki-nav-link" data-nav-href="WatchMonitorReportReference.html" href="WatchMonitorReportReference.html">WatchMonitorReportReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="WatchMonitorAutomationAndAI.html" href="WatchMonitorAutomationAndAI.html">WatchMonitorAutomationAndAI</a></li>
 <li><a class="wiki-nav-link" data-nav-href="SecurityModel.html" href="SecurityModel.html">SecurityModel</a></li>
 <li><a class="wiki-nav-link" data-nav-href="PerformanceAndScaling.html" href="PerformanceAndScaling.html">PerformanceAndScaling</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Troubleshooting.html" href="Troubleshooting.html">Troubleshooting</a></li>
@@ -302,6 +310,24 @@ wiki serve --open</code></pre>
 <p>Mit expliziten Pfaden:</p>
 <pre><code class="language-powershell">wiki build --source WIKI --output .nova\wiki-site
 wiki open Home --source WIKI --output .nova\wiki-site --port 8767</code></pre>
+<h3 id="16-einen-projektordner-live-ueberwachen">16. Einen Projektordner live ueberwachen</h3>
+<p>Lege <code>nova_project_monitor.ns</code> in den Projektordner und starte den Monitor direkt dort:</p>
+<pre><code class="language-powershell">cd F:\DeCoG-TRI
+ns.run nova_project_monitor.ns</code></pre>
+<p>Sicherer Erstlauf:</p>
+<pre><code class="language-powershell">$env:NOVA_PROJECT_MONITOR_ONESHOT = &quot;1&quot;
+$env:NOVA_PROJECT_MONITOR_OPEN = &quot;0&quot;
+ns.run nova_project_monitor.ns</code></pre>
+<p>Mit Build/Test-Checks und AI-Review:</p>
+<pre><code class="language-powershell">$env:NOVA_PROJECT_MONITOR_AUTOMATION = &quot;auto&quot;
+$env:NOVA_PROJECT_MONITOR_AI_MODE = &quot;auto&quot;
+ns.run nova_project_monitor.ns</code></pre>
+<p>Erwartung:</p>
+<ul>
+<li><code>.nova_project_monitor/project_monitor_report.html</code> wird aktualisiert</li>
+<li>geaenderte Dateien erhalten Detailseiten</li>
+<li>Review-Agent und Build-/Test-Ergebnisse erscheinen im Report</li>
+</ul>
 <h2 id="wann-diese-seite-benutzt-werden-sollte">Wann diese Seite benutzt werden sollte</h2>
 <p>Diese Seite ist ideal, wenn du:</p>
 <ul>
@@ -316,6 +342,8 @@ wiki open Home --source WIKI --output .nova\wiki-site --port 8767</code></pre>
 <li><a href="ClassReference.html">ClassReference</a></li>
 <li><a href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
 <li><a href="Tutorials.html">Tutorials</a></li>
+<li><a href="WatchMonitor.html">WatchMonitor</a></li>
+<li><a href="WatchMonitorQuickStart.html">WatchMonitorQuickStart</a></li>
 </ul>
         </article>
         <aside class="wiki-toc">
@@ -341,6 +369,7 @@ wiki open Home --source WIKI --output .nova\wiki-site --port 8767</code></pre>
 <li class="wiki-toc-link level-3"><a href="#13-minimaler-multi-agent-flow">13. Minimaler Multi-Agent-Flow</a></li>
 <li class="wiki-toc-link level-3"><a href="#14-service-mit-traffic-shift-vorbereiten">14. Service mit Traffic-Shift vorbereiten</a></li>
 <li class="wiki-toc-link level-3"><a href="#15-die-wiki-als-html-site-bauen-und-oeffnen">15. Die Wiki als HTML-Site bauen und oeffnen</a></li>
+<li class="wiki-toc-link level-3"><a href="#16-einen-projektordner-live-ueberwachen">16. Einen Projektordner live ueberwachen</a></li>
 <li class="wiki-toc-link"><a href="#wann-diese-seite-benutzt-werden-sollte">Wann diese Seite benutzt werden sollte</a></li>
 <li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
 </ul></div>

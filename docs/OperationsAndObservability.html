@@ -40,10 +40,15 @@
 <li><a class="wiki-nav-link" data-nav-href="ShellCommandReference.html" href="ShellCommandReference.html">ShellCommandReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="APIReference.html" href="APIReference.html">APIReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ExamplesAndRecipes.html" href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
+<li><a class="wiki-nav-link" data-nav-href="WatchMonitor.html" href="WatchMonitor.html">WatchMonitor</a></li>
+<li><a class="wiki-nav-link" data-nav-href="WatchMonitorQuickStart.html" href="WatchMonitorQuickStart.html">WatchMonitorQuickStart</a></li>
+<li><a class="wiki-nav-link" data-nav-href="WatchMonitorReportReference.html" href="WatchMonitorReportReference.html">WatchMonitorReportReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="WatchMonitorAutomationAndAI.html" href="WatchMonitorAutomationAndAI.html">WatchMonitorAutomationAndAI</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Tutorials.html" href="Tutorials.html">Tutorials</a></li>
 <li><a class="wiki-nav-link" data-nav-href="TutorialTechnologyRadar.html" href="TutorialTechnologyRadar.html">TutorialTechnologyRadar</a></li>
 <li><a class="wiki-nav-link" data-nav-href="TutorialMultiAgentCluster.html" href="TutorialMultiAgentCluster.html">TutorialMultiAgentCluster</a></li>
 <li><a class="wiki-nav-link" data-nav-href="TutorialLMStudioIntegration.html" href="TutorialLMStudioIntegration.html">TutorialLMStudioIntegration</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialProjectWatchMonitor.html" href="TutorialProjectWatchMonitor.html">TutorialProjectWatchMonitor</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Architektur</h2>
@@ -82,6 +87,9 @@
 <li><a class="wiki-nav-link" data-nav-href="RepositoryStructure.html" href="RepositoryStructure.html">RepositoryStructure</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Testing.html" href="Testing.html">Testing</a></li>
 <li><a class="wiki-nav-link" data-nav-href="BuildAndRelease.html" href="BuildAndRelease.html">BuildAndRelease</a></li>
+<li><a class="wiki-nav-link" data-nav-href="WatchMonitor.html" href="WatchMonitor.html">WatchMonitor</a></li>
+<li><a class="wiki-nav-link" data-nav-href="WatchMonitorReportReference.html" href="WatchMonitorReportReference.html">WatchMonitorReportReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="WatchMonitorAutomationAndAI.html" href="WatchMonitorAutomationAndAI.html">WatchMonitorAutomationAndAI</a></li>
 <li><a class="wiki-nav-link" data-nav-href="SecurityModel.html" href="SecurityModel.html">SecurityModel</a></li>
 <li><a class="wiki-nav-link" data-nav-href="PerformanceAndScaling.html" href="PerformanceAndScaling.html">PerformanceAndScaling</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Troubleshooting.html" href="Troubleshooting.html">Troubleshooting</a></li>
@@ -146,6 +154,19 @@ ns.resume</code></pre>
 <h3 id="html-wiki-als-diagnoseschritt-bauen">HTML-Wiki als Diagnoseschritt bauen</h3>
 <pre><code class="language-powershell">wiki build</code></pre>
 <p>Der letzte Schritt ist kein Betriebsfeature der Runtime selbst, aber ein schneller Integrationscheck fuer Toolchain und lokale Installation.</p>
+<h3 id="projektordner-mit-watch-monitor-beobachten">Projektordner mit Watch Monitor beobachten</h3>
+<pre><code class="language-powershell">cd F:\DeCoG-TRI
+$env:NOVA_PROJECT_MONITOR_AUTOMATION = &quot;auto&quot;
+$env:NOVA_PROJECT_MONITOR_AI_MODE = &quot;auto&quot;
+ns.run nova_project_monitor.ns</code></pre>
+<p>Das ist der direkteste Betriebsweg, um:</p>
+<ul>
+<li>Datei-Hotspots zu sehen</li>
+<li>Zeilen-Diffs pro Aenderung nachzuverfolgen</li>
+<li>Review-Agent-Ergebnisse sichtbar zu machen</li>
+<li>Build- und Testlaeufe nach Aenderungen zu protokollieren</li>
+</ul>
+<p>Die erzeugten Artefakte liegen unter <code>.nova_project_monitor/</code>.</p>
 <h2 id="typische-betriebsfragen">Typische Betriebsfragen</h2>
 <h3 id="wo-sehe-ich-ob-die-runtime-gesund-wirkt">Wo sehe ich, ob die Runtime gesund wirkt?</h3>
 <p>Mit <code>doctor</code> fuer Installationsfaehigkeiten und <code>ns.status</code> fuer den Plattformzustand.</p>
@@ -164,6 +185,8 @@ ns.resume</code></pre>
 <li><a href="RuntimeAndControlPlane.html">RuntimeAndControlPlane</a></li>
 <li><a href="APIReference.html">APIReference</a></li>
 <li><a href="Troubleshooting.html">Troubleshooting</a></li>
+<li><a href="WatchMonitor.html">WatchMonitor</a></li>
+<li><a href="WatchMonitorReportReference.html">WatchMonitorReportReference</a></li>
 </ul>
         </article>
         <aside class="wiki-toc">
@@ -177,6 +200,7 @@ ns.resume</code></pre>
 <li class="wiki-toc-link level-3"><a href="#lokalen-runtime-status-pruefen">Lokalen Runtime-Status pruefen</a></li>
 <li class="wiki-toc-link level-3"><a href="#snapshot-schreiben-und-wieder-laden">Snapshot schreiben und wieder laden</a></li>
 <li class="wiki-toc-link level-3"><a href="#html-wiki-als-diagnoseschritt-bauen">HTML-Wiki als Diagnoseschritt bauen</a></li>
+<li class="wiki-toc-link level-3"><a href="#projektordner-mit-watch-monitor-beobachten">Projektordner mit Watch Monitor beobachten</a></li>
 <li class="wiki-toc-link"><a href="#typische-betriebsfragen">Typische Betriebsfragen</a></li>
 <li class="wiki-toc-link level-3"><a href="#wo-sehe-ich-ob-die-runtime-gesund-wirkt">Wo sehe ich, ob die Runtime gesund wirkt?</a></li>
 <li class="wiki-toc-link level-3"><a href="#wie-sichere-ich-den-runtime-zustand">Wie sichere ich den Runtime-Zustand?</a></li>

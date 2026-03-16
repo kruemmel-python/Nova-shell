@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="Nova-shell wiki builder">
+  <title>WatchMonitor Automation and AI | Nova-shell Wiki</title>
+  <link rel="stylesheet" href="assets/wiki.css">
+</head>
+<body>
+  <div class="wiki-shell">
+    <aside class="wiki-sidebar" data-sidebar>
+      <div class="wiki-brand">
+        <a href="Home.html">Nova-shell Wiki</a>
+        <p>HTML documentation for the Nova-shell platform.</p>
+      </div>
+      <label class="wiki-search">
+        <span>Search</span>
+        <input type="search" placeholder="Find pages, classes, methods..." data-wiki-search>
+      </label>
+      <div class="wiki-search-results" data-search-results></div>
+      <nav class="wiki-nav">
+        <section class="wiki-nav-section">
+<h2>Einstieg</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="Home.html" href="Home.html">Home</a></li>
+<li><a class="wiki-nav-link" data-nav-href="GermanLanguage.html" href="GermanLanguage.html">GermanLanguage</a></li>
+<li><a class="wiki-nav-link" data-nav-href="QuickStart.html" href="QuickStart.html">QuickStart</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Installation.html" href="Installation.html">Installation</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
+<li><a class="wiki-nav-link" data-nav-href="nsCreate.html" href="nsCreate.html">nsCreate</a></li>
+<li><a class="wiki-nav-link" data-nav-href="nsReference.html" href="nsReference.html">nsReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="nsPatterns.html" href="nsPatterns.html">nsPatterns</a></li>
+</ul></section>
+<section class="wiki-nav-section">
+<h2>Nutzung</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="NovaCLI.html" href="NovaCLI.html">NovaCLI</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ShellCommandReference.html" href="ShellCommandReference.html">ShellCommandReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="APIReference.html" href="APIReference.html">APIReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ExamplesAndRecipes.html" href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
+<li><a class="wiki-nav-link" data-nav-href="WatchMonitor.html" href="WatchMonitor.html">WatchMonitor</a></li>
+<li><a class="wiki-nav-link" data-nav-href="WatchMonitorQuickStart.html" href="WatchMonitorQuickStart.html">WatchMonitorQuickStart</a></li>
+<li><a class="wiki-nav-link" data-nav-href="WatchMonitorReportReference.html" href="WatchMonitorReportReference.html">WatchMonitorReportReference</a></li>
+<li><a class="wiki-nav-link active" data-nav-href="WatchMonitorAutomationAndAI.html" href="WatchMonitorAutomationAndAI.html">WatchMonitorAutomationAndAI</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Tutorials.html" href="Tutorials.html">Tutorials</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialTechnologyRadar.html" href="TutorialTechnologyRadar.html">TutorialTechnologyRadar</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialMultiAgentCluster.html" href="TutorialMultiAgentCluster.html">TutorialMultiAgentCluster</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialLMStudioIntegration.html" href="TutorialLMStudioIntegration.html">TutorialLMStudioIntegration</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialProjectWatchMonitor.html" href="TutorialProjectWatchMonitor.html">TutorialProjectWatchMonitor</a></li>
+</ul></section>
+<section class="wiki-nav-section">
+<h2>Architektur</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="Architecture.html" href="Architecture.html">Architecture</a></li>
+<li><a class="wiki-nav-link" data-nav-href="SystemOverview.html" href="SystemOverview.html">SystemOverview</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ComponentModel.html" href="ComponentModel.html">ComponentModel</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ExecutionModel.html" href="ExecutionModel.html">ExecutionModel</a></li>
+<li><a class="wiki-nav-link" data-nav-href="DataFlow.html" href="DataFlow.html">DataFlow</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaLanguage.html" href="NovaLanguage.html">NovaLanguage</a></li>
+<li><a class="wiki-nav-link" data-nav-href="nsCreate.html" href="nsCreate.html">nsCreate</a></li>
+<li><a class="wiki-nav-link" data-nav-href="nsReference.html" href="nsReference.html">nsReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="nsPatterns.html" href="nsPatterns.html">nsPatterns</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaRuntime.html" href="NovaRuntime.html">NovaRuntime</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaGraphEngine.html" href="NovaGraphEngine.html">NovaGraphEngine</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaPlanner.html" href="NovaPlanner.html">NovaPlanner</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ParserAndASTReference.html" href="ParserAndASTReference.html">ParserAndASTReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="RuntimeMethodReference.html" href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ClassReference.html" href="ClassReference.html">ClassReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="CodeReferenceIndex.html" href="CodeReferenceIndex.html">CodeReferenceIndex</a></li>
+</ul></section>
+<section class="wiki-nav-section">
+<h2>Plattformfunktionen</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="NovaAgents.html" href="NovaAgents.html">NovaAgents</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaMesh.html" href="NovaMesh.html">NovaMesh</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaSensors.html" href="NovaSensors.html">NovaSensors</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaMemory.html" href="NovaMemory.html">NovaMemory</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaTools.html" href="NovaTools.html">NovaTools</a></li>
+</ul></section>
+<section class="wiki-nav-section">
+<h2>Entwicklung und Betrieb</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="DevelopmentGuide.html" href="DevelopmentGuide.html">DevelopmentGuide</a></li>
+<li><a class="wiki-nav-link" data-nav-href="PageTemplate.html" href="PageTemplate.html">PageTemplate</a></li>
+<li><a class="wiki-nav-link" data-nav-href="RepositoryStructure.html" href="RepositoryStructure.html">RepositoryStructure</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Testing.html" href="Testing.html">Testing</a></li>
+<li><a class="wiki-nav-link" data-nav-href="BuildAndRelease.html" href="BuildAndRelease.html">BuildAndRelease</a></li>
+<li><a class="wiki-nav-link" data-nav-href="WatchMonitor.html" href="WatchMonitor.html">WatchMonitor</a></li>
+<li><a class="wiki-nav-link" data-nav-href="WatchMonitorReportReference.html" href="WatchMonitorReportReference.html">WatchMonitorReportReference</a></li>
+<li><a class="wiki-nav-link active" data-nav-href="WatchMonitorAutomationAndAI.html" href="WatchMonitorAutomationAndAI.html">WatchMonitorAutomationAndAI</a></li>
+<li><a class="wiki-nav-link" data-nav-href="SecurityModel.html" href="SecurityModel.html">SecurityModel</a></li>
+<li><a class="wiki-nav-link" data-nav-href="PerformanceAndScaling.html" href="PerformanceAndScaling.html">PerformanceAndScaling</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Troubleshooting.html" href="Troubleshooting.html">Troubleshooting</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Roadmap.html" href="Roadmap.html">Roadmap</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Contributing.html" href="Contributing.html">Contributing</a></li>
+<li><a class="wiki-nav-link" data-nav-href="License.html" href="License.html">License</a></li>
+</ul></section>
+<section class="wiki-nav-section">
+<h2>Theorie</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="Research.html" href="Research.html">Research</a></li>
+<li><a class="wiki-nav-link" data-nav-href="AIOSConcept.html" href="AIOSConcept.html">AIOSConcept</a></li>
+<li><a class="wiki-nav-link" data-nav-href="AgentSystems.html" href="AgentSystems.html">AgentSystems</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Glossary.html" href="Glossary.html">Glossary</a></li>
+<li><a class="wiki-nav-link" data-nav-href="FAQ.html" href="FAQ.html">FAQ</a></li>
+</ul></section>
+      </nav>
+    </aside>
+    <main class="wiki-main">
+      <header class="wiki-header">
+        <button type="button" class="wiki-nav-toggle" data-nav-toggle>Menu</button>
+        <div class="wiki-header-copy">
+          <span class="wiki-kicker">Nova-shell Documentation</span>
+          <h1>WatchMonitor Automation and AI</h1>
+          <p>Source: WatchMonitorAutomationAndAI.md</p>
+        </div>
+      </header>
+      <div class="wiki-layout">
+        <article class="wiki-article">
+          <h1 id="watchmonitor-automation-and-ai">WatchMonitor Automation and AI</h1>
+<h2 id="zweck">Zweck</h2>
+<p>Diese Seite dokumentiert die Automations- und Reviewpfade des Watch Monitors. Sie beschreibt, wann Build und Tests gestartet werden, wie AI-Review ausgewaehlt wird und welche Modi erzwingbar sind.</p>
+<h2 id="kernobjekte">Kernobjekte</h2>
+<ul>
+<li>Automations-Erkennung ueber Projektdateien</li>
+<li>AI-Review mit Prioritaeten und Fallbacks</li>
+<li>Watch-Modi fuer Eventbetrieb oder Polling</li>
+<li>Laufzeitkonfiguration ueber Umgebungsvariablen</li>
+</ul>
+<h2 id="methoden-und-schnittstellen">Methoden und Schnittstellen</h2>
+<p>Wichtige Variablen:</p>
+<ul>
+<li><code>NOVA_PROJECT_MONITOR_AUTOMATION</code></li>
+<li><code>NOVA_PROJECT_MONITOR_AUTOMATION_TIMEOUT</code></li>
+<li><code>NOVA_PROJECT_MONITOR_AI_MODE</code></li>
+<li><code>NOVA_PROJECT_MONITOR_AI_MODEL</code></li>
+<li><code>NOVA_PROJECT_MONITOR_AI_TIMEOUT</code></li>
+<li><code>NOVA_PROJECT_MONITOR_WATCH_MODE</code></li>
+<li><code>NOVA_PROJECT_MONITOR_DEBOUNCE</code></li>
+</ul>
+<h2 id="watch-modi">Watch-Modi</h2>
+<h3 id="auto"><code>auto</code></h3>
+<p>Bevorzugt echte Dateisystemevents ueber <code>watchdog</code>. Falls <code>watchdog</code> nicht verfuegbar ist, faellt der Monitor auf Polling zurueck.</p>
+<h3 id="watchdog"><code>watchdog</code></h3>
+<p>Erzwingt den Eventpfad. Wenn <code>watchdog</code> fehlt, wird im Status ein Fallback-Grund festgehalten.</p>
+<h3 id="poll"><code>poll</code></h3>
+<p>Erzwingt klassisches Polling ueber einen Zeitintervall.</p>
+<h2 id="automation">Automation</h2>
+<h3 id="automatische-erkennung">Automatische Erkennung</h3>
+<p>Der Monitor erkennt zurzeit vor allem:</p>
+<ul>
+<li><code>package.json</code> mit <code>build</code>-Script</li>
+<li><code>package.json</code> mit <code>test</code>-Script</li>
+<li>Python-Tests unter <code>tests/test_*.py</code></li>
+</ul>
+<p>Typische automatisch ausgefuehrte Kommandos:</p>
+<ul>
+<li><code>npm run build</code></li>
+<li><code>npm run test</code></li>
+<li><code>python -m unittest discover -s tests -p &quot;test_*.py&quot;</code></li>
+</ul>
+<h3 id="automationsmodi">Automationsmodi</h3>
+<ul>
+<li><code>auto</code>: nur bei relevanten Aenderungen</li>
+<li><code>on</code>: immer nach jedem Change-Event</li>
+<li><code>off</code>: keine Build-/Testchecks</li>
+</ul>
+<h3 id="timeout">Timeout</h3>
+<pre><code class="language-powershell">$env:NOVA_PROJECT_MONITOR_AUTOMATION_TIMEOUT = &quot;900&quot;</code></pre>
+<h2 id="ai-review">AI-Review</h2>
+<h3 id="prioritaet-in-auto">Prioritaet in <code>auto</code></h3>
+<p>Wenn <code>NOVA_PROJECT_MONITOR_AI_MODE=auto</code> gesetzt ist, nutzt der Monitor diese Reihenfolge:</p>
+<ol>
+<li><code>atheria</code></li>
+<li>OpenAI-kompatible Provider</li>
+<li><code>ollama</code></li>
+</ol>
+<h3 id="unterstuetzte-modi">Unterstuetzte Modi</h3>
+<ul>
+<li><code>auto</code></li>
+<li><code>atheria</code></li>
+<li><code>openai</code></li>
+<li><code>openrouter</code></li>
+<li><code>groq</code></li>
+<li><code>lmstudio</code></li>
+<li><code>ollama</code></li>
+</ul>
+<h3 id="sichtbarkeit-im-report">Sichtbarkeit im Report</h3>
+<p>Der Report zeigt fuer jedes Review:</p>
+<ul>
+<li><code>source</code></li>
+<li><code>provider</code></li>
+<li><code>model</code></li>
+<li><code>mode</code></li>
+</ul>
+<p>So ist immer sichtbar, ob die Bewertung aus:</p>
+<ul>
+<li>Heuristik</li>
+<li>Atheria</li>
+<li>OpenAI-kompatibler API</li>
+<li>LM Studio</li>
+<li>Ollama</li>
+</ul>
+<p>stammt.</p>
+<h2 id="cli">CLI</h2>
+<h3 id="atheria-priorisieren">Atheria priorisieren</h3>
+<pre><code class="language-powershell">$env:NOVA_PROJECT_MONITOR_AI_MODE = &quot;auto&quot;
+ns.run nova_project_monitor.ns</code></pre>
+<h3 id="atheria-erzwingen">Atheria erzwingen</h3>
+<pre><code class="language-powershell">$env:NOVA_PROJECT_MONITOR_AI_MODE = &quot;atheria&quot;
+ns.run nova_project_monitor.ns</code></pre>
+<h3 id="openai-erzwingen">OpenAI erzwingen</h3>
+<pre><code class="language-powershell">$env:NOVA_PROJECT_MONITOR_AI_MODE = &quot;openai&quot;
+$env:OPENAI_API_KEY = &quot;...&quot;
+$env:NOVA_PROJECT_MONITOR_AI_MODEL = &quot;gpt-4o-mini&quot;
+ns.run nova_project_monitor.ns</code></pre>
+<h3 id="ollama-erzwingen">Ollama erzwingen</h3>
+<pre><code class="language-powershell">$env:NOVA_PROJECT_MONITOR_AI_MODE = &quot;ollama&quot;
+$env:OLLAMA_MODEL = &quot;llama3.2&quot;
+ns.run nova_project_monitor.ns</code></pre>
+<h3 id="build-und-tests-immer-ausfuehren">Build und Tests immer ausfuehren</h3>
+<pre><code class="language-powershell">$env:NOVA_PROJECT_MONITOR_AUTOMATION = &quot;on&quot;
+ns.run nova_project_monitor.ns</code></pre>
+<h3 id="nur-dateisystemevents-nutzen">Nur Dateisystemevents nutzen</h3>
+<pre><code class="language-powershell">$env:NOVA_PROJECT_MONITOR_WATCH_MODE = &quot;watchdog&quot;
+$env:NOVA_PROJECT_MONITOR_DEBOUNCE = &quot;1.0&quot;
+ns.run nova_project_monitor.ns</code></pre>
+<h2 id="beispiele">Beispiele</h2>
+<h3 id="lokales-teamprojekt-mit-atheria-und-auto-build">Lokales Teamprojekt mit Atheria und Auto-Build</h3>
+<pre><code class="language-powershell">cd F:\DeCoG-TRI
+$env:NOVA_PROJECT_MONITOR_AI_MODE = &quot;auto&quot;
+$env:NOVA_PROJECT_MONITOR_AUTOMATION = &quot;auto&quot;
+$env:NOVA_PROJECT_MONITOR_WATCH_MODE = &quot;auto&quot;
+ns.run nova_project_monitor.ns</code></pre>
+<h3 id="api-review-fuer-cloud-session">API-Review fuer Cloud-Session</h3>
+<pre><code class="language-powershell">$env:NOVA_PROJECT_MONITOR_AI_MODE = &quot;openai&quot;
+$env:OPENAI_API_KEY = &quot;...&quot;
+$env:NOVA_PROJECT_MONITOR_AI_MODEL = &quot;gpt-4o-mini&quot;
+$env:NOVA_PROJECT_MONITOR_AUTOMATION = &quot;on&quot;
+ns.run nova_project_monitor.ns</code></pre>
+<h3 id="nur-report-kein-browser-keine-automation">Nur Report, kein Browser, keine Automation</h3>
+<pre><code class="language-powershell">$env:NOVA_PROJECT_MONITOR_ONESHOT = &quot;1&quot;
+$env:NOVA_PROJECT_MONITOR_OPEN = &quot;0&quot;
+$env:NOVA_PROJECT_MONITOR_AUTOMATION = &quot;off&quot;
+ns.run nova_project_monitor.ns</code></pre>
+<h2 id="typische-fehlerbilder">Typische Fehlerbilder</h2>
+<h3 id="keine-ai-bewertung-trotz-gesetztem-modus">Keine AI-Bewertung trotz gesetztem Modus</h3>
+<p>Pruefe:</p>
+<ul>
+<li>API-Key oder lokales Modell</li>
+<li>ob Atheria lokal verfuegbar ist</li>
+<li>ob der Provider valide JSON-Reviewdaten liefert</li>
+</ul>
+<p>Wenn kein valides Review zurueckkommt, faellt der Monitor kontrolliert auf die heuristische Bewertung zurueck.</p>
+<h3 id="build-oder-tests-laufen-nicht">Build oder Tests laufen nicht</h3>
+<p>Pruefe:</p>
+<ul>
+<li><code>NOVA_PROJECT_MONITOR_AUTOMATION</code></li>
+<li>ob ein <code>build</code>- oder <code>test</code>-Script in <code>package.json</code> existiert</li>
+<li>ob Python-Tests unter <code>tests/test_*.py</code> liegen</li>
+</ul>
+<h3 id="watchdog-reagiert-nicht">Watchdog reagiert nicht</h3>
+<p>Pruefe:</p>
+<pre><code class="language-powershell">$env:NOVA_PROJECT_MONITOR_WATCH_MODE = &quot;poll&quot;
+ns.run nova_project_monitor.ns</code></pre>
+<p>Wenn Polling funktioniert, ist der Projektmonitor selbst gesund und nur die Eventbibliothek der Installation fehlt oder reagiert nicht.</p>
+<h2 id="verwandte-seiten">Verwandte Seiten</h2>
+<ul>
+<li><a href="WatchMonitor.html">WatchMonitor</a></li>
+<li><a href="WatchMonitorQuickStart.html">WatchMonitorQuickStart</a></li>
+<li><a href="WatchMonitorReportReference.html">WatchMonitorReportReference</a></li>
+<li><a href="TutorialProjectWatchMonitor.html">TutorialProjectWatchMonitor</a></li>
+<li><a href="NovaAgents.html">NovaAgents</a></li>
+<li><a href="OperationsAndObservability.html">OperationsAndObservability</a></li>
+</ul>
+        </article>
+        <aside class="wiki-toc">
+          <div class="wiki-toc-card"><h2>On this page</h2><ul>
+<li class="wiki-toc-link"><a href="#zweck">Zweck</a></li>
+<li class="wiki-toc-link"><a href="#kernobjekte">Kernobjekte</a></li>
+<li class="wiki-toc-link"><a href="#methoden-und-schnittstellen">Methoden und Schnittstellen</a></li>
+<li class="wiki-toc-link"><a href="#watch-modi">Watch-Modi</a></li>
+<li class="wiki-toc-link level-3"><a href="#auto">`auto`</a></li>
+<li class="wiki-toc-link level-3"><a href="#watchdog">`watchdog`</a></li>
+<li class="wiki-toc-link level-3"><a href="#poll">`poll`</a></li>
+<li class="wiki-toc-link"><a href="#automation">Automation</a></li>
+<li class="wiki-toc-link level-3"><a href="#automatische-erkennung">Automatische Erkennung</a></li>
+<li class="wiki-toc-link level-3"><a href="#automationsmodi">Automationsmodi</a></li>
+<li class="wiki-toc-link level-3"><a href="#timeout">Timeout</a></li>
+<li class="wiki-toc-link"><a href="#ai-review">AI-Review</a></li>
+<li class="wiki-toc-link level-3"><a href="#prioritaet-in-auto">Prioritaet in `auto`</a></li>
+<li class="wiki-toc-link level-3"><a href="#unterstuetzte-modi">Unterstuetzte Modi</a></li>
+<li class="wiki-toc-link level-3"><a href="#sichtbarkeit-im-report">Sichtbarkeit im Report</a></li>
+<li class="wiki-toc-link"><a href="#cli">CLI</a></li>
+<li class="wiki-toc-link level-3"><a href="#atheria-priorisieren">Atheria priorisieren</a></li>
+<li class="wiki-toc-link level-3"><a href="#atheria-erzwingen">Atheria erzwingen</a></li>
+<li class="wiki-toc-link level-3"><a href="#openai-erzwingen">OpenAI erzwingen</a></li>
+<li class="wiki-toc-link level-3"><a href="#ollama-erzwingen">Ollama erzwingen</a></li>
+<li class="wiki-toc-link level-3"><a href="#build-und-tests-immer-ausfuehren">Build und Tests immer ausfuehren</a></li>
+<li class="wiki-toc-link level-3"><a href="#nur-dateisystemevents-nutzen">Nur Dateisystemevents nutzen</a></li>
+<li class="wiki-toc-link"><a href="#beispiele">Beispiele</a></li>
+<li class="wiki-toc-link level-3"><a href="#lokales-teamprojekt-mit-atheria-und-auto-build">Lokales Teamprojekt mit Atheria und Auto-Build</a></li>
+<li class="wiki-toc-link level-3"><a href="#api-review-fuer-cloud-session">API-Review fuer Cloud-Session</a></li>
+<li class="wiki-toc-link level-3"><a href="#nur-report-kein-browser-keine-automation">Nur Report, kein Browser, keine Automation</a></li>
+<li class="wiki-toc-link"><a href="#typische-fehlerbilder">Typische Fehlerbilder</a></li>
+<li class="wiki-toc-link level-3"><a href="#keine-ai-bewertung-trotz-gesetztem-modus">Keine AI-Bewertung trotz gesetztem Modus</a></li>
+<li class="wiki-toc-link level-3"><a href="#build-oder-tests-laufen-nicht">Build oder Tests laufen nicht</a></li>
+<li class="wiki-toc-link level-3"><a href="#watchdog-reagiert-nicht">Watchdog reagiert nicht</a></li>
+<li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
+</ul></div>
+        </aside>
+      </div>
+      <footer class="wiki-footer">
+        <p><a href="Home.html">Home</a> | <a href="QuickStart.html">QuickStart</a> | <a href="Architecture.html">Architecture</a> | <a href="NovaCLI.html">NovaCLI</a> | <a href="DevelopmentGuide.html">DevelopmentGuide</a> | <a href="FAQ.html">FAQ</a></p>
+      </footer>
+    </main>
+  </div>
+  <script>
+    window.NOVA_WIKI = {
+      currentPage: "WatchMonitorAutomationAndAI.html",
+      searchIndex: "assets/search-index.json"
+    };
+  </script>
+  <script src="assets/wiki.js" defer></script>
+</body>
+</html>
