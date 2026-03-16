@@ -113,6 +113,24 @@ nova-shell --no-plugins -c "ai providers" | ConvertFrom-Json
 | `vision` | Web- und UI-Flaechen | `vision start 8877` | lokaler Vision-Server startet |
 | `guard` | Sicherheits- und Sandbox-Pfade | `guard list` | JSON mit Policies und eBPF-Profilen |
 
+#### Watch Monitor als `.ns`-Betriebspfad
+
+Der Projektmonitor ist kein eigenes Top-Level-Kommando.
+Er wird ueber `ns.run` gestartet und arbeitet dann als langlebiger Beobachter im Projektordner.
+
+Direkt testbares Beispiel:
+
+```powershell
+cd F:\DeCoG-TRI
+ns.run nova_project_monitor.ns
+```
+
+Erwartung:
+
+- `.nova_project_monitor/` wird aufgebaut
+- der HTML-Report aktualisiert sich nach Projektänderungen
+- je nach Konfiguration laufen Build, Tests und Review-Agent mit
+
 ## API
 
 Die CLI spricht nicht nur lokal.
@@ -719,3 +737,5 @@ ns.graph .\control.ns
 - [NovaRuntime](./NovaRuntime.md)
 - [ClassReference](./ClassReference.md)
 - [PageTemplate](./PageTemplate.md)
+- [WatchMonitor](./WatchMonitor.md)
+- [WatchMonitorAutomationAndAI](./WatchMonitorAutomationAndAI.md)

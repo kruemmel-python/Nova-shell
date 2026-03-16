@@ -75,7 +75,7 @@ class _StreamTee(io.TextIOBase):
 class _PythonAdapter:
     def execute(self, task: ExecutorTask) -> ExecutorResult:
         code = task.command or (task.arguments[0] if task.arguments else "")
-        globals_ns: dict[str, Any] = {"json": json, "time": time, "_": task.pipeline_data}
+        globals_ns: dict[str, Any] = {"json": json, "os": os, "time": time, "_": task.pipeline_data}
         stream_mode = str(task.metadata.get("stream_mode") or "")
         stdout: io.StringIO | _StreamTee = _StreamTee(sys.stdout) if stream_mode == "tee" else io.StringIO()
         try:

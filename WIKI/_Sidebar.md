@@ -18,10 +18,15 @@
 - [ShellCommandReference](./ShellCommandReference.md)
 - [APIReference](./APIReference.md)
 - [ExamplesAndRecipes](./ExamplesAndRecipes.md)
+- [WatchMonitor](./WatchMonitor.md)
+- [WatchMonitorQuickStart](./WatchMonitorQuickStart.md)
+- [WatchMonitorReportReference](./WatchMonitorReportReference.md)
+- [WatchMonitorAutomationAndAI](./WatchMonitorAutomationAndAI.md)
 - [Tutorials](./Tutorials.md)
 - [TutorialTechnologyRadar](./TutorialTechnologyRadar.md)
 - [TutorialMultiAgentCluster](./TutorialMultiAgentCluster.md)
 - [TutorialLMStudioIntegration](./TutorialLMStudioIntegration.md)
+- [TutorialProjectWatchMonitor](./TutorialProjectWatchMonitor.md)
 
 ## Architektur
 
@@ -57,6 +62,9 @@
 - [RepositoryStructure](./RepositoryStructure.md)
 - [Testing](./Testing.md)
 - [BuildAndRelease](./BuildAndRelease.md)
+- [WatchMonitor](./WatchMonitor.md)
+- [WatchMonitorReportReference](./WatchMonitorReportReference.md)
+- [WatchMonitorAutomationAndAI](./WatchMonitorAutomationAndAI.md)
 - [SecurityModel](./SecurityModel.md)
 - [PerformanceAndScaling](./PerformanceAndScaling.md)
 - [Troubleshooting](./Troubleshooting.md)

@@ -1,0 +1,39 @@
+system local_control {
+  mode: local
+  observability: structured
+}
+
+state scan_state {
+  namespace: file_extension_scan_advanced
+}
+
+agent inspector {
+  model: local
+  system_prompt: "Bewerte Dateiscans nach Ordnung, Dateityp-Verteilung, Dateien ohne Endung, grossen Dateien und konkreten Aufraeumempfehlungen."
+}
+
+dataset target_dir {
+  path: "."
+  format: "directory"
+  recursive: true
+  exclude: [".nova"]
+}
+
+flow main {
+  py.exec 'records = [item for item in _ if item.get("kind") in {"file", "directory"}]; label = lambda item: item.get("relative_path") or item.get("name"); files = [item for item in records if item.get("kind") == "file"]; directories = [item for item in records if item.get("kind") == "directory"]; extensions = sorted({(item.get("extension") or "[Keine Endung]") for item in files}); groups = {ext: {"count": len([item for item in files if (item.get("extension") or "[Keine Endung]") == ext]), "files": sorted(label(item) for item in files if (item.get("extension") or "[Keine Endung]") == ext)} for ext in extensions}; _ = json.dumps({"directory_count": len(directories), "directories": sorted(label(item) for item in directories), "file_count": len(files), "groups": groups, "largest_files": [{"name": label(item), "size": item.get("size")} for item in sorted(files, key=lambda item: (item.get("size") or 0), reverse=True)[:10]], "recent_files": [{"name": label(item), "modified_at": item.get("modified_at")} for item in sorted(files, key=lambda item: (item.get("modified_at") or 0), reverse=True)[:10]]}, ensure_ascii=False, indent=2)' target_dir -> report
+  state.set last_report report
+  system.log report
+  py.exec 'payload = json.loads(_); top_entries = sorted(payload.get("groups", {}).items(), key=lambda item: (-item[1].get("count", 0), item[0]))[:5]; top_text = ", ".join(["{}: {}".format(ext, info.get("count", 0)) for ext, info in top_entries]) or "keine Dateien"; _ = "Scan abgeschlossen: {} Dateien, {} Ordner. Haeufigste Endungen: {}.".format(payload.get("file_count", 0), payload.get("directory_count", 0), top_text)' report -> summary_text
+  state.set last_summary summary_text
+  system.log summary_text
+  inspector summarize report -> inspector_result
+  state.set last_inspector_result inspector_result
+  py.exec 'payload = _; memory_record = payload.get("memory_record", {}); evaluation = payload.get("evaluation", {}); _ = "{}\nBewertung: {} (Score: {})".format(memory_record.get("text", "Keine Agent-Ausgabe"), evaluation.get("verdict", "unknown"), evaluation.get("score", "n/a"))' inspector_result -> inspector_summary
+  state.set last_inspector_summary inspector_summary
+  system.log inspector_summary
+  py.exec 'report_json, summary, inspector = _; payload = json.loads(report_json); group_rows = "".join(["<tr><td>{}</td><td>{}</td><td>{}</td></tr>".format(ext, info.get("count", 0), "<br>".join(info.get("files", []))) for ext, info in sorted(payload.get("groups", {}).items())]); directory_items = "".join(["<li>{}</li>".format(name) for name in payload.get("directories", [])]) or "<li>Keine Unterordner</li>"; largest_items = "".join(["<li>{} ({})</li>".format(item.get("name"), item.get("size")) for item in payload.get("largest_files", [])]) or "<li>Keine Dateien</li>"; recent_items = "".join(["<li>{} ({})</li>".format(item.get("name"), item.get("modified_at")) for item in payload.get("recent_files", [])]) or "<li>Keine Dateien</li>"; html = "<!DOCTYPE html><html lang=\"de\"><head><meta charset=\"utf-8\"><title>Datei-Scan</title><style>body{font-family:Segoe UI,Arial,sans-serif;margin:32px;background:#f5f7fb;color:#1f2937;}h1,h2{margin-bottom:12px;}section{background:#ffffff;border:1px solid #d6deeb;border-radius:14px;padding:20px;margin-bottom:20px;box-shadow:0 10px 30px rgba(15,23,42,0.08);}table{width:100%;border-collapse:collapse;}th,td{padding:10px;border-bottom:1px solid #e5e7eb;text-align:left;vertical-align:top;}th{background:#eef2ff;}ul{margin:0;padding-left:20px;}code{background:#eef2ff;padding:2px 6px;border-radius:6px;}.agent-note{background:#eef6ff;border-left:4px solid #3b82f6;padding:14px;border-radius:10px;white-space:pre-wrap;}</style></head><body><h1>Datei-Scan</h1><section><p>" + summary + "</p><p><strong>Dateien:</strong> " + str(payload.get("file_count", 0)) + " | <strong>Ordner:</strong> " + str(payload.get("directory_count", 0)) + "</p></section><section><h2>Bewertung durch inspector</h2><div class=\"agent-note\">" + inspector + "</div></section><section><h2>Endungen</h2><table><thead><tr><th>Endung</th><th>Anzahl</th><th>Dateien</th></tr></thead><tbody>" + group_rows + "</tbody></table></section><section><h2>Unterordner</h2><ul>" + directory_items + "</ul></section><section><h2>Groesste Dateien</h2><ul>" + largest_items + "</ul></section><section><h2>Zuletzt geaendert</h2><ul>" + recent_items + "</ul></section></body></html>"; output = os.path.abspath("file_extension_scan_report.html"); open(output, "w", encoding="utf-8").write(html); _ = output' report summary_text inspector_summary -> html_path
+  state.set last_html_path html_path
+  system.log html_path
+  py.exec 'path = _; open_flag = os.environ.get("NOVA_OPEN_HTML_REPORT", "1").lower() not in {"0", "false", "no"}; startfile = getattr(os, "startfile", None); startfile(path) if open_flag and startfile else None; _ = path' html_path -> opened_html
+  system.log opened_html
+}

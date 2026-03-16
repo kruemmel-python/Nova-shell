@@ -1,6 +1,7 @@
 import hashlib
 import http.server
 import json
+import os
 import sqlite3
 import socket
 import tempfile
@@ -454,6 +455,129 @@ class NovaLanguageTests(unittest.TestCase):
                 self.assertGreaterEqual(snapshot["mesh"]["task_count"], 1)
                 self.assertGreaterEqual(snapshot["observability"]["node_count"], 1)
                 self.assertTrue(any(event.name == "new_metric" for event in runtime.context.event_bus.history))
+
+    def test_runtime_supports_directory_dataset_bootstrap(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            (base / "alpha.txt").write_text("alpha", encoding="utf-8")
+            (base / "beta.json").write_text("{}", encoding="utf-8")
+            (base / "nested").mkdir()
+            program = """
+agent inspector {
+  model: local
+}
+
+dataset target_dir {
+  path: "."
+  format: "directory"
+}
+
+flow main {
+  inspector summarize target_dir -> result
+  system.log result
+}
+""".strip()
+
+            with NovaRuntime() as runtime:
+                runtime.load(program, base_path=tmp)
+                assert runtime.context is not None
+
+                records = runtime.context.datasets["target_dir"].records
+                self.assertGreaterEqual(len(records), 3)
+                self.assertTrue(any(item["name"] == "alpha.txt" and item["kind"] == "file" for item in records))
+                self.assertTrue(any(item["name"] == "nested" and item["kind"] == "directory" for item in records))
+
+                flow_record = runtime.execute_flow("main")
+                self.assertEqual(flow_record.flow, "main")
+
+    def test_runtime_supports_recursive_directory_dataset_bootstrap(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            (base / "alpha.txt").write_text("alpha", encoding="utf-8")
+            nested = base / "nested"
+            nested.mkdir()
+            (nested / "delta.md").write_text("nested", encoding="utf-8")
+            hidden_runtime = base / ".nova"
+            hidden_runtime.mkdir()
+            (hidden_runtime / "state.json").write_text("{}", encoding="utf-8")
+            program = """
+dataset target_dir {
+  path: "."
+  format: "directory"
+  recursive: true
+  exclude: [".nova"]
+}
+
+flow main {
+  system.log target_dir
+}
+""".strip()
+
+            with NovaRuntime() as runtime:
+                runtime.load(program, base_path=tmp)
+                assert runtime.context is not None
+
+                records = runtime.context.datasets["target_dir"].records
+                self.assertTrue(any(item["relative_path"] == "alpha.txt" and item["kind"] == "file" for item in records))
+                self.assertTrue(any(item["relative_path"] == "nested" and item["kind"] == "directory" for item in records))
+                self.assertTrue(any(item["relative_path"] == "nested/delta.md" and item["kind"] == "file" for item in records))
+                self.assertFalse(any(item["relative_path"].startswith(".nova") for item in records if isinstance(item, dict) and "relative_path" in item))
+
+    def test_advanced_file_extension_scan_example_generates_report_and_summary(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            (base / "alpha.txt").write_text("alpha", encoding="utf-8")
+            (base / "beta.json").write_text("{}", encoding="utf-8")
+            (base / "gamma").write_text("plain", encoding="utf-8")
+            nested = base / "nested"
+            nested.mkdir()
+            (nested / "delta.md").write_text("nested", encoding="utf-8")
+            program = (Path(__file__).resolve().parent.parent / "examples" / "file_extension_scan_advanced.ns").read_text(encoding="utf-8")
+            previous_open_flag = os.environ.get("NOVA_OPEN_HTML_REPORT")
+            os.environ["NOVA_OPEN_HTML_REPORT"] = "0"
+
+            try:
+                with NovaRuntime() as runtime:
+                    runtime.load(program, base_path=tmp)
+                    assert runtime.context is not None
+
+                    flow_record = runtime.execute_flow("main")
+                    self.assertEqual(flow_record.flow, "main")
+                    self.assertIn("last_report", runtime.context.states)
+                    self.assertIn("last_summary", runtime.context.states)
+                    self.assertIn("last_inspector_result", runtime.context.states)
+                    self.assertIn("last_inspector_summary", runtime.context.states)
+                    self.assertIn("last_html_path", runtime.context.states)
+                    self.assertIn("alpha.txt", runtime.context.states["last_report"])
+                    self.assertIn("nested/delta.md", runtime.context.states["last_report"])
+                    self.assertIn("Scan abgeschlossen", runtime.context.states["last_summary"])
+                    self.assertIn("Dateien", runtime.context.states["last_summary"])
+                    self.assertEqual(runtime.context.states["last_inspector_result"]["model"], "local")
+                    self.assertIn("inspector [local] summarize", runtime.context.states["last_inspector_summary"])
+                    self.assertIn("Top-Endungen", runtime.context.states["last_inspector_summary"])
+                    self.assertIn("Empfehlungen", runtime.context.states["last_inspector_summary"])
+                    self.assertIn("Dateien ohne Endung", runtime.context.states["last_inspector_summary"])
+                    self.assertIn("Bewertung: pass", runtime.context.states["last_inspector_summary"])
+                    self.assertIn("report", runtime.context.outputs)
+                    self.assertIn("summary_text", runtime.context.outputs)
+                    self.assertIn("inspector_result", runtime.context.outputs)
+                    self.assertIn("inspector_summary", runtime.context.outputs)
+                    self.assertIn("html_path", runtime.context.outputs)
+                    html_path = Path(runtime.context.states["last_html_path"])
+                    self.assertTrue(html_path.exists())
+                    html_body = html_path.read_text(encoding="utf-8")
+                    self.assertIn("Datei-Scan", html_body)
+                    self.assertIn("alpha.txt", html_body)
+                    self.assertIn("nested/delta.md", html_body)
+                    self.assertIn("Scan abgeschlossen", html_body)
+                    self.assertIn("Bewertung durch inspector", html_body)
+                    self.assertIn("inspector [local] summarize", html_body)
+                    self.assertIn("Empfehlungen", html_body)
+            finally:
+                if previous_open_flag is None:
+                    os.environ.pop("NOVA_OPEN_HTML_REPORT", None)
+                else:
+                    os.environ["NOVA_OPEN_HTML_REPORT"] = previous_open_flag
 
     def test_runtime_native_executor_manager_handles_python_backend(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

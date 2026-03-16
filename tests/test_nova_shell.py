@@ -2,6 +2,7 @@ import io
 import json
 import os
 import re
+import runpy
 import socket
 import tempfile
 import threading
@@ -935,6 +936,309 @@ if len(files_lines) == 2:
 
             after_status = json.loads(self.shell.route("atheria status").output)
             self.assertGreaterEqual(int(after_status.get("trained_records", 0)), before_records + 3)
+
+    def test_ns_run_project_monitor_generates_html_and_detects_line_changes(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        helper_path = root / "examples" / "nova_project_monitor_helper.py"
+        generator_path = root / "scripts" / "generate_project_monitor_ns.py"
+        generator = runpy.run_path(str(generator_path))
+        ns_text = generator["build_ns_text"](helper_path.read_text(encoding="utf-8"))
+
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp).resolve()
+            script_file = project / "nova_project_monitor.ns"
+            source_dir = project / "src"
+            source_dir.mkdir(parents=True, exist_ok=True)
+            target_file = source_dir / "app.ts"
+            target_file.write_text(
+                "const a = 1;\n"
+                "function renderValue() {\n"
+                "  return a;\n"
+                "}\n",
+                encoding="utf-8",
+            )
+            script_file.write_text(ns_text, encoding="utf-8")
+
+            with patch.dict(os.environ, {"NOVA_PROJECT_MONITOR_ONESHOT": "1", "NOVA_PROJECT_MONITOR_OPEN": "0"}, clear=False):
+                self.shell.route(f"cd {project}")
+                first = self.shell.route(f"ns.run {script_file}")
+                self.assertIsNone(first.error)
+
+            monitor_dir = project / ".nova_project_monitor"
+            report_path = monitor_dir / "project_monitor_report.html"
+            helper_copy = monitor_dir / "project_monitor_helper.py"
+            history_path = monitor_dir / "history.json"
+            self.assertTrue(report_path.is_file())
+            self.assertTrue(helper_copy.is_file())
+            history_payload = json.loads(history_path.read_text(encoding="utf-8"))
+            self.assertEqual(len(history_payload["events"]), 1)
+            self.assertEqual(history_payload["events"][0]["kind"], "baseline")
+
+            target_file.write_text(
+                "const a = 2;\n"
+                "function renderValue() {\n"
+                "  return a + 1;\n"
+                "}\n",
+                encoding="utf-8",
+            )
+
+            with patch.dict(os.environ, {"NOVA_PROJECT_MONITOR_ONESHOT": "1", "NOVA_PROJECT_MONITOR_OPEN": "0"}, clear=False):
+                second = self.shell.route(f"ns.run {script_file}")
+                self.assertIsNone(second.error)
+
+            history_payload = json.loads(history_path.read_text(encoding="utf-8"))
+            self.assertEqual(len(history_payload["events"]), 2)
+            change_event = history_payload["events"][-1]
+            self.assertEqual(change_event["kind"], "change")
+            self.assertEqual(len(change_event["modified"]), 1)
+            modified = change_event["modified"][0]
+            self.assertEqual(modified["path"], "src/app.ts")
+            self.assertGreaterEqual(modified["added_lines"], 1)
+            self.assertGreaterEqual(modified["removed_lines"], 1)
+            self.assertIn("review_agent", change_event)
+            self.assertIn(change_event["review_agent"]["severity"], {"low", "medium", "high", "critical"})
+            self.assertIn("Review-Agent bewertet", change_event["review_agent"]["summary"])
+            self.assertEqual(change_event["review_agent"]["source"], "heuristic")
+            self.assertIn("detail_page", modified)
+            self.assertTrue((monitor_dir / modified["detail_page"]).is_file())
+            html_body = report_path.read_text(encoding="utf-8")
+            self.assertIn("src/app.ts", html_body)
+            self.assertIn("Aenderung erkannt", html_body)
+            self.assertIn("Review-Agent", html_body)
+            self.assertIn("Datei-Hotspots", html_body)
+            self.assertIn("Detailseite", html_body)
+
+    def test_ns_run_project_monitor_can_use_ai_review_provider(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        helper_path = root / "examples" / "nova_project_monitor_helper.py"
+        generator_path = root / "scripts" / "generate_project_monitor_ns.py"
+        generator = runpy.run_path(str(generator_path))
+        ns_text = generator["build_ns_text"](helper_path.read_text(encoding="utf-8"))
+
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp).resolve()
+            script_file = project / "nova_project_monitor.ns"
+            target_file = project / "app.ts"
+            target_file.write_text("const value = 1;\n", encoding="utf-8")
+            script_file.write_text(ns_text, encoding="utf-8")
+
+            with patch.dict(os.environ, {"NOVA_PROJECT_MONITOR_ONESHOT": "1", "NOVA_PROJECT_MONITOR_OPEN": "0"}, clear=False):
+                self.shell.route(f"cd {project}")
+                first = self.shell.route(f"ns.run {script_file}")
+                self.assertIsNone(first.error)
+
+            target_file.write_text("const value = 2;\nconst next = value + 1;\n", encoding="utf-8")
+            ai_payload = {
+                "choices": [
+                    {
+                        "message": {
+                            "content": json.dumps(
+                                {
+                                    "severity": "high",
+                                    "headline": "AI Review",
+                                    "summary": "AI hat eine relevante Aenderung erkannt.",
+                                    "findings": ["Dateilogik wurde sichtbar erweitert."],
+                                    "recommendations": ["Fokussierten Smoke-Test ausfuehren."],
+                                },
+                                ensure_ascii=False,
+                            )
+                        }
+                    }
+                ]
+            }
+
+            with patch.dict(
+                os.environ,
+                {
+                    "NOVA_PROJECT_MONITOR_ONESHOT": "1",
+                    "NOVA_PROJECT_MONITOR_OPEN": "0",
+                    "NOVA_AI_PROVIDER": "openai",
+                    "NOVA_AI_MODEL": "gpt-4o-mini",
+                    "OPENAI_API_KEY": "test-key",
+                },
+                clear=False,
+            ):
+                with patch("urllib.request.urlopen", return_value=FakeHTTPResponse(ai_payload)):
+                    second = self.shell.route(f"ns.run {script_file}")
+                    self.assertIsNone(second.error)
+
+            history_payload = json.loads((project / ".nova_project_monitor" / "history.json").read_text(encoding="utf-8"))
+            change_event = history_payload["events"][-1]
+            review = change_event["review_agent"]
+            self.assertEqual(review["source"], "ai")
+            self.assertEqual(review["provider"], "openai")
+            self.assertEqual(review["headline"], "AI Review")
+            self.assertEqual(review["mode"], "openai")
+            self.assertIn("AI hat eine relevante Aenderung erkannt.", review["summary"])
+
+    def test_project_monitor_prefers_atheria_before_other_ai_providers(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        helper = runpy.run_path(str(root / "examples" / "nova_project_monitor_helper.py"))
+        resolve = helper["resolve_ai_provider_config"]
+        resolve.__globals__["atheria_runtime_available"] = lambda: True
+
+        with patch.dict(
+            os.environ,
+            {
+                "OPENAI_API_KEY": "test-key",
+                "NOVA_PROJECT_MONITOR_AI_MODE": "auto",
+                "LM_STUDIO_MODEL": "",
+                "OLLAMA_MODEL": "llama3.2",
+            },
+            clear=False,
+        ):
+            payload = resolve()
+
+        self.assertTrue(payload["enabled"])
+        self.assertEqual(payload["provider"], "atheria")
+        self.assertEqual(payload["kind"], "atheria-core")
+        self.assertEqual(payload["mode"], "auto")
+
+    def test_project_monitor_can_force_specific_ai_mode(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        helper = runpy.run_path(str(root / "examples" / "nova_project_monitor_helper.py"))
+        resolve = helper["resolve_ai_provider_config"]
+        resolve.__globals__["atheria_runtime_available"] = lambda: True
+
+        with patch.dict(
+            os.environ,
+            {
+                "NOVA_PROJECT_MONITOR_AI_MODE": "ollama",
+                "OLLAMA_MODEL": "llama3.2",
+                "OPENAI_API_KEY": "test-key",
+            },
+            clear=False,
+        ):
+            ollama_payload = resolve()
+
+        self.assertTrue(ollama_payload["enabled"])
+        self.assertEqual(ollama_payload["provider"], "ollama")
+        self.assertEqual(ollama_payload["mode"], "ollama")
+
+        with patch.dict(
+            os.environ,
+            {
+                "NOVA_PROJECT_MONITOR_AI_MODE": "openai",
+                "OPENAI_API_KEY": "test-key",
+                "NOVA_AI_MODEL": "gpt-4o-mini",
+            },
+            clear=False,
+        ):
+            openai_payload = resolve()
+
+        self.assertTrue(openai_payload["enabled"])
+        self.assertEqual(openai_payload["provider"], "openai")
+        self.assertEqual(openai_payload["mode"], "openai")
+
+    def test_project_monitor_detects_build_and_test_commands(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        helper = runpy.run_path(str(root / "examples" / "nova_project_monitor_helper.py"))
+        detect = helper["detect_project_automation"]
+
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp).resolve()
+            (project / "package.json").write_text(
+                json.dumps({"scripts": {"build": "vite build", "test": "vitest run"}}, ensure_ascii=False),
+                encoding="utf-8",
+            )
+            tests_dir = project / "tests"
+            tests_dir.mkdir(parents=True, exist_ok=True)
+            (tests_dir / "test_sample.py").write_text("import unittest\n", encoding="utf-8")
+
+            commands = detect(project)
+
+        displays = {item["display"] for item in commands}
+        self.assertIn("npm run build", displays)
+        self.assertIn("npm run test", displays)
+        self.assertTrue(any(item["name"] == "Python Unit Tests" for item in commands))
+
+    def test_project_monitor_resolve_watch_mode_prefers_watchdog_when_available(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        helper = runpy.run_path(str(root / "examples" / "nova_project_monitor_helper.py"))
+        resolve = helper["resolve_watch_mode"]
+        resolve.__globals__["WATCHDOG_AVAILABLE"] = True
+
+        with patch.dict(os.environ, {"NOVA_PROJECT_MONITOR_WATCH_MODE": "auto"}, clear=False):
+            payload = resolve()
+
+        self.assertEqual(payload["mode"], "watchdog")
+        self.assertTrue(payload["available"])
+
+        resolve.__globals__["WATCHDOG_AVAILABLE"] = False
+        with patch.dict(os.environ, {"NOVA_PROJECT_MONITOR_WATCH_MODE": "watchdog"}, clear=False):
+            fallback = resolve()
+
+        self.assertEqual(fallback["mode"], "poll")
+        self.assertFalse(fallback["available"])
+        self.assertIn("watchdog not installed", fallback["reason"])
+
+    def test_ns_run_project_monitor_includes_automation_results_in_report(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        helper_path = root / "examples" / "nova_project_monitor_helper.py"
+        generator_path = root / "scripts" / "generate_project_monitor_ns.py"
+        generator = runpy.run_path(str(generator_path))
+        ns_text = generator["build_ns_text"](helper_path.read_text(encoding="utf-8"))
+
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp).resolve()
+            script_file = project / "nova_project_monitor.ns"
+            target_file = project / "app.ts"
+            target_file.write_text("export const value = 1;\n", encoding="utf-8")
+            (project / "package.json").write_text(
+                json.dumps({"scripts": {"build": "vite build", "test": "vitest run"}}, ensure_ascii=False),
+                encoding="utf-8",
+            )
+            script_file.write_text(ns_text, encoding="utf-8")
+
+            with patch.dict(
+                os.environ,
+                {
+                    "NOVA_PROJECT_MONITOR_ONESHOT": "1",
+                    "NOVA_PROJECT_MONITOR_OPEN": "0",
+                    "NOVA_PROJECT_MONITOR_AUTOMATION": "on",
+                },
+                clear=False,
+            ):
+                self.shell.route(f"cd {project}")
+                first = self.shell.route(f"ns.run {script_file}")
+                self.assertIsNone(first.error)
+
+            target_file.write_text("export const value = 2;\nexport const next = value + 1;\n", encoding="utf-8")
+
+            def fake_subprocess_run(command: list[str], **_: object) -> SimpleNamespace:
+                display = " ".join(command)
+                if display == "npm run build":
+                    return SimpleNamespace(returncode=0, stdout="build ok\n", stderr="")
+                if display == "npm run test":
+                    return SimpleNamespace(returncode=0, stdout="tests ok\n", stderr="")
+                return SimpleNamespace(returncode=1, stdout="", stderr=f"unexpected command: {display}")
+
+            with patch.dict(
+                os.environ,
+                {
+                    "NOVA_PROJECT_MONITOR_ONESHOT": "1",
+                    "NOVA_PROJECT_MONITOR_OPEN": "0",
+                    "NOVA_PROJECT_MONITOR_AUTOMATION": "on",
+                },
+                clear=False,
+            ):
+                with patch("subprocess.run", side_effect=fake_subprocess_run):
+                    second = self.shell.route(f"ns.run {script_file}")
+                    self.assertIsNone(second.error)
+
+            monitor_dir = project / ".nova_project_monitor"
+            history_payload = json.loads((monitor_dir / "history.json").read_text(encoding="utf-8"))
+            change_event = history_payload["events"][-1]
+            automation = change_event["automation"]
+            self.assertTrue(automation["enabled"])
+            self.assertEqual(automation["status"], "passed")
+            self.assertEqual(len(automation["runs"]), 2)
+            self.assertTrue(all(item["success"] for item in automation["runs"]))
+
+            html_body = (monitor_dir / "project_monitor_report.html").read_text(encoding="utf-8")
+            self.assertIn("Build und Tests", html_body)
+            self.assertIn("npm run build", html_body)
+            self.assertIn("tests ok", html_body)
 
     def test_run_morning_briefing_can_use_custom_reference_files_without_defaults(self) -> None:
         root = Path(__file__).resolve().parents[1]

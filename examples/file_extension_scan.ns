@@ -1,0 +1,19 @@
+system local_control {
+  mode: local
+  observability: structured
+}
+
+state scan_state {
+  namespace: file_extension_scan
+}
+
+dataset target_dir {
+  path: "."
+  format: "directory"
+}
+
+flow main {
+  py.exec 'json.dumps({"file_count": len([item for item in _ if item.get("kind") == "file"]), "groups": {ext: {"count": len([item for item in _ if item.get("kind") == "file" and (item.get("extension") or "[Keine Endung]") == ext]), "files": sorted(item["name"] for item in _ if item.get("kind") == "file" and (item.get("extension") or "[Keine Endung]") == ext)} for ext in sorted({(item.get("extension") or "[Keine Endung]") for item in _ if item.get("kind") == "file"})}}, ensure_ascii=False, indent=2)' target_dir -> report
+  state.set last_report report
+  system.log report
+}

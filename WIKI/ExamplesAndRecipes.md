@@ -282,6 +282,37 @@ wiki build --source WIKI --output .nova\wiki-site
 wiki open Home --source WIKI --output .nova\wiki-site --port 8767
 ```
 
+### 16. Einen Projektordner live ueberwachen
+
+Lege `nova_project_monitor.ns` in den Projektordner und starte den Monitor direkt dort:
+
+```powershell
+cd F:\DeCoG-TRI
+ns.run nova_project_monitor.ns
+```
+
+Sicherer Erstlauf:
+
+```powershell
+$env:NOVA_PROJECT_MONITOR_ONESHOT = "1"
+$env:NOVA_PROJECT_MONITOR_OPEN = "0"
+ns.run nova_project_monitor.ns
+```
+
+Mit Build/Test-Checks und AI-Review:
+
+```powershell
+$env:NOVA_PROJECT_MONITOR_AUTOMATION = "auto"
+$env:NOVA_PROJECT_MONITOR_AI_MODE = "auto"
+ns.run nova_project_monitor.ns
+```
+
+Erwartung:
+
+- `.nova_project_monitor/project_monitor_report.html` wird aktualisiert
+- geaenderte Dateien erhalten Detailseiten
+- Review-Agent und Build-/Test-Ergebnisse erscheinen im Report
+
 ## Wann diese Seite benutzt werden sollte
 
 Diese Seite ist ideal, wenn du:
@@ -297,3 +328,5 @@ Diese Seite ist ideal, wenn du:
 - [ClassReference](./ClassReference.md)
 - [RuntimeMethodReference](./RuntimeMethodReference.md)
 - [Tutorials](./Tutorials.md)
+- [WatchMonitor](./WatchMonitor.md)
+- [WatchMonitorQuickStart](./WatchMonitorQuickStart.md)

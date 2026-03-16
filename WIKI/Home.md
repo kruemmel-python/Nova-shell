@@ -66,6 +66,8 @@ Wenn du Klassen, Methoden, Endpunkte und Einstiegspunkte suchst:
 - [ProgrammingWithNovaShell](./ProgrammingWithNovaShell.md): wie man mit CLI, `.ns` und Python wirklich programmiert
 - [ShellCommandReference](./ShellCommandReference.md): Zuordnung von Kommandos zu Handlern
 - [APIReference](./APIReference.md): HTTP-Control-Plane-API mit Beispielen
+- [WatchMonitor](./WatchMonitor.md): Projektordner live ueberwachen, analysieren und HTML-Reports aktualisieren
+- [TutorialProjectWatchMonitor](./TutorialProjectWatchMonitor.md): Schritt-fuer-Schritt-Aufbau eines echten Projektwaechters
 - [Tutorials](./Tutorials.md): gefuehrte Workflows
 - [ExamplesAndRecipes](./ExamplesAndRecipes.md): kurze, konkrete Anwendungsrezepte
 
@@ -93,6 +95,7 @@ Wenn du Klassen, Methoden, Endpunkte und Einstiegspunkte suchst:
 - [NovaMesh](./NovaMesh.md): Worker, Protokolle und verteilte Ausfuehrung
 - [ServiceFabricAndTrafficPlane](./ServiceFabricAndTrafficPlane.md): Services, Routing, Probes und Traffic-Shifts
 - [OperationsAndObservability](./OperationsAndObservability.md): Traces, Alerts, Backups, Recovery
+- [WatchMonitorReportReference](./WatchMonitorReportReference.md): HTML-Report, JSON-Dateien, Detailseiten und Hotspots
 
 ### Referenz
 

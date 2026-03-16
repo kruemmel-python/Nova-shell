@@ -225,6 +225,9 @@ class AgentRuntime:
         )
 
     def _render_output(self, specification: AgentSpecification, action: str, inputs: list[Any], prompt_text: str) -> str:
+        structured = self._render_structured_output(specification, action, inputs)
+        if structured is not None:
+            return structured
         summarized_inputs = [self._summarize_input(value) for value in inputs]
         payload = "; ".join(item for item in summarized_inputs if item) or "no inputs"
         tools = ", ".join(specification.tools) if specification.tools else "no tools"
@@ -293,6 +296,119 @@ class AgentRuntime:
                 return compact[:120]
             case _:
                 return str(value)
+
+    def _render_structured_output(self, specification: AgentSpecification, action: str, inputs: list[Any]) -> str | None:
+        if action not in {"summarize", "inspect", "evaluate", "review"} or not inputs:
+            return None
+        payload = self._coerce_structured_input(inputs[0])
+        if isinstance(payload, dict) and {"file_count", "directory_count", "groups"}.issubset(payload.keys()):
+            return self._render_folder_scan_output(specification, action, payload)
+        return None
+
+    def _coerce_structured_input(self, value: Any) -> Any:
+        if isinstance(value, str):
+            stripped = value.strip()
+            if stripped.startswith("{") or stripped.startswith("["):
+                try:
+                    return json.loads(stripped)
+                except json.JSONDecodeError:
+                    return value
+        return value
+
+    def _render_folder_scan_output(self, specification: AgentSpecification, action: str, payload: dict[str, Any]) -> str:
+        file_count = int(payload.get("file_count") or 0)
+        directory_count = int(payload.get("directory_count") or 0)
+        groups = payload.get("groups") or {}
+        if not isinstance(groups, dict):
+            groups = {}
+        normalized_groups: dict[str, dict[str, Any]] = {}
+        for extension, details in groups.items():
+            if isinstance(details, dict):
+                normalized_groups[str(extension)] = details
+
+        top_groups = sorted(
+            normalized_groups.items(),
+            key=lambda item: (-int((item[1] or {}).get("count") or 0), item[0]),
+        )
+        top_group_lines = [
+            f"- {extension}: {int((details or {}).get('count') or 0)} Datei(en)"
+            for extension, details in top_groups[:5]
+        ]
+        files_without_extension = int((normalized_groups.get("[Keine Endung]") or {}).get("count") or 0)
+        extension_count = len(normalized_groups)
+        dominant_extension = top_groups[0] if top_groups else None
+        dominant_ratio = (
+            (int((dominant_extension[1] or {}).get("count") or 0) / file_count)
+            if dominant_extension and file_count
+            else 0.0
+        )
+
+        largest_files = payload.get("largest_files") or []
+        largest_lines: list[str] = []
+        if isinstance(largest_files, list):
+            for item in largest_files[:3]:
+                if isinstance(item, dict):
+                    largest_lines.append(f"- {item.get('name', 'unbekannt')} ({self._format_size(item.get('size'))})")
+
+        findings: list[str] = []
+        recommendations: list[str] = []
+
+        if file_count == 0:
+            findings.append("- Keine Dateien im Zielordner gefunden.")
+            recommendations.append("- Keine Aktion erforderlich, bis Dateien vorhanden sind.")
+        else:
+            findings.append(f"- {file_count} Datei(en), {directory_count} Unterordner, {extension_count} Dateityp(en).")
+            if files_without_extension:
+                findings.append(f"- {files_without_extension} Datei(en) ohne Endung gefunden.")
+                recommendations.append("- Dateien ohne Endung pruefen und sinnvoll benennen oder einsortieren.")
+            if dominant_extension and dominant_ratio >= 0.5:
+                findings.append(
+                    f"- Deutlicher Schwerpunkt auf {dominant_extension[0]} ({int((dominant_extension[1] or {}).get('count') or 0)} Datei(en), {dominant_ratio:.0%})."
+                )
+                recommendations.append(f"- Fuer {dominant_extension[0]} einen eigenen Unterordner oder Batch-Workflow anlegen.")
+            else:
+                findings.append("- Kein einzelner Dateityp dominiert den Ordner.")
+            if extension_count >= 6:
+                findings.append("- Hohe Typenvielfalt deutet auf gemischten Ablageordner hin.")
+                recommendations.append("- Unterordner nach Thema oder Dateityp anlegen, um die Root-Ebene zu entlasten.")
+            if file_count >= 25:
+                findings.append("- Viele Dateien liegen direkt im Zielordner.")
+                recommendations.append("- Alte oder abgeschlossene Dateien archivieren und den Root-Ordner reduzieren.")
+            if largest_lines:
+                findings.append("- Groesste Dateien:")
+                findings.extend(largest_lines)
+                recommendations.append("- Grosse Dateien auf Relevanz, Dubletten oder Archivierung pruefen.")
+
+        if not recommendations:
+            recommendations.append("- Der Ordner wirkt aktuell stabil; nur bei Bedarf weiter strukturieren.")
+
+        top_extensions = "\n".join(top_group_lines) if top_group_lines else "- Keine Dateitypen erkannt."
+        return "\n".join(
+            [
+                f"{specification.name} [{specification.model}] {action}:",
+                f"Uebersicht: {file_count} Datei(en), {directory_count} Unterordner.",
+                "Top-Endungen:",
+                top_extensions,
+                "Befunde:",
+                *findings,
+                "Empfehlungen:",
+                *recommendations,
+            ]
+        )
+
+    def _format_size(self, value: Any) -> str:
+        try:
+            size = float(value)
+        except (TypeError, ValueError):
+            return "unbekannt"
+        units = ["B", "KB", "MB", "GB", "TB"]
+        unit_index = 0
+        while size >= 1024.0 and unit_index < len(units) - 1:
+            size /= 1024.0
+            unit_index += 1
+        if unit_index == 0:
+            return f"{int(size)} {units[unit_index]}"
+        return f"{size:.1f} {units[unit_index]}"
 
     def _bounded_text(self, value: Any, limit: int) -> str:
         text = str(value)

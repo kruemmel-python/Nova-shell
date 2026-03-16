@@ -10,6 +10,7 @@ Die Tutorials sollen nicht nur erklaeren, was ein Feature ist, sondern einen nac
 - [TutorialTechnologyRadar](./TutorialTechnologyRadar.md)
 - [TutorialMultiAgentCluster](./TutorialMultiAgentCluster.md)
 - [TutorialLMStudioIntegration](./TutorialLMStudioIntegration.md)
+- [TutorialProjectWatchMonitor](./TutorialProjectWatchMonitor.md)
 
 ## Lernreihenfolge
 
@@ -39,8 +40,21 @@ ns.run examples\market_radar.ns
 
 Danach kannst du tiefer in die Tutorials fuer Cluster- oder lokale Modellpfade gehen.
 
+Wenn du ein echtes Projekt live beobachten willst, ist dies der direkteste Einstieg:
+
+```powershell
+cd F:\DeCoG-TRI
+ns.run nova_project_monitor.ns
+```
+
+Dazu passend:
+
+- [TutorialProjectWatchMonitor](./TutorialProjectWatchMonitor.md)
+- [WatchMonitor](./WatchMonitor.md)
+
 ## Verwandte Seiten
 
 - [ExamplesAndRecipes](./ExamplesAndRecipes.md)
 - [NovaCLI](./NovaCLI.md)
 - [ProgrammingWithNovaShell](./ProgrammingWithNovaShell.md)
+- [WatchMonitor](./WatchMonitor.md)

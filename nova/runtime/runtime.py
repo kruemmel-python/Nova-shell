@@ -2543,6 +2543,12 @@ class NovaRuntime:
             if not target.is_absolute():
                 target = (base_path / target).resolve(strict=False)
             if target.exists():
+                if target.is_dir():
+                    recursive = bool(properties.get("recursive"))
+                    max_depth_value = properties.get("max_depth")
+                    max_depth = int(max_depth_value) if isinstance(max_depth_value, (int, float, str)) and str(max_depth_value).strip() else None
+                    exclude = self._coerce_string_list(properties.get("exclude"))
+                    return self._directory_records(target, recursive=recursive, max_depth=max_depth, exclude=exclude)
                 if target.suffix.lower() == ".json":
                     loaded = json.loads(target.read_text(encoding="utf-8"))
                     if isinstance(loaded, list):
@@ -2573,6 +2579,88 @@ class NovaRuntime:
 
     def _normalize_record(self, value: Any) -> Any:
         return value if isinstance(value, dict) else {"value": value}
+
+    def _coerce_string_list(self, value: Any) -> list[str]:
+        if isinstance(value, list):
+            return [str(item) for item in value if str(item).strip()]
+        if value is None:
+            return []
+        text = str(value).strip()
+        return [text] if text else []
+
+    def _directory_records(
+        self,
+        target: Path,
+        *,
+        recursive: bool = False,
+        max_depth: int | None = None,
+        exclude: list[str] | None = None,
+    ) -> list[dict[str, Any]]:
+        records: list[dict[str, Any]] = []
+        excluded = {item for item in (exclude or []) if item}
+
+        def should_exclude(relative_path: Path) -> bool:
+            return any(part in excluded for part in relative_path.parts)
+
+        def append_child(child: Path) -> None:
+            relative_path = child.relative_to(target)
+            if should_exclude(relative_path):
+                return
+            try:
+                stat = child.stat()
+            except OSError as exc:
+                records.append(
+                    {
+                        "name": child.name,
+                        "path": str(child),
+                        "relative_path": relative_path.as_posix(),
+                        "depth": len(relative_path.parts),
+                        "kind": "unknown",
+                        "extension": child.suffix.lower(),
+                        "error": str(exc),
+                    }
+                )
+                return
+
+            kind = "directory" if child.is_dir() else "file" if child.is_file() else "other"
+            records.append(
+                {
+                    "name": child.name,
+                    "path": str(child),
+                    "relative_path": relative_path.as_posix(),
+                    "depth": len(relative_path.parts),
+                    "kind": kind,
+                    "extension": child.suffix.lower() if child.is_file() else "",
+                    "size": stat.st_size if child.is_file() else None,
+                    "modified_at": stat.st_mtime,
+                }
+            )
+
+        def walk(directory: Path, depth: int) -> None:
+            try:
+                children = sorted(directory.iterdir(), key=lambda item: item.name.lower())
+            except OSError as exc:
+                relative_path = directory.relative_to(target) if directory != target else Path(".")
+                return records.append(
+                    {
+                        "name": directory.name or str(directory),
+                        "path": str(directory),
+                        "relative_path": relative_path.as_posix(),
+                        "depth": 0 if relative_path == Path(".") else len(relative_path.parts),
+                        "kind": "directory",
+                        "error": str(exc),
+                    }
+                )
+
+            for child in children:
+                append_child(child)
+                child_relative = child.relative_to(target)
+                child_depth = len(child_relative.parts)
+                if recursive and child.is_dir() and (max_depth is None or child_depth < max_depth) and not should_exclude(child_relative):
+                    walk(child, depth + 1)
+
+        walk(target, 0)
+        return records
 
     def _publish_event(self, event_name: str, payload: Any, *, source: str) -> Event:
         assert self.context is not None

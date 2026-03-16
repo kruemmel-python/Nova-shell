@@ -172,6 +172,37 @@ class BackendRouter:
             target = (base_path / target).resolve(strict=False)
         if not target.exists():
             return CommandExecution(error=f"data file not found: {target}")
+        if target.is_dir():
+            entries: list[dict[str, Any]] = []
+            try:
+                children = sorted(target.iterdir(), key=lambda item: item.name.lower())
+            except OSError as exc:
+                return CommandExecution(error=str(exc))
+            for child in children:
+                try:
+                    stat = child.stat()
+                except OSError as exc:
+                    entries.append(
+                        {
+                            "name": child.name,
+                            "path": str(child),
+                            "kind": "unknown",
+                            "extension": child.suffix.lower(),
+                            "error": str(exc),
+                        }
+                    )
+                    continue
+                entries.append(
+                    {
+                        "name": child.name,
+                        "path": str(child),
+                        "kind": "directory" if child.is_dir() else "file" if child.is_file() else "other",
+                        "extension": child.suffix.lower() if child.is_file() else "",
+                        "size": stat.st_size if child.is_file() else None,
+                        "modified_at": stat.st_mtime,
+                    }
+                )
+            return CommandExecution(output=json.dumps(entries, ensure_ascii=False), data=entries)
         if target.suffix.lower() == ".json":
             data = json.loads(target.read_text(encoding="utf-8"))
             return CommandExecution(output=json.dumps(data, ensure_ascii=False), data=data)

@@ -63,7 +63,7 @@ powershell -ExecutionPolicy Bypass -File scripts\upgrade_windows_install.ps1
 Mit explizitem Installer:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts\upgrade_windows_install.ps1 -InstallerPath H:\Nova-shell-main\dist\release\windows-amd64\core\installers\nova-shell-0.8.12-windows-x64-core.msi
+powershell -ExecutionPolicy Bypass -File scripts\upgrade_windows_install.ps1 -InstallerPath H:\Nova-shell-main\dist\release\windows-amd64\core\installers\nova-shell-0.8.13-windows-x64-core.msi
 ```
 
 Nur den Ablauf pruefen:

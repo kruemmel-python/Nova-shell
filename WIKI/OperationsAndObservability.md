@@ -52,6 +52,24 @@ wiki build
 
 Der letzte Schritt ist kein Betriebsfeature der Runtime selbst, aber ein schneller Integrationscheck fuer Toolchain und lokale Installation.
 
+### Projektordner mit Watch Monitor beobachten
+
+```powershell
+cd F:\DeCoG-TRI
+$env:NOVA_PROJECT_MONITOR_AUTOMATION = "auto"
+$env:NOVA_PROJECT_MONITOR_AI_MODE = "auto"
+ns.run nova_project_monitor.ns
+```
+
+Das ist der direkteste Betriebsweg, um:
+
+- Datei-Hotspots zu sehen
+- Zeilen-Diffs pro Aenderung nachzuverfolgen
+- Review-Agent-Ergebnisse sichtbar zu machen
+- Build- und Testlaeufe nach Aenderungen zu protokollieren
+
+Die erzeugten Artefakte liegen unter `.nova_project_monitor/`.
+
 ## Typische Betriebsfragen
 
 ### Wo sehe ich, ob die Runtime gesund wirkt?
@@ -75,3 +93,5 @@ Ueber Snapshot- und Control-Plane-Pfade. Fuer umfangreichere Release- oder Betri
 - [RuntimeAndControlPlane](./RuntimeAndControlPlane.md)
 - [APIReference](./APIReference.md)
 - [Troubleshooting](./Troubleshooting.md)
+- [WatchMonitor](./WatchMonitor.md)
+- [WatchMonitorReportReference](./WatchMonitorReportReference.md)

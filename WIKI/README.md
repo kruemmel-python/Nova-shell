@@ -32,6 +32,11 @@ Sie beschreibt das Projekt aus sich selbst heraus und ist nicht als Verweissamml
 - [NovaMemory](./NovaMemory.md)
 - [NovaTools](./NovaTools.md)
 - [ExamplesAndRecipes](./ExamplesAndRecipes.md)
+- [WatchMonitor](./WatchMonitor.md)
+- [WatchMonitorQuickStart](./WatchMonitorQuickStart.md)
+- [WatchMonitorReportReference](./WatchMonitorReportReference.md)
+- [WatchMonitorAutomationAndAI](./WatchMonitorAutomationAndAI.md)
+- [TutorialProjectWatchMonitor](./TutorialProjectWatchMonitor.md)
 - [ClassReference](./ClassReference.md)
 - [CodeReferenceIndex](./CodeReferenceIndex.md)
 - [ParserAndASTReference](./ParserAndASTReference.md)
@@ -59,6 +64,7 @@ Wenn du neu bist:
 5. [nsPatterns](./nsPatterns.md)
 6. [NovaCLI](./NovaCLI.md)
 7. [ExamplesAndRecipes](./ExamplesAndRecipes.md)
+8. [WatchMonitorQuickStart](./WatchMonitorQuickStart.md)
 
 ### Technik und Architektur
 
@@ -72,6 +78,7 @@ Wenn du das System bauen oder erweitern willst:
 6. [nsPatterns](./nsPatterns.md)
 7. [NovaRuntime](./NovaRuntime.md)
 8. [CodeReferenceIndex](./CodeReferenceIndex.md)
+9. [WatchMonitor](./WatchMonitor.md)
 
 ## Verwandte Seiten
 
