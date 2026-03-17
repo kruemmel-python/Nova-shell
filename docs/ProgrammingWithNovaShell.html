@@ -40,14 +40,21 @@
 <li><a class="wiki-nav-link" data-nav-href="ShellCommandReference.html" href="ShellCommandReference.html">ShellCommandReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="APIReference.html" href="APIReference.html">APIReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ExamplesAndRecipes.html" href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NSBlobGenerator.html" href="NSBlobGenerator.html">NSBlobGenerator</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaSynthPredictiveEngineShifting.html" href="NovaSynthPredictiveEngineShifting.html">NovaSynthPredictiveEngineShifting</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ZeroCopyFederatedLearningMesh.html" href="ZeroCopyFederatedLearningMesh.html">ZeroCopyFederatedLearningMesh</a></li>
+<li><a class="wiki-nav-link" data-nav-href="MyceliaAtheriaCoEvolution.html" href="MyceliaAtheriaCoEvolution.html">MyceliaAtheriaCoEvolution</a></li>
 <li><a class="wiki-nav-link" data-nav-href="WatchMonitor.html" href="WatchMonitor.html">WatchMonitor</a></li>
 <li><a class="wiki-nav-link" data-nav-href="WatchMonitorQuickStart.html" href="WatchMonitorQuickStart.html">WatchMonitorQuickStart</a></li>
 <li><a class="wiki-nav-link" data-nav-href="WatchMonitorReportReference.html" href="WatchMonitorReportReference.html">WatchMonitorReportReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="WatchMonitorAutomationAndAI.html" href="WatchMonitorAutomationAndAI.html">WatchMonitorAutomationAndAI</a></li>
+<li><a class="wiki-nav-link" data-nav-href="WatchMonitorTroubleshooting.html" href="WatchMonitorTroubleshooting.html">WatchMonitorTroubleshooting</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Tutorials.html" href="Tutorials.html">Tutorials</a></li>
 <li><a class="wiki-nav-link" data-nav-href="TutorialTechnologyRadar.html" href="TutorialTechnologyRadar.html">TutorialTechnologyRadar</a></li>
 <li><a class="wiki-nav-link" data-nav-href="TutorialMultiAgentCluster.html" href="TutorialMultiAgentCluster.html">TutorialMultiAgentCluster</a></li>
 <li><a class="wiki-nav-link" data-nav-href="TutorialLMStudioIntegration.html" href="TutorialLMStudioIntegration.html">TutorialLMStudioIntegration</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialBlobSeeds.html" href="TutorialBlobSeeds.html">TutorialBlobSeeds</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialPredictiveFederatedCoevolution.html" href="TutorialPredictiveFederatedCoevolution.html">TutorialPredictiveFederatedCoevolution</a></li>
 <li><a class="wiki-nav-link" data-nav-href="TutorialProjectWatchMonitor.html" href="TutorialProjectWatchMonitor.html">TutorialProjectWatchMonitor</a></li>
 </ul></section>
 <section class="wiki-nav-section">
@@ -75,6 +82,10 @@
 <ul>
 <li><a class="wiki-nav-link" data-nav-href="NovaAgents.html" href="NovaAgents.html">NovaAgents</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaMesh.html" href="NovaMesh.html">NovaMesh</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NSBlobGenerator.html" href="NSBlobGenerator.html">NSBlobGenerator</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaSynthPredictiveEngineShifting.html" href="NovaSynthPredictiveEngineShifting.html">NovaSynthPredictiveEngineShifting</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ZeroCopyFederatedLearningMesh.html" href="ZeroCopyFederatedLearningMesh.html">ZeroCopyFederatedLearningMesh</a></li>
+<li><a class="wiki-nav-link" data-nav-href="MyceliaAtheriaCoEvolution.html" href="MyceliaAtheriaCoEvolution.html">MyceliaAtheriaCoEvolution</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaSensors.html" href="NovaSensors.html">NovaSensors</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaMemory.html" href="NovaMemory.html">NovaMemory</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaTools.html" href="NovaTools.html">NovaTools</a></li>
@@ -197,6 +208,16 @@ agent show helper</code></pre>
 <pre><code class="language-powershell">mesh start-worker --caps cpu,py
 mesh list
 mesh run py py 1 + 1</code></pre>
+<h3 id="6-logik-als-blob-seed-kapseln">6. Logik als Blob-Seed kapseln</h3>
+<pre><code class="language-powershell">blob pack --text &quot;21 * 2&quot; --type py
+blob verify .\calc.nsblob.json
+blob exec .\calc.nsblob.json</code></pre>
+<p>Das ist der richtige Weg, wenn Logik:</p>
+<ul>
+<li>kompakt transportiert</li>
+<li>vor Ausfuehrung verifiziert</li>
+<li>oder ueber Mesh mobil verschoben werden soll</li>
+</ul>
 <h2 id="programmieren-mit-pipelines">Programmieren mit Pipelines</h2>
 <p>Pipelines sind ideal fuer kleine Automationen ohne <code>.ns</code>.</p>
 <h3 id="einfache-pipeline">Einfache Pipeline</h3>
@@ -256,6 +277,15 @@ ns.control events ping 0 10</code></pre>
 <pre><code class="language-powershell">ns.snapshot .\control-snapshot.json
 ns.resume .\control-snapshot.json
 ns.status</code></pre>
+<h3 id="blob-seeds-direkt-in-ns-nutzen">Blob-Seeds direkt in <code>.ns</code> nutzen</h3>
+<pre><code class="language-ns">flow inspect_blob {
+  blob.verify &quot;C:/project/workflow.nsblob.json&quot; -&gt; verified
+  blob.unpack &quot;C:/project/workflow.nsblob.json&quot; -&gt; unpacked
+}
+
+flow execute_blob {
+  blob.exec &quot;C:/project/workflow.nsblob.json&quot; -&gt; executed
+}</code></pre>
 <h2 id="programmieren-mit-python">Programmieren mit Python</h2>
 <p>Die Python-API ist sinnvoll, wenn du:</p>
 <ul>
@@ -333,6 +363,7 @@ cpp.sandbox int main(){ return 0; }</code></pre>
 <li><a href="NovaCLI.html">NovaCLI</a></li>
 <li><a href="ShellCommandReference.html">ShellCommandReference</a></li>
 <li><a href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
+<li><a href="NSBlobGenerator.html">NSBlobGenerator</a></li>
 </ol>
 <p>Wenn du <code>.ns</code>-Programme schreiben willst:</p>
 <ol>
@@ -345,6 +376,7 @@ cpp.sandbox int main(){ return 0; }</code></pre>
 <ol>
 <li><a href="ClassReference.html">ClassReference</a></li>
 <li><a href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
+<li><a href="NSBlobGenerator.html">NSBlobGenerator</a></li>
 <li><a href="CodeReferenceIndex.html">CodeReferenceIndex</a></li>
 </ol>
 <h2 id="verwandte-seiten">Verwandte Seiten</h2>
@@ -370,6 +402,7 @@ cpp.sandbox int main(){ return 0; }</code></pre>
 <li class="wiki-toc-link level-3"><a href="#3-ein-tool-als-wiederverwendbare-funktion-bauen">3. Ein Tool als wiederverwendbare Funktion bauen</a></li>
 <li class="wiki-toc-link level-3"><a href="#4-einen-agenten-definieren">4. Einen Agenten definieren</a></li>
 <li class="wiki-toc-link level-3"><a href="#5-lokal-verteilt-arbeiten">5. Lokal verteilt arbeiten</a></li>
+<li class="wiki-toc-link level-3"><a href="#6-logik-als-blob-seed-kapseln">6. Logik als Blob-Seed kapseln</a></li>
 <li class="wiki-toc-link"><a href="#programmieren-mit-pipelines">Programmieren mit Pipelines</a></li>
 <li class="wiki-toc-link level-3"><a href="#einfache-pipeline">Einfache Pipeline</a></li>
 <li class="wiki-toc-link level-3"><a href="#strukturierte-daten">Strukturierte Daten</a></li>
@@ -378,6 +411,7 @@ cpp.sandbox int main(){ return 0; }</code></pre>
 <li class="wiki-toc-link level-3"><a href="#praktischer-ablauf">Praktischer Ablauf</a></li>
 <li class="wiki-toc-link level-3"><a href="#queue-und-events-wirklich-nutzen">Queue und Events wirklich nutzen</a></li>
 <li class="wiki-toc-link level-3"><a href="#snapshot-und-resume">Snapshot und Resume</a></li>
+<li class="wiki-toc-link level-3"><a href="#blob-seeds-direkt-in-ns-nutzen">Blob-Seeds direkt in `.ns` nutzen</a></li>
 <li class="wiki-toc-link"><a href="#programmieren-mit-python">Programmieren mit Python</a></li>
 <li class="wiki-toc-link level-3"><a href="#parser-und-runtime-direkt-benutzen">Parser und Runtime direkt benutzen</a></li>
 <li class="wiki-toc-link level-3"><a href="#shell-direkt-als-objekt-benutzen">Shell direkt als Objekt benutzen</a></li>

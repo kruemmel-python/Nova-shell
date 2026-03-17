@@ -40,14 +40,21 @@
 <li><a class="wiki-nav-link" data-nav-href="ShellCommandReference.html" href="ShellCommandReference.html">ShellCommandReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="APIReference.html" href="APIReference.html">APIReference</a></li>
 <li><a class="wiki-nav-link active" data-nav-href="ExamplesAndRecipes.html" href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NSBlobGenerator.html" href="NSBlobGenerator.html">NSBlobGenerator</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaSynthPredictiveEngineShifting.html" href="NovaSynthPredictiveEngineShifting.html">NovaSynthPredictiveEngineShifting</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ZeroCopyFederatedLearningMesh.html" href="ZeroCopyFederatedLearningMesh.html">ZeroCopyFederatedLearningMesh</a></li>
+<li><a class="wiki-nav-link" data-nav-href="MyceliaAtheriaCoEvolution.html" href="MyceliaAtheriaCoEvolution.html">MyceliaAtheriaCoEvolution</a></li>
 <li><a class="wiki-nav-link" data-nav-href="WatchMonitor.html" href="WatchMonitor.html">WatchMonitor</a></li>
 <li><a class="wiki-nav-link" data-nav-href="WatchMonitorQuickStart.html" href="WatchMonitorQuickStart.html">WatchMonitorQuickStart</a></li>
 <li><a class="wiki-nav-link" data-nav-href="WatchMonitorReportReference.html" href="WatchMonitorReportReference.html">WatchMonitorReportReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="WatchMonitorAutomationAndAI.html" href="WatchMonitorAutomationAndAI.html">WatchMonitorAutomationAndAI</a></li>
+<li><a class="wiki-nav-link" data-nav-href="WatchMonitorTroubleshooting.html" href="WatchMonitorTroubleshooting.html">WatchMonitorTroubleshooting</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Tutorials.html" href="Tutorials.html">Tutorials</a></li>
 <li><a class="wiki-nav-link" data-nav-href="TutorialTechnologyRadar.html" href="TutorialTechnologyRadar.html">TutorialTechnologyRadar</a></li>
 <li><a class="wiki-nav-link" data-nav-href="TutorialMultiAgentCluster.html" href="TutorialMultiAgentCluster.html">TutorialMultiAgentCluster</a></li>
 <li><a class="wiki-nav-link" data-nav-href="TutorialLMStudioIntegration.html" href="TutorialLMStudioIntegration.html">TutorialLMStudioIntegration</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialBlobSeeds.html" href="TutorialBlobSeeds.html">TutorialBlobSeeds</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialPredictiveFederatedCoevolution.html" href="TutorialPredictiveFederatedCoevolution.html">TutorialPredictiveFederatedCoevolution</a></li>
 <li><a class="wiki-nav-link" data-nav-href="TutorialProjectWatchMonitor.html" href="TutorialProjectWatchMonitor.html">TutorialProjectWatchMonitor</a></li>
 </ul></section>
 <section class="wiki-nav-section">
@@ -75,6 +82,10 @@
 <ul>
 <li><a class="wiki-nav-link" data-nav-href="NovaAgents.html" href="NovaAgents.html">NovaAgents</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaMesh.html" href="NovaMesh.html">NovaMesh</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NSBlobGenerator.html" href="NSBlobGenerator.html">NSBlobGenerator</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaSynthPredictiveEngineShifting.html" href="NovaSynthPredictiveEngineShifting.html">NovaSynthPredictiveEngineShifting</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ZeroCopyFederatedLearningMesh.html" href="ZeroCopyFederatedLearningMesh.html">ZeroCopyFederatedLearningMesh</a></li>
+<li><a class="wiki-nav-link" data-nav-href="MyceliaAtheriaCoEvolution.html" href="MyceliaAtheriaCoEvolution.html">MyceliaAtheriaCoEvolution</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaSensors.html" href="NovaSensors.html">NovaSensors</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaMemory.html" href="NovaMemory.html">NovaMemory</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaTools.html" href="NovaTools.html">NovaTools</a></li>
@@ -151,6 +162,8 @@
 <li><code>ns.graph</code></li>
 <li><code>ns.control</code></li>
 <li><code>mesh.*</code></li>
+<li><code>blob.*</code></li>
+<li><code>synth.*</code></li>
 <li><code>ns.format</code></li>
 <li><code>ns.lint</code></li>
 <li><code>ns.test</code></li>
@@ -298,6 +311,48 @@ flow review_loop {
   reviewer critique findings
 }</code></pre>
 <h3 id="14-service-mit-traffic-shift-vorbereiten">14. Service mit Traffic-Shift vorbereiten</h3>
+<h3 id="15-blob-seed-lokal-erzeugen-und-ausfuehren">15. Blob-Seed lokal erzeugen und ausfuehren</h3>
+<pre><code class="language-powershell">blob pack --text &quot;21 * 2&quot; --type py
+blob verify .\calc.nsblob.json
+blob exec .\calc.nsblob.json</code></pre>
+<h3 id="16-blob-seed-in-deklarativer-runtime-nutzen">16. Blob-Seed in deklarativer Runtime nutzen</h3>
+<pre><code class="language-powershell">ns.graph examples\blob_runtime.ns
+ns.run examples\blob_runtime.ns</code></pre>
+<h3 id="17-blob-seed-ueber-mesh-verschieben">17. Blob-Seed ueber Mesh verschieben</h3>
+<pre><code class="language-powershell">mesh start-worker --caps cpu,py
+blob mesh-run cpu .\calc.nsblob.json</code></pre>
+<h3 id="18-predictive-engine-shift-testen">18. Predictive Engine Shift testen</h3>
+<pre><code class="language-powershell">py 1 + 1
+py 2 + 1
+py 3 + 1
+synth forecast
+synth shift suggest &quot;for item in rows: total += item&quot;</code></pre>
+<p>Wenn genug Telemetrie vorhanden ist, liefert Nova-shell neben einer Engine-Empfehlung auch einen <code>delegated_command</code>.</p>
+<h3 id="19-federated-invariant-im-mesh-publizieren">19. Federated Invariant im Mesh publizieren</h3>
+<pre><code class="language-powershell">mesh federated publish --statement &quot;Inter-core resonance raised&quot; --namespace swarm --project lab --broadcast
+mesh federated history 5</code></pre>
+<p>Fuer same-host zero-copy:</p>
+<pre><code class="language-powershell">zero put federated-invariant-payload
+mesh federated publish --statement &quot;Shared invariant&quot; --handle &lt;HANDLE&gt; --size &lt;SIZE&gt; --type text --same-host</code></pre>
+<h3 id="20-aion-chronik-direkt-ins-mesh-uebertragen">20. Aion-Chronik direkt ins Mesh uebertragen</h3>
+<pre><code class="language-powershell">mesh federated chronik-latest --namespace atheria --project swarm --broadcast</code></pre>
+<h3 id="21-mycelia-atheria-co-evolution-laufen-lassen">21. Mycelia-Atheria Co-Evolution laufen lassen</h3>
+<pre><code class="language-powershell">mycelia coevolve run research-pop --cycles 3 --input &quot;edge inference pressure rises&quot;
+mycelia coevolve status research-pop</code></pre>
+<h3 id="22-beispielprogramme-fuer-federated-memory-und-co-evolution-vorbereiten">22. Beispielprogramme fuer Federated Memory und Co-Evolution vorbereiten</h3>
+<pre><code class="language-powershell">ns.graph examples\federated_swarm_memory.ns
+ns.run examples\federated_swarm_memory.ns
+
+ns.graph examples\mycelia_coevolution_lab.ns
+ns.run examples\mycelia_coevolution_lab.ns</code></pre>
+<h2 id="verwandte-seiten">Verwandte Seiten</h2>
+<ul>
+<li><a href="NSBlobGenerator.html">NSBlobGenerator</a></li>
+<li><a href="NovaSynthPredictiveEngineShifting.html">NovaSynthPredictiveEngineShifting</a></li>
+<li><a href="ZeroCopyFederatedLearningMesh.html">ZeroCopyFederatedLearningMesh</a></li>
+<li><a href="MyceliaAtheriaCoEvolution.html">MyceliaAtheriaCoEvolution</a></li>
+<li><a href="TutorialPredictiveFederatedCoevolution.html">TutorialPredictiveFederatedCoevolution</a></li>
+</ul>
 <pre><code class="language-python">from nova.runtime.runtime import NovaRuntime
 
 runtime = NovaRuntime()
@@ -368,6 +423,15 @@ ns.run nova_project_monitor.ns</code></pre>
 <li class="wiki-toc-link level-3"><a href="#12-atheria-und-memory-nutzen">12. Atheria und Memory nutzen</a></li>
 <li class="wiki-toc-link level-3"><a href="#13-minimaler-multi-agent-flow">13. Minimaler Multi-Agent-Flow</a></li>
 <li class="wiki-toc-link level-3"><a href="#14-service-mit-traffic-shift-vorbereiten">14. Service mit Traffic-Shift vorbereiten</a></li>
+<li class="wiki-toc-link level-3"><a href="#15-blob-seed-lokal-erzeugen-und-ausfuehren">15. Blob-Seed lokal erzeugen und ausfuehren</a></li>
+<li class="wiki-toc-link level-3"><a href="#16-blob-seed-in-deklarativer-runtime-nutzen">16. Blob-Seed in deklarativer Runtime nutzen</a></li>
+<li class="wiki-toc-link level-3"><a href="#17-blob-seed-ueber-mesh-verschieben">17. Blob-Seed ueber Mesh verschieben</a></li>
+<li class="wiki-toc-link level-3"><a href="#18-predictive-engine-shift-testen">18. Predictive Engine Shift testen</a></li>
+<li class="wiki-toc-link level-3"><a href="#19-federated-invariant-im-mesh-publizieren">19. Federated Invariant im Mesh publizieren</a></li>
+<li class="wiki-toc-link level-3"><a href="#20-aion-chronik-direkt-ins-mesh-uebertragen">20. Aion-Chronik direkt ins Mesh uebertragen</a></li>
+<li class="wiki-toc-link level-3"><a href="#21-mycelia-atheria-co-evolution-laufen-lassen">21. Mycelia-Atheria Co-Evolution laufen lassen</a></li>
+<li class="wiki-toc-link level-3"><a href="#22-beispielprogramme-fuer-federated-memory-und-co-evolution-vorbereiten">22. Beispielprogramme fuer Federated Memory und Co-Evolution vorbereiten</a></li>
+<li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
 <li class="wiki-toc-link level-3"><a href="#15-die-wiki-als-html-site-bauen-und-oeffnen">15. Die Wiki als HTML-Site bauen und oeffnen</a></li>
 <li class="wiki-toc-link level-3"><a href="#16-einen-projektordner-live-ueberwachen">16. Einen Projektordner live ueberwachen</a></li>
 <li class="wiki-toc-link"><a href="#wann-diese-seite-benutzt-werden-sollte">Wann diese Seite benutzt werden sollte</a></li>

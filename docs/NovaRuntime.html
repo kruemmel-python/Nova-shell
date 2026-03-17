@@ -40,14 +40,21 @@
 <li><a class="wiki-nav-link" data-nav-href="ShellCommandReference.html" href="ShellCommandReference.html">ShellCommandReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="APIReference.html" href="APIReference.html">APIReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ExamplesAndRecipes.html" href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NSBlobGenerator.html" href="NSBlobGenerator.html">NSBlobGenerator</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaSynthPredictiveEngineShifting.html" href="NovaSynthPredictiveEngineShifting.html">NovaSynthPredictiveEngineShifting</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ZeroCopyFederatedLearningMesh.html" href="ZeroCopyFederatedLearningMesh.html">ZeroCopyFederatedLearningMesh</a></li>
+<li><a class="wiki-nav-link" data-nav-href="MyceliaAtheriaCoEvolution.html" href="MyceliaAtheriaCoEvolution.html">MyceliaAtheriaCoEvolution</a></li>
 <li><a class="wiki-nav-link" data-nav-href="WatchMonitor.html" href="WatchMonitor.html">WatchMonitor</a></li>
 <li><a class="wiki-nav-link" data-nav-href="WatchMonitorQuickStart.html" href="WatchMonitorQuickStart.html">WatchMonitorQuickStart</a></li>
 <li><a class="wiki-nav-link" data-nav-href="WatchMonitorReportReference.html" href="WatchMonitorReportReference.html">WatchMonitorReportReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="WatchMonitorAutomationAndAI.html" href="WatchMonitorAutomationAndAI.html">WatchMonitorAutomationAndAI</a></li>
+<li><a class="wiki-nav-link" data-nav-href="WatchMonitorTroubleshooting.html" href="WatchMonitorTroubleshooting.html">WatchMonitorTroubleshooting</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Tutorials.html" href="Tutorials.html">Tutorials</a></li>
 <li><a class="wiki-nav-link" data-nav-href="TutorialTechnologyRadar.html" href="TutorialTechnologyRadar.html">TutorialTechnologyRadar</a></li>
 <li><a class="wiki-nav-link" data-nav-href="TutorialMultiAgentCluster.html" href="TutorialMultiAgentCluster.html">TutorialMultiAgentCluster</a></li>
 <li><a class="wiki-nav-link" data-nav-href="TutorialLMStudioIntegration.html" href="TutorialLMStudioIntegration.html">TutorialLMStudioIntegration</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialBlobSeeds.html" href="TutorialBlobSeeds.html">TutorialBlobSeeds</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialPredictiveFederatedCoevolution.html" href="TutorialPredictiveFederatedCoevolution.html">TutorialPredictiveFederatedCoevolution</a></li>
 <li><a class="wiki-nav-link" data-nav-href="TutorialProjectWatchMonitor.html" href="TutorialProjectWatchMonitor.html">TutorialProjectWatchMonitor</a></li>
 </ul></section>
 <section class="wiki-nav-section">
@@ -75,6 +82,10 @@
 <ul>
 <li><a class="wiki-nav-link" data-nav-href="NovaAgents.html" href="NovaAgents.html">NovaAgents</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaMesh.html" href="NovaMesh.html">NovaMesh</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NSBlobGenerator.html" href="NSBlobGenerator.html">NSBlobGenerator</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaSynthPredictiveEngineShifting.html" href="NovaSynthPredictiveEngineShifting.html">NovaSynthPredictiveEngineShifting</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ZeroCopyFederatedLearningMesh.html" href="ZeroCopyFederatedLearningMesh.html">ZeroCopyFederatedLearningMesh</a></li>
+<li><a class="wiki-nav-link" data-nav-href="MyceliaAtheriaCoEvolution.html" href="MyceliaAtheriaCoEvolution.html">MyceliaAtheriaCoEvolution</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaSensors.html" href="NovaSensors.html">NovaSensors</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaMemory.html" href="NovaMemory.html">NovaMemory</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaTools.html" href="NovaTools.html">NovaTools</a></li>
@@ -155,6 +166,10 @@
 <td><code>NovaControlPlaneAPIServer</code></td>
 <td>HTTP-API fuer die Plattform</td>
 </tr>
+<tr>
+<td><code>PredictiveEngineShifter</code></td>
+<td>forecast-basierte Engine-Wahl und delegierte Ausfuehrung</td>
+</tr>
 </tbody></table>
 <h2 id="lebenszyklus">Lebenszyklus</h2>
 <pre><code class="language-text">parse / load
@@ -208,6 +223,8 @@ snapshot / resume / close</code></pre>
 <li><code>list_services()</code></li>
 <li><code>list_packages()</code></li>
 <li><code>discover_service(...)</code></li>
+<li><code>predictive.forecast()</code></li>
+<li><code>predictive.recommend_engine(...)</code></li>
 </ul>
 <h2 id="eingebaute-toolpfade">Eingebaute Toolpfade</h2>
 <p>Die Runtime kennt eingebaute Pfade, die in Flows direkt auftauchen koennen:</p>
@@ -222,6 +239,18 @@ snapshot / resume / close</code></pre>
 <li><code>service.deploy</code></li>
 <li><code>package.install</code></li>
 </ul>
+<h2 id="predictive-shifting">Predictive Shifting</h2>
+<p>Der Runtimepfad bindet den Predictive Engine Shifter direkt in Telemetrie und Engine-Delegation ein.</p>
+<p>Dadurch kann Nova-shell:</p>
+<ul>
+<li>Stage-Ausfuehrungen als Telemetrie speichern</li>
+<li>Last- und Spannungsanstiege prognostizieren</li>
+<li>Zielpfade fuer <code>synth shift</code> aus Forecast und Heuristik gemeinsam ableiten</li>
+</ul>
+<p>CLI:</p>
+<pre><code class="language-powershell">synth forecast
+synth shift suggest &quot;for item in rows: total += item&quot;
+synth shift run &quot;for item in rows: total += item&quot;</code></pre>
 <h2 id="cli">CLI</h2>
 <p>Direkte Runtime-Kommandos:</p>
 <ul>
@@ -270,6 +299,12 @@ ns.status</code></pre>
 <h3 id="snapshot-schreiben-und-laden">Snapshot schreiben und laden</h3>
 <pre><code class="language-powershell">ns.snapshot
 ns.resume</code></pre>
+<h3 id="predictive-shift-live-pruefen">Predictive Shift live pruefen</h3>
+<pre><code class="language-powershell">py 1 + 1
+py 2 + 1
+py 3 + 1
+synth forecast
+synth shift suggest &quot;matrix multiply tensor embedding&quot;</code></pre>
 <h2 id="typische-fehler-und-fragen">Typische Fehler und Fragen</h2>
 <h3 id="wann-ist-ein-problem-ein-parser-und-wann-ein-runtime-problem">Wann ist ein Problem ein Parser- und wann ein Runtime-Problem?</h3>
 <p>Wenn <code>ns.graph</code> funktioniert, aber <code>ns.run</code> nicht, ist die Syntax meist korrekt und der Fehler liegt spaeter im Laufzeitpfad.</p>
@@ -282,6 +317,7 @@ ns.resume</code></pre>
 <li><a href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
 <li><a href="APIReference.html">APIReference</a></li>
 <li><a href="RuntimeAndControlPlane.html">RuntimeAndControlPlane</a></li>
+<li><a href="NovaSynthPredictiveEngineShifting.html">NovaSynthPredictiveEngineShifting</a></li>
 <li><a href="NovaAgents.html">NovaAgents</a></li>
 <li><a href="NovaMesh.html">NovaMesh</a></li>
 </ul>
@@ -299,12 +335,14 @@ ns.resume</code></pre>
 <li class="wiki-toc-link level-3"><a href="#api-und-betrieb">API und Betrieb</a></li>
 <li class="wiki-toc-link level-3"><a href="#services-und-plattform">Services und Plattform</a></li>
 <li class="wiki-toc-link"><a href="#eingebaute-toolpfade">Eingebaute Toolpfade</a></li>
+<li class="wiki-toc-link"><a href="#predictive-shifting">Predictive Shifting</a></li>
 <li class="wiki-toc-link"><a href="#cli">CLI</a></li>
 <li class="wiki-toc-link"><a href="#api">API</a></li>
 <li class="wiki-toc-link"><a href="#testbare-beispiele">Testbare Beispiele</a></li>
 <li class="wiki-toc-link level-3"><a href="#ein-programm-aus-python-laufen-lassen">Ein Programm aus Python laufen lassen</a></li>
 <li class="wiki-toc-link level-3"><a href="#ein-bestehendes-beispiel-ueber-die-cli-ausfuehren">Ein bestehendes Beispiel ueber die CLI ausfuehren</a></li>
 <li class="wiki-toc-link level-3"><a href="#snapshot-schreiben-und-laden">Snapshot schreiben und laden</a></li>
+<li class="wiki-toc-link level-3"><a href="#predictive-shift-live-pruefen">Predictive Shift live pruefen</a></li>
 <li class="wiki-toc-link"><a href="#typische-fehler-und-fragen">Typische Fehler und Fragen</a></li>
 <li class="wiki-toc-link level-3"><a href="#wann-ist-ein-problem-ein-parser-und-wann-ein-runtime-problem">Wann ist ein Problem ein Parser- und wann ein Runtime-Problem?</a></li>
 <li class="wiki-toc-link level-3"><a href="#wo-fuehrt-die-runtime-agenten-aus">Wo fuehrt die Runtime Agenten aus?</a></li>

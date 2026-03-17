@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="Nova-shell wiki builder">
-  <title>Nova Tools | Nova-shell Wiki</title>
+  <title>Mycelia-Atheria Co-Evolution | Nova-shell Wiki</title>
   <link rel="stylesheet" href="assets/wiki.css">
 </head>
 <body>
@@ -43,7 +43,7 @@
 <li><a class="wiki-nav-link" data-nav-href="NSBlobGenerator.html" href="NSBlobGenerator.html">NSBlobGenerator</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaSynthPredictiveEngineShifting.html" href="NovaSynthPredictiveEngineShifting.html">NovaSynthPredictiveEngineShifting</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ZeroCopyFederatedLearningMesh.html" href="ZeroCopyFederatedLearningMesh.html">ZeroCopyFederatedLearningMesh</a></li>
-<li><a class="wiki-nav-link" data-nav-href="MyceliaAtheriaCoEvolution.html" href="MyceliaAtheriaCoEvolution.html">MyceliaAtheriaCoEvolution</a></li>
+<li><a class="wiki-nav-link active" data-nav-href="MyceliaAtheriaCoEvolution.html" href="MyceliaAtheriaCoEvolution.html">MyceliaAtheriaCoEvolution</a></li>
 <li><a class="wiki-nav-link" data-nav-href="WatchMonitor.html" href="WatchMonitor.html">WatchMonitor</a></li>
 <li><a class="wiki-nav-link" data-nav-href="WatchMonitorQuickStart.html" href="WatchMonitorQuickStart.html">WatchMonitorQuickStart</a></li>
 <li><a class="wiki-nav-link" data-nav-href="WatchMonitorReportReference.html" href="WatchMonitorReportReference.html">WatchMonitorReportReference</a></li>
@@ -85,10 +85,10 @@
 <li><a class="wiki-nav-link" data-nav-href="NSBlobGenerator.html" href="NSBlobGenerator.html">NSBlobGenerator</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaSynthPredictiveEngineShifting.html" href="NovaSynthPredictiveEngineShifting.html">NovaSynthPredictiveEngineShifting</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ZeroCopyFederatedLearningMesh.html" href="ZeroCopyFederatedLearningMesh.html">ZeroCopyFederatedLearningMesh</a></li>
-<li><a class="wiki-nav-link" data-nav-href="MyceliaAtheriaCoEvolution.html" href="MyceliaAtheriaCoEvolution.html">MyceliaAtheriaCoEvolution</a></li>
+<li><a class="wiki-nav-link active" data-nav-href="MyceliaAtheriaCoEvolution.html" href="MyceliaAtheriaCoEvolution.html">MyceliaAtheriaCoEvolution</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaSensors.html" href="NovaSensors.html">NovaSensors</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaMemory.html" href="NovaMemory.html">NovaMemory</a></li>
-<li><a class="wiki-nav-link active" data-nav-href="NovaTools.html" href="NovaTools.html">NovaTools</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaTools.html" href="NovaTools.html">NovaTools</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Entwicklung und Betrieb</h2>
@@ -124,60 +124,141 @@
         <button type="button" class="wiki-nav-toggle" data-nav-toggle>Menu</button>
         <div class="wiki-header-copy">
           <span class="wiki-kicker">Nova-shell Documentation</span>
-          <h1>Nova Tools</h1>
-          <p>Source: NovaTools.md</p>
+          <h1>Mycelia-Atheria Co-Evolution</h1>
+          <p>Source: MyceliaAtheriaCoEvolution.md</p>
         </div>
       </header>
       <div class="wiki-layout">
         <article class="wiki-article">
-          <h1 id="nova-tools">Nova Tools</h1>
+          <h1 id="mycelia-atheria-co-evolution">Mycelia-Atheria Co-Evolution</h1>
 <h2 id="zweck">Zweck</h2>
-<p>Tools sind strukturierte, benannte Operationen mit Eingabeschema und Pipeline-Template. Sie sind der sauberste Weg, wiederverwendbare Shell-Operationen bereitzustellen.</p>
-<h2 id="kernpunkte">Kernpunkte</h2>
+<p>Mycelia-Atheria Co-Evolution verbindet die ALife-Schicht <code>mycelia</code> mit Atherias Prognose- und Invariantensystem. Populationen optimieren nicht mehr nur einen simplen Fitnesswert, sondern werden an mehreren Signalen gemessen:</p>
 <ul>
-<li>Ein Tool besitzt Name, Beschreibung, Schema und Pipeline.</li>
-<li>Tools koennen direkt aus der Shell oder indirekt aus Agent- und Plannerpfaden genutzt werden.</li>
-<li>Tools bilden eine Schicht zwischen Promptlogik und konkreter Kommandokette.</li>
+<li>Forecast-Qualitaet</li>
+<li>Invariant-Ausrichtung</li>
+<li>Tool-Integritaet und Erfolgsrate</li>
+<li>geometrische Komplexitaet ueber Atherias Kruemmungsproxy</li>
 </ul>
-<h2 id="praktische-nutzung">Praktische Nutzung</h2>
-<ul>
-<li>Registriere kleine, stabile Operationen als Tool statt sie jedes Mal neu zu tippen.</li>
-<li>Halte Schemata eng, damit <code>tool call</code> frueh auf fehlende Argumente pruefen kann.</li>
-</ul>
-<h2 id="testbare-einstiege">Testbare Einstiege</h2>
-<h3 id="ein-tool-definieren-und-ausfuehren">Ein Tool definieren und ausfuehren</h3>
-<pre><code class="language-powershell">tool register greet --description &quot;Greet user&quot; --schema &quot;{\&quot;type\&quot;:\&quot;object\&quot;,\&quot;properties\&quot;:{\&quot;name\&quot;:{\&quot;type\&quot;:\&quot;string\&quot;}},\&quot;required\&quot;:[\&quot;name\&quot;]}&quot; --pipeline &quot;py \&quot;Hello \&quot; + {{py:name}}&quot;
-tool call greet name=Nova
-tool show greet</code></pre>
+<p>Damit wird aus Agentenmutation keine Spielerei, sondern ein kontrollierter, messbarer Optimierungsprozess.</p>
+<h2 id="kernobjekte">Kernobjekte</h2>
+<table><thead><tr>
+<th>Objekt</th>
+<th>Rolle</th>
+</tr></thead><tbody>
+<tr>
+<td><code>MyceliaAtheriaCoEvolutionLab</code></td>
+<td>Co-Evolution-Schicht und Persistenz</td>
+</tr>
+<tr>
+<td><code>MyceliaRuntime</code></td>
+<td>Population, Reproduktion und Zyklussteuerung</td>
+</tr>
+<tr>
+<td><code>ToolExecutionRecord</code></td>
+<td>Erfolg, Ausfall und Nutzwert einzelner Toolpfade</td>
+</tr>
+<tr>
+<td><code>MarketLandscapeFutureProjector</code></td>
+<td>prognostischer Anteil der Fitness</td>
+</tr>
+<tr>
+<td><code>InformationEinsteinLikeSimulator</code></td>
+<td>Rekonstruktion und Kruemmungsproxy als Strafterm</td>
+</tr>
+</tbody></table>
+<h2 id="fitness-modell">Fitness-Modell</h2>
+<pre><code class="language-text">base fitness
+  +
+forecast quality
+  +
+invariant alignment
+  +
+tool integrity
+  -
+curvature penalty
+  =
+coevolution score</code></pre>
+<p>Dieses Modell verhindert, dass Populationen nur auf vergangene Beispiele ueberfitten oder unkontrolliert komplexer werden.</p>
+<h2 id="cli">CLI</h2>
+<h3 id="dedizierten-co-evolution-lauf-starten">Dedizierten Co-Evolution-Lauf starten</h3>
+<pre><code class="language-powershell">mycelia coevolve run research-pop --cycles 5 --input &quot;edge inference pressure rises&quot;</code></pre>
+<h3 id="status-der-population-ansehen">Status der Population ansehen</h3>
+<pre><code class="language-powershell">mycelia coevolve status research-pop</code></pre>
+<h3 id="bestehenden-population-tick-um-co-evolution-erweitern">Bestehenden Population-Tick um Co-Evolution erweitern</h3>
+<pre><code class="language-powershell">mycelia population tick research-pop --cycles 5 --coevolve</code></pre>
+<h2 id="testbare-beispiele">Testbare Beispiele</h2>
+<h3 id="1-population-mit-co-evolution-laufen-lassen">1. Population mit Co-Evolution laufen lassen</h3>
+<pre><code class="language-powershell">mycelia coevolve run trend-rss --cycles 3 --input &quot;news feeds with predictive relevance&quot;</code></pre>
 <p>Erwartung:</p>
 <ul>
-<li>Der Aufruf liefert <code>Hello Nova</code>.</li>
-<li>Die Tooldefinition bleibt ueber <code>tool show</code> inspizierbar.</li>
+<li>Rueckgabe mit <code>population</code>, <code>cycles</code>, <code>best_individual</code> und <code>coevolution</code></li>
 </ul>
-<h2 id="typische-fragen-und-fehler">Typische Fragen und Fehler</h2>
-<h3 id="tool-call-scheitert"><code>tool call</code> scheitert</h3>
+<h3 id="2-reportdatei-in-die-bewertung-einbeziehen">2. Reportdatei in die Bewertung einbeziehen</h3>
+<pre><code class="language-powershell">mycelia coevolve run project-review --cycles 2 --report-file .nova_project_monitor\\project_monitor_analysis.json</code></pre>
+<p>Damit kann eine Population direkt auf bestehende Analyseberichte oder Projektzustandsdaten reagieren.</p>
+<h3 id="3-populationstakt-mit-schwarmmodus">3. Populationstakt mit Schwarmmodus</h3>
+<pre><code class="language-powershell">mycelia coevolve run swarm-lab --cycles 5 --swarm --input &quot;distributed anomaly detection&quot;</code></pre>
+<h2 id="persistenz">Persistenz</h2>
+<p>Die Co-Evolution speichert unter Atherias Storage-Root:</p>
 <ul>
-<li>Ein Pflichtfeld im Schema fehlt.</li>
-<li>Die Pipeline ist syntaktisch fehlerhaft.</li>
-<li>Der Template-Platzhalter passt nicht zum Eingabenamen.</li>
+<li>Verlauf vergangener Runs</li>
+<li>Scores</li>
+<li>Forecast- und Kruemmungsanteile</li>
+<li>Population-/Best-Individual-Metadaten</li>
 </ul>
+<p>Das macht Fitnessverlaeufe ueber mehrere Shell-Sessions hinweg nachvollziehbar.</p>
+<h2 id="designentscheidungen">Designentscheidungen</h2>
+<h3 id="warum-kruemmung-als-strafterm">Warum Kruemmung als Strafterm?</h3>
+<p>Weil komplexe, stark gekruemmte Modelle oft eindrucksvoll wirken, aber auf historischen Daten ueberpassen. Die Kruemmungsstrafe zwingt Populationen zu stabileren, glatteren Strategien.</p>
+<h3 id="warum-forecast-qualitaet-mit-tool-erfolg-kombinieren">Warum Forecast-Qualitaet mit Tool-Erfolg kombinieren?</h3>
+<p>Eine Population soll nicht nur gute Geschichten erzaehlen, sondern auch mit realen Toolpfaden tragfaehige Ergebnisse erzeugen.</p>
+<h2 id="typische-fehler-und-fragen">Typische Fehler und Fragen</h2>
+<h3 id="warum-verbessert-sich-die-population-kaum">Warum verbessert sich die Population kaum?</h3>
+<p>Typische Gruende:</p>
+<ul>
+<li>zu wenig Variabilitaet</li>
+<li>schlechtes Eingangssignal</li>
+<li>starke Kruemmungsstrafe</li>
+<li>kaum verwertbare Tool- oder Forecast-Daten</li>
+</ul>
+<h3 id="woran-erkenne-ich-dass-co-evolution-aktiv-war">Woran erkenne ich, dass Co-Evolution aktiv war?</h3>
+<p>In der Rueckgabe stehen:</p>
+<ul>
+<li><code>coevolution</code></li>
+<li>Forecast-Metriken</li>
+<li>curvature- oder penalty-bezogene Werte</li>
+</ul>
+<h3 id="kann-ich-co-evolution-in-den-normalen-population-tick-integrieren">Kann ich Co-Evolution in den normalen Population-Tick integrieren?</h3>
+<p>Ja. Genau dafuer gibt es <code>--coevolve</code>. Der klassische Mycelia-Pfad bleibt aber auch ohne diesen Zusatz nutzbar.</p>
 <h2 id="verwandte-seiten">Verwandte Seiten</h2>
 <ul>
-<li><a href="NovaCLI.html">NovaCLI</a></li>
-<li><a href="NovaPlanner.html">NovaPlanner</a></li>
-<li><a href="AgentsAndKnowledge.html">AgentsAndKnowledge</a></li>
+<li><a href="NovaAgents.html">NovaAgents</a></li>
+<li><a href="Research.html">Research</a></li>
+<li><a href="AIOSConcept.html">AIOSConcept</a></li>
 <li><a href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
 </ul>
         </article>
         <aside class="wiki-toc">
           <div class="wiki-toc-card"><h2>On this page</h2><ul>
 <li class="wiki-toc-link"><a href="#zweck">Zweck</a></li>
-<li class="wiki-toc-link"><a href="#kernpunkte">Kernpunkte</a></li>
-<li class="wiki-toc-link"><a href="#praktische-nutzung">Praktische Nutzung</a></li>
-<li class="wiki-toc-link"><a href="#testbare-einstiege">Testbare Einstiege</a></li>
-<li class="wiki-toc-link level-3"><a href="#ein-tool-definieren-und-ausfuehren">Ein Tool definieren und ausfuehren</a></li>
-<li class="wiki-toc-link"><a href="#typische-fragen-und-fehler">Typische Fragen und Fehler</a></li>
-<li class="wiki-toc-link level-3"><a href="#tool-call-scheitert">`tool call` scheitert</a></li>
+<li class="wiki-toc-link"><a href="#kernobjekte">Kernobjekte</a></li>
+<li class="wiki-toc-link"><a href="#fitness-modell">Fitness-Modell</a></li>
+<li class="wiki-toc-link"><a href="#cli">CLI</a></li>
+<li class="wiki-toc-link level-3"><a href="#dedizierten-co-evolution-lauf-starten">Dedizierten Co-Evolution-Lauf starten</a></li>
+<li class="wiki-toc-link level-3"><a href="#status-der-population-ansehen">Status der Population ansehen</a></li>
+<li class="wiki-toc-link level-3"><a href="#bestehenden-population-tick-um-co-evolution-erweitern">Bestehenden Population-Tick um Co-Evolution erweitern</a></li>
+<li class="wiki-toc-link"><a href="#testbare-beispiele">Testbare Beispiele</a></li>
+<li class="wiki-toc-link level-3"><a href="#1-population-mit-co-evolution-laufen-lassen">1. Population mit Co-Evolution laufen lassen</a></li>
+<li class="wiki-toc-link level-3"><a href="#2-reportdatei-in-die-bewertung-einbeziehen">2. Reportdatei in die Bewertung einbeziehen</a></li>
+<li class="wiki-toc-link level-3"><a href="#3-populationstakt-mit-schwarmmodus">3. Populationstakt mit Schwarmmodus</a></li>
+<li class="wiki-toc-link"><a href="#persistenz">Persistenz</a></li>
+<li class="wiki-toc-link"><a href="#designentscheidungen">Designentscheidungen</a></li>
+<li class="wiki-toc-link level-3"><a href="#warum-kruemmung-als-strafterm">Warum Kruemmung als Strafterm?</a></li>
+<li class="wiki-toc-link level-3"><a href="#warum-forecast-qualitaet-mit-tool-erfolg-kombinieren">Warum Forecast-Qualitaet mit Tool-Erfolg kombinieren?</a></li>
+<li class="wiki-toc-link"><a href="#typische-fehler-und-fragen">Typische Fehler und Fragen</a></li>
+<li class="wiki-toc-link level-3"><a href="#warum-verbessert-sich-die-population-kaum">Warum verbessert sich die Population kaum?</a></li>
+<li class="wiki-toc-link level-3"><a href="#woran-erkenne-ich-dass-co-evolution-aktiv-war">Woran erkenne ich, dass Co-Evolution aktiv war?</a></li>
+<li class="wiki-toc-link level-3"><a href="#kann-ich-co-evolution-in-den-normalen-population-tick-integrieren">Kann ich Co-Evolution in den normalen Population-Tick integrieren?</a></li>
 <li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
 </ul></div>
         </aside>
@@ -189,7 +270,7 @@ tool show greet</code></pre>
   </div>
   <script>
     window.NOVA_WIKI = {
-      currentPage: "NovaTools.html",
+      currentPage: "MyceliaAtheriaCoEvolution.html",
       searchIndex: "assets/search-index.json"
     };
   </script>

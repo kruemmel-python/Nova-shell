@@ -40,14 +40,21 @@
 <li><a class="wiki-nav-link" data-nav-href="ShellCommandReference.html" href="ShellCommandReference.html">ShellCommandReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="APIReference.html" href="APIReference.html">APIReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ExamplesAndRecipes.html" href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NSBlobGenerator.html" href="NSBlobGenerator.html">NSBlobGenerator</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaSynthPredictiveEngineShifting.html" href="NovaSynthPredictiveEngineShifting.html">NovaSynthPredictiveEngineShifting</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ZeroCopyFederatedLearningMesh.html" href="ZeroCopyFederatedLearningMesh.html">ZeroCopyFederatedLearningMesh</a></li>
+<li><a class="wiki-nav-link" data-nav-href="MyceliaAtheriaCoEvolution.html" href="MyceliaAtheriaCoEvolution.html">MyceliaAtheriaCoEvolution</a></li>
 <li><a class="wiki-nav-link" data-nav-href="WatchMonitor.html" href="WatchMonitor.html">WatchMonitor</a></li>
 <li><a class="wiki-nav-link" data-nav-href="WatchMonitorQuickStart.html" href="WatchMonitorQuickStart.html">WatchMonitorQuickStart</a></li>
 <li><a class="wiki-nav-link" data-nav-href="WatchMonitorReportReference.html" href="WatchMonitorReportReference.html">WatchMonitorReportReference</a></li>
 <li><a class="wiki-nav-link active" data-nav-href="WatchMonitorAutomationAndAI.html" href="WatchMonitorAutomationAndAI.html">WatchMonitorAutomationAndAI</a></li>
+<li><a class="wiki-nav-link" data-nav-href="WatchMonitorTroubleshooting.html" href="WatchMonitorTroubleshooting.html">WatchMonitorTroubleshooting</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Tutorials.html" href="Tutorials.html">Tutorials</a></li>
 <li><a class="wiki-nav-link" data-nav-href="TutorialTechnologyRadar.html" href="TutorialTechnologyRadar.html">TutorialTechnologyRadar</a></li>
 <li><a class="wiki-nav-link" data-nav-href="TutorialMultiAgentCluster.html" href="TutorialMultiAgentCluster.html">TutorialMultiAgentCluster</a></li>
 <li><a class="wiki-nav-link" data-nav-href="TutorialLMStudioIntegration.html" href="TutorialLMStudioIntegration.html">TutorialLMStudioIntegration</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialBlobSeeds.html" href="TutorialBlobSeeds.html">TutorialBlobSeeds</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialPredictiveFederatedCoevolution.html" href="TutorialPredictiveFederatedCoevolution.html">TutorialPredictiveFederatedCoevolution</a></li>
 <li><a class="wiki-nav-link" data-nav-href="TutorialProjectWatchMonitor.html" href="TutorialProjectWatchMonitor.html">TutorialProjectWatchMonitor</a></li>
 </ul></section>
 <section class="wiki-nav-section">
@@ -75,6 +82,10 @@
 <ul>
 <li><a class="wiki-nav-link" data-nav-href="NovaAgents.html" href="NovaAgents.html">NovaAgents</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaMesh.html" href="NovaMesh.html">NovaMesh</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NSBlobGenerator.html" href="NSBlobGenerator.html">NSBlobGenerator</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaSynthPredictiveEngineShifting.html" href="NovaSynthPredictiveEngineShifting.html">NovaSynthPredictiveEngineShifting</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ZeroCopyFederatedLearningMesh.html" href="ZeroCopyFederatedLearningMesh.html">ZeroCopyFederatedLearningMesh</a></li>
+<li><a class="wiki-nav-link" data-nav-href="MyceliaAtheriaCoEvolution.html" href="MyceliaAtheriaCoEvolution.html">MyceliaAtheriaCoEvolution</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaSensors.html" href="NovaSensors.html">NovaSensors</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaMemory.html" href="NovaMemory.html">NovaMemory</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaTools.html" href="NovaTools.html">NovaTools</a></li>
@@ -211,6 +222,23 @@ ns.run nova_project_monitor.ns</code></pre>
 <h3 id="atheria-erzwingen">Atheria erzwingen</h3>
 <pre><code class="language-powershell">$env:NOVA_PROJECT_MONITOR_AI_MODE = &quot;atheria&quot;
 ns.run nova_project_monitor.ns</code></pre>
+<h3 id="lm-studio-statt-atheria-erzwingen">LM Studio statt Atheria erzwingen</h3>
+<p>In LM Studio:</p>
+<ol>
+<li>Modell laden</li>
+<li>Local Server starten</li>
+<li>OpenAI-kompatiblen Endpoint aktiv lassen</li>
+</ol>
+<p>Dann:</p>
+<pre><code class="language-powershell">$env:NOVA_PROJECT_MONITOR_AI_MODE = &quot;lmstudio&quot;
+$env:LM_STUDIO_BASE_URL = &quot;http://127.0.0.1:1234/v1&quot;
+$env:LM_STUDIO_MODEL = &quot;qwen2.5-coder-7b-instruct&quot;
+ns.run nova_project_monitor.ns</code></pre>
+<p>Wichtig:</p>
+<ul>
+<li><code>auto</code> wuerde bei lokaler Atheria-Verfuegbarkeit wieder Atheria bevorzugen</li>
+<li>fuer LM Studio musst du also explizit <code>lmstudio</code> setzen</li>
+</ul>
 <h3 id="openai-erzwingen">OpenAI erzwingen</h3>
 <pre><code class="language-powershell">$env:NOVA_PROJECT_MONITOR_AI_MODE = &quot;openai&quot;
 $env:OPENAI_API_KEY = &quot;...&quot;
@@ -218,8 +246,10 @@ $env:NOVA_PROJECT_MONITOR_AI_MODEL = &quot;gpt-4o-mini&quot;
 ns.run nova_project_monitor.ns</code></pre>
 <h3 id="ollama-erzwingen">Ollama erzwingen</h3>
 <pre><code class="language-powershell">$env:NOVA_PROJECT_MONITOR_AI_MODE = &quot;ollama&quot;
+$env:OLLAMA_BASE_URL = &quot;http://127.0.0.1:11434&quot;
 $env:OLLAMA_MODEL = &quot;llama3.2&quot;
 ns.run nova_project_monitor.ns</code></pre>
+<p>Wenn Atheria lokal verfuegbar ist und du trotzdem Ollama willst, reicht <code>auto</code> nicht aus. Du musst <code>NOVA_PROJECT_MONITOR_AI_MODE = &quot;ollama&quot;</code> explizit setzen.</p>
 <h3 id="build-und-tests-immer-ausfuehren">Build und Tests immer ausfuehren</h3>
 <pre><code class="language-powershell">$env:NOVA_PROJECT_MONITOR_AUTOMATION = &quot;on&quot;
 ns.run nova_project_monitor.ns</code></pre>
@@ -239,6 +269,18 @@ ns.run nova_project_monitor.ns</code></pre>
 $env:OPENAI_API_KEY = &quot;...&quot;
 $env:NOVA_PROJECT_MONITOR_AI_MODEL = &quot;gpt-4o-mini&quot;
 $env:NOVA_PROJECT_MONITOR_AUTOMATION = &quot;on&quot;
+ns.run nova_project_monitor.ns</code></pre>
+<h3 id="lm-studio-lokal-statt-atheria">LM Studio lokal statt Atheria</h3>
+<pre><code class="language-powershell">$env:NOVA_PROJECT_MONITOR_AI_MODE = &quot;lmstudio&quot;
+$env:LM_STUDIO_BASE_URL = &quot;http://127.0.0.1:1234/v1&quot;
+$env:LM_STUDIO_MODEL = &quot;qwen2.5-coder-7b-instruct&quot;
+$env:NOVA_PROJECT_MONITOR_AUTOMATION = &quot;auto&quot;
+ns.run nova_project_monitor.ns</code></pre>
+<h3 id="ollama-lokal-statt-atheria">Ollama lokal statt Atheria</h3>
+<pre><code class="language-powershell">$env:NOVA_PROJECT_MONITOR_AI_MODE = &quot;ollama&quot;
+$env:OLLAMA_BASE_URL = &quot;http://127.0.0.1:11434&quot;
+$env:OLLAMA_MODEL = &quot;llama3.2&quot;
+$env:NOVA_PROJECT_MONITOR_AUTOMATION = &quot;auto&quot;
 ns.run nova_project_monitor.ns</code></pre>
 <h3 id="nur-report-kein-browser-keine-automation">Nur Report, kein Browser, keine Automation</h3>
 <pre><code class="language-powershell">$env:NOVA_PROJECT_MONITOR_ONESHOT = &quot;1&quot;
@@ -271,6 +313,7 @@ ns.run nova_project_monitor.ns</code></pre>
 <li><a href="WatchMonitor.html">WatchMonitor</a></li>
 <li><a href="WatchMonitorQuickStart.html">WatchMonitorQuickStart</a></li>
 <li><a href="WatchMonitorReportReference.html">WatchMonitorReportReference</a></li>
+<li><a href="WatchMonitorTroubleshooting.html">WatchMonitorTroubleshooting</a></li>
 <li><a href="TutorialProjectWatchMonitor.html">TutorialProjectWatchMonitor</a></li>
 <li><a href="NovaAgents.html">NovaAgents</a></li>
 <li><a href="OperationsAndObservability.html">OperationsAndObservability</a></li>
@@ -296,6 +339,7 @@ ns.run nova_project_monitor.ns</code></pre>
 <li class="wiki-toc-link"><a href="#cli">CLI</a></li>
 <li class="wiki-toc-link level-3"><a href="#atheria-priorisieren">Atheria priorisieren</a></li>
 <li class="wiki-toc-link level-3"><a href="#atheria-erzwingen">Atheria erzwingen</a></li>
+<li class="wiki-toc-link level-3"><a href="#lm-studio-statt-atheria-erzwingen">LM Studio statt Atheria erzwingen</a></li>
 <li class="wiki-toc-link level-3"><a href="#openai-erzwingen">OpenAI erzwingen</a></li>
 <li class="wiki-toc-link level-3"><a href="#ollama-erzwingen">Ollama erzwingen</a></li>
 <li class="wiki-toc-link level-3"><a href="#build-und-tests-immer-ausfuehren">Build und Tests immer ausfuehren</a></li>
@@ -303,6 +347,8 @@ ns.run nova_project_monitor.ns</code></pre>
 <li class="wiki-toc-link"><a href="#beispiele">Beispiele</a></li>
 <li class="wiki-toc-link level-3"><a href="#lokales-teamprojekt-mit-atheria-und-auto-build">Lokales Teamprojekt mit Atheria und Auto-Build</a></li>
 <li class="wiki-toc-link level-3"><a href="#api-review-fuer-cloud-session">API-Review fuer Cloud-Session</a></li>
+<li class="wiki-toc-link level-3"><a href="#lm-studio-lokal-statt-atheria">LM Studio lokal statt Atheria</a></li>
+<li class="wiki-toc-link level-3"><a href="#ollama-lokal-statt-atheria">Ollama lokal statt Atheria</a></li>
 <li class="wiki-toc-link level-3"><a href="#nur-report-kein-browser-keine-automation">Nur Report, kein Browser, keine Automation</a></li>
 <li class="wiki-toc-link"><a href="#typische-fehlerbilder">Typische Fehlerbilder</a></li>
 <li class="wiki-toc-link level-3"><a href="#keine-ai-bewertung-trotz-gesetztem-modus">Keine AI-Bewertung trotz gesetztem Modus</a></li>

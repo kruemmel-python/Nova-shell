@@ -40,14 +40,21 @@
 <li><a class="wiki-nav-link" data-nav-href="ShellCommandReference.html" href="ShellCommandReference.html">ShellCommandReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="APIReference.html" href="APIReference.html">APIReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ExamplesAndRecipes.html" href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NSBlobGenerator.html" href="NSBlobGenerator.html">NSBlobGenerator</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaSynthPredictiveEngineShifting.html" href="NovaSynthPredictiveEngineShifting.html">NovaSynthPredictiveEngineShifting</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ZeroCopyFederatedLearningMesh.html" href="ZeroCopyFederatedLearningMesh.html">ZeroCopyFederatedLearningMesh</a></li>
+<li><a class="wiki-nav-link" data-nav-href="MyceliaAtheriaCoEvolution.html" href="MyceliaAtheriaCoEvolution.html">MyceliaAtheriaCoEvolution</a></li>
 <li><a class="wiki-nav-link" data-nav-href="WatchMonitor.html" href="WatchMonitor.html">WatchMonitor</a></li>
 <li><a class="wiki-nav-link" data-nav-href="WatchMonitorQuickStart.html" href="WatchMonitorQuickStart.html">WatchMonitorQuickStart</a></li>
 <li><a class="wiki-nav-link" data-nav-href="WatchMonitorReportReference.html" href="WatchMonitorReportReference.html">WatchMonitorReportReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="WatchMonitorAutomationAndAI.html" href="WatchMonitorAutomationAndAI.html">WatchMonitorAutomationAndAI</a></li>
+<li><a class="wiki-nav-link" data-nav-href="WatchMonitorTroubleshooting.html" href="WatchMonitorTroubleshooting.html">WatchMonitorTroubleshooting</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Tutorials.html" href="Tutorials.html">Tutorials</a></li>
 <li><a class="wiki-nav-link" data-nav-href="TutorialTechnologyRadar.html" href="TutorialTechnologyRadar.html">TutorialTechnologyRadar</a></li>
 <li><a class="wiki-nav-link" data-nav-href="TutorialMultiAgentCluster.html" href="TutorialMultiAgentCluster.html">TutorialMultiAgentCluster</a></li>
 <li><a class="wiki-nav-link" data-nav-href="TutorialLMStudioIntegration.html" href="TutorialLMStudioIntegration.html">TutorialLMStudioIntegration</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialBlobSeeds.html" href="TutorialBlobSeeds.html">TutorialBlobSeeds</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialPredictiveFederatedCoevolution.html" href="TutorialPredictiveFederatedCoevolution.html">TutorialPredictiveFederatedCoevolution</a></li>
 <li><a class="wiki-nav-link" data-nav-href="TutorialProjectWatchMonitor.html" href="TutorialProjectWatchMonitor.html">TutorialProjectWatchMonitor</a></li>
 </ul></section>
 <section class="wiki-nav-section">
@@ -75,6 +82,10 @@
 <ul>
 <li><a class="wiki-nav-link" data-nav-href="NovaAgents.html" href="NovaAgents.html">NovaAgents</a></li>
 <li><a class="wiki-nav-link active" data-nav-href="NovaMesh.html" href="NovaMesh.html">NovaMesh</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NSBlobGenerator.html" href="NSBlobGenerator.html">NSBlobGenerator</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaSynthPredictiveEngineShifting.html" href="NovaSynthPredictiveEngineShifting.html">NovaSynthPredictiveEngineShifting</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ZeroCopyFederatedLearningMesh.html" href="ZeroCopyFederatedLearningMesh.html">ZeroCopyFederatedLearningMesh</a></li>
+<li><a class="wiki-nav-link" data-nav-href="MyceliaAtheriaCoEvolution.html" href="MyceliaAtheriaCoEvolution.html">MyceliaAtheriaCoEvolution</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaSensors.html" href="NovaSensors.html">NovaSensors</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaMemory.html" href="NovaMemory.html">NovaMemory</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaTools.html" href="NovaTools.html">NovaTools</a></li>
@@ -155,6 +166,10 @@
 <td><code>NativeExecutorManager</code></td>
 <td>Verwaltung lokaler nativer Executor</td>
 </tr>
+<tr>
+<td><code>FederatedLearningMesh</code></td>
+<td>signierte Invariant-Updates, Broadcast und Apply</td>
+</tr>
 </tbody></table>
 <h2 id="worker-lebenszyklus">Worker-Lebenszyklus</h2>
 <pre><code class="language-text">register
@@ -193,6 +208,11 @@ mesh beat
 mesh intelligent-run py 1 + 1
 mesh stop-worker</code></pre>
 <p>Je nach Aufbau kann zusaetzlich mit <code>mesh add</code>, <code>mesh list</code> oder Control-Plane-Kommandos gearbeitet werden.</p>
+<p>Fuer die Federated-Schicht kommen dazu:</p>
+<pre><code class="language-text">mesh federated status
+mesh federated history 10
+mesh federated publish --statement &quot;...&quot; --broadcast
+mesh federated chronik-latest --broadcast</code></pre>
 <h2 id="api">API</h2>
 <p>Mesh-relevante API-Bereiche umfassen:</p>
 <ul>
@@ -226,6 +246,12 @@ registry.register(
 <li><code>namespace</code></li>
 <li><code>require_tls</code></li>
 </ul>
+<h3 id="federated-invariant-broadcast">Federated Invariant Broadcast</h3>
+<pre><code class="language-powershell">mesh federated publish --statement &quot;Edge anomaly detector learned a new invariant&quot; --namespace swarm --project lab --broadcast
+mesh federated history 5</code></pre>
+<h3 id="same-host-zero-copy-via-zero">Same-host Zero-Copy via <code>zero</code></h3>
+<pre><code class="language-powershell">zero put invariant-payload
+mesh federated publish --statement &quot;Shared invariant&quot; --handle &lt;HANDLE&gt; --size &lt;SIZE&gt; --type text --same-host</code></pre>
 <h2 id="typische-fehler-und-fragen">Typische Fehler und Fragen</h2>
 <h3 id="warum-wird-ein-task-nicht-verteilt">Warum wird ein Task nicht verteilt?</h3>
 <p>Oft passt keine Capability, der Worker ist nicht registriert oder Policy- und Trust-Anforderungen verhindern den Dispatch.</p>
@@ -242,6 +268,7 @@ registry.register(
 <ul>
 <li><a href="MeshAndDistributedExecution.html">MeshAndDistributedExecution</a></li>
 <li><a href="NovaRuntime.html">NovaRuntime</a></li>
+<li><a href="ZeroCopyFederatedLearningMesh.html">ZeroCopyFederatedLearningMesh</a></li>
 <li><a href="SecurityAndTrust.html">SecurityAndTrust</a></li>
 <li><a href="APIReference.html">APIReference</a></li>
 </ul>
@@ -259,6 +286,8 @@ registry.register(
 <li class="wiki-toc-link level-3"><a href="#worker-lokal-starten">Worker lokal starten</a></li>
 <li class="wiki-toc-link level-3"><a href="#registry-aus-python-pruefen">Registry aus Python pruefen</a></li>
 <li class="wiki-toc-link level-3"><a href="#deklarative-platzierungsmetadaten">Deklarative Platzierungsmetadaten</a></li>
+<li class="wiki-toc-link level-3"><a href="#federated-invariant-broadcast">Federated Invariant Broadcast</a></li>
+<li class="wiki-toc-link level-3"><a href="#same-host-zero-copy-via-zero">Same-host Zero-Copy via `zero`</a></li>
 <li class="wiki-toc-link"><a href="#typische-fehler-und-fragen">Typische Fehler und Fragen</a></li>
 <li class="wiki-toc-link level-3"><a href="#warum-wird-ein-task-nicht-verteilt">Warum wird ein Task nicht verteilt?</a></li>
 <li class="wiki-toc-link level-3"><a href="#wann-ist-mesh-ueberhaupt-relevant">Wann ist Mesh ueberhaupt relevant?</a></li>

@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="Nova-shell wiki builder">
-  <title>Nova Tools | Nova-shell Wiki</title>
+  <title>Zero-Copy Federated Learning Mesh | Nova-shell Wiki</title>
   <link rel="stylesheet" href="assets/wiki.css">
 </head>
 <body>
@@ -42,7 +42,7 @@
 <li><a class="wiki-nav-link" data-nav-href="ExamplesAndRecipes.html" href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NSBlobGenerator.html" href="NSBlobGenerator.html">NSBlobGenerator</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaSynthPredictiveEngineShifting.html" href="NovaSynthPredictiveEngineShifting.html">NovaSynthPredictiveEngineShifting</a></li>
-<li><a class="wiki-nav-link" data-nav-href="ZeroCopyFederatedLearningMesh.html" href="ZeroCopyFederatedLearningMesh.html">ZeroCopyFederatedLearningMesh</a></li>
+<li><a class="wiki-nav-link active" data-nav-href="ZeroCopyFederatedLearningMesh.html" href="ZeroCopyFederatedLearningMesh.html">ZeroCopyFederatedLearningMesh</a></li>
 <li><a class="wiki-nav-link" data-nav-href="MyceliaAtheriaCoEvolution.html" href="MyceliaAtheriaCoEvolution.html">MyceliaAtheriaCoEvolution</a></li>
 <li><a class="wiki-nav-link" data-nav-href="WatchMonitor.html" href="WatchMonitor.html">WatchMonitor</a></li>
 <li><a class="wiki-nav-link" data-nav-href="WatchMonitorQuickStart.html" href="WatchMonitorQuickStart.html">WatchMonitorQuickStart</a></li>
@@ -84,11 +84,11 @@
 <li><a class="wiki-nav-link" data-nav-href="NovaMesh.html" href="NovaMesh.html">NovaMesh</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NSBlobGenerator.html" href="NSBlobGenerator.html">NSBlobGenerator</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaSynthPredictiveEngineShifting.html" href="NovaSynthPredictiveEngineShifting.html">NovaSynthPredictiveEngineShifting</a></li>
-<li><a class="wiki-nav-link" data-nav-href="ZeroCopyFederatedLearningMesh.html" href="ZeroCopyFederatedLearningMesh.html">ZeroCopyFederatedLearningMesh</a></li>
+<li><a class="wiki-nav-link active" data-nav-href="ZeroCopyFederatedLearningMesh.html" href="ZeroCopyFederatedLearningMesh.html">ZeroCopyFederatedLearningMesh</a></li>
 <li><a class="wiki-nav-link" data-nav-href="MyceliaAtheriaCoEvolution.html" href="MyceliaAtheriaCoEvolution.html">MyceliaAtheriaCoEvolution</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaSensors.html" href="NovaSensors.html">NovaSensors</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaMemory.html" href="NovaMemory.html">NovaMemory</a></li>
-<li><a class="wiki-nav-link active" data-nav-href="NovaTools.html" href="NovaTools.html">NovaTools</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaTools.html" href="NovaTools.html">NovaTools</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Entwicklung und Betrieb</h2>
@@ -124,60 +124,149 @@
         <button type="button" class="wiki-nav-toggle" data-nav-toggle>Menu</button>
         <div class="wiki-header-copy">
           <span class="wiki-kicker">Nova-shell Documentation</span>
-          <h1>Nova Tools</h1>
-          <p>Source: NovaTools.md</p>
+          <h1>Zero-Copy Federated Learning Mesh</h1>
+          <p>Source: ZeroCopyFederatedLearningMesh.md</p>
         </div>
       </header>
       <div class="wiki-layout">
         <article class="wiki-article">
-          <h1 id="nova-tools">Nova Tools</h1>
+          <h1 id="zero-copy-federated-learning-mesh">Zero-Copy Federated Learning Mesh</h1>
 <h2 id="zweck">Zweck</h2>
-<p>Tools sind strukturierte, benannte Operationen mit Eingabeschema und Pipeline-Template. Sie sind der sauberste Weg, wiederverwendbare Shell-Operationen bereitzustellen.</p>
-<h2 id="kernpunkte">Kernpunkte</h2>
+<p>Zero-Copy Federated Learning Mesh bringt Atheria-Invarianten verteilt in den Mesh-Layer. Statt grosse Rohdaten oder komplette Modelle zwischen Workstations zu kopieren, synchronisiert Nova-shell signierte, verifizierte Wissensupdates.</p>
+<p>Der Fokus liegt auf:</p>
 <ul>
-<li>Ein Tool besitzt Name, Beschreibung, Schema und Pipeline.</li>
-<li>Tools koennen direkt aus der Shell oder indirekt aus Agent- und Plannerpfaden genutzt werden.</li>
-<li>Tools bilden eine Schicht zwischen Promptlogik und konkreter Kommandokette.</li>
+<li>geringem Transferaufwand</li>
+<li>Integritaet der Updates</li>
+<li>schneller Verteilung neuer Invarianten</li>
+<li>same-host zero-copy ueber Shared Memory</li>
 </ul>
-<h2 id="praktische-nutzung">Praktische Nutzung</h2>
-<ul>
-<li>Registriere kleine, stabile Operationen als Tool statt sie jedes Mal neu zu tippen.</li>
-<li>Halte Schemata eng, damit <code>tool call</code> frueh auf fehlende Argumente pruefen kann.</li>
-</ul>
-<h2 id="testbare-einstiege">Testbare Einstiege</h2>
-<h3 id="ein-tool-definieren-und-ausfuehren">Ein Tool definieren und ausfuehren</h3>
-<pre><code class="language-powershell">tool register greet --description &quot;Greet user&quot; --schema &quot;{\&quot;type\&quot;:\&quot;object\&quot;,\&quot;properties\&quot;:{\&quot;name\&quot;:{\&quot;type\&quot;:\&quot;string\&quot;}},\&quot;required\&quot;:[\&quot;name\&quot;]}&quot; --pipeline &quot;py \&quot;Hello \&quot; + {{py:name}}&quot;
-tool call greet name=Nova
-tool show greet</code></pre>
+<h2 id="kernobjekte">Kernobjekte</h2>
+<table><thead><tr>
+<th>Objekt</th>
+<th>Rolle</th>
+</tr></thead><tbody>
+<tr>
+<td><code>FederatedLearningMesh</code></td>
+<td>zentrale Federated-Schicht fuer Publish, Apply, Broadcast und Historie</td>
+</tr>
+<tr>
+<td><code>FederatedInvariantUpdate</code></td>
+<td>normiertes, signiertes Invariant-Update</td>
+</tr>
+<tr>
+<td><code>SignatureResolver</code></td>
+<td>HMAC-basierte Integritaetspruefung</td>
+</tr>
+<tr>
+<td><code>NovaZeroPool</code></td>
+<td>same-host Shared-Memory-Handles ohne teures Payload-Kopieren</td>
+</tr>
+<tr>
+<td><code>MeshWorkerServer</code></td>
+<td>Worker-Endpunkt fuer <code>/federated/apply</code> und Status</td>
+</tr>
+</tbody></table>
+<h2 id="architektur">Architektur</h2>
+<pre><code class="language-text">local Atheria / report
+  -&gt;
+invariant payload
+  -&gt;
+signature + integrity metadata
+  -&gt;
+federated publish
+  -&gt;
+mesh broadcast
+  -&gt;
+remote apply
+  -&gt;
+verified swarm memory</code></pre>
+<h2 id="cli">CLI</h2>
+<h3 id="status-der-federated-schicht">Status der Federated-Schicht</h3>
+<pre><code class="language-powershell">mesh federated status</code></pre>
+<h3 id="letzte-updates-anzeigen">Letzte Updates anzeigen</h3>
+<pre><code class="language-powershell">mesh federated history 10</code></pre>
+<h3 id="manuelles-invariant-publizieren">Manuelles Invariant publizieren</h3>
+<pre><code class="language-powershell">mesh federated publish --statement &quot;Inter-core resonance raised&quot; --namespace swarm --project lab --broadcast</code></pre>
+<h3 id="neueste-aion-chronik-invariante-veroeffentlichen">Neueste Aion-Chronik-Invariante veroeffentlichen</h3>
+<pre><code class="language-powershell">mesh federated chronik-latest --broadcast</code></pre>
+<h2 id="testbare-beispiele">Testbare Beispiele</h2>
+<h3 id="1-einfaches-publish-ohne-zero-copy">1. Einfaches Publish ohne Zero-Copy</h3>
+<pre><code class="language-powershell">mesh federated publish --statement &quot;Edge anomaly detector learned new invariant&quot; --namespace security --project guards</code></pre>
 <p>Erwartung:</p>
 <ul>
-<li>Der Aufruf liefert <code>Hello Nova</code>.</li>
-<li>Die Tooldefinition bleibt ueber <code>tool show</code> inspizierbar.</li>
+<li>JSON mit <code>verified</code>, <code>update_id</code> und Broadcast-/Apply-Informationen</li>
 </ul>
-<h2 id="typische-fragen-und-fehler">Typische Fragen und Fehler</h2>
-<h3 id="tool-call-scheitert"><code>tool call</code> scheitert</h3>
+<h3 id="2-same-host-zero-copy-ueber-zero">2. Same-host Zero-Copy ueber <code>zero</code></h3>
+<pre><code class="language-powershell">zero put federated-invariant-payload</code></pre>
+<p>Danach den Rueckgabewert <code>handle</code> und <code>size</code> verwenden:</p>
+<pre><code class="language-powershell">mesh federated publish --statement &quot;Shared invariant&quot; --handle &lt;HANDLE&gt; --size &lt;SIZE&gt; --type text --same-host</code></pre>
+<p>Damit wird der Payload ueber Shared Memory referenziert, nicht erneut im Klartext kopiert.</p>
+<h3 id="3-chronik-gebundenes-schwarmgedaechtnis">3. Chronik-gebundenes Schwarmgedaechtnis</h3>
+<pre><code class="language-powershell">mesh federated chronik-latest --namespace atheria --project swarm --broadcast</code></pre>
+<p>Damit wird der neueste Aion-Chronik-Resonanzzustand als Federated-Update in den Mesh-Layer eingespeist.</p>
+<h2 id="integritaet-und-vertrauen">Integritaet und Vertrauen</h2>
+<p>Federated Updates werden nicht blind angenommen. Die Federated-Schicht prueft:</p>
 <ul>
-<li>Ein Pflichtfeld im Schema fehlt.</li>
-<li>Die Pipeline ist syntaktisch fehlerhaft.</li>
-<li>Der Template-Platzhalter passt nicht zum Eingabenamen.</li>
+<li>Signatur</li>
+<li>Payload-Integritaet</li>
+<li>semantische Struktur des Updates</li>
+<li>Broadcast-/Apply-Erfolg pro Worker</li>
 </ul>
+<p>Damit passt die Schicht zu Nova-shells Trust- und Mesh-Sicherheitsmodell.</p>
+<h2 id="designentscheidungen">Designentscheidungen</h2>
+<h3 id="warum-keine-rohdaten-uebertragen">Warum keine Rohdaten uebertragen?</h3>
+<p>Rohdaten sind teuer, sensibel und oft nicht noetig. Fuer kollaboratives Lernen reichen haeufig verdichtete Invarianten, Statements oder Gewichts-/Signalzusammenfassungen.</p>
+<h3 id="warum-same-host-zero-copy">Warum same-host zero-copy?</h3>
+<p>Wenn mehrere Prozesse auf derselben Maschine laufen, ist Shared Memory guenstiger als erneutes Serialisieren. Das ist besonders relevant fuer:</p>
+<ul>
+<li>lokale Worker</li>
+<li>grosse Invariant-Payloads</li>
+<li>schnelle Broadcast-Loops</li>
+</ul>
+<h2 id="typische-fehler-und-fragen">Typische Fehler und Fragen</h2>
+<h3 id="warum-wird-ein-update-nicht-angewendet">Warum wird ein Update nicht angewendet?</h3>
+<p>Typische Gruende:</p>
+<ul>
+<li>Signatur ungueltig</li>
+<li>Payload nicht lesbar</li>
+<li>Worker-Endpunkt nicht erreichbar</li>
+<li>Trust- oder Transportpfad nicht passend</li>
+</ul>
+<h3 id="wo-sehe-ich-ob-ein-broadcast-erfolgreich-war">Wo sehe ich, ob ein Broadcast erfolgreich war?</h3>
+<p>Im Rueckgabefeld <code>broadcast</code>. Dort stehen <code>applied_count</code>, <code>failed_count</code> und die einzelnen Antworten.</p>
+<h3 id="wann-lohnt-sich-same-host">Wann lohnt sich <code>--same-host</code>?</h3>
+<p>Wenn der Sender und der Zielworker auf derselben Maschine oder im selben lokalen Prozessverbund liegen.</p>
 <h2 id="verwandte-seiten">Verwandte Seiten</h2>
 <ul>
-<li><a href="NovaCLI.html">NovaCLI</a></li>
-<li><a href="NovaPlanner.html">NovaPlanner</a></li>
-<li><a href="AgentsAndKnowledge.html">AgentsAndKnowledge</a></li>
+<li><a href="NovaMesh.html">NovaMesh</a></li>
+<li><a href="SecurityAndTrust.html">SecurityAndTrust</a></li>
+<li><a href="NovaMemory.html">NovaMemory</a></li>
+<li><a href="APIReference.html">APIReference</a></li>
 <li><a href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
 </ul>
         </article>
         <aside class="wiki-toc">
           <div class="wiki-toc-card"><h2>On this page</h2><ul>
 <li class="wiki-toc-link"><a href="#zweck">Zweck</a></li>
-<li class="wiki-toc-link"><a href="#kernpunkte">Kernpunkte</a></li>
-<li class="wiki-toc-link"><a href="#praktische-nutzung">Praktische Nutzung</a></li>
-<li class="wiki-toc-link"><a href="#testbare-einstiege">Testbare Einstiege</a></li>
-<li class="wiki-toc-link level-3"><a href="#ein-tool-definieren-und-ausfuehren">Ein Tool definieren und ausfuehren</a></li>
-<li class="wiki-toc-link"><a href="#typische-fragen-und-fehler">Typische Fragen und Fehler</a></li>
-<li class="wiki-toc-link level-3"><a href="#tool-call-scheitert">`tool call` scheitert</a></li>
+<li class="wiki-toc-link"><a href="#kernobjekte">Kernobjekte</a></li>
+<li class="wiki-toc-link"><a href="#architektur">Architektur</a></li>
+<li class="wiki-toc-link"><a href="#cli">CLI</a></li>
+<li class="wiki-toc-link level-3"><a href="#status-der-federated-schicht">Status der Federated-Schicht</a></li>
+<li class="wiki-toc-link level-3"><a href="#letzte-updates-anzeigen">Letzte Updates anzeigen</a></li>
+<li class="wiki-toc-link level-3"><a href="#manuelles-invariant-publizieren">Manuelles Invariant publizieren</a></li>
+<li class="wiki-toc-link level-3"><a href="#neueste-aion-chronik-invariante-veroeffentlichen">Neueste Aion-Chronik-Invariante veroeffentlichen</a></li>
+<li class="wiki-toc-link"><a href="#testbare-beispiele">Testbare Beispiele</a></li>
+<li class="wiki-toc-link level-3"><a href="#1-einfaches-publish-ohne-zero-copy">1. Einfaches Publish ohne Zero-Copy</a></li>
+<li class="wiki-toc-link level-3"><a href="#2-same-host-zero-copy-ueber-zero">2. Same-host Zero-Copy ueber `zero`</a></li>
+<li class="wiki-toc-link level-3"><a href="#3-chronik-gebundenes-schwarmgedaechtnis">3. Chronik-gebundenes Schwarmgedaechtnis</a></li>
+<li class="wiki-toc-link"><a href="#integritaet-und-vertrauen">Integritaet und Vertrauen</a></li>
+<li class="wiki-toc-link"><a href="#designentscheidungen">Designentscheidungen</a></li>
+<li class="wiki-toc-link level-3"><a href="#warum-keine-rohdaten-uebertragen">Warum keine Rohdaten uebertragen?</a></li>
+<li class="wiki-toc-link level-3"><a href="#warum-same-host-zero-copy">Warum same-host zero-copy?</a></li>
+<li class="wiki-toc-link"><a href="#typische-fehler-und-fragen">Typische Fehler und Fragen</a></li>
+<li class="wiki-toc-link level-3"><a href="#warum-wird-ein-update-nicht-angewendet">Warum wird ein Update nicht angewendet?</a></li>
+<li class="wiki-toc-link level-3"><a href="#wo-sehe-ich-ob-ein-broadcast-erfolgreich-war">Wo sehe ich, ob ein Broadcast erfolgreich war?</a></li>
+<li class="wiki-toc-link level-3"><a href="#wann-lohnt-sich-same-host">Wann lohnt sich `--same-host`?</a></li>
 <li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
 </ul></div>
         </aside>
@@ -189,7 +278,7 @@ tool show greet</code></pre>
   </div>
   <script>
     window.NOVA_WIKI = {
-      currentPage: "NovaTools.html",
+      currentPage: "ZeroCopyFederatedLearningMesh.html",
       searchIndex: "assets/search-index.json"
     };
   </script>
