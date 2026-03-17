@@ -1,62 +1,41 @@
 # Was Nova-shell ist
 
-Nova-shell ist kein einzelnes Agent-Skript und auch nicht nur eine Shell.
-Nova-shell ist eine einheitliche Laufzeit fuer drei Dinge gleichzeitig:
+Nova-shell ist keine einzelne Shell-Erweiterung und auch nicht nur ein Agent-Framework.
+Nova-shell ist heute eine kombinierte Plattform aus:
 
-1. eine CLI- und Runtime-Plattform fuer polyglotte Ausfuehrung
-2. eine deklarative Sprache fuer Workflows und AI-Systeme
-3. eine AI-Operating-System-Schicht fuer Agenten, Wissen und verteilte Ausfuehrung
+1. interaktiver Shell und polyglotter Runtime
+2. deklarativer Sprache fuer `.ns`-Programme
+3. AI-OS- und Control-Plane-Schicht fuer Agenten, Wissen und verteilte Ausfuehrung
 
 Kurz gesagt:
 
-Nova-shell verbindet die Denkweise von Unix-Shell, Workflow-Engine, Agent-Runtime und verteilter Control Plane in einem System.
+**Nova-shell ist eine deklarative AI-Runtime- und Operating-System-Plattform fuer Compute, Agenten, Atheria, Events und Mesh-Orchestrierung.**
 
 ## Die kurze Einordnung
 
-Nova-shell ist heute:
+Nova-shell verbindet in einem System:
 
-- eine Runtime fuer `Python`, `C++`, `GPU/OpenCL`, `WASM`, `AI` und externe Tools
-- eine deklarative `.ns`-Sprache mit Parser, AST, Graph-Compiler und Runtime
-- eine Event- und Flow-Plattform fuer agentische und datengetriebene Workflows
-- ein System mit Atheria, Vector Memory, Agenten, Mesh-Workern, Service-Fabric und Control Plane
+- Shell-Bedienung und direkte CLI-Steuerung
+- Python, C++, GPU, WASM und externe Tools
+- Agenten, Tools, Provider-Routing und Memory
+- Atheria als lokales Wissens- und Lernsystem
+- Event- und Flow-Logik
+- deklarative Graph-Ausfuehrung ueber `.ns`
+- Mesh, Remote-Dispatch und Worker-Orchestrierung
+- Security, Policies, Observability, Release- und Betriebslogik
 
-Nova-shell ist nicht:
+Damit ist Nova-shell breiter als:
 
-- nur ein Chat-Frontend fuer ein LLM
-- nur ein AutoGPT-artiger Agent-Loop
-- nur ein Build-Tool
-- nur ein Forschungsprototyp ohne Runtime-Schicht
-
-## Was im Repo tatsaechlich existiert
-
-Die aktuelle Codebasis besteht aus zwei zusammenlebenden Ausfuehrungspfaden:
-
-1. der bestehenden Shell- und CLI-Runtime in `nova_shell.py`
-2. dem deklarativen Nova-Stack unter `nova/`
-
-Der deklarative Stack umfasst:
-
-- `nova.parser`
-- `nova.graph`
-- `nova.runtime`
-- `nova.agents`
-- `nova.events`
-- `nova.mesh`
-
-Damit existieren im Projekt bereits:
-
-- ein Parser fuer `.ns`-Dateien
-- ein typisiertes AST-Modell
-- ein Graph-Compiler
-- eine Runtime fuer Flows, Events, Agenten und Tools
-- eine Mesh- und Worker-Schicht
-- eine persistente Control Plane unter `.nova/`
+- eine klassische Kommandozeile
+- ein reines LLM-Frontend
+- ein einzelnes Agent-Framework
+- ein blosses Build- oder Workflow-Tool
 
 ## Die drei Ebenen von Nova-shell
 
-### 1. Compute Runtime
+### 1. Shell und Runtime
 
-Nova-shell fuehrt unterschiedliche Rechenpfade in einem gemeinsamen Runtime-Modell aus:
+Nova-shell ist zunaechst eine interaktive Laufzeitumgebung fuer mehrere Ausfuehrungspfade:
 
 - `py`
 - `cpp`
@@ -64,266 +43,206 @@ Nova-shell fuehrt unterschiedliche Rechenpfade in einem gemeinsamen Runtime-Mode
 - `wasm`
 - `ai`
 - `sys`
+- `remote`
 
-Das ist wichtig, weil Nova-shell nicht nur LLM-Aufrufe orchestriert, sondern echte heterogene Ausfuehrung.
+Der wichtige Punkt ist: Diese Pfade leben nicht nebeneinander als lose Toolsammlung, sondern unter einem gemeinsamen Bedien- und Routingmodell.
 
-### 2. Agent- und Wissensruntime
+### 2. Nova Language
 
-Nova-shell besitzt eine eigene AI-Schicht mit:
+Mit der Nova Language (`.ns`) beschreibt Nova-shell nicht nur Befehlsfolgen, sondern Systemstrukturen.
 
-- Agenten
-- Tool-Aufrufen
-- persistentem Memory
-- Atheria als lokalem Wissens- und Resonanzsystem
-- Event- und Flow-Verknuepfung
+Deklarierbar sind unter anderem:
 
-Das bedeutet:
+- `system`
+- `state`
+- `dataset`
+- `agent`
+- `tool`
+- `flow`
+- `event`
+- `service`
+- `package`
 
-Nova-shell kann nicht nur antworten, sondern trainieren, suchen, erinnern, reagieren und Workflows ausloesen.
+Aus einer `.ns`-Datei wird ueber Parser, AST und Graph-Compiler ein ausfuehrbarer Systemgraph.
 
 ### 3. AI-OS- und Control-Plane-Schicht
 
-Der neuere Nova-Stack geht ueber klassische Agent-Systeme hinaus und bringt produktionsnahe Plattformbausteine mit:
+Der aktuelle Nova-Stack geht ueber Shell und Workflows hinaus.
+Er umfasst inzwischen:
 
 - Queueing
 - Scheduler
-- Replay
-- Recovery
-- Security
-- Policy Enforcement
-- Consensus
-- Service Fabric
-- Traffic Plane
-- Observability
-- Mesh Dispatch
+- Replay und Recovery
+- Konsens- und Replikationspfade
+- Service-Fabric und Traffic Plane
+- PKI, Trust und Policies
+- Telemetrie und Operations
+- Mesh-Worker und verteilte Ausfuehrung
 
-Das ist der Punkt, an dem Nova-shell nicht mehr nur wie ein Framework wirkt, sondern wie eine Runtime-Plattform.
+Dadurch wirkt Nova-shell nicht mehr nur wie ein Framework, sondern wie eine Runtime-Plattform mit eigener Betriebslogik.
 
-## Architektur in einem Bild
+## Was im Repo tatsaechlich vorhanden ist
 
-```text
-Nova-shell
+Die heutige Codebasis besteht aus zwei Hauptpfaden:
 
-User Layer
-  CLI
-  Nova Language (.ns)
+1. `nova_shell.py` als bestehende Shell- und CLI-Runtime
+2. `nova/` als deklarativer Nova-Stack
 
-Orchestration Layer
-  Flows
-  Events
-  Graph Compiler
-  Scheduler
+Der `nova/`-Stack umfasst insbesondere:
 
-Agent Layer
-  Agents
-  Tools
-  Prompt / Provider Routing
-  Atheria
-  Memory
+- `nova.parser`
+- `nova.graph`
+- `nova.runtime`
+- `nova.agents`
+- `nova.events`
+- `nova.mesh`
+- `nova.toolchain`
+- `nova.wiki`
 
-Execution Layer
-  Python
-  C++
-  GPU
-  WASM
-  AI
-  External Tools
+Damit existieren im Projekt bereits:
 
-Distributed Layer
-  Mesh Workers
-  Remote Dispatch
-  Control Plane
-
-Platform Layer
-  Security
-  Policies
-  Services
-  Packages
-  Observability
-  Recovery
-  Consensus
-```
-
-## Was Nova-shell von klassischen Agent-Frameworks unterscheidet
-
-Klassische Agent-Frameworks arbeiten oft nach diesem Muster:
-
-```text
-Prompt -> Agent -> Tool -> Ergebnis -> naechster Loop
-```
-
-Nova-shell arbeitet deutlich breiter:
-
-```text
-Event -> Flow -> Graph -> Agent/Tool -> Dataset/Memory -> Event
-```
-
-Der Unterschied ist entscheidend:
-
-- ein Agent-Framework organisiert meist nur Reasoning und Tool-Nutzung
-- Nova-shell organisiert zusaetzlich Datenfluss, Ausfuehrung, Events, Worker, Sicherheitsregeln und Plattformzustand
-
-## Einordnung gegenueber OpenClaw und aehnlichen Systemen
-
-Wenn man Nova-shell mit OpenClaw-, AutoGPT-, CrewAI- oder ReAct-artigen Systemen vergleicht, dann gilt:
-
-- Nova-shell deckt denselben Problemraum fuer Agenten, Tools, Memory und mehrstufige Ausfuehrung ab
-- Nova-shell ist aber nicht auf einen Python-Agent-Loop reduziert
-- Nova-shell besitzt zusaetzlich eine echte Runtime fuer Compute, Events, Mesh und Plattformbetrieb
-
-Sauber formuliert:
-
-OpenClaw-artige Systeme sind primär Agent-Frameworks.
-Nova-shell ist eine Agent-Runtime plus Workflow-Engine plus verteilte Compute-Plattform.
-
-## Die Nova Language
-
-Nova-shell hat mit der Nova Language einen deklarativen Pfad, der nicht nur Befehle, sondern Systeme beschreibt.
-
-Typische Deklarationen:
-
-- `agent`
-- `dataset`
-- `flow`
-- `state`
-- `event`
-- `tool`
-- `service`
-- `package`
-- `system`
-
-Beispiel:
-
-```ns
-agent researcher {
-model: llama3
-tools: rss_fetch, summarize
-}
-
-dataset tech_rss {
-source: rss
-}
-
-flow radar {
-rss.fetch tech_rss
-atheria.embed tech_rss
-researcher summarize tech_rss
-event.emit dataset.updated
-}
-```
-
-Dieser Teil ist wichtig, weil Nova-shell damit nicht nur interaktiv benutzt werden kann, sondern auch als deklarative Plattform beschrieben wird.
+- Parser und AST fuer `.ns`
+- Execution-Graph-Kompilierung
+- deklarative Runtime
+- Agent- und Memory-Schicht
+- Event-Bus
+- Mesh- und Worker-Logik
+- API-, Scheduler- und Control-Plane-Bausteine
+- HTML-Wiki-Build und Doku-Serving
 
 ## Was Atheria in Nova-shell ist
 
-Atheria ist in Nova-shell kein dekoratives Extra und auch kein reiner Chat-Modus.
-Atheria ist die lokale Wissens- und Resonanzschicht des Systems.
+Atheria ist kein dekoratives Extra.
+Es ist die lokale Wissens-, Trainings- und Resonanzschicht der Plattform.
 
-Atheria kann:
+Atheria dient unter anderem fuer:
 
-- initialisiert werden
-- Trainingsdaten aufnehmen
-- Dateien und QA-Paare trainieren
-- durchsucht werden
-- Chat-Kontext liefern
-- Sensoren und Guardian-Logik nutzen
+- Dateitraining
+- QA-Training
+- semantische Suche
+- Chat-Kontext
+- Sensoren
+- Guardian- und Review-Pfade
+- Wissens- und Invariantenarbeit im Zusammenspiel mit Agenten und Mesh
 
-Damit ergaenzt Atheria die Runtime um:
+Damit ergaenzt Atheria Nova-shell um:
 
 - lokales Wissensgedaechtnis
-- semantische Suche
-- Langzeitkontext
-- beobachtende und reaktive Wissenspfade
+- semantischen Langzeitkontext
+- analysierende und reaktive Wissenspfade
 
-## Was die Mesh- und Plattformschicht bedeutet
+## Was Nova-shell heute zusaetzlich besonders macht
 
-Nova-shell ist nicht nur lokal gedacht.
-Es besitzt eine verteilte Schicht mit:
+Die aktuelle Plattform hat Funktionen, die ueber die fruehere Runtime-Beschreibung klar hinausgehen.
 
-- Worker-Registrierung
-- Capability-basierter Verteilung
-- Remote-Dispatch
-- Control-Plane-APIs
-- Queueing und Schedules
-- Recovery- und Replay-Pfaden
+### Blob Seeds
 
-Im neueren `nova/`-Runtimepfad kommen dazu:
+Mit dem NS-Blob-Generator koennen Logikbausteine als verifizierbare, komprimierte Seeds verpackt, verschoben und wieder ausgefuehrt werden.
 
-- native Executor-Daemons fuer `py`, `cpp`, `gpu`, `wasm` und `ai`
-- Consensus-Logik
-- Security- und Trust-Management
-- Service-Fabric
-- Traffic-Plane
-- Observability und Audit
+Relevante Befehle:
 
-Das ist der Kern der Aussage, dass Nova-shell eine AI-Operating-System-Schicht ist:
-Es verwaltet nicht nur Aufgaben, sondern Laufzeit, Richtlinien, Dienste, Wiederherstellung und Ausfuehrungswege.
+- `blob pack`
+- `blob verify`
+- `blob unpack`
+- `blob exec`
+- `blob mesh-run`
+
+Das ist wichtig fuer:
+
+- verifizierbaren Logiktransport
+- mobile Ausfuehrung im Mesh
+- Integritaetspruefung vor Rehydrierung
+
+### Predictive Engine Shifting
+
+Mit NovaSynth kann Nova-shell Laufzeit- und Telemetriedaten verwenden, um Ausfuehrungspfade proaktiv zu bewerten.
+
+Relevante Befehle:
+
+- `synth forecast`
+- `synth shift suggest <code>`
+- `synth shift run <code>`
+
+Das Ziel ist, Last und Ausfuehrung nicht nur zu beobachten, sondern Engine-Wahlen aktiv zu verbessern.
+
+### Zero-Copy Federated Learning Mesh
+
+Nova-shell besitzt mit Mesh, Fabric und Atheria eine Basis fuer verteilten Wissens- und Invariantenabgleich.
+
+Relevante Befehle:
+
+- `mesh federated status`
+- `mesh federated publish`
+- `mesh federated history`
+- `mesh federated chronik-latest`
+
+### Mycelia-Atheria Co-Evolution
+
+Nova-shell kann populationsbasierte Optimierung mit Atheria-Metriken, Tool-Erfolg und Forecast-Signalen kombinieren.
+
+Relevante Befehle:
+
+- `mycelia coevolve run`
+- `mycelia coevolve status`
+
+### Watch Monitor
+
+Nova-shell kann Projektordner live beobachten, Codeaenderungen analysieren, Diffs protokollieren, optional Tests oder Build-Schritte ausloesen und HTML-Reports laufend aktualisieren.
+
+Das zeigt gut, dass Nova-shell nicht nur "Code ausfuehrt", sondern auch Betriebs- und Analysefunktionen uebernimmt.
 
 ## Konkrete Dinge, die man heute mit Nova-shell tun kann
 
 Beispiele auf CLI-Ebene:
 
 ```text
+atheria init
 agent create analyst "Summarize {{input}}"
 agent run analyst quarterly report
-atheria init
-atheria train qa --question "What is Nova-shell?" --answer "Nova-shell is a unified runtime."
 memory embed --id note-1 "Distributed execution matters"
 memory search "distributed execution"
-mesh start-worker --caps py,gpu
-ns.run examples/market_radar.ns
-ns.graph examples/market_radar.ns
-ns.control daemon start
+blob pack --text "21 * 2" --type py
+synth forecast
+mesh federated status
+mycelia coevolve status research-pop
+wiki build
 ```
 
 Beispiele auf Plattformebene:
 
-- Flows kompilieren und als Graph ausfuehren
-- Events loggen und wieder abspielen
-- Dienste und Pakete deklarieren
-- Worker ueber Mesh-Faehigkeiten auswaehlen
-- Agenten mit Tools und Memory in Workflows einbetten
+- `.ns`-Programme als Graph kompilieren und ausfuehren
+- Agenten mit Tools und Memory in Flows einbetten
+- Blob-Seeds verifizieren und im Mesh ausfuehren
+- Projektordner beobachten und HTML-Analysen erzeugen
+- verteilte Worker ueber Faehigkeiten und Policies ansprechen
+- Services, Packages und Runtime-Zustand deklarativ beschreiben
 
-## Was vorher im Dokument falsch oder zu ungenau war
+## Was Nova-shell nicht ist
 
-Die fruehere Fassung hatte drei Probleme:
+Saubere technische Sprache ist hier wichtig.
+Nova-shell ist derzeit nicht:
 
-1. Sie war zu spekulativ.
-   Sie hat sehr stark ueber "zukuenftige Agent-Runtimes" gesprochen, statt Nova-shell selbst sauber zu beschreiben.
-
-2. Sie war zu absolut.
-   Aussagen wie "Nova kann alles, was X kann" sind als technische Einordnung zu grob. Korrekt ist: Nova-shell deckt einen groesseren Runtime-Raum ab, aber Vergleiche muessen an Features und Ausfuehrungsmodellen festgemacht werden.
-
-3. Sie war zu wiederholend.
-   Viele Abschnitte haben dieselbe Kernaussage mehrfach gesagt, statt Architektur, Runtime und Plattform klar zu trennen.
-
-## Die ehrliche technische Einordnung
-
-Nova-shell ist heute am treffendsten beschrieben als:
-
-**deklarative AI-Runtime- und Operating-System-Plattform fuer Agenten, Wissen, Workflows und verteilte Compute-Ausfuehrung**
-
-Oder noch kuerzer:
-
-**Nova-shell ist eine AI-OS-Runtime mit CLI, Sprache, Graph-Ausfuehrung, Agenten, Atheria und verteilter Control Plane.**
-
-## Was Nova-shell nicht behaupten sollte
-
-Saubere technische Sprache ist wichtig.
-Nova-shell ist im Repo bereits sehr weit ausgebaut, aber diese Aussage sollte bewusst nicht verwendet werden:
-
-"Nova-shell ist schon ein weltweit ausgerolltes Produktbetriebssystem."
+- ein allgemeiner Ersatz fuer Bash, PowerShell oder ein klassisches Betriebssystem
+- ein blosses Chat-Frontend fuer irgendein Modell
+- ein magischer Universaloptimierer fuer jeden Workload
+- automatisch ein weltweit betriebenes Produkt-OS nur weil die Repo-Bausteine vorhanden sind
 
 Korrekt ist:
 
 - Nova-shell besitzt die Software-Bausteine einer AI-OS-Plattform
-- Nova-shell enthaelt Runtime-, Graph-, Agent-, Mesh- und Plattformlogik
-- reale globale Ausrollung und Betrieb sind etwas anderes als Repo-Code
+- Nova-shell ist eine ernsthafte Runtime-, Language- und Control-Plane-Basis
+- reale globale Ausrollung und laufender Betrieb sind etwas anderes als Repo-Code
+
+## Die ehrliche technische Kurzformel
+
+Die treffendste kurze Beschreibung ist:
+
+**Nova-shell ist eine AI-OS-Runtime mit Shell, Nova Language, Graph-Ausfuehrung, Agenten, Atheria, Blob-Seeds und verteilter Control Plane.**
 
 ## Fazit
 
 Nova-shell ist kein einfacher Agent-Bot.
-Nova-shell ist auch keine klassische Script-Shell.
+Es ist auch keine klassische Script-Shell.
 
 Nova-shell ist eine mehrschichtige Plattform:
 
@@ -335,4 +254,4 @@ Nova-shell ist eine mehrschichtige Plattform:
 - verteilte Compute-Schicht
 - AI-OS-Control-Plane
 
-Genau darin liegt die eigentliche Kategorie des Projekts.
+Genau darin liegt die eigentliche Kategorie des Projekts: Nova-shell fuehrt Sprache, Laufzeit, Wissen, Verteilung, Analyse und Betrieb in einem System zusammen.
