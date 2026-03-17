@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="Nova-shell wiki builder">
-  <title>Subsystems | Nova-shell Wiki</title>
+  <title>Was Nova-shell ist | Nova-shell Wiki</title>
   <link rel="stylesheet" href="assets/wiki.css">
 </head>
 <body>
@@ -116,7 +116,7 @@
 <li><a class="wiki-nav-link" data-nav-href="Research.html" href="Research.html">Research</a></li>
 <li><a class="wiki-nav-link" data-nav-href="AIOSConcept.html" href="AIOSConcept.html">AIOSConcept</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Whitepaper.html" href="Whitepaper.html">Whitepaper</a></li>
-<li><a class="wiki-nav-link" data-nav-href="Was-es-Ist.html" href="Was-es-Ist.html">Was-es-Ist</a></li>
+<li><a class="wiki-nav-link active" data-nav-href="Was-es-Ist.html" href="Was-es-Ist.html">Was-es-Ist</a></li>
 <li><a class="wiki-nav-link" data-nav-href="wirtschaftlicher_nutzen.html" href="wirtschaftlicher_nutzen.html">wirtschaftlicher_nutzen</a></li>
 <li><a class="wiki-nav-link" data-nav-href="AgentSystems.html" href="AgentSystems.html">AgentSystems</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Glossary.html" href="Glossary.html">Glossary</a></li>
@@ -129,66 +129,244 @@
         <button type="button" class="wiki-nav-toggle" data-nav-toggle>Menu</button>
         <div class="wiki-header-copy">
           <span class="wiki-kicker">Nova-shell Documentation</span>
-          <h1>Subsystems</h1>
-          <p>Source: Subsystems.md</p>
+          <h1>Was Nova-shell ist</h1>
+          <p>Source: Was-es-Ist.md</p>
         </div>
       </header>
       <div class="wiki-layout">
         <article class="wiki-article">
-          <h1 id="subsystems">Subsystems</h1>
-<h2 id="zweck">Zweck</h2>
-<p>Diese Seite ordnet Nova-shell nach Subsystemen. Sie ist besonders nuetzlich, wenn eine Aufgabe nicht von einem einzelnen Kommando ausgeht, sondern von einer technischen Frage wie &quot;Wo liegt Scheduling?&quot; oder &quot;Wo wird Agent Memory verwaltet?&quot;.</p>
-<h2 id="sprache-und-toolchain">Sprache und Toolchain</h2>
+          <h1 id="was-nova-shell-ist">Was Nova-shell ist</h1>
+<p>Nova-shell ist keine einzelne Shell-Erweiterung und auch nicht nur ein Agent-Framework. Nova-shell ist heute eine kombinierte Plattform aus:</p>
+<ol>
+<li>interaktiver Shell und polyglotter Runtime</li>
+<li>deklarativer Sprache fuer <code>.ns</code>-Programme</li>
+<li>AI-OS- und Control-Plane-Schicht fuer Agenten, Wissen und verteilte Ausfuehrung</li>
+</ol>
+<p>Kurz gesagt:</p>
+<p><strong>Nova-shell ist eine deklarative AI-Runtime- und Operating-System-Plattform fuer Compute, Agenten, Atheria, Events und Mesh-Orchestrierung.</strong></p>
+<h2 id="die-kurze-einordnung">Die kurze Einordnung</h2>
+<p>Nova-shell verbindet in einem System:</p>
 <ul>
-<li><a href="NovaLanguage.html">NovaLanguage</a></li>
-<li><a href="NovaGraphEngine.html">NovaGraphEngine</a></li>
-<li><a href="NovaPlanner.html">NovaPlanner</a></li>
-<li><a href="ParserAndASTReference.html">ParserAndASTReference</a></li>
+<li>Shell-Bedienung und direkte CLI-Steuerung</li>
+<li>Python, C++, GPU, WASM und externe Tools</li>
+<li>Agenten, Tools, Provider-Routing und Memory</li>
+<li>Atheria als lokales Wissens- und Lernsystem</li>
+<li>Event- und Flow-Logik</li>
+<li>deklarative Graph-Ausfuehrung ueber <code>.ns</code></li>
+<li>Mesh, Remote-Dispatch und Worker-Orchestrierung</li>
+<li>Security, Policies, Observability, Release- und Betriebslogik</li>
 </ul>
-<h2 id="shell-und-cli">Shell und CLI</h2>
+<p>Damit ist Nova-shell breiter als:</p>
 <ul>
-<li><a href="NovaCLI.html">NovaCLI</a></li>
-<li><a href="CLIAndLegacyRuntime.html">CLIAndLegacyRuntime</a></li>
-<li><a href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
+<li>eine klassische Kommandozeile</li>
+<li>ein reines LLM-Frontend</li>
+<li>ein einzelnes Agent-Framework</li>
+<li>ein blosses Build- oder Workflow-Tool</li>
 </ul>
-<h2 id="runtime-und-plattform">Runtime und Plattform</h2>
+<h2 id="die-drei-ebenen-von-nova-shell">Die drei Ebenen von Nova-shell</h2>
+<h3 id="1-shell-und-runtime">1. Shell und Runtime</h3>
+<p>Nova-shell ist zunaechst eine interaktive Laufzeitumgebung fuer mehrere Ausfuehrungspfade:</p>
 <ul>
-<li><a href="NovaRuntime.html">NovaRuntime</a></li>
-<li><a href="ExecutionModel.html">ExecutionModel</a></li>
-<li><a href="DataFlow.html">DataFlow</a></li>
-<li><a href="RuntimeAndControlPlane.html">RuntimeAndControlPlane</a></li>
+<li><code>py</code></li>
+<li><code>cpp</code></li>
+<li><code>gpu</code></li>
+<li><code>wasm</code></li>
+<li><code>ai</code></li>
+<li><code>sys</code></li>
+<li><code>remote</code></li>
 </ul>
-<h2 id="ai-und-knowledge">AI und Knowledge</h2>
+<p>Der wichtige Punkt ist: Diese Pfade leben nicht nebeneinander als lose Toolsammlung, sondern unter einem gemeinsamen Bedien- und Routingmodell.</p>
+<h3 id="2-nova-language">2. Nova Language</h3>
+<p>Mit der Nova Language (<code>.ns</code>) beschreibt Nova-shell nicht nur Befehlsfolgen, sondern Systemstrukturen.</p>
+<p>Deklarierbar sind unter anderem:</p>
 <ul>
-<li><a href="NovaAgents.html">NovaAgents</a></li>
-<li><a href="NovaMemory.html">NovaMemory</a></li>
-<li><a href="NovaTools.html">NovaTools</a></li>
-<li><a href="NovaSensors.html">NovaSensors</a></li>
-<li><a href="AgentsAndKnowledge.html">AgentsAndKnowledge</a></li>
+<li><code>system</code></li>
+<li><code>state</code></li>
+<li><code>dataset</code></li>
+<li><code>agent</code></li>
+<li><code>tool</code></li>
+<li><code>flow</code></li>
+<li><code>event</code></li>
+<li><code>service</code></li>
+<li><code>package</code></li>
 </ul>
-<h2 id="verteilte-systeme-und-betrieb">Verteilte Systeme und Betrieb</h2>
+<p>Aus einer <code>.ns</code>-Datei wird ueber Parser, AST und Graph-Compiler ein ausfuehrbarer Systemgraph.</p>
+<h3 id="3-ai-os-und-control-plane-schicht">3. AI-OS- und Control-Plane-Schicht</h3>
+<p>Der aktuelle Nova-Stack geht ueber Shell und Workflows hinaus. Er umfasst inzwischen:</p>
 <ul>
-<li><a href="NovaMesh.html">NovaMesh</a></li>
-<li><a href="MeshAndDistributedExecution.html">MeshAndDistributedExecution</a></li>
-<li><a href="SecurityModel.html">SecurityModel</a></li>
-<li><a href="PerformanceAndScaling.html">PerformanceAndScaling</a></li>
+<li>Queueing</li>
+<li>Scheduler</li>
+<li>Replay und Recovery</li>
+<li>Konsens- und Replikationspfade</li>
+<li>Service-Fabric und Traffic Plane</li>
+<li>PKI, Trust und Policies</li>
+<li>Telemetrie und Operations</li>
+<li>Mesh-Worker und verteilte Ausfuehrung</li>
 </ul>
-<h2 id="verwandte-seiten">Verwandte Seiten</h2>
+<p>Dadurch wirkt Nova-shell nicht mehr nur wie ein Framework, sondern wie eine Runtime-Plattform mit eigener Betriebslogik.</p>
+<h2 id="was-im-repo-tatsaechlich-vorhanden-ist">Was im Repo tatsaechlich vorhanden ist</h2>
+<p>Die heutige Codebasis besteht aus zwei Hauptpfaden:</p>
+<ol>
+<li><code>nova_shell.py</code> als bestehende Shell- und CLI-Runtime</li>
+<li><code>nova/</code> als deklarativer Nova-Stack</li>
+</ol>
+<p>Der <code>nova/</code>-Stack umfasst insbesondere:</p>
 <ul>
-<li><a href="SystemOverview.html">SystemOverview</a></li>
-<li><a href="RepositoryStructure.html">RepositoryStructure</a></li>
-<li><a href="CodeReferenceIndex.html">CodeReferenceIndex</a></li>
+<li><code>nova.parser</code></li>
+<li><code>nova.graph</code></li>
+<li><code>nova.runtime</code></li>
+<li><code>nova.agents</code></li>
+<li><code>nova.events</code></li>
+<li><code>nova.mesh</code></li>
+<li><code>nova.toolchain</code></li>
+<li><code>nova.wiki</code></li>
 </ul>
+<p>Damit existieren im Projekt bereits:</p>
+<ul>
+<li>Parser und AST fuer <code>.ns</code></li>
+<li>Execution-Graph-Kompilierung</li>
+<li>deklarative Runtime</li>
+<li>Agent- und Memory-Schicht</li>
+<li>Event-Bus</li>
+<li>Mesh- und Worker-Logik</li>
+<li>API-, Scheduler- und Control-Plane-Bausteine</li>
+<li>HTML-Wiki-Build und Doku-Serving</li>
+</ul>
+<h2 id="was-atheria-in-nova-shell-ist">Was Atheria in Nova-shell ist</h2>
+<p>Atheria ist kein dekoratives Extra. Es ist die lokale Wissens-, Trainings- und Resonanzschicht der Plattform.</p>
+<p>Atheria dient unter anderem fuer:</p>
+<ul>
+<li>Dateitraining</li>
+<li>QA-Training</li>
+<li>semantische Suche</li>
+<li>Chat-Kontext</li>
+<li>Sensoren</li>
+<li>Guardian- und Review-Pfade</li>
+<li>Wissens- und Invariantenarbeit im Zusammenspiel mit Agenten und Mesh</li>
+</ul>
+<p>Damit ergaenzt Atheria Nova-shell um:</p>
+<ul>
+<li>lokales Wissensgedaechtnis</li>
+<li>semantischen Langzeitkontext</li>
+<li>analysierende und reaktive Wissenspfade</li>
+</ul>
+<h2 id="was-nova-shell-heute-zusaetzlich-besonders-macht">Was Nova-shell heute zusaetzlich besonders macht</h2>
+<p>Die aktuelle Plattform hat Funktionen, die ueber die fruehere Runtime-Beschreibung klar hinausgehen.</p>
+<h3 id="blob-seeds">Blob Seeds</h3>
+<p>Mit dem NS-Blob-Generator koennen Logikbausteine als verifizierbare, komprimierte Seeds verpackt, verschoben und wieder ausgefuehrt werden.</p>
+<p>Relevante Befehle:</p>
+<ul>
+<li><code>blob pack</code></li>
+<li><code>blob verify</code></li>
+<li><code>blob unpack</code></li>
+<li><code>blob exec</code></li>
+<li><code>blob mesh-run</code></li>
+</ul>
+<p>Das ist wichtig fuer:</p>
+<ul>
+<li>verifizierbaren Logiktransport</li>
+<li>mobile Ausfuehrung im Mesh</li>
+<li>Integritaetspruefung vor Rehydrierung</li>
+</ul>
+<h3 id="predictive-engine-shifting">Predictive Engine Shifting</h3>
+<p>Mit NovaSynth kann Nova-shell Laufzeit- und Telemetriedaten verwenden, um Ausfuehrungspfade proaktiv zu bewerten.</p>
+<p>Relevante Befehle:</p>
+<ul>
+<li><code>synth forecast</code></li>
+<li><code>synth shift suggest &lt;code&gt;</code></li>
+<li><code>synth shift run &lt;code&gt;</code></li>
+</ul>
+<p>Das Ziel ist, Last und Ausfuehrung nicht nur zu beobachten, sondern Engine-Wahlen aktiv zu verbessern.</p>
+<h3 id="zero-copy-federated-learning-mesh">Zero-Copy Federated Learning Mesh</h3>
+<p>Nova-shell besitzt mit Mesh, Fabric und Atheria eine Basis fuer verteilten Wissens- und Invariantenabgleich.</p>
+<p>Relevante Befehle:</p>
+<ul>
+<li><code>mesh federated status</code></li>
+<li><code>mesh federated publish</code></li>
+<li><code>mesh federated history</code></li>
+<li><code>mesh federated chronik-latest</code></li>
+</ul>
+<h3 id="mycelia-atheria-co-evolution">Mycelia-Atheria Co-Evolution</h3>
+<p>Nova-shell kann populationsbasierte Optimierung mit Atheria-Metriken, Tool-Erfolg und Forecast-Signalen kombinieren.</p>
+<p>Relevante Befehle:</p>
+<ul>
+<li><code>mycelia coevolve run</code></li>
+<li><code>mycelia coevolve status</code></li>
+</ul>
+<h3 id="watch-monitor">Watch Monitor</h3>
+<p>Nova-shell kann Projektordner live beobachten, Codeaenderungen analysieren, Diffs protokollieren, optional Tests oder Build-Schritte ausloesen und HTML-Reports laufend aktualisieren.</p>
+<p>Das zeigt gut, dass Nova-shell nicht nur &quot;Code ausfuehrt&quot;, sondern auch Betriebs- und Analysefunktionen uebernimmt.</p>
+<h2 id="konkrete-dinge-die-man-heute-mit-nova-shell-tun-kann">Konkrete Dinge, die man heute mit Nova-shell tun kann</h2>
+<p>Beispiele auf CLI-Ebene:</p>
+<pre><code class="language-text">atheria init
+agent create analyst &quot;Summarize {{input}}&quot;
+agent run analyst quarterly report
+memory embed --id note-1 &quot;Distributed execution matters&quot;
+memory search &quot;distributed execution&quot;
+blob pack --text &quot;21 * 2&quot; --type py
+synth forecast
+mesh federated status
+mycelia coevolve status research-pop
+wiki build</code></pre>
+<p>Beispiele auf Plattformebene:</p>
+<ul>
+<li><code>.ns</code>-Programme als Graph kompilieren und ausfuehren</li>
+<li>Agenten mit Tools und Memory in Flows einbetten</li>
+<li>Blob-Seeds verifizieren und im Mesh ausfuehren</li>
+<li>Projektordner beobachten und HTML-Analysen erzeugen</li>
+<li>verteilte Worker ueber Faehigkeiten und Policies ansprechen</li>
+<li>Services, Packages und Runtime-Zustand deklarativ beschreiben</li>
+</ul>
+<h2 id="was-nova-shell-nicht-ist">Was Nova-shell nicht ist</h2>
+<p>Saubere technische Sprache ist hier wichtig. Nova-shell ist derzeit nicht:</p>
+<ul>
+<li>ein allgemeiner Ersatz fuer Bash, PowerShell oder ein klassisches Betriebssystem</li>
+<li>ein blosses Chat-Frontend fuer irgendein Modell</li>
+<li>ein magischer Universaloptimierer fuer jeden Workload</li>
+<li>automatisch ein weltweit betriebenes Produkt-OS nur weil die Repo-Bausteine vorhanden sind</li>
+</ul>
+<p>Korrekt ist:</p>
+<ul>
+<li>Nova-shell besitzt die Software-Bausteine einer AI-OS-Plattform</li>
+<li>Nova-shell ist eine ernsthafte Runtime-, Language- und Control-Plane-Basis</li>
+<li>reale globale Ausrollung und laufender Betrieb sind etwas anderes als Repo-Code</li>
+</ul>
+<h2 id="die-ehrliche-technische-kurzformel">Die ehrliche technische Kurzformel</h2>
+<p>Die treffendste kurze Beschreibung ist:</p>
+<p><strong>Nova-shell ist eine AI-OS-Runtime mit Shell, Nova Language, Graph-Ausfuehrung, Agenten, Atheria, Blob-Seeds und verteilter Control Plane.</strong></p>
+<h2 id="fazit">Fazit</h2>
+<p>Nova-shell ist kein einfacher Agent-Bot. Es ist auch keine klassische Script-Shell.</p>
+<p>Nova-shell ist eine mehrschichtige Plattform:</p>
+<ul>
+<li>Shell</li>
+<li>Runtime</li>
+<li>deklarative Sprache</li>
+<li>Agent- und Wissenssystem</li>
+<li>Event- und Graph-Engine</li>
+<li>verteilte Compute-Schicht</li>
+<li>AI-OS-Control-Plane</li>
+</ul>
+<p>Genau darin liegt die eigentliche Kategorie des Projekts: Nova-shell fuehrt Sprache, Laufzeit, Wissen, Verteilung, Analyse und Betrieb in einem System zusammen.</p>
         </article>
         <aside class="wiki-toc">
           <div class="wiki-toc-card"><h2>On this page</h2><ul>
-<li class="wiki-toc-link"><a href="#zweck">Zweck</a></li>
-<li class="wiki-toc-link"><a href="#sprache-und-toolchain">Sprache und Toolchain</a></li>
-<li class="wiki-toc-link"><a href="#shell-und-cli">Shell und CLI</a></li>
-<li class="wiki-toc-link"><a href="#runtime-und-plattform">Runtime und Plattform</a></li>
-<li class="wiki-toc-link"><a href="#ai-und-knowledge">AI und Knowledge</a></li>
-<li class="wiki-toc-link"><a href="#verteilte-systeme-und-betrieb">Verteilte Systeme und Betrieb</a></li>
-<li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
+<li class="wiki-toc-link"><a href="#die-kurze-einordnung">Die kurze Einordnung</a></li>
+<li class="wiki-toc-link"><a href="#die-drei-ebenen-von-nova-shell">Die drei Ebenen von Nova-shell</a></li>
+<li class="wiki-toc-link level-3"><a href="#1-shell-und-runtime">1. Shell und Runtime</a></li>
+<li class="wiki-toc-link level-3"><a href="#2-nova-language">2. Nova Language</a></li>
+<li class="wiki-toc-link level-3"><a href="#3-ai-os-und-control-plane-schicht">3. AI-OS- und Control-Plane-Schicht</a></li>
+<li class="wiki-toc-link"><a href="#was-im-repo-tatsaechlich-vorhanden-ist">Was im Repo tatsaechlich vorhanden ist</a></li>
+<li class="wiki-toc-link"><a href="#was-atheria-in-nova-shell-ist">Was Atheria in Nova-shell ist</a></li>
+<li class="wiki-toc-link"><a href="#was-nova-shell-heute-zusaetzlich-besonders-macht">Was Nova-shell heute zusaetzlich besonders macht</a></li>
+<li class="wiki-toc-link level-3"><a href="#blob-seeds">Blob Seeds</a></li>
+<li class="wiki-toc-link level-3"><a href="#predictive-engine-shifting">Predictive Engine Shifting</a></li>
+<li class="wiki-toc-link level-3"><a href="#zero-copy-federated-learning-mesh">Zero-Copy Federated Learning Mesh</a></li>
+<li class="wiki-toc-link level-3"><a href="#mycelia-atheria-co-evolution">Mycelia-Atheria Co-Evolution</a></li>
+<li class="wiki-toc-link level-3"><a href="#watch-monitor">Watch Monitor</a></li>
+<li class="wiki-toc-link"><a href="#konkrete-dinge-die-man-heute-mit-nova-shell-tun-kann">Konkrete Dinge, die man heute mit Nova-shell tun kann</a></li>
+<li class="wiki-toc-link"><a href="#was-nova-shell-nicht-ist">Was Nova-shell nicht ist</a></li>
+<li class="wiki-toc-link"><a href="#die-ehrliche-technische-kurzformel">Die ehrliche technische Kurzformel</a></li>
+<li class="wiki-toc-link"><a href="#fazit">Fazit</a></li>
 </ul></div>
         </aside>
       </div>
@@ -199,7 +377,7 @@
   </div>
   <script>
     window.NOVA_WIKI = {
-      currentPage: "Subsystems.html",
+      currentPage: "Was-es-Ist.html",
       searchIndex: "assets/search-index.json"
     };
   </script>
