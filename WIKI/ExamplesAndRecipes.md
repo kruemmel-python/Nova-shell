@@ -394,6 +394,46 @@ Erwartung:
 - geaenderte Dateien erhalten Detailseiten
 - Review-Agent und Build-/Test-Ergebnisse erscheinen im Report
 
+### 17. Windows-Persistenz und Temp-Ausfuehrung gezielt ueberwachen
+
+Lege `nova_system_guard.ns` in ein Arbeitsverzeichnis und starte den Guard:
+
+```powershell
+ns.run nova_system_guard.ns
+```
+
+Nur die Guard-Logik gegen eigene Testpfade laufen lassen:
+
+```powershell
+$env:NOVA_SYSTEM_GUARD_INCLUDE_DEFAULTS = "0"
+$env:NOVA_SYSTEM_GUARD_INCLUDE_PROJECT = "off"
+$env:NOVA_SYSTEM_GUARD_PATHS = "C:/lab/startup;C:/lab/temp"
+$env:NOVA_SYSTEM_GUARD_ONESHOT = "1"
+$env:NOVA_SYSTEM_GUARD_OPEN = "0"
+ns.run nova_system_guard.ns
+```
+
+Mit Live-Dateisystem-Events:
+
+```powershell
+$env:NOVA_SYSTEM_GUARD_WATCH_MODE = "auto"
+ns.run nova_system_guard.ns
+```
+
+Mit Quarantaene fuer neue Hochrisiko-Dateien:
+
+```powershell
+$env:NOVA_SYSTEM_GUARD_ACTION = "high"
+ns.run nova_system_guard.ns
+```
+
+Erwartung:
+
+- `.nova_system_guard/system_guard_report.html` wird aktualisiert
+- kritische Windows-Pfade wie Startup, Temp, Downloads und Treiberbereiche werden fokussiert bewertet
+- Textbasierte Aenderungen wie `.bat` oder `.ps1` erscheinen mit Zeilen-Diff und Detailseite
+- Scheduled Tasks, Registry Run Keys sowie Signatur-/Publisher-Status erscheinen im Report
+
 ## Wann diese Seite benutzt werden sollte
 
 Diese Seite ist ideal, wenn du:
@@ -410,4 +450,5 @@ Diese Seite ist ideal, wenn du:
 - [RuntimeMethodReference](./RuntimeMethodReference.md)
 - [Tutorials](./Tutorials.md)
 - [WatchMonitor](./WatchMonitor.md)
+- [SystemGuardMonitor](./SystemGuardMonitor.md)
 - [WatchMonitorQuickStart](./WatchMonitorQuickStart.md)

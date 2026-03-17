@@ -4,6 +4,7 @@ import os
 import re
 import runpy
 import socket
+import subprocess
 import tempfile
 import threading
 import time
@@ -1239,6 +1240,203 @@ if len(files_lines) == 2:
             self.assertIn("Build und Tests", html_body)
             self.assertIn("npm run build", html_body)
             self.assertIn("tests ok", html_body)
+
+    def test_ns_run_system_guard_generates_html_and_flags_high_risk_changes(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        helper_path = root / "examples" / "nova_system_guard_helper.py"
+        generator_path = root / "scripts" / "generate_system_guard_ns.py"
+        generator = runpy.run_path(str(generator_path))
+        ns_text = generator["build_ns_text"](helper_path.read_text(encoding="utf-8"))
+
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp).resolve()
+            startup_dir = project / "startup"
+            temp_dir = project / "temp"
+            startup_dir.mkdir(parents=True, exist_ok=True)
+            temp_dir.mkdir(parents=True, exist_ok=True)
+            script_file = project / "nova_system_guard.ns"
+            startup_file = startup_dir / "autorun.bat"
+            startup_file.write_text("@echo off\necho safe\n", encoding="utf-8")
+            script_file.write_text(ns_text, encoding="utf-8")
+
+            with patch.dict(
+                os.environ,
+                {
+                    "NOVA_SYSTEM_GUARD_INCLUDE_DEFAULTS": "0",
+                    "NOVA_SYSTEM_GUARD_INCLUDE_PROJECT": "off",
+                    "NOVA_SYSTEM_GUARD_PATHS": f"{startup_dir};{temp_dir}",
+                    "NOVA_SYSTEM_GUARD_ONESHOT": "1",
+                    "NOVA_SYSTEM_GUARD_OPEN": "0",
+                },
+                clear=False,
+            ):
+                self.shell.route(f"cd {project}")
+                first = self.shell.route(f"ns.run {script_file}")
+                self.assertIsNone(first.error)
+
+            guard_dir = project / ".nova_system_guard"
+            report_path = guard_dir / "system_guard_report.html"
+            history_path = guard_dir / "history.json"
+            status_path = guard_dir / "latest_status.json"
+            helper_copy = guard_dir / "system_guard_helper.py"
+            self.assertTrue(report_path.is_file())
+            self.assertTrue(status_path.is_file())
+            self.assertTrue(helper_copy.is_file())
+            baseline_payload = json.loads(history_path.read_text(encoding="utf-8"))
+            self.assertEqual(len(baseline_payload["events"]), 1)
+            self.assertEqual(baseline_payload["events"][0]["kind"], "baseline")
+
+            startup_file.write_text("@echo off\necho suspicious\nstart powershell.exe\n", encoding="utf-8")
+            (temp_dir / "dropper.exe").write_bytes(b"MZ\x90\x00payload")
+
+            with patch.dict(
+                os.environ,
+                {
+                    "NOVA_SYSTEM_GUARD_INCLUDE_DEFAULTS": "0",
+                    "NOVA_SYSTEM_GUARD_INCLUDE_PROJECT": "off",
+                    "NOVA_SYSTEM_GUARD_PATHS": f"{startup_dir};{temp_dir}",
+                    "NOVA_SYSTEM_GUARD_ONESHOT": "1",
+                    "NOVA_SYSTEM_GUARD_OPEN": "0",
+                },
+                clear=False,
+            ):
+                second = self.shell.route(f"ns.run {script_file}")
+                self.assertIsNone(second.error)
+
+            history_payload = json.loads(history_path.read_text(encoding="utf-8"))
+            self.assertEqual(len(history_payload["events"]), 2)
+            change_event = history_payload["events"][-1]
+            self.assertEqual(change_event["kind"], "change")
+            self.assertEqual(len(change_event["modified"]), 1)
+            self.assertEqual(len(change_event["created"]), 1)
+            modified = change_event["modified"][0]
+            created = change_event["created"][0]
+            self.assertEqual(modified["relative_path"], "autorun.bat")
+            self.assertEqual(created["relative_path"], "dropper.exe")
+            self.assertEqual(modified["scope_category"], "persistence")
+            self.assertEqual(created["scope_category"], "temporary")
+            self.assertGreaterEqual(modified["added_lines"], 1)
+            self.assertGreaterEqual(modified["removed_lines"], 1)
+            self.assertIn(change_event["review"]["severity"], {"high", "critical"})
+            self.assertIn("detail_page", modified)
+            self.assertTrue((guard_dir / modified["detail_page"]).is_file())
+            html_body = report_path.read_text(encoding="utf-8")
+            self.assertIn("Nova System Guard", html_body)
+            self.assertIn("Custom Startup Path", html_body)
+            self.assertIn("Custom Temp Path", html_body)
+            self.assertIn("autorun.bat", html_body)
+            self.assertIn("dropper.exe", html_body)
+            self.assertIn("Sicherheitsrelevante Aenderung erkannt", html_body)
+            latest_status = json.loads(status_path.read_text(encoding="utf-8"))
+            self.assertTrue(latest_status["changed"])
+            self.assertGreaterEqual(latest_status["scope_count"], 4)
+
+    def test_ns_run_system_guard_supports_signature_inventory_and_quarantine(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        helper_path = root / "examples" / "nova_system_guard_helper.py"
+        generator_path = root / "scripts" / "generate_system_guard_ns.py"
+        generator = runpy.run_path(str(generator_path))
+        ns_text = generator["build_ns_text"](helper_path.read_text(encoding="utf-8"))
+        original_run = subprocess.run
+
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp).resolve()
+            startup_dir = project / "startup"
+            temp_dir = project / "temp"
+            startup_dir.mkdir(parents=True, exist_ok=True)
+            temp_dir.mkdir(parents=True, exist_ok=True)
+            script_file = project / "nova_system_guard.ns"
+            startup_file = startup_dir / "autorun.bat"
+            startup_file.write_text("@echo off\necho baseline\n", encoding="utf-8")
+            script_file.write_text(ns_text, encoding="utf-8")
+            phase = {"value": "baseline"}
+
+            def fake_subprocess_run(command: list[str], **kwargs: object) -> SimpleNamespace:
+                if command and str(command[0]).lower() == "powershell":
+                    script_text = str(command[-1])
+                    if "Get-ScheduledTask" in script_text:
+                        payload = (
+                            []
+                            if phase["value"] == "baseline"
+                            else [
+                                {
+                                    "TaskName": "UpdaterHelper",
+                                    "TaskPath": "\\Custom\\",
+                                    "State": "Ready",
+                                    "Author": "Unknown",
+                                    "Actions": "powershell.exe -ExecutionPolicy Bypass -File C:\\Temp\\stage.ps1",
+                                    "Principal": "SYSTEM",
+                                }
+                            ]
+                        )
+                        return SimpleNamespace(returncode=0, stdout=json.dumps(payload), stderr="")
+                    if "CurrentVersion\\Run" in script_text:
+                        payload = (
+                            []
+                            if phase["value"] == "baseline"
+                            else [
+                                {
+                                    "KeyPath": "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run",
+                                    "Name": "UpdaterHelper",
+                                    "Command": "C:\\Temp\\dropper.exe /background",
+                                }
+                            ]
+                        )
+                        return SimpleNamespace(returncode=0, stdout=json.dumps(payload), stderr="")
+                    if "Get-AuthenticodeSignature" in script_text:
+                        status_payload = {
+                            "Status": "NotSigned",
+                            "StatusMessage": "File is not signed.",
+                            "Publisher": "",
+                            "Thumbprint": "",
+                        }
+                        return SimpleNamespace(returncode=0, stdout=json.dumps(status_payload), stderr="")
+                return original_run(command, **kwargs)
+
+            with patch.dict(
+                os.environ,
+                {
+                    "NOVA_SYSTEM_GUARD_INCLUDE_DEFAULTS": "0",
+                    "NOVA_SYSTEM_GUARD_INCLUDE_PROJECT": "off",
+                    "NOVA_SYSTEM_GUARD_PATHS": f"{startup_dir};{temp_dir}",
+                    "NOVA_SYSTEM_GUARD_ONESHOT": "1",
+                    "NOVA_SYSTEM_GUARD_OPEN": "0",
+                    "NOVA_SYSTEM_GUARD_ACTION": "high",
+                },
+                clear=False,
+            ):
+                with patch("subprocess.run", side_effect=fake_subprocess_run):
+                    self.shell.route(f"cd {project}")
+                    first = self.shell.route(f"ns.run {script_file}")
+                    self.assertIsNone(first.error)
+
+                    phase["value"] = "change"
+                    startup_file.write_text("@echo off\npowershell.exe -ExecutionPolicy Bypass -File C:\\Temp\\stage.ps1\n", encoding="utf-8")
+                    dropper = temp_dir / "dropper.exe"
+                    dropper.write_bytes(b"MZ\x90\x00payload")
+                    second = self.shell.route(f"ns.run {script_file}")
+                    self.assertIsNone(second.error)
+
+            guard_dir = project / ".nova_system_guard"
+            history_payload = json.loads((guard_dir / "history.json").read_text(encoding="utf-8"))
+            change_event = history_payload["events"][-1]
+            created_kinds = {item["kind"] for item in change_event["created"]}
+            self.assertIn("scheduled_task", created_kinds)
+            self.assertIn("run_key", created_kinds)
+            file_created = next(item for item in change_event["created"] if item["kind"] == "executable")
+            self.assertEqual(file_created["signature_status"], "NotSigned")
+            self.assertIn("quarantine", file_created)
+            self.assertTrue(file_created["quarantine"]["success"])
+            self.assertFalse((temp_dir / "dropper.exe").exists())
+            quarantine_target = Path(file_created["quarantine"]["target_path"])
+            self.assertTrue(quarantine_target.is_file())
+            latest_status = json.loads((guard_dir / "latest_status.json").read_text(encoding="utf-8"))
+            self.assertTrue(any(action["type"] == "quarantine" for action in latest_status["actions"]))
+            html_body = (guard_dir / "system_guard_report.html").read_text(encoding="utf-8")
+            self.assertIn("Signatur- und Publisher-Pruefung", html_body)
+            self.assertIn("Scheduled Tasks", html_body)
+            self.assertIn("Registry Run Keys", html_body)
+            self.assertIn("quarantine", html_body)
 
     def test_run_morning_briefing_can_use_custom_reference_files_without_defaults(self) -> None:
         root = Path(__file__).resolve().parents[1]

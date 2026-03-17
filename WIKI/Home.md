@@ -26,6 +26,7 @@ Wenn du neu im Projekt bist:
 
 - [QuickStart](./QuickStart.md)
 - [Installation](./Installation.md)
+- [Dokumentation](./Dokumentation.md)
 - [ProgrammingWithNovaShell](./ProgrammingWithNovaShell.md)
 - [nsCreate](./nsCreate.md)
 - [nsReference](./nsReference.md)
@@ -62,6 +63,7 @@ Wenn du Klassen, Methoden, Endpunkte und Einstiegspunkte suchst:
 
 - [QuickStart](./QuickStart.md): erster produktiver Lauf
 - [Installation](./Installation.md): Setup und Voraussetzungen
+- [Dokumentation](./Dokumentation.md): zentrale Gesamt- und Kommandoreferenz als Wiki-Seite
 - [Troubleshooting](./Troubleshooting.md): typische Probleme
 
 ### Nutzung
@@ -75,6 +77,7 @@ Wenn du Klassen, Methoden, Endpunkte und Einstiegspunkte suchst:
 - [ZeroCopyFederatedLearningMesh](./ZeroCopyFederatedLearningMesh.md): signierte Invariant-Synchronisation und same-host zero-copy im Mesh
 - [MyceliaAtheriaCoEvolution](./MyceliaAtheriaCoEvolution.md): populationsbasierte Optimierung mit Forecast-, Invariant- und Kruemmungssignalen
 - [WatchMonitor](./WatchMonitor.md): Projektordner live ueberwachen, analysieren und HTML-Reports aktualisieren
+- [SystemGuardMonitor](./SystemGuardMonitor.md): kritische Windows-Pfade fuer Persistenz, Temp-Ausfuehrung und Host-Integrity ueberwachen
 - [TutorialProjectWatchMonitor](./TutorialProjectWatchMonitor.md): Schritt-fuer-Schritt-Aufbau eines echten Projektwaechters
 - [TutorialBlobSeeds](./TutorialBlobSeeds.md): Blob-Seeds bauen, verifizieren, ausfuehren und ueber Mesh verschieben
 - [TutorialPredictiveFederatedCoevolution](./TutorialPredictiveFederatedCoevolution.md): Forecast, Federated Mesh und Co-Evolution als zusammenhaengender Plattformpfad
@@ -110,6 +113,7 @@ Wenn du Klassen, Methoden, Endpunkte und Einstiegspunkte suchst:
 - [ServiceFabricAndTrafficPlane](./ServiceFabricAndTrafficPlane.md): Services, Routing, Probes und Traffic-Shifts
 - [OperationsAndObservability](./OperationsAndObservability.md): Traces, Alerts, Backups, Recovery
 - [WatchMonitorReportReference](./WatchMonitorReportReference.md): HTML-Report, JSON-Dateien, Detailseiten und Hotspots
+- [SystemGuardMonitor](./SystemGuardMonitor.md): zweiter Watch-Pfad fuer Host-Integrity statt Repo-Churn
 
 ### Referenz
 
@@ -119,6 +123,12 @@ Wenn du Klassen, Methoden, Endpunkte und Einstiegspunkte suchst:
 - [RuntimeMethodReference](./RuntimeMethodReference.md): zentrale `NovaRuntime`-Methoden
 - [APIReference](./APIReference.md): Endpunkte mit Zweck und Beispielnutzung
 - [RepositoryStructure](./RepositoryStructure.md): Verzeichnisstruktur
+
+### Strategie und Nutzen
+
+- [wirtschaftlicher_nutzen](./wirtschaftlicher_nutzen.md): wirtschaftliche Einsatzgebiete, ROI-Hebel und realistische Einfuehrungsszenarien
+- [Whitepaper](./Whitepaper.md): technische Einordnung und Plattformbild
+- [Was-es-Ist](./Was-es-Ist.md): kompakte Projektpositionierung
 
 ## Typische Lesepfade
 
@@ -146,6 +156,12 @@ Wenn du Klassen, Methoden, Endpunkte und Einstiegspunkte suchst:
 2. [NovaMesh](./NovaMesh.md)
 3. [APIReference](./APIReference.md)
 4. [OperationsAndObservability](./OperationsAndObservability.md)
+
+### Fuer Strategie, Einfuehrung und Positionierung
+
+1. [wirtschaftlicher_nutzen](./wirtschaftlicher_nutzen.md)
+2. [Whitepaper](./Whitepaper.md)
+3. [Was-es-Ist](./Was-es-Ist.md)
 
 ## Leitgedanke dieser Wiki
 

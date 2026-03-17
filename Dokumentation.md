@@ -10,6 +10,8 @@ Sie beschreibt die heute vorhandenen Hauptschichten des Systems:
 - Blob-Seeds, Predictive Shifting und Federated Learning
 - HTML-Wiki, Watch Monitor und Release-Pfade
 
+Die Dokumentation beschreibt bewusst den **tatsaechlich vorhandenen** Stand des Projekts. Sie ist deshalb keine Sammlung maximaler Zukunftsbehauptungen, sondern ein Arbeitsdokument fuer reale Nutzung, Einfuehrung und Weiterentwicklung.
+
 Wenn du mit Nova-shell neu beginnst, lies zunaechst:
 
 - [Was-es-Ist.md](Was-es-Ist.md)
@@ -32,6 +34,18 @@ Das gemeinsame Modell dahinter lautet:
 - Ausfuehrung kann ueber Python, C++, GPU, WASM, AI oder Mesh erfolgen
 - Ergebnisse koennen in State, Memory, Atheria, Reports oder Events zurueckfliessen
 
+Wirtschaftlich interessant ist Nova-shell vor allem dort, wo heute mehrere getrennte Werkzeuge fuer Shell-Automation, Projektbeobachtung, AI-Workflows, Dokumentation und verteilte Jobs parallel gepflegt werden.
+
+## 1.1 Wo Nova-shell heute besonders sinnvoll ist
+
+Nova-shell bringt aktuell besonders dann Nutzen, wenn mindestens eines dieser Muster vorliegt:
+
+- wiederkehrende Projekt- und Analyseablaeufe
+- hoher Glue-Code-Aufwand zwischen mehreren Werkzeugen
+- Bedarf an lokaler oder hybrider AI-Unterstuetzung
+- Bedarf an watch- oder event-getriebener Automatisierung
+- hoher Dokumentations-, Review- oder Auditdruck
+
 ## 2. Schreibweise und Bedienlogik
 
 - `cmd1 | cmd2`: Das Ergebnis der ersten Stage wird an die zweite weitergereicht.
@@ -42,6 +56,14 @@ Das gemeinsame Modell dahinter lautet:
 - PowerShell-Umgebungsvariablen wie `$env:NAME="wert"` setzt du ausserhalb der Nova-shell-REPL.
 
 ## 3. Schnelluebersicht der Kommandofamilien
+
+Die Kommandofamilien decken nicht alle denselben Reifegrad oder denselben wirtschaftlichen Nutzen ab. Fuer die meisten Teams liegen die schnellsten produktiven Gewinne heute in:
+
+- `watch`, `wiki`, `vision`
+- `atheria`, `agent`, `memory`
+- `blob`
+- `mesh`
+- `ns.run`, `ns.graph`, `ns.status`
 
 ### Basis
 
@@ -284,12 +306,16 @@ Wichtig:
 - `blob exec-inline` erwartet den vollstaendigen `nsblob:...`-Seed.
 - `nsblob:...` mit drei Punkten ist nur ein Platzhalter in Doku und Beispielen, kein ausfuehrbarer Wert.
 
+Wirtschaftlich ist dieser Bereich besonders dann interessant, wenn Logik zwischen Projekten, Workern oder Standorten transportiert werden soll, ohne jedes Mal neue Verzeichnis- oder Installationslogik aufzubauen.
+
 Mehr dazu:
 
 - [WIKI/NSBlobGenerator.md](WIKI/NSBlobGenerator.md)
 - [WIKI/TutorialBlobSeeds.md](WIKI/TutorialBlobSeeds.md)
 
 ## 8. AI, Atheria, Agenten und Memory
+
+Dieser Bereich ist einer der staerksten Nova-shell-Pfade fuer praktischen Nutzen, weil hier Wissensnutzung, Analyse und operative Automatisierung zusammenlaufen.
 
 ### `ai`
 
@@ -457,7 +483,17 @@ Mehr dazu:
 
 - [WIKI/NovaSynthPredictiveEngineShifting.md](WIKI/NovaSynthPredictiveEngineShifting.md)
 
+Realistisch ist dieser Bereich heute vor allem fuer:
+
+- Ressourcenauswahl
+- Laufzeitempfehlungen
+- experimentelle Optimierung
+
+Er ist weniger als vollautonome Universalsteuerung zu lesen, sondern als gezielte Laufzeitverbesserung in passenden Szenarien.
+
 ## 11. Mesh, Federated Learning und Remote
+
+Die groesste wirtschaftliche Wirkung liegt hier meist nicht in "globalem Clusterbetrieb", sondern in der pragmatischen Nutzung vorhandener Rechner, Worker und Standorte.
 
 ### `remote`
 
@@ -521,6 +557,8 @@ Beispiele:
 wiki build
 wiki serve --open
 ```
+
+Das ist wirtschaftlich besonders nuetzlich fuer Teams, die technische Dokumentation nicht als Nebenprodukt, sondern als lauffaehigen Teil ihrer Plattform behandeln wollen.
 
 ## 13. Nova Language und deklarative Runtime
 
@@ -596,6 +634,8 @@ Wichtige Punkte:
 - Build-/Test-Automation optional ausloesen
 - Atheria, LM Studio, Ollama oder OpenAI-kompatible Provider fuer Reviews nutzen
 
+Der Watch Monitor ist derzeit einer der unmittelbarsten Nova-shell-Nutzenpfade fuer Unternehmen, weil er ohne grosse Zusatzarchitektur direkte Transparenz, Review-Hilfe und Projektbeobachtung liefert.
+
 Wichtige Seiten:
 
 - [WIKI/WatchMonitor.md](WIKI/WatchMonitor.md)
@@ -632,6 +672,8 @@ Empfohlene Reihenfolge:
 5. `wiki build`
 6. `ns.run`, `ns.graph`, `ns.status`
 7. Watch Monitor und Control Plane
+
+Diese Reihenfolge ist auch wirtschaftlich sinnvoll: zuerst die Bereiche nutzen, die schnell Sichtbarkeit und Produktivitaet schaffen, danach die tieferen Plattform- und Verteilungsschichten.
 
 ## 17. Weiterfuehrende Dateien
 

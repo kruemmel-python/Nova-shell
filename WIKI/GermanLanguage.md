@@ -8,6 +8,7 @@ Die Seite dient als kompakter Einstieg fuer deutschsprachige Nutzer, die schnell
 ## Einstieg
 
 - [Home](./Home.md)
+- [Dokumentation](./Dokumentation.md)
 - [QuickStart](./QuickStart.md)
 - [Installation](./Installation.md)
 
@@ -33,6 +34,7 @@ Die Seite dient als kompakter Einstieg fuer deutschsprachige Nutzer, die schnell
 
 - [DevelopmentGuide](./DevelopmentGuide.md)
 - [Research](./Research.md)
+- [wirtschaftlicher_nutzen](./wirtschaftlicher_nutzen.md)
 - [Glossary](./Glossary.md)
 
 ## Empfohlene Lesepfade

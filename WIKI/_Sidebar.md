@@ -4,6 +4,7 @@
 
 - [Home](./Home.md)
 - [GermanLanguage](./GermanLanguage.md)
+- [Dokumentation](./Dokumentation.md)
 - [QuickStart](./QuickStart.md)
 - [Installation](./Installation.md)
 - [ProgrammingWithNovaShell](./ProgrammingWithNovaShell.md)
@@ -13,6 +14,7 @@
 
 ## Nutzung
 
+- [Dokumentation](./Dokumentation.md)
 - [NovaCLI](./NovaCLI.md)
 - [ProgrammingWithNovaShell](./ProgrammingWithNovaShell.md)
 - [ShellCommandReference](./ShellCommandReference.md)
@@ -23,6 +25,7 @@
 - [ZeroCopyFederatedLearningMesh](./ZeroCopyFederatedLearningMesh.md)
 - [MyceliaAtheriaCoEvolution](./MyceliaAtheriaCoEvolution.md)
 - [WatchMonitor](./WatchMonitor.md)
+- [SystemGuardMonitor](./SystemGuardMonitor.md)
 - [WatchMonitorQuickStart](./WatchMonitorQuickStart.md)
 - [WatchMonitorReportReference](./WatchMonitorReportReference.md)
 - [WatchMonitorAutomationAndAI](./WatchMonitorAutomationAndAI.md)
@@ -74,6 +77,7 @@
 - [Testing](./Testing.md)
 - [BuildAndRelease](./BuildAndRelease.md)
 - [WatchMonitor](./WatchMonitor.md)
+- [SystemGuardMonitor](./SystemGuardMonitor.md)
 - [WatchMonitorReportReference](./WatchMonitorReportReference.md)
 - [WatchMonitorAutomationAndAI](./WatchMonitorAutomationAndAI.md)
 - [SecurityModel](./SecurityModel.md)
@@ -87,6 +91,9 @@
 
 - [Research](./Research.md)
 - [AIOSConcept](./AIOSConcept.md)
+- [Whitepaper](./Whitepaper.md)
+- [Was-es-Ist](./Was-es-Ist.md)
+- [wirtschaftlicher_nutzen](./wirtschaftlicher_nutzen.md)
 - [AgentSystems](./AgentSystems.md)
 - [Glossary](./Glossary.md)
 - [FAQ](./FAQ.md)

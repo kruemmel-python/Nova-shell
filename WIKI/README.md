@@ -9,6 +9,7 @@ Sie beschreibt das Projekt aus sich selbst heraus und ist nicht als Verweissamml
 
 - [Home](./Home.md)
 - [GermanLanguage](./GermanLanguage.md)
+- [Dokumentation](./Dokumentation.md)
 - [QuickStart](./QuickStart.md)
 - [Installation](./Installation.md)
 - [ProgrammingWithNovaShell](./ProgrammingWithNovaShell.md)
@@ -37,6 +38,7 @@ Sie beschreibt das Projekt aus sich selbst heraus und ist nicht als Verweissamml
 - [NovaTools](./NovaTools.md)
 - [ExamplesAndRecipes](./ExamplesAndRecipes.md)
 - [WatchMonitor](./WatchMonitor.md)
+- [SystemGuardMonitor](./SystemGuardMonitor.md)
 - [WatchMonitorQuickStart](./WatchMonitorQuickStart.md)
 - [WatchMonitorReportReference](./WatchMonitorReportReference.md)
 - [WatchMonitorAutomationAndAI](./WatchMonitorAutomationAndAI.md)
@@ -57,6 +59,12 @@ Sie beschreibt das Projekt aus sich selbst heraus und ist nicht als Verweissamml
 - [Troubleshooting](./Troubleshooting.md)
 - [Roadmap](./Roadmap.md)
 
+## Strategie und Nutzen
+
+- [wirtschaftlicher_nutzen](./wirtschaftlicher_nutzen.md)
+- [Whitepaper](./Whitepaper.md)
+- [Was-es-Ist](./Was-es-Ist.md)
+
 ## Wie diese Wiki verwendet werden sollte
 
 ### Einstieg
@@ -64,13 +72,15 @@ Sie beschreibt das Projekt aus sich selbst heraus und ist nicht als Verweissamml
 Wenn du neu bist:
 
 1. [Home](./Home.md)
-2. [QuickStart](./QuickStart.md)
-3. [nsCreate](./nsCreate.md)
-4. [nsReference](./nsReference.md)
-5. [nsPatterns](./nsPatterns.md)
-6. [NovaCLI](./NovaCLI.md)
-7. [ExamplesAndRecipes](./ExamplesAndRecipes.md)
-8. [WatchMonitorQuickStart](./WatchMonitorQuickStart.md)
+2. [Dokumentation](./Dokumentation.md)
+3. [QuickStart](./QuickStart.md)
+4. [nsCreate](./nsCreate.md)
+5. [nsReference](./nsReference.md)
+6. [nsPatterns](./nsPatterns.md)
+7. [NovaCLI](./NovaCLI.md)
+8. [ExamplesAndRecipes](./ExamplesAndRecipes.md)
+9. [WatchMonitorQuickStart](./WatchMonitorQuickStart.md)
+10. [SystemGuardMonitor](./SystemGuardMonitor.md)
 
 ### Technik und Architektur
 
@@ -85,6 +95,7 @@ Wenn du das System bauen oder erweitern willst:
 7. [NovaRuntime](./NovaRuntime.md)
 8. [CodeReferenceIndex](./CodeReferenceIndex.md)
 9. [WatchMonitor](./WatchMonitor.md)
+10. [SystemGuardMonitor](./SystemGuardMonitor.md)
 
 ## Verwandte Seiten
 

@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="Nova-shell wiki builder">
+  <title>Whitepaper: Nova-shell | Nova-shell Wiki</title>
+  <link rel="stylesheet" href="assets/wiki.css">
+</head>
+<body>
+  <div class="wiki-shell">
+    <aside class="wiki-sidebar" data-sidebar>
+      <div class="wiki-brand">
+        <a href="Home.html">Nova-shell Wiki</a>
+        <p>HTML documentation for the Nova-shell platform.</p>
+      </div>
+      <label class="wiki-search">
+        <span>Search</span>
+        <input type="search" placeholder="Find pages, classes, methods..." data-wiki-search>
+      </label>
+      <div class="wiki-search-results" data-search-results></div>
+      <nav class="wiki-nav">
+        <section class="wiki-nav-section">
+<h2>Einstieg</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="Home.html" href="Home.html">Home</a></li>
+<li><a class="wiki-nav-link" data-nav-href="GermanLanguage.html" href="GermanLanguage.html">GermanLanguage</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Dokumentation.html" href="Dokumentation.html">Dokumentation</a></li>
+<li><a class="wiki-nav-link" data-nav-href="QuickStart.html" href="QuickStart.html">QuickStart</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Installation.html" href="Installation.html">Installation</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
+<li><a class="wiki-nav-link" data-nav-href="nsCreate.html" href="nsCreate.html">nsCreate</a></li>
+<li><a class="wiki-nav-link" data-nav-href="nsReference.html" href="nsReference.html">nsReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="nsPatterns.html" href="nsPatterns.html">nsPatterns</a></li>
+</ul></section>
+<section class="wiki-nav-section">
+<h2>Nutzung</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="Dokumentation.html" href="Dokumentation.html">Dokumentation</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaCLI.html" href="NovaCLI.html">NovaCLI</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ShellCommandReference.html" href="ShellCommandReference.html">ShellCommandReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="APIReference.html" href="APIReference.html">APIReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ExamplesAndRecipes.html" href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NSBlobGenerator.html" href="NSBlobGenerator.html">NSBlobGenerator</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaSynthPredictiveEngineShifting.html" href="NovaSynthPredictiveEngineShifting.html">NovaSynthPredictiveEngineShifting</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ZeroCopyFederatedLearningMesh.html" href="ZeroCopyFederatedLearningMesh.html">ZeroCopyFederatedLearningMesh</a></li>
+<li><a class="wiki-nav-link" data-nav-href="MyceliaAtheriaCoEvolution.html" href="MyceliaAtheriaCoEvolution.html">MyceliaAtheriaCoEvolution</a></li>
+<li><a class="wiki-nav-link" data-nav-href="WatchMonitor.html" href="WatchMonitor.html">WatchMonitor</a></li>
+<li><a class="wiki-nav-link" data-nav-href="WatchMonitorQuickStart.html" href="WatchMonitorQuickStart.html">WatchMonitorQuickStart</a></li>
+<li><a class="wiki-nav-link" data-nav-href="WatchMonitorReportReference.html" href="WatchMonitorReportReference.html">WatchMonitorReportReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="WatchMonitorAutomationAndAI.html" href="WatchMonitorAutomationAndAI.html">WatchMonitorAutomationAndAI</a></li>
+<li><a class="wiki-nav-link" data-nav-href="WatchMonitorTroubleshooting.html" href="WatchMonitorTroubleshooting.html">WatchMonitorTroubleshooting</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Tutorials.html" href="Tutorials.html">Tutorials</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialTechnologyRadar.html" href="TutorialTechnologyRadar.html">TutorialTechnologyRadar</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialMultiAgentCluster.html" href="TutorialMultiAgentCluster.html">TutorialMultiAgentCluster</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialLMStudioIntegration.html" href="TutorialLMStudioIntegration.html">TutorialLMStudioIntegration</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialBlobSeeds.html" href="TutorialBlobSeeds.html">TutorialBlobSeeds</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialPredictiveFederatedCoevolution.html" href="TutorialPredictiveFederatedCoevolution.html">TutorialPredictiveFederatedCoevolution</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialProjectWatchMonitor.html" href="TutorialProjectWatchMonitor.html">TutorialProjectWatchMonitor</a></li>
+</ul></section>
+<section class="wiki-nav-section">
+<h2>Architektur</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="Architecture.html" href="Architecture.html">Architecture</a></li>
+<li><a class="wiki-nav-link" data-nav-href="SystemOverview.html" href="SystemOverview.html">SystemOverview</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ComponentModel.html" href="ComponentModel.html">ComponentModel</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ExecutionModel.html" href="ExecutionModel.html">ExecutionModel</a></li>
+<li><a class="wiki-nav-link" data-nav-href="DataFlow.html" href="DataFlow.html">DataFlow</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaLanguage.html" href="NovaLanguage.html">NovaLanguage</a></li>
+<li><a class="wiki-nav-link" data-nav-href="nsCreate.html" href="nsCreate.html">nsCreate</a></li>
+<li><a class="wiki-nav-link" data-nav-href="nsReference.html" href="nsReference.html">nsReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="nsPatterns.html" href="nsPatterns.html">nsPatterns</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaRuntime.html" href="NovaRuntime.html">NovaRuntime</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaGraphEngine.html" href="NovaGraphEngine.html">NovaGraphEngine</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaPlanner.html" href="NovaPlanner.html">NovaPlanner</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ParserAndASTReference.html" href="ParserAndASTReference.html">ParserAndASTReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="RuntimeMethodReference.html" href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ClassReference.html" href="ClassReference.html">ClassReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="CodeReferenceIndex.html" href="CodeReferenceIndex.html">CodeReferenceIndex</a></li>
+</ul></section>
+<section class="wiki-nav-section">
+<h2>Plattformfunktionen</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="NovaAgents.html" href="NovaAgents.html">NovaAgents</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaMesh.html" href="NovaMesh.html">NovaMesh</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NSBlobGenerator.html" href="NSBlobGenerator.html">NSBlobGenerator</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaSynthPredictiveEngineShifting.html" href="NovaSynthPredictiveEngineShifting.html">NovaSynthPredictiveEngineShifting</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ZeroCopyFederatedLearningMesh.html" href="ZeroCopyFederatedLearningMesh.html">ZeroCopyFederatedLearningMesh</a></li>
+<li><a class="wiki-nav-link" data-nav-href="MyceliaAtheriaCoEvolution.html" href="MyceliaAtheriaCoEvolution.html">MyceliaAtheriaCoEvolution</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaSensors.html" href="NovaSensors.html">NovaSensors</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaMemory.html" href="NovaMemory.html">NovaMemory</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaTools.html" href="NovaTools.html">NovaTools</a></li>
+</ul></section>
+<section class="wiki-nav-section">
+<h2>Entwicklung und Betrieb</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="DevelopmentGuide.html" href="DevelopmentGuide.html">DevelopmentGuide</a></li>
+<li><a class="wiki-nav-link" data-nav-href="PageTemplate.html" href="PageTemplate.html">PageTemplate</a></li>
+<li><a class="wiki-nav-link" data-nav-href="RepositoryStructure.html" href="RepositoryStructure.html">RepositoryStructure</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Testing.html" href="Testing.html">Testing</a></li>
+<li><a class="wiki-nav-link" data-nav-href="BuildAndRelease.html" href="BuildAndRelease.html">BuildAndRelease</a></li>
+<li><a class="wiki-nav-link" data-nav-href="WatchMonitor.html" href="WatchMonitor.html">WatchMonitor</a></li>
+<li><a class="wiki-nav-link" data-nav-href="WatchMonitorReportReference.html" href="WatchMonitorReportReference.html">WatchMonitorReportReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="WatchMonitorAutomationAndAI.html" href="WatchMonitorAutomationAndAI.html">WatchMonitorAutomationAndAI</a></li>
+<li><a class="wiki-nav-link" data-nav-href="SecurityModel.html" href="SecurityModel.html">SecurityModel</a></li>
+<li><a class="wiki-nav-link" data-nav-href="PerformanceAndScaling.html" href="PerformanceAndScaling.html">PerformanceAndScaling</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Troubleshooting.html" href="Troubleshooting.html">Troubleshooting</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Roadmap.html" href="Roadmap.html">Roadmap</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Contributing.html" href="Contributing.html">Contributing</a></li>
+<li><a class="wiki-nav-link" data-nav-href="License.html" href="License.html">License</a></li>
+</ul></section>
+<section class="wiki-nav-section">
+<h2>Theorie</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="Research.html" href="Research.html">Research</a></li>
+<li><a class="wiki-nav-link" data-nav-href="AIOSConcept.html" href="AIOSConcept.html">AIOSConcept</a></li>
+<li><a class="wiki-nav-link active" data-nav-href="Whitepaper.html" href="Whitepaper.html">Whitepaper</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Was-es-Ist.html" href="Was-es-Ist.html">Was-es-Ist</a></li>
+<li><a class="wiki-nav-link" data-nav-href="wirtschaftlicher_nutzen.html" href="wirtschaftlicher_nutzen.html">wirtschaftlicher_nutzen</a></li>
+<li><a class="wiki-nav-link" data-nav-href="AgentSystems.html" href="AgentSystems.html">AgentSystems</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Glossary.html" href="Glossary.html">Glossary</a></li>
+<li><a class="wiki-nav-link" data-nav-href="FAQ.html" href="FAQ.html">FAQ</a></li>
+</ul></section>
+      </nav>
+    </aside>
+    <main class="wiki-main">
+      <header class="wiki-header">
+        <button type="button" class="wiki-nav-toggle" data-nav-toggle>Menu</button>
+        <div class="wiki-header-copy">
+          <span class="wiki-kicker">Nova-shell Documentation</span>
+          <h1>Whitepaper: Nova-shell</h1>
+          <p>Source: Whitepaper.md</p>
+        </div>
+      </header>
+      <div class="wiki-layout">
+        <article class="wiki-article">
+          <h1 id="whitepaper-nova-shell">Whitepaper: Nova-shell</h1>
+<h2 id="executive-summary">Executive Summary</h2>
+<p>Nova-shell ist mit Version <code>0.8.15</code> keine reine polyglotte Compute-Runtime mehr. Das System ist heute eine kombinierte Plattform aus:</p>
+<ul>
+<li>interaktiver Shell</li>
+<li>deklarativer Sprache (<code>.ns</code>)</li>
+<li>AI- und Knowledge-Runtime</li>
+<li>verteilter Orchestrierungs- und Control-Plane</li>
+</ul>
+<p>Nova-shell verbindet damit Eigenschaften aus Unix-Shell, Workflow-Engine, Agent-Runtime, Service-Fabric und Mesh-Orchestrierung in einem gemeinsamen Laufzeitmodell.</p>
+<p>Der Kernnutzen liegt in der Vereinheitlichung von bisher getrennten Schichten:</p>
+<ul>
+<li>lokale und verteilte Ausfuehrung</li>
+<li>Python, C++, GPU, WASM und externe Tools</li>
+<li>Agenten, Atheria-Knowledge und Event-Flows</li>
+<li>Security, Trust, Observability und Release-Faehigkeit</li>
+<li>Dokumentation, Analyse und Betrieb in derselben Plattform</li>
+</ul>
+<p>Wirtschaftlich relevant wird Nova-shell dort, wo Teams heute mehrere getrennte Werkzeuge fuer Automatisierung, Analyse, AI, verteilte Ausfuehrung und Dokumentation parallel pflegen. Der Plattformansatz senkt dort Integrationskosten, verkuerzt Rueckkopplungszeiten und verbessert die Nachvollziehbarkeit technischer Ablaeufe.</p>
+<p>Nova-shell ist damit keine abstrakte Zukunftsbehauptung, sondern eine produktnahe Laufzeit- und Orchestrierungsschicht fuer Teams, die Compute, Wissen, Agenten und verteilte Reaktionen unter einem konsistenten Modell betreiben wollen.</p>
+<h2 id="1-problemstellung">1. Problemstellung</h2>
+<p>In modernen Systemen entstehen die groessten Reibungsverluste nicht in einzelnen Algorithmen, sondern an den Uebergaengen:</p>
+<ul>
+<li>Code und Daten wechseln zwischen Python, nativen Komponenten, GPU-Pfaden und Remote-Workern.</li>
+<li>Agentenlogik, Event-Handling, Build-Automation und Wissensspeicher wachsen oft in getrennten Werkzeugen.</li>
+<li>Orchestrierung, Security, Telemetrie, Dokumentation und Release-Prozesse werden als spaete Nebenaufgaben behandelt.</li>
+<li>Verteilte Systeme scheitern selten an einer fehlenden Funktion, sondern an inkonsistenter Ausfuehrung, schwacher Beobachtbarkeit und fehlender Integritaet.</li>
+</ul>
+<p>Klassische Toolketten loesen Teilprobleme:</p>
+<ul>
+<li>Shells orchestrieren Kommandos.</li>
+<li>Workflow-Tools koordinieren Jobs.</li>
+<li>Agent-Frameworks steuern LLM-Aufgaben.</li>
+<li>Cluster-Systeme verteilen Last.</li>
+<li>Doku-Generatoren bauen Dokumentation.</li>
+</ul>
+<p>Aber diese Schichten bleiben meist organisatorisch und technisch getrennt.</p>
+<p>Nova-shell setzt genau dort an: Es fuehrt Sprache, Runtime, Agents, Wissen, Events, Mesh, Security und Release-Operations in einer Plattform zusammen.</p>
+<p>Aus wirtschaftlicher Sicht adressiert Nova-shell damit vor allem drei Probleme:</p>
+<ul>
+<li>wiederkehrende Integrations- und Glue-Code-Kosten</li>
+<li>langsame Rueckmeldung in Entwicklungs- und Betriebsablaeufen</li>
+<li>hohe Reibung zwischen Umsetzung, Dokumentation und Governance</li>
+</ul>
+<h2 id="2-systemdefinition">2. Systemdefinition</h2>
+<p>Nova-shell ist heute gleichzeitig drei Dinge:</p>
+<h3 id="2-1-eine-deklarative-sprache">2.1 Eine deklarative Sprache</h3>
+<p>Mit der Nova Language (<code>.ns</code>) koennen Systeme, Flows, Zustandsraeume, Agenten, Datensaetze, Services, Events und Packages beschrieben werden.</p>
+<p>Beispielhaft:</p>
+<pre><code class="language-ns">agent researcher {
+  model: local
+}
+
+dataset inbox {
+  path: &quot;.&quot;
+  format: &quot;directory&quot;
+}
+
+flow analyze {
+  researcher summarize inbox -&gt; summary
+  system.log summary
+}</code></pre>
+<h3 id="2-2-eine-ai-und-knowledge-runtime">2.2 Eine AI- und Knowledge-Runtime</h3>
+<p>Nova-shell enthaelt eine Agent-Schicht mit:</p>
+<ul>
+<li>Modell- und Provider-Selektion</li>
+<li>Tool-Nutzung</li>
+<li>Memory- und Prompt-Registry</li>
+<li>Eval- und Governance-Pfaden</li>
+<li>Atheria als lokales Wissens- und Lernsystem</li>
+</ul>
+<h3 id="2-3-eine-verteilte-orchestrierungsplattform">2.3 Eine verteilte Orchestrierungsplattform</h3>
+<p>Das System enthaelt:</p>
+<ul>
+<li>Execution Graphs statt nur linearer Pipelines</li>
+<li>Event-Bus und Reactive Flows</li>
+<li>Mesh-Worker und Remote-Ausfuehrung</li>
+<li>Control Plane mit Queueing, Replay, Snapshots und Konsens</li>
+<li>Service-Fabric, Traffic Plane und Rollout-Mechanismen</li>
+</ul>
+<h2 id="3-leitprinzipien">3. Leitprinzipien</h2>
+<p>Die Architektur folgt sieben Leitprinzipien:</p>
+<ol>
+<li>Minimalismus</li>
+<p>Nova-shell versucht nicht, unnoetige Schichten zu verstecken. Vieles bleibt bewusst sichtbar und steuerbar.</p>
+</ol>
+<ol>
+<li>Deklarative Systemprogrammierung</li>
+<p>Systeme, Flows, Services und Agenten sollen beschreibbar und nicht nur imperativ zusammengeskriptet sein.</p>
+</ol>
+<ol>
+<li>Graph statt linearer Befehlskette</li>
+<p>Abhaengigkeiten, Datenfluss und Ausfuehrung werden als gerichteter Graph verstanden.</p>
+</ol>
+<ol>
+<li>Agent-Nativitaet</li>
+<p>Agenten sind kein Fremdkoerper, sondern integraler Teil der Runtime.</p>
+</ol>
+<ol>
+<li>Event-getriebener Betrieb</li>
+<p>Reaktionen auf Dateiaenderungen, Runtime-Ereignisse oder Wissensupdates gehoeren in die Plattform selbst.</p>
+</ol>
+<ol>
+<li>Security und Verifizierbarkeit in der Laufzeit</li>
+<p>Trust, Isolation, Policies, Signaturen und Integritaetspruefungen muessen in der Ausfuehrungsschicht liegen.</p>
+</ol>
+<ol>
+<li>Release-Faehigkeit</li>
+<p>Eine Runtime mit Produktionsanspruch muss baubar, paketierbar, attestierbar und reproduzierbar sein.</p>
+</ol>
+<h2 id="4-gesamtarchitektur">4. Gesamtarchitektur</h2>
+<p>Nova-shell laesst sich in sechs Ebenen gliedern.</p>
+<h3 id="4-1-interface-layer">4.1 Interface Layer</h3>
+<p>Die Interface Layer umfasst:</p>
+<ul>
+<li>interaktive CLI</li>
+<li>Shell-Pipelines</li>
+<li>NovaScript- und Legacy-Befehle</li>
+<li>Nova Language (<code>ns.run</code>, <code>ns.graph</code>, <code>ns.exec</code>)</li>
+<li>HTML-Wiki-Build und lokales Doku-Serving</li>
+</ul>
+<p>Sie ist nicht nur Bedienoberflaeche, sondern Einstieg in dieselbe Runtime.</p>
+<h3 id="4-2-language-and-graph-layer">4.2 Language and Graph Layer</h3>
+<p>Die Nova Language wird ueber Parser, AST und Graph-Compiler verarbeitet:</p>
+<ul>
+<li><code>NovaParser</code></li>
+<li>typisierte AST-Knoten</li>
+<li>Graph-Kompilierung in DAG-Strukturen</li>
+<li>deklarative Tools und Runtime-Knoten</li>
+</ul>
+<p>Dadurch wird aus einer <code>.ns</code>-Datei kein loses Skript, sondern ein ausfuehrbarer Systemgraph.</p>
+<h3 id="4-3-execution-and-backend-layer">4.3 Execution and Backend Layer</h3>
+<p>Nova-shell orchestriert mehrere Ausfuehrungsziele:</p>
+<ul>
+<li><code>py</code> und <code>python</code></li>
+<li><code>cpp</code></li>
+<li><code>gpu</code></li>
+<li><code>wasm</code></li>
+<li><code>sys</code></li>
+<li><code>remote</code></li>
+<li>Mesh-Dispatch</li>
+</ul>
+<p>Hinzu kommen native Executor-Daemons, isolierte Jobausfuehrung, Timeout-, Cancel- und Restart-Pfade.</p>
+<h3 id="4-4-ai-and-knowledge-layer">4.4 AI and Knowledge Layer</h3>
+<p>Diese Schicht umfasst:</p>
+<ul>
+<li>Agent Runtime</li>
+<li>Provider-Adapter</li>
+<li>Prompt- und Eval-Registry</li>
+<li>Tool-Sandboxing</li>
+<li>lokales und verteiltes Memory</li>
+<li>Atheria als Wissens-, Trainings- und Embedding-Schicht</li>
+<li>Mycelia-Co-Evolution fuer populationsbasierte Optimierung</li>
+</ul>
+<p>Wirtschaftlich relevant ist diese Schicht vor allem dann, wenn Wissen, Reviews, Reports und Agentenpfade nicht als isolierte Einzellösungen betrieben werden sollen.</p>
+<h3 id="4-5-control-and-mesh-layer">4.5 Control and Mesh Layer</h3>
+<p>Diese Ebene umfasst:</p>
+<ul>
+<li>Event-Bus</li>
+<li>Queueing und Scheduling</li>
+<li>Control Plane</li>
+<li>Konsens- und Replikationspfade</li>
+<li>Mesh-Worker</li>
+<li>Federated Learning Mesh</li>
+<li>Service-Fabric und Traffic Plane</li>
+</ul>
+<p>Die Folge ist, dass Compute, Agenten, Wissen und Services nicht in getrennten Werkzeugketten orchestriert werden muessen. Genau darin liegt ein grosser Teil des Produktivitaetsgewinns.</p>
+<h3 id="4-6-operations-security-and-release-layer">4.6 Operations, Security and Release Layer</h3>
+<p>Nova-shell enthaelt:</p>
+<ul>
+<li>PKI-, Trust- und mTLS-Onboarding</li>
+<li>Policies, Namespace- und Quota-Enforcement</li>
+<li>Telemetrie, Traces, Alerts, Statusoberflaechen</li>
+<li>Backups, Replay und Recovery</li>
+<li>Windows-MSI, Standalone, Wheel, SBOM und Checksums</li>
+</ul>
+<p>Diese Schicht ist wirtschaftlich entscheidend, weil sie Nova-shell von einer reinen Technikdemo in Richtung eines betreibbaren Systems verschiebt.</p>
+<h2 id="5-wichtige-systemkomponenten">5. Wichtige Systemkomponenten</h2>
+<h3 id="5-1-nova-language">5.1 Nova Language</h3>
+<p>Nova Language ist die deklarative Systemsprache von Nova-shell. Sie modelliert:</p>
+<ul>
+<li><code>system</code></li>
+<li><code>state</code></li>
+<li><code>dataset</code></li>
+<li><code>agent</code></li>
+<li><code>tool</code></li>
+<li><code>flow</code></li>
+<li><code>event</code></li>
+<li><code>service</code></li>
+<li><code>package</code></li>
+</ul>
+<p>Neuere Erweiterungen umfassen ausserdem deklarative Blob-Ausfuehrung ueber:</p>
+<ul>
+<li><code>blob.verify</code></li>
+<li><code>blob.unpack</code></li>
+<li><code>blob.exec</code></li>
+</ul>
+<p>Nova-shell wird dadurch programmierbar, ohne dass jede Systemfunktion auf Shell-Skripting reduziert bleibt.</p>
+<h3 id="5-2-atheria">5.2 Atheria</h3>
+<p>Atheria ist die lokale Knowledge- und Lernschicht von Nova-shell. Sie dient unter anderem fuer:</p>
+<ul>
+<li>Dokument- und Dateitraining</li>
+<li>Embeddings und Suchpfade</li>
+<li>lokale AI-gestuetzte Analyse</li>
+<li>Invarianten und Trendwissen</li>
+<li>Verbindung von Laufzeitbeobachtung und Wissensraum</li>
+</ul>
+<p>Atheria ist im aktuellen Nova-shell-Stand der wichtigste Hebel fuer lokale Wissensnutzung, wiederverwendbare Analyse und projektnahe AI-Unterstuetzung.</p>
+<h3 id="5-3-agent-runtime">5.3 Agent Runtime</h3>
+<p>Die Agent Runtime fuehrt Aufgaben mit Modell-, Tool- und Memory-Kontext aus. Dabei unterstuetzt sie:</p>
+<ul>
+<li>lokale Modelle</li>
+<li>OpenAI-kompatible Provider</li>
+<li>LM Studio</li>
+<li>Ollama</li>
+<li>Atheria-zentrierte lokale Review- und Analysepfade</li>
+</ul>
+<p>Agenten koennen sowohl ad hoc angesprochen als auch in Graphen, Watches und Projektmonitoren eingebettet werden.</p>
+<h3 id="5-4-blob-seeds">5.4 Blob Seeds</h3>
+<p>Mit dem NS-Blob-Generator koennen Logikbausteine als verifizierbare, komprimierte Seeds verpackt werden:</p>
+<ul>
+<li><code>blob pack</code></li>
+<li><code>blob verify</code></li>
+<li><code>blob unpack</code></li>
+<li><code>blob exec</code></li>
+<li><code>blob mesh-run</code></li>
+</ul>
+<p>Diese Funktion ist besonders wichtig fuer:</p>
+<ul>
+<li>verifizierbaren Logiktransport</li>
+<li>mobile Ausfuehrung im Mesh</li>
+<li>Integritaetspruefung vor Rehydrierung</li>
+<li>ressourcenschonende Vorhaltung von Logikbausteinen</li>
+</ul>
+<p>Blob-Seeds sind damit eine Infrastrukturtechnik fuer portable, sichere Runtime-Module.</p>
+<h3 id="5-5-predictive-engine-shifting">5.5 Predictive Engine Shifting</h3>
+<p>NovaSynth ist in Nova-shell inzwischen mehr als ein lokaler Heuristikhelfer. Mit der Predictive-Engine-Shifting-Schicht kann das System Telemetrie und Laufzeitsignale nutzen, um Ausfuehrungspfade proaktiv zu verschieben.</p>
+<p>Relevante Befehle:</p>
+<ul>
+<li><code>synth forecast</code></li>
+<li><code>synth shift suggest &lt;code&gt;</code></li>
+<li><code>synth shift run &lt;code&gt;</code></li>
+</ul>
+<p>Ziel ist nicht bloss &quot;Autotuning&quot;, sondern die vorausschauende Wahl des geeigneten Ausfuehrungspfads zwischen Python, C++, GPU und Mesh. Wirtschaftlich ist das vor allem dort interessant, wo Laufzeitkosten, Reaktionszeiten oder Ressourcenauslastung relevant sind.</p>
+<h3 id="5-6-zero-copy-federated-learning-mesh">5.6 Zero-Copy Federated Learning Mesh</h3>
+<p>Nova-shell kombiniert NovaZero/Fabric-Pfade, Mesh und Atheria zu einem verteilten Wissens- und Invariantenmodell:</p>
+<ul>
+<li>signierte Invariant-Updates</li>
+<li>Broadcast im Mesh</li>
+<li>same-host zero-copy Handles</li>
+<li>Chronik- und Integritaetsbezug</li>
+</ul>
+<p>Relevante Befehle:</p>
+<ul>
+<li><code>mesh federated status</code></li>
+<li><code>mesh federated publish</code></li>
+<li><code>mesh federated history</code></li>
+<li><code>mesh federated chronik-latest</code></li>
+</ul>
+<p>Damit wird Nova-shell zu einer Plattform fuer kollaborative Wissens- und Lernprozesse ueber mehrere Knoten, ohne dass jede Wissensaktualisierung als klassischer schwergewichtiger Modelltransport organisiert werden muss.</p>
+<h3 id="5-7-mycelia-atheria-co-evolution">5.7 Mycelia-Atheria Co-Evolution</h3>
+<p>Die Co-Evolution-Schicht fuehrt populationsbasierte Optimierung mit Atheria-Metriken, Tool-Erfolg und Forecast-Signalen zusammen.</p>
+<p>Relevante Befehle:</p>
+<ul>
+<li><code>mycelia coevolve run</code></li>
+<li><code>mycelia coevolve status</code></li>
+</ul>
+<p>Diese Schicht ist noch kein allgemeines Ersatzmodell fuer Data Science oder AutoML, aber sie zeigt einen wirtschaftlich interessanten Pfad fuer Teams, die experimentelle Optimierung nicht in separaten Forschungsartefakten, sondern direkt in ihrer Laufzeitumgebung verankern wollen.</p>
+<h2 id="6-operatives-laufzeitmodell">6. Operatives Laufzeitmodell</h2>
+<p>Nova-shell arbeitet heute in mehreren Betriebsmodi:</p>
+<h3 id="6-1-interaktive-shell">6.1 Interaktive Shell</h3>
+<p>Direkte Ausfuehrung lokaler Befehle, Pipelines und Analysepfade.</p>
+<h3 id="6-2-deklarative-runtime">6.2 Deklarative Runtime</h3>
+<p><code>ns.run</code>, <code>ns.exec</code> und <code>ns.graph</code> fuehren deklarative Programme aus oder zeigen deren Ausfuehrungsgraph.</p>
+<h3 id="6-3-event-und-watch-betrieb">6.3 Event- und Watch-Betrieb</h3>
+<p>Watch- und Projektmonitor-Pfade reagieren auf Dateisystemereignisse, aktualisieren HTML-Berichte und fuehren optional Automations- oder AI-Review-Schritte aus.</p>
+<h3 id="6-4-verteilte-runtime">6.4 Verteilte Runtime</h3>
+<p>Mesh-Worker, Remote-Dispatch, Federated Broadcast und Service-Fabric ermoeglichen verteilte Ausfuehrung.</p>
+<h3 id="6-5-api-und-daemon-betrieb">6.5 API- und Daemon-Betrieb</h3>
+<p>Die Plattform stellt eine Control-Plane-API, Status- und Metrikpfade sowie administrative Kommandos fuer Queue, Konsens, Services, Executor und Rollouts bereit.</p>
+<h2 id="7-security-und-trust-modell">7. Security- und Trust-Modell</h2>
+<p>Nova-shell folgt einem Trust-Modell, das Integritaet und kontrollierte Faehigkeitserweiterung priorisiert.</p>
+<p>Wichtige Elemente:</p>
+<ul>
+<li>interne CA und Worker-Onboarding</li>
+<li>mTLS- und Trust-Policies</li>
+<li>Namespace- und Tenant-Isolation</li>
+<li>Rollen- und Policy-Enforcement</li>
+<li>Guard- und Sandbox-Pfade</li>
+<li>Signatur- und Hash-basierte Integritaetspruefung fuer Blob-Seeds und Release-Artefakte</li>
+</ul>
+<p>Wichtig ist die Abgrenzung: Nova-shell liefert technische Sicherheitsmechanismen, ersetzt aber keine vollstaendige Organisations-, IAM- oder Netzwerk-Governance ausserhalb der Plattform.</p>
+<h2 id="8-observability-analyse-und-dokumentation">8. Observability, Analyse und Dokumentation</h2>
+<p>Nova-shell behandelt Dokumentation und Beobachtbarkeit nicht als Nebenprodukte.</p>
+<p>Dazu gehoeren:</p>
+<ul>
+<li><code>doctor</code> fuer Runtime-Diagnose</li>
+<li>Pulse-, Lens- und Statuspfade</li>
+<li>HTML-Wiki-Build ueber <code>wiki build</code></li>
+<li>Watch Monitor fuer Projektanalysen mit HTML-Reports</li>
+<li>JSON-Analysepfade und Detailansichten fuer Codeaenderungen</li>
+</ul>
+<p>Der Projektmonitor ist ein gutes Beispiel fuer den Plattformansatz: Eine <code>.ns</code>-Datei kann in einen Projektordner gelegt werden und ueberwacht danach Aenderungen, Hotspots, Diffs, Automation und AI-Review in einer laufend aktualisierten HTML-Ausgabe.</p>
+<h2 id="9-release-und-supply-chain-modell">9. Release- und Supply-Chain-Modell</h2>
+<p>Nova-shell ist auf nachvollziehbare Distribution ausgelegt.</p>
+<p>Der aktuelle Release-Stack umfasst im Projekt:</p>
+<ul>
+<li>Python <code>sdist</code></li>
+<li>Python <code>wheel</code></li>
+<li>Nuitka-Standalone-Bundle</li>
+<li>Windows <code>MSI</code></li>
+<li>CycloneDX-SBOM</li>
+<li>Subject-Checksums</li>
+<li>SHA-256-Checksums</li>
+<li>GitHub Release-Auslieferung</li>
+</ul>
+<p>Fuer <code>0.8.15</code> ist der aktuelle verifizierte oeffentliche Releasepfad insbesondere der Windows-Core-Stack mit gruener Test- und Smoke-Test-Kette.</p>
+<p>Wesentlich ist dabei nicht nur das Paketformat, sondern die Reproduzierbarkeit:</p>
+<ul>
+<li>automatisierte Tests</li>
+<li>Build-Skripte</li>
+<li>Upgrade-Helfer</li>
+<li>Release Notes aus Manifesten</li>
+<li>verifizierbare Artefaktmetadaten</li>
+</ul>
+<h2 id="10-typische-einsatzszenarien">10. Typische Einsatzszenarien</h2>
+<h3 id="10-1-projektueberwachung-und-engineering-analytics">10.1 Projektueberwachung und Engineering Analytics</h3>
+<p>Nova-shell kann Projektordner live beobachten, Diffs analysieren, HTML-Reports erzeugen und Build-/Test-Reaktionen ausloesen.</p>
+<p>Der wirtschaftliche Nutzen liegt hier in schnellerer Rueckmeldung, besserer technischer Transparenz und geringeren manuellen Review-Kosten.</p>
+<h3 id="10-2-polyglotte-compute-pipelines">10.2 Polyglotte Compute-Pipelines</h3>
+<p>Teams koennen Python, C++, GPU und WASM in einer Runtime orchestrieren, statt mehrere lose Werkzeugketten zu betreiben.</p>
+<p>Der Mehrwert liegt vor allem in geringeren Integrationskosten und besserer Wiederverwendbarkeit von Laufzeitlogik.</p>
+<h3 id="10-3-lokale-ai-und-knowledge-systeme">10.3 Lokale AI- und Knowledge-Systeme</h3>
+<p>Mit Atheria, Agenten, Blob-Seeds und Event-Flows laesst sich lokales oder hybrides AI-gestuetztes Arbeiten aufbauen.</p>
+<p>Das ist wirtschaftlich besonders dort sinnvoll, wo Wissen im Unternehmen verbleiben, aber trotzdem in operative Prozesse eingebunden werden soll.</p>
+<h3 id="10-4-verteilte-wissens-und-invariantenmodelle">10.4 Verteilte Wissens- und Invariantenmodelle</h3>
+<p>Federated Mesh und Zero-Copy-Pfade ermoeglichen verteiltes Lernen und signierten Wissensaustausch.</p>
+<p>Das reduziert in geeigneten Szenarien Bandbreiten-, Synchronisations- und Integrationskosten.</p>
+<h3 id="10-5-forschungs-und-evolutionssysteme">10.5 Forschungs- und Evolutionssysteme</h3>
+<p>Mit Mycelia-Co-Evolution, Forecasting und Atheria-Metriken kann Nova-shell als experimentelle Plattform fuer selbstoptimierende Agenten- und Analysepfade genutzt werden.</p>
+<p>Dieser Bereich ist eher strategisch als kurzfristig operativ, zeigt aber das Erweiterungspotenzial der Plattform.</p>
+<h2 id="11-technische-einordnung">11. Technische Einordnung</h2>
+<p>Nova-shell ist weder nur:</p>
+<ul>
+<li>eine Shell</li>
+<li>ein Agent-Framework</li>
+<li>eine Workflow-Engine</li>
+<li>ein Cluster-Manager</li>
+<li>ein Doku-Generator</li>
+</ul>
+<p>sondern eine Plattform, die diese Faehigkeiten operational zusammenfuehrt.</p>
+<p>Die passende Einordnung ist deshalb:</p>
+<ul>
+<li>Shell fuer direkte Steuerung</li>
+<li>Sprache fuer deklarative Programme</li>
+<li>Runtime fuer Compute und Agenten</li>
+<li>Control Plane fuer verteilte Orchestrierung</li>
+<li>AI-OS-Schicht fuer Wissen, Reaktion und Selbstbeobachtung</li>
+</ul>
+<h2 id="12-nicht-ziele">12. Nicht-Ziele</h2>
+<p>Ein belastbares Whitepaper muss auch benennen, was Nova-shell aktuell nicht beansprucht.</p>
+<p>Nova-shell ist derzeit nicht:</p>
+<ul>
+<li>Ersatz fuer allgemeine Desktop- oder Server-Betriebssysteme</li>
+<li>magische Universaloptimierung fuer beliebige Hardware und jeden Workload</li>
+<li>vollstaendige Organisations- oder Compliance-Architektur</li>
+<li>automatischer Ersatz fuer SRE, IAM, Netzwerk- oder Teamprozesse</li>
+<li>Beweis fuer globale Produktionsreife allein durch das Vorhandensein von Mesh, Konsens oder SBOM</li>
+</ul>
+<p>Diese Abgrenzung ist wichtig, damit Nova-shell als serioese Plattform und nicht als ueberdehntes Totalversprechen verstanden wird.</p>
+<h2 id="13-schlussfolgerung">13. Schlussfolgerung</h2>
+<p>Nova-shell <code>0.8.15</code> ist heute eine wesentlich weiter entwickelte Plattform als die fruehe Beschreibung einer &quot;Unified Compute Runtime&quot;.</p>
+<p>Der aktuelle Kernmehrwert liegt in der Kombination:</p>
+<ul>
+<li>deklarative Nova Language</li>
+<li>polyglotte Execution Layer</li>
+<li>Agent- und Atheria-Runtime</li>
+<li>Event- und Watch-getriebene Betriebslogik</li>
+<li>Mesh, Federated Learning und Control Plane</li>
+<li>verifizierbare Blob-Seeds</li>
+<li>Predictive Engine Shifting</li>
+<li>Service-, Security- und Release-Schichten</li>
+<li>HTML-Wiki und Analyseoberflaechen als Teil des Systems</li>
+</ul>
+<p>Nova-shell ist damit eine Plattform zum Beschreiben, Beobachten, Verteilen, Optimieren und Absichern von AI- und Compute-Systemen. Ihr wirtschaftlicher Wert entsteht nicht durch einen einzelnen &quot;Killer-Use-Case&quot;, sondern durch die konsistente Zusammenfuehrung von Runtime, Wissen, Analyse, Automatisierung und Betrieb.</p>
+<p>Der strategische Unterschied liegt nicht in einem einzelnen Feature, sondern darin, dass Sprache, Runtime, Wissen, Verteilung, Security und Betrieb im selben System zusammengefuehrt werden.</p>
+        </article>
+        <aside class="wiki-toc">
+          <div class="wiki-toc-card"><h2>On this page</h2><ul>
+<li class="wiki-toc-link"><a href="#executive-summary">Executive Summary</a></li>
+<li class="wiki-toc-link"><a href="#1-problemstellung">1. Problemstellung</a></li>
+<li class="wiki-toc-link"><a href="#2-systemdefinition">2. Systemdefinition</a></li>
+<li class="wiki-toc-link level-3"><a href="#2-1-eine-deklarative-sprache">2.1 Eine deklarative Sprache</a></li>
+<li class="wiki-toc-link level-3"><a href="#2-2-eine-ai-und-knowledge-runtime">2.2 Eine AI- und Knowledge-Runtime</a></li>
+<li class="wiki-toc-link level-3"><a href="#2-3-eine-verteilte-orchestrierungsplattform">2.3 Eine verteilte Orchestrierungsplattform</a></li>
+<li class="wiki-toc-link"><a href="#3-leitprinzipien">3. Leitprinzipien</a></li>
+<li class="wiki-toc-link"><a href="#4-gesamtarchitektur">4. Gesamtarchitektur</a></li>
+<li class="wiki-toc-link level-3"><a href="#4-1-interface-layer">4.1 Interface Layer</a></li>
+<li class="wiki-toc-link level-3"><a href="#4-2-language-and-graph-layer">4.2 Language and Graph Layer</a></li>
+<li class="wiki-toc-link level-3"><a href="#4-3-execution-and-backend-layer">4.3 Execution and Backend Layer</a></li>
+<li class="wiki-toc-link level-3"><a href="#4-4-ai-and-knowledge-layer">4.4 AI and Knowledge Layer</a></li>
+<li class="wiki-toc-link level-3"><a href="#4-5-control-and-mesh-layer">4.5 Control and Mesh Layer</a></li>
+<li class="wiki-toc-link level-3"><a href="#4-6-operations-security-and-release-layer">4.6 Operations, Security and Release Layer</a></li>
+<li class="wiki-toc-link"><a href="#5-wichtige-systemkomponenten">5. Wichtige Systemkomponenten</a></li>
+<li class="wiki-toc-link level-3"><a href="#5-1-nova-language">5.1 Nova Language</a></li>
+<li class="wiki-toc-link level-3"><a href="#5-2-atheria">5.2 Atheria</a></li>
+<li class="wiki-toc-link level-3"><a href="#5-3-agent-runtime">5.3 Agent Runtime</a></li>
+<li class="wiki-toc-link level-3"><a href="#5-4-blob-seeds">5.4 Blob Seeds</a></li>
+<li class="wiki-toc-link level-3"><a href="#5-5-predictive-engine-shifting">5.5 Predictive Engine Shifting</a></li>
+<li class="wiki-toc-link level-3"><a href="#5-6-zero-copy-federated-learning-mesh">5.6 Zero-Copy Federated Learning Mesh</a></li>
+<li class="wiki-toc-link level-3"><a href="#5-7-mycelia-atheria-co-evolution">5.7 Mycelia-Atheria Co-Evolution</a></li>
+<li class="wiki-toc-link"><a href="#6-operatives-laufzeitmodell">6. Operatives Laufzeitmodell</a></li>
+<li class="wiki-toc-link level-3"><a href="#6-1-interaktive-shell">6.1 Interaktive Shell</a></li>
+<li class="wiki-toc-link level-3"><a href="#6-2-deklarative-runtime">6.2 Deklarative Runtime</a></li>
+<li class="wiki-toc-link level-3"><a href="#6-3-event-und-watch-betrieb">6.3 Event- und Watch-Betrieb</a></li>
+<li class="wiki-toc-link level-3"><a href="#6-4-verteilte-runtime">6.4 Verteilte Runtime</a></li>
+<li class="wiki-toc-link level-3"><a href="#6-5-api-und-daemon-betrieb">6.5 API- und Daemon-Betrieb</a></li>
+<li class="wiki-toc-link"><a href="#7-security-und-trust-modell">7. Security- und Trust-Modell</a></li>
+<li class="wiki-toc-link"><a href="#8-observability-analyse-und-dokumentation">8. Observability, Analyse und Dokumentation</a></li>
+<li class="wiki-toc-link"><a href="#9-release-und-supply-chain-modell">9. Release- und Supply-Chain-Modell</a></li>
+<li class="wiki-toc-link"><a href="#10-typische-einsatzszenarien">10. Typische Einsatzszenarien</a></li>
+<li class="wiki-toc-link level-3"><a href="#10-1-projektueberwachung-und-engineering-analytics">10.1 Projektueberwachung und Engineering Analytics</a></li>
+<li class="wiki-toc-link level-3"><a href="#10-2-polyglotte-compute-pipelines">10.2 Polyglotte Compute-Pipelines</a></li>
+<li class="wiki-toc-link level-3"><a href="#10-3-lokale-ai-und-knowledge-systeme">10.3 Lokale AI- und Knowledge-Systeme</a></li>
+<li class="wiki-toc-link level-3"><a href="#10-4-verteilte-wissens-und-invariantenmodelle">10.4 Verteilte Wissens- und Invariantenmodelle</a></li>
+<li class="wiki-toc-link level-3"><a href="#10-5-forschungs-und-evolutionssysteme">10.5 Forschungs- und Evolutionssysteme</a></li>
+<li class="wiki-toc-link"><a href="#11-technische-einordnung">11. Technische Einordnung</a></li>
+<li class="wiki-toc-link"><a href="#12-nicht-ziele">12. Nicht-Ziele</a></li>
+<li class="wiki-toc-link"><a href="#13-schlussfolgerung">13. Schlussfolgerung</a></li>
+</ul></div>
+        </aside>
+      </div>
+      <footer class="wiki-footer">
+        <p><a href="Home.html">Home</a> | <a href="QuickStart.html">QuickStart</a> | <a href="Architecture.html">Architecture</a> | <a href="NovaCLI.html">NovaCLI</a> | <a href="DevelopmentGuide.html">DevelopmentGuide</a> | <a href="FAQ.html">FAQ</a></p>
+      </footer>
+    </main>
+  </div>
+  <script>
+    window.NOVA_WIKI = {
+      currentPage: "Whitepaper.html",
+      searchIndex: "assets/search-index.json"
+    };
+  </script>
+  <script src="assets/wiki.js" defer></script>
+</body>
+</html>
