@@ -40,6 +40,10 @@
 <li><a class="wiki-nav-link" data-nav-href="ShellCommandReference.html" href="ShellCommandReference.html">ShellCommandReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="APIReference.html" href="APIReference.html">APIReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ExamplesAndRecipes.html" href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NSBlobGenerator.html" href="NSBlobGenerator.html">NSBlobGenerator</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaSynthPredictiveEngineShifting.html" href="NovaSynthPredictiveEngineShifting.html">NovaSynthPredictiveEngineShifting</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ZeroCopyFederatedLearningMesh.html" href="ZeroCopyFederatedLearningMesh.html">ZeroCopyFederatedLearningMesh</a></li>
+<li><a class="wiki-nav-link" data-nav-href="MyceliaAtheriaCoEvolution.html" href="MyceliaAtheriaCoEvolution.html">MyceliaAtheriaCoEvolution</a></li>
 <li><a class="wiki-nav-link" data-nav-href="WatchMonitor.html" href="WatchMonitor.html">WatchMonitor</a></li>
 <li><a class="wiki-nav-link" data-nav-href="WatchMonitorQuickStart.html" href="WatchMonitorQuickStart.html">WatchMonitorQuickStart</a></li>
 <li><a class="wiki-nav-link" data-nav-href="WatchMonitorReportReference.html" href="WatchMonitorReportReference.html">WatchMonitorReportReference</a></li>
@@ -49,6 +53,8 @@
 <li><a class="wiki-nav-link" data-nav-href="TutorialTechnologyRadar.html" href="TutorialTechnologyRadar.html">TutorialTechnologyRadar</a></li>
 <li><a class="wiki-nav-link" data-nav-href="TutorialMultiAgentCluster.html" href="TutorialMultiAgentCluster.html">TutorialMultiAgentCluster</a></li>
 <li><a class="wiki-nav-link" data-nav-href="TutorialLMStudioIntegration.html" href="TutorialLMStudioIntegration.html">TutorialLMStudioIntegration</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialBlobSeeds.html" href="TutorialBlobSeeds.html">TutorialBlobSeeds</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialPredictiveFederatedCoevolution.html" href="TutorialPredictiveFederatedCoevolution.html">TutorialPredictiveFederatedCoevolution</a></li>
 <li><a class="wiki-nav-link" data-nav-href="TutorialProjectWatchMonitor.html" href="TutorialProjectWatchMonitor.html">TutorialProjectWatchMonitor</a></li>
 </ul></section>
 <section class="wiki-nav-section">
@@ -76,6 +82,10 @@
 <ul>
 <li><a class="wiki-nav-link" data-nav-href="NovaAgents.html" href="NovaAgents.html">NovaAgents</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaMesh.html" href="NovaMesh.html">NovaMesh</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NSBlobGenerator.html" href="NSBlobGenerator.html">NSBlobGenerator</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaSynthPredictiveEngineShifting.html" href="NovaSynthPredictiveEngineShifting.html">NovaSynthPredictiveEngineShifting</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ZeroCopyFederatedLearningMesh.html" href="ZeroCopyFederatedLearningMesh.html">ZeroCopyFederatedLearningMesh</a></li>
+<li><a class="wiki-nav-link" data-nav-href="MyceliaAtheriaCoEvolution.html" href="MyceliaAtheriaCoEvolution.html">MyceliaAtheriaCoEvolution</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaSensors.html" href="NovaSensors.html">NovaSensors</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaMemory.html" href="NovaMemory.html">NovaMemory</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaTools.html" href="NovaTools.html">NovaTools</a></li>
@@ -313,6 +323,18 @@ nova-shell --no-plugins -c &quot;ai providers&quot; | ConvertFrom-Json</code></p
 <td>lokaler Worker startet</td>
 </tr>
 <tr>
+<td><code>blob</code></td>
+<td>verifizierbare Seed-Kapselung, Rehydrierung und Mesh-Transport</td>
+<td><code>blob pack --text &quot;21 * 2&quot; --type py</code></td>
+<td><code>.nsblob.json</code> und <code>inline_seed</code> werden erzeugt</td>
+</tr>
+<tr>
+<td><code>synth</code></td>
+<td>prädiktive Engine-Wahl und delegierte Ausfuehrung</td>
+<td><code>synth forecast</code></td>
+<td>JSON-Forecast oder Shift-Empfehlung</td>
+</tr>
+<tr>
 <td><code>wiki</code></td>
 <td>Markdown-Wiki nach HTML bauen und serven</td>
 <td><code>wiki build</code></td>
@@ -440,6 +462,44 @@ ns.control status</code></pre>
 <li><code>queue run</code> verarbeitet mindestens einen Eintrag</li>
 <li><code>event emit</code> erzeugt ein Laufzeitereignis</li>
 <li><code>ns.control events ping 0 10</code> zeigt das eingegangene Event</li>
+</ul>
+<h4 id="blob-seeds-lokal-testen">Blob-Seeds lokal testen</h4>
+<pre><code class="language-powershell">blob pack --text &quot;21 * 2&quot; --type py
+blob verify .\calc.nsblob.json
+blob exec .\calc.nsblob.json</code></pre>
+<p>Erwartung:</p>
+<ul>
+<li>der Seed ist verifiziert</li>
+<li><code>blob exec</code> liefert <code>42</code></li>
+</ul>
+<h3 id="schnell-pruefbar-predictive-shifting">Schnell pruefbar: Predictive Shifting</h3>
+<pre><code class="language-powershell">py 1 + 1
+py 2 + 1
+py 3 + 1
+synth forecast
+synth shift suggest &quot;for item in rows: total += item&quot;</code></pre>
+<p>Erwartung:</p>
+<ul>
+<li><code>synth forecast</code> liefert <code>status</code>, <code>engine_pressure</code> und <code>projection</code></li>
+<li><code>synth shift suggest ...</code> liefert <code>engine</code>, <code>delegated_command</code>, <code>pressure_index</code> und <code>reasons</code></li>
+</ul>
+<h3 id="schnell-pruefbar-federated-learning-mesh">Schnell pruefbar: Federated Learning Mesh</h3>
+<pre><code class="language-powershell">mesh federated status
+mesh federated publish --statement &quot;Inter-core resonance raised&quot; --namespace swarm --project lab
+mesh federated history 5</code></pre>
+<p>Erwartung:</p>
+<ul>
+<li>Status der Federated-Schicht</li>
+<li>ein signiertes Update</li>
+<li>sichtbare Historie</li>
+</ul>
+<h3 id="schnell-pruefbar-co-evolution">Schnell pruefbar: Co-Evolution</h3>
+<pre><code class="language-powershell">mycelia coevolve run research-pop --cycles 2 --input &quot;edge inference pressure rises&quot;
+mycelia coevolve status research-pop</code></pre>
+<p>Erwartung:</p>
+<ul>
+<li>Population wird bewertet</li>
+<li>Rueckgabe enthaelt Co-Evolution-Daten statt nur simpler Populationstakte</li>
 </ul>
 <h4 id="snapshot-und-resume">Snapshot und Resume</h4>
 <pre><code class="language-powershell">ns.snapshot .\control-snapshot.json
@@ -750,6 +810,10 @@ cpp.sandbox int main(){ return 0; }</code></pre>
 <li><a href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
 <li><a href="ShellCommandReference.html">ShellCommandReference</a></li>
 <li><a href="CodeReferenceIndex.html">CodeReferenceIndex</a></li>
+<li><a href="NSBlobGenerator.html">NSBlobGenerator</a></li>
+<li><a href="NovaSynthPredictiveEngineShifting.html">NovaSynthPredictiveEngineShifting</a></li>
+<li><a href="ZeroCopyFederatedLearningMesh.html">ZeroCopyFederatedLearningMesh</a></li>
+<li><a href="MyceliaAtheriaCoEvolution.html">MyceliaAtheriaCoEvolution</a></li>
 <li><a href="APIReference.html">APIReference</a></li>
 <li><a href="NovaLanguage.html">NovaLanguage</a></li>
 <li><a href="NovaRuntime.html">NovaRuntime</a></li>
@@ -771,6 +835,9 @@ cpp.sandbox int main(){ return 0; }</code></pre>
 <li class="wiki-toc-link"><a href="#beispiele">Beispiele</a></li>
 <li class="wiki-toc-link level-3"><a href="#schnell-pruefbar-ai-und-knowledge">Schnell pruefbar: AI und Knowledge</a></li>
 <li class="wiki-toc-link level-3"><a href="#schnell-pruefbar-deklarative-runtime">Schnell pruefbar: Deklarative Runtime</a></li>
+<li class="wiki-toc-link level-3"><a href="#schnell-pruefbar-predictive-shifting">Schnell pruefbar: Predictive Shifting</a></li>
+<li class="wiki-toc-link level-3"><a href="#schnell-pruefbar-federated-learning-mesh">Schnell pruefbar: Federated Learning Mesh</a></li>
+<li class="wiki-toc-link level-3"><a href="#schnell-pruefbar-co-evolution">Schnell pruefbar: Co-Evolution</a></li>
 <li class="wiki-toc-link level-3"><a href="#schnell-pruefbar-plattform-und-betrieb">Schnell pruefbar: Plattform und Betrieb</a></li>
 <li class="wiki-toc-link"><a href="#kommando-referenz-im-detail">Kommando-Referenz im Detail</a></li>
 <li class="wiki-toc-link level-3"><a href="#ai">`ai`</a></li>

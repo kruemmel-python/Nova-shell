@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="Nova-shell wiki builder">
-  <title>Nova Tools | Nova-shell Wiki</title>
+  <title>Tutorial Blob Seeds | Nova-shell Wiki</title>
   <link rel="stylesheet" href="assets/wiki.css">
 </head>
 <body>
@@ -53,7 +53,7 @@
 <li><a class="wiki-nav-link" data-nav-href="TutorialTechnologyRadar.html" href="TutorialTechnologyRadar.html">TutorialTechnologyRadar</a></li>
 <li><a class="wiki-nav-link" data-nav-href="TutorialMultiAgentCluster.html" href="TutorialMultiAgentCluster.html">TutorialMultiAgentCluster</a></li>
 <li><a class="wiki-nav-link" data-nav-href="TutorialLMStudioIntegration.html" href="TutorialLMStudioIntegration.html">TutorialLMStudioIntegration</a></li>
-<li><a class="wiki-nav-link" data-nav-href="TutorialBlobSeeds.html" href="TutorialBlobSeeds.html">TutorialBlobSeeds</a></li>
+<li><a class="wiki-nav-link active" data-nav-href="TutorialBlobSeeds.html" href="TutorialBlobSeeds.html">TutorialBlobSeeds</a></li>
 <li><a class="wiki-nav-link" data-nav-href="TutorialPredictiveFederatedCoevolution.html" href="TutorialPredictiveFederatedCoevolution.html">TutorialPredictiveFederatedCoevolution</a></li>
 <li><a class="wiki-nav-link" data-nav-href="TutorialProjectWatchMonitor.html" href="TutorialProjectWatchMonitor.html">TutorialProjectWatchMonitor</a></li>
 </ul></section>
@@ -88,7 +88,7 @@
 <li><a class="wiki-nav-link" data-nav-href="MyceliaAtheriaCoEvolution.html" href="MyceliaAtheriaCoEvolution.html">MyceliaAtheriaCoEvolution</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaSensors.html" href="NovaSensors.html">NovaSensors</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaMemory.html" href="NovaMemory.html">NovaMemory</a></li>
-<li><a class="wiki-nav-link active" data-nav-href="NovaTools.html" href="NovaTools.html">NovaTools</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaTools.html" href="NovaTools.html">NovaTools</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Entwicklung und Betrieb</h2>
@@ -124,60 +124,98 @@
         <button type="button" class="wiki-nav-toggle" data-nav-toggle>Menu</button>
         <div class="wiki-header-copy">
           <span class="wiki-kicker">Nova-shell Documentation</span>
-          <h1>Nova Tools</h1>
-          <p>Source: NovaTools.md</p>
+          <h1>Tutorial Blob Seeds</h1>
+          <p>Source: TutorialBlobSeeds.md</p>
         </div>
       </header>
       <div class="wiki-layout">
         <article class="wiki-article">
-          <h1 id="nova-tools">Nova Tools</h1>
-<h2 id="zweck">Zweck</h2>
-<p>Tools sind strukturierte, benannte Operationen mit Eingabeschema und Pipeline-Template. Sie sind der sauberste Weg, wiederverwendbare Shell-Operationen bereitzustellen.</p>
-<h2 id="kernpunkte">Kernpunkte</h2>
+          <h1 id="tutorial-blob-seeds">Tutorial Blob Seeds</h1>
+<h2 id="ziel">Ziel</h2>
+<p>Dieses Tutorial zeigt, wie Nova-shell-Logik als Seed gekapselt, verifiziert, lokal ausgefuehrt und ueber Mesh verschoben wird.</p>
+<p>Am Ende hast du:</p>
 <ul>
-<li>Ein Tool besitzt Name, Beschreibung, Schema und Pipeline.</li>
-<li>Tools koennen direkt aus der Shell oder indirekt aus Agent- und Plannerpfaden genutzt werden.</li>
-<li>Tools bilden eine Schicht zwischen Promptlogik und konkreter Kommandokette.</li>
+<li>einen <code>.ns</code>-Seed</li>
+<li>einen Python-Seed</li>
+<li>einen lokalen oder entfernten Ausfuehrungspfad</li>
+<li>einen deklarativen Flow, der einen Seed direkt benutzt</li>
 </ul>
-<h2 id="praktische-nutzung">Praktische Nutzung</h2>
+<h2 id="schritt-1-einfachen-python-seed-bauen">Schritt 1: Einfachen Python-Seed bauen</h2>
+<pre><code class="language-powershell">blob pack --text &quot;21 * 2&quot; --type py</code></pre>
+<p>Die Ausgabe enthaelt:</p>
 <ul>
-<li>Registriere kleine, stabile Operationen als Tool statt sie jedes Mal neu zu tippen.</li>
-<li>Halte Schemata eng, damit <code>tool call</code> frueh auf fehlende Argumente pruefen kann.</li>
+<li><code>path</code></li>
+<li><code>inline_seed</code></li>
+<li><code>sha256</code></li>
+<li><code>compressed_sha256</code></li>
 </ul>
-<h2 id="testbare-einstiege">Testbare Einstiege</h2>
-<h3 id="ein-tool-definieren-und-ausfuehren">Ein Tool definieren und ausfuehren</h3>
-<pre><code class="language-powershell">tool register greet --description &quot;Greet user&quot; --schema &quot;{\&quot;type\&quot;:\&quot;object\&quot;,\&quot;properties\&quot;:{\&quot;name\&quot;:{\&quot;type\&quot;:\&quot;string\&quot;}},\&quot;required\&quot;:[\&quot;name\&quot;]}&quot; --pipeline &quot;py \&quot;Hello \&quot; + {{py:name}}&quot;
-tool call greet name=Nova
-tool show greet</code></pre>
+<h2 id="schritt-2-seed-verifizieren">Schritt 2: Seed verifizieren</h2>
+<pre><code class="language-powershell">blob verify .\calc.nsblob.json</code></pre>
 <p>Erwartung:</p>
 <ul>
-<li>Der Aufruf liefert <code>Hello Nova</code>.</li>
-<li>Die Tooldefinition bleibt ueber <code>tool show</code> inspizierbar.</li>
+<li><code>verified: true</code></li>
 </ul>
-<h2 id="typische-fragen-und-fehler">Typische Fragen und Fehler</h2>
-<h3 id="tool-call-scheitert"><code>tool call</code> scheitert</h3>
+<h2 id="schritt-3-seed-lokal-ausfuehren">Schritt 3: Seed lokal ausfuehren</h2>
+<pre><code class="language-powershell">blob exec .\calc.nsblob.json</code></pre>
+<h2 id="schritt-4-ns-datei-als-seed-kapseln">Schritt 4: <code>.ns</code>-Datei als Seed kapseln</h2>
+<p>Lege zuerst eine kleine Datei an:</p>
+<pre><code class="language-powershell">@&#x27;
+flow hello {
+  system.log &quot;hello from blob&quot; -&gt; out
+}
+&#x27;@ | Set-Content .\hello_blob.ns</code></pre>
+<p>Dann:</p>
+<pre><code class="language-powershell">blob pack .\hello_blob.ns --type ns --output .\hello_blob.nsblob.json
+blob exec .\hello_blob.nsblob.json</code></pre>
+<h2 id="schritt-5-seed-direkt-in-ns-nutzen">Schritt 5: Seed direkt in <code>.ns</code> nutzen</h2>
+<pre><code class="language-powershell">@&#x27;
+flow inspect_blob {
+  blob.verify &quot;.\\hello_blob.nsblob.json&quot; -&gt; verified
+  blob.unpack &quot;.\\hello_blob.nsblob.json&quot; -&gt; unpacked
+}
+&#x27;@ | Set-Content .\blob_runtime.ns
+
+ns.graph .\blob_runtime.ns
+ns.run .\blob_runtime.ns</code></pre>
+<h2 id="schritt-6-seed-ueber-mesh-laufen-lassen">Schritt 6: Seed ueber Mesh laufen lassen</h2>
+<pre><code class="language-powershell">mesh start-worker --caps cpu,py
+blob mesh-run cpu .\hello_blob.nsblob.json</code></pre>
+<h2 id="woran-man-erfolg-erkennt">Woran man Erfolg erkennt</h2>
 <ul>
-<li>Ein Pflichtfeld im Schema fehlt.</li>
-<li>Die Pipeline ist syntaktisch fehlerhaft.</li>
-<li>Der Template-Platzhalter passt nicht zum Eingabenamen.</li>
+<li><code>blob verify</code> liefert <code>verified: true</code></li>
+<li><code>blob exec</code> liefert eine sinnvolle Ausgabe</li>
+<li><code>blob mesh-run</code> liefert <code>worker_url</code>, <code>command</code> und das entfernte Ergebnis</li>
+<li><code>ns.run</code> mit <code>blob.verify</code> oder <code>blob.exec</code> schreibt die erwarteten Flow-Outputs</li>
 </ul>
+<h2 id="typische-probleme">Typische Probleme</h2>
+<h3 id="blob-exec-meldet-hash-fehler"><code>blob.exec</code> meldet Hash-Fehler</h3>
+<p>Dann ist der Seed veraendert oder beschaedigt. Packe ihn neu.</p>
+<h3 id="blob-exec-fuer-ns-scheitert"><code>blob.exec</code> fuer <code>ns</code> scheitert</h3>
+<p>Dann ist der Seed-Inhalt vermutlich kein deklaratives Nova-Programm.</p>
+<h3 id="blob-mesh-run-findet-keinen-worker"><code>blob mesh-run</code> findet keinen Worker</h3>
+<p>Dann fehlt ein passender Worker fuer die angeforderte Capability.</p>
 <h2 id="verwandte-seiten">Verwandte Seiten</h2>
 <ul>
+<li><a href="NSBlobGenerator.html">NSBlobGenerator</a></li>
 <li><a href="NovaCLI.html">NovaCLI</a></li>
-<li><a href="NovaPlanner.html">NovaPlanner</a></li>
-<li><a href="AgentsAndKnowledge.html">AgentsAndKnowledge</a></li>
-<li><a href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
+<li><a href="NovaRuntime.html">NovaRuntime</a></li>
+<li><a href="ZeroCopyFederatedLearningMesh.html">ZeroCopyFederatedLearningMesh</a></li>
 </ul>
         </article>
         <aside class="wiki-toc">
           <div class="wiki-toc-card"><h2>On this page</h2><ul>
-<li class="wiki-toc-link"><a href="#zweck">Zweck</a></li>
-<li class="wiki-toc-link"><a href="#kernpunkte">Kernpunkte</a></li>
-<li class="wiki-toc-link"><a href="#praktische-nutzung">Praktische Nutzung</a></li>
-<li class="wiki-toc-link"><a href="#testbare-einstiege">Testbare Einstiege</a></li>
-<li class="wiki-toc-link level-3"><a href="#ein-tool-definieren-und-ausfuehren">Ein Tool definieren und ausfuehren</a></li>
-<li class="wiki-toc-link"><a href="#typische-fragen-und-fehler">Typische Fragen und Fehler</a></li>
-<li class="wiki-toc-link level-3"><a href="#tool-call-scheitert">`tool call` scheitert</a></li>
+<li class="wiki-toc-link"><a href="#ziel">Ziel</a></li>
+<li class="wiki-toc-link"><a href="#schritt-1-einfachen-python-seed-bauen">Schritt 1: Einfachen Python-Seed bauen</a></li>
+<li class="wiki-toc-link"><a href="#schritt-2-seed-verifizieren">Schritt 2: Seed verifizieren</a></li>
+<li class="wiki-toc-link"><a href="#schritt-3-seed-lokal-ausfuehren">Schritt 3: Seed lokal ausfuehren</a></li>
+<li class="wiki-toc-link"><a href="#schritt-4-ns-datei-als-seed-kapseln">Schritt 4: `.ns`-Datei als Seed kapseln</a></li>
+<li class="wiki-toc-link"><a href="#schritt-5-seed-direkt-in-ns-nutzen">Schritt 5: Seed direkt in `.ns` nutzen</a></li>
+<li class="wiki-toc-link"><a href="#schritt-6-seed-ueber-mesh-laufen-lassen">Schritt 6: Seed ueber Mesh laufen lassen</a></li>
+<li class="wiki-toc-link"><a href="#woran-man-erfolg-erkennt">Woran man Erfolg erkennt</a></li>
+<li class="wiki-toc-link"><a href="#typische-probleme">Typische Probleme</a></li>
+<li class="wiki-toc-link level-3"><a href="#blob-exec-meldet-hash-fehler">`blob.exec` meldet Hash-Fehler</a></li>
+<li class="wiki-toc-link level-3"><a href="#blob-exec-fuer-ns-scheitert">`blob.exec` fuer `ns` scheitert</a></li>
+<li class="wiki-toc-link level-3"><a href="#blob-mesh-run-findet-keinen-worker">`blob mesh-run` findet keinen Worker</a></li>
 <li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
 </ul></div>
         </aside>
@@ -189,7 +227,7 @@ tool show greet</code></pre>
   </div>
   <script>
     window.NOVA_WIKI = {
-      currentPage: "NovaTools.html",
+      currentPage: "TutorialBlobSeeds.html",
       searchIndex: "assets/search-index.json"
     };
   </script>

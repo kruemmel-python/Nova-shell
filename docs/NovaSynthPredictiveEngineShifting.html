@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="Nova-shell wiki builder">
-  <title>Nova Tools | Nova-shell Wiki</title>
+  <title>NovaSynth Predictive Engine-Shifting | Nova-shell Wiki</title>
   <link rel="stylesheet" href="assets/wiki.css">
 </head>
 <body>
@@ -41,7 +41,7 @@
 <li><a class="wiki-nav-link" data-nav-href="APIReference.html" href="APIReference.html">APIReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ExamplesAndRecipes.html" href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NSBlobGenerator.html" href="NSBlobGenerator.html">NSBlobGenerator</a></li>
-<li><a class="wiki-nav-link" data-nav-href="NovaSynthPredictiveEngineShifting.html" href="NovaSynthPredictiveEngineShifting.html">NovaSynthPredictiveEngineShifting</a></li>
+<li><a class="wiki-nav-link active" data-nav-href="NovaSynthPredictiveEngineShifting.html" href="NovaSynthPredictiveEngineShifting.html">NovaSynthPredictiveEngineShifting</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ZeroCopyFederatedLearningMesh.html" href="ZeroCopyFederatedLearningMesh.html">ZeroCopyFederatedLearningMesh</a></li>
 <li><a class="wiki-nav-link" data-nav-href="MyceliaAtheriaCoEvolution.html" href="MyceliaAtheriaCoEvolution.html">MyceliaAtheriaCoEvolution</a></li>
 <li><a class="wiki-nav-link" data-nav-href="WatchMonitor.html" href="WatchMonitor.html">WatchMonitor</a></li>
@@ -83,12 +83,12 @@
 <li><a class="wiki-nav-link" data-nav-href="NovaAgents.html" href="NovaAgents.html">NovaAgents</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaMesh.html" href="NovaMesh.html">NovaMesh</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NSBlobGenerator.html" href="NSBlobGenerator.html">NSBlobGenerator</a></li>
-<li><a class="wiki-nav-link" data-nav-href="NovaSynthPredictiveEngineShifting.html" href="NovaSynthPredictiveEngineShifting.html">NovaSynthPredictiveEngineShifting</a></li>
+<li><a class="wiki-nav-link active" data-nav-href="NovaSynthPredictiveEngineShifting.html" href="NovaSynthPredictiveEngineShifting.html">NovaSynthPredictiveEngineShifting</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ZeroCopyFederatedLearningMesh.html" href="ZeroCopyFederatedLearningMesh.html">ZeroCopyFederatedLearningMesh</a></li>
 <li><a class="wiki-nav-link" data-nav-href="MyceliaAtheriaCoEvolution.html" href="MyceliaAtheriaCoEvolution.html">MyceliaAtheriaCoEvolution</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaSensors.html" href="NovaSensors.html">NovaSensors</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaMemory.html" href="NovaMemory.html">NovaMemory</a></li>
-<li><a class="wiki-nav-link active" data-nav-href="NovaTools.html" href="NovaTools.html">NovaTools</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaTools.html" href="NovaTools.html">NovaTools</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Entwicklung und Betrieb</h2>
@@ -124,60 +124,167 @@
         <button type="button" class="wiki-nav-toggle" data-nav-toggle>Menu</button>
         <div class="wiki-header-copy">
           <span class="wiki-kicker">Nova-shell Documentation</span>
-          <h1>Nova Tools</h1>
-          <p>Source: NovaTools.md</p>
+          <h1>NovaSynth Predictive Engine-Shifting</h1>
+          <p>Source: NovaSynthPredictiveEngineShifting.md</p>
         </div>
       </header>
       <div class="wiki-layout">
         <article class="wiki-article">
-          <h1 id="nova-tools">Nova Tools</h1>
+          <h1 id="novasynth-predictive-engine-shifting">NovaSynth Predictive Engine-Shifting</h1>
 <h2 id="zweck">Zweck</h2>
-<p>Tools sind strukturierte, benannte Operationen mit Eingabeschema und Pipeline-Template. Sie sind der sauberste Weg, wiederverwendbare Shell-Operationen bereitzustellen.</p>
-<h2 id="kernpunkte">Kernpunkte</h2>
+<p>NovaSynth Predictive Engine-Shifting erweitert Nova-shell um eine vorausschauende Engine-Wahl. Statt Workloads nur statisch oder rein heuristisch zwischen <code>py</code>, <code>cpp</code>, <code>gpu</code> und <code>mesh</code> zu verschieben, nutzt der Shifter Telemetrie, Atheria-Signale und Prognosen aus dem Atheria-Landscape-Projector.</p>
+<p>Das Ziel ist nicht nur Reaktion auf Last, sondern proaktive Migration:</p>
 <ul>
-<li>Ein Tool besitzt Name, Beschreibung, Schema und Pipeline.</li>
-<li>Tools koennen direkt aus der Shell oder indirekt aus Agent- und Plannerpfaden genutzt werden.</li>
-<li>Tools bilden eine Schicht zwischen Promptlogik und konkreter Kommandokette.</li>
+<li>Python nach <code>cpp</code>, wenn Schleifen- und Interpreterkosten dominieren</li>
+<li>numerische Workloads nach <code>gpu</code>, bevor die lokale CPU kippt</li>
+<li>trainings- oder batchlastige Aufgaben nach <code>mesh</code>, wenn Druck und Latenz steigen</li>
 </ul>
-<h2 id="praktische-nutzung">Praktische Nutzung</h2>
+<h2 id="kernobjekte">Kernobjekte</h2>
+<table><thead><tr>
+<th>Objekt</th>
+<th>Rolle</th>
+</tr></thead><tbody>
+<tr>
+<td><code>PredictiveEngineShifter</code></td>
+<td>sammelt Telemetrie, erzeugt Forecasts und empfiehlt Engines</td>
+</tr>
+<tr>
+<td><code>PredictiveTelemetryEvent</code></td>
+<td>normiertes Telemetrieereignis pro Stage-Ausfuehrung</td>
+</tr>
+<tr>
+<td><code>NovaOptimizer</code></td>
+<td>einfache Heuristikschicht, deren Scores in den Predictive-Pfad einfliessen</td>
+</tr>
+<tr>
+<td><code>NovaSynth</code></td>
+<td>CLI-Einstieg fuer <code>synth forecast</code> und <code>synth shift</code></td>
+</tr>
+<tr>
+<td><code>MarketLandscapeFutureProjector</code></td>
+<td>Atheria-basierter Forecast-Kern fuer Stress- und Szenarioprojektionen</td>
+</tr>
+</tbody></table>
+<h2 id="datenfluss">Datenfluss</h2>
+<pre><code class="language-text">Stage execution
+  -&gt;
+telemetry event
+  -&gt;
+PredictiveEngineShifter.record_event()
+  -&gt;
+Atheria projector forecast
+  -&gt;
+pressure index + scenario probabilities
+  -&gt;
+engine recommendation
+  -&gt;
+delegated command (py/cpp/gpu/mesh)</code></pre>
+<h2 id="cli">CLI</h2>
+<h3 id="forecast-erzeugen">Forecast erzeugen</h3>
+<pre><code class="language-powershell">synth forecast</code></pre>
+<p>Typischer Zweck:</p>
 <ul>
-<li>Registriere kleine, stabile Operationen als Tool statt sie jedes Mal neu zu tippen.</li>
-<li>Halte Schemata eng, damit <code>tool call</code> frueh auf fehlende Argumente pruefen kann.</li>
+<li>Lastentwicklung ansehen</li>
+<li>Prognosequalitaet pruefen</li>
+<li>verstehen, warum Nova-shell auf <code>cpp</code>, <code>gpu</code> oder <code>mesh</code> umschalten will</li>
 </ul>
-<h2 id="testbare-einstiege">Testbare Einstiege</h2>
-<h3 id="ein-tool-definieren-und-ausfuehren">Ein Tool definieren und ausfuehren</h3>
-<pre><code class="language-powershell">tool register greet --description &quot;Greet user&quot; --schema &quot;{\&quot;type\&quot;:\&quot;object\&quot;,\&quot;properties\&quot;:{\&quot;name\&quot;:{\&quot;type\&quot;:\&quot;string\&quot;}},\&quot;required\&quot;:[\&quot;name\&quot;]}&quot; --pipeline &quot;py \&quot;Hello \&quot; + {{py:name}}&quot;
-tool call greet name=Nova
-tool show greet</code></pre>
+<h3 id="engine-empfehlung-fuer-einen-codepfad">Engine-Empfehlung fuer einen Codepfad</h3>
+<pre><code class="language-powershell">synth shift suggest &quot;for item in rows: total += item&quot;</code></pre>
+<p>Typisches Ergebnis:</p>
+<pre><code class="language-json">{
+  &quot;engine&quot;: &quot;cpp&quot;,
+  &quot;pressure_index&quot;: 0.83,
+  &quot;predictability_index&quot;: 0.41,
+  &quot;delegated_command&quot;: &quot;cpp.expr ...&quot;,
+  &quot;migration_kind&quot;: &quot;python_to_cpp_expr&quot;
+}</code></pre>
+<h3 id="delegierten-pfad-direkt-ausfuehren">Delegierten Pfad direkt ausfuehren</h3>
+<pre><code class="language-powershell">synth shift run &quot;for item in rows: total += item&quot;</code></pre>
+<p>Das fuehrt nicht blind Python aus, sondern den von NovaSynth empfohlenen Zielpfad.</p>
+<h2 id="testbare-beispiele">Testbare Beispiele</h2>
+<h3 id="1-forecast-mit-kuenstlich-erhitzter-telemetrie">1. Forecast mit kuenstlich erhitzter Telemetrie</h3>
+<pre><code class="language-powershell">py 1 + 1
+py 2 + 1
+py 3 + 1
+synth forecast</code></pre>
+<p>Wirklich aussagekraeftig wird der Forecast erst nach mehreren Events.</p>
+<h3 id="2-loop-heavy-python-nach-c-kippen-lassen">2. Loop-heavy Python nach C++ kippen lassen</h3>
+<pre><code class="language-powershell">synth shift suggest &quot;for item in rows: total += item&quot;</code></pre>
 <p>Erwartung:</p>
 <ul>
-<li>Der Aufruf liefert <code>Hello Nova</code>.</li>
-<li>Die Tooldefinition bleibt ueber <code>tool show</code> inspizierbar.</li>
+<li><code>engine</code> ist eher <code>cpp</code> oder bei hoher Last <code>mesh</code></li>
+<li><code>reasons</code> enthaelt Hinweise wie <code>loop-heavy workload favors compiled execution</code></li>
 </ul>
-<h2 id="typische-fragen-und-fehler">Typische Fragen und Fehler</h2>
-<h3 id="tool-call-scheitert"><code>tool call</code> scheitert</h3>
+<h3 id="3-numerischen-pfad-auf-gpu-oder-mesh-lenken">3. Numerischen Pfad auf GPU oder Mesh lenken</h3>
+<pre><code class="language-powershell">synth shift suggest &quot;matrix multiply tensor embedding fft&quot;</code></pre>
+<p>Erwartung:</p>
 <ul>
-<li>Ein Pflichtfeld im Schema fehlt.</li>
-<li>Die Pipeline ist syntaktisch fehlerhaft.</li>
-<li>Der Template-Platzhalter passt nicht zum Eingabenamen.</li>
+<li>bei verfuegbarer GPU: <code>gpu</code></li>
+<li>ohne lokale GPU, aber mit passenden Workern: <code>mesh</code></li>
 </ul>
+<h2 id="persistierte-artefakte">Persistierte Artefakte</h2>
+<p>Der Predictive-Pfad schreibt unter Atherias Storage-Root in:</p>
+<ul>
+<li><code>.nova/predictive-engine-telemetry.jsonl</code></li>
+<li><code>.nova/predictive-engine-status.json</code></li>
+</ul>
+<p>Damit bleibt der Forecast ueber Shell-Lebenszyklen hinweg warm.</p>
+<h2 id="designentscheidungen">Designentscheidungen</h2>
+<h3 id="warum-forecast-statt-nur-heuristiken">Warum Forecast statt nur Heuristiken?</h3>
+<p>Heuristiken erkennen Muster im Code. Forecasts erkennen zusaetzlich, ob das System in Richtung Engpass, Ueberhitzung oder Spannungsanstieg driftet.</p>
+<h3 id="warum-atheria-als-forecast-kern">Warum Atheria als Forecast-Kern?</h3>
+<p>Die Atheria-Projector-Schicht ist bereits auf zeitliche Landschaftsprognosen ausgelegt. Hier wird sie nicht fuer Maerkte, sondern fuer interne Runtime-Telemetrie genutzt.</p>
+<h3 id="warum-nicht-immer-direkt-auf-mesh">Warum nicht immer direkt auf <code>mesh</code>?</h3>
+<p>Mesh-Offloading ist nicht kostenlos. Der Shifter gewichtet deshalb:</p>
+<ul>
+<li>Druck</li>
+<li>Vorhersagequalitaet</li>
+<li>Workload-Signatur</li>
+<li>lokale Verfuegbarkeit von GPU und Workern</li>
+</ul>
+<h2 id="typische-fehler-und-fragen">Typische Fehler und Fragen</h2>
+<h3 id="warum-bleibt-der-forecast-auf-insufficient-history">Warum bleibt der Forecast auf <code>insufficient_history</code>?</h3>
+<p>Dann wurden noch zu wenige Telemetrieevents gesammelt. Fuehre zuerst einige reale <code>py</code>, <code>cpp</code> oder <code>gpu</code>-Stages aus und pruefe dann erneut mit:</p>
+<pre><code class="language-powershell">synth forecast</code></pre>
+<h3 id="warum-wird-kein-gpu-vorgeschlagen">Warum wird kein <code>gpu</code> vorgeschlagen?</h3>
+<p>Weil entweder:</p>
+<ul>
+<li>keine GPU verfuegbar ist</li>
+<li>die Signatur nicht numerisch genug ist</li>
+<li>oder der Mesh-/C++-Pfad unter den aktuellen Druckwerten sinnvoller ist</li>
+</ul>
+<h3 id="wo-sehe-ich-den-delegierten-zielpfad">Wo sehe ich den delegierten Zielpfad?</h3>
+<p>Im Rueckgabefeld <code>delegated_command</code>. Das ist der Pfad, den <code>synth shift run</code> anschliessend wirklich benutzt.</p>
 <h2 id="verwandte-seiten">Verwandte Seiten</h2>
 <ul>
-<li><a href="NovaCLI.html">NovaCLI</a></li>
-<li><a href="NovaPlanner.html">NovaPlanner</a></li>
-<li><a href="AgentsAndKnowledge.html">AgentsAndKnowledge</a></li>
+<li><a href="NovaRuntime.html">NovaRuntime</a></li>
+<li><a href="NovaMesh.html">NovaMesh</a></li>
+<li><a href="OperationsAndObservability.html">OperationsAndObservability</a></li>
 <li><a href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
 </ul>
         </article>
         <aside class="wiki-toc">
           <div class="wiki-toc-card"><h2>On this page</h2><ul>
 <li class="wiki-toc-link"><a href="#zweck">Zweck</a></li>
-<li class="wiki-toc-link"><a href="#kernpunkte">Kernpunkte</a></li>
-<li class="wiki-toc-link"><a href="#praktische-nutzung">Praktische Nutzung</a></li>
-<li class="wiki-toc-link"><a href="#testbare-einstiege">Testbare Einstiege</a></li>
-<li class="wiki-toc-link level-3"><a href="#ein-tool-definieren-und-ausfuehren">Ein Tool definieren und ausfuehren</a></li>
-<li class="wiki-toc-link"><a href="#typische-fragen-und-fehler">Typische Fragen und Fehler</a></li>
-<li class="wiki-toc-link level-3"><a href="#tool-call-scheitert">`tool call` scheitert</a></li>
+<li class="wiki-toc-link"><a href="#kernobjekte">Kernobjekte</a></li>
+<li class="wiki-toc-link"><a href="#datenfluss">Datenfluss</a></li>
+<li class="wiki-toc-link"><a href="#cli">CLI</a></li>
+<li class="wiki-toc-link level-3"><a href="#forecast-erzeugen">Forecast erzeugen</a></li>
+<li class="wiki-toc-link level-3"><a href="#engine-empfehlung-fuer-einen-codepfad">Engine-Empfehlung fuer einen Codepfad</a></li>
+<li class="wiki-toc-link level-3"><a href="#delegierten-pfad-direkt-ausfuehren">Delegierten Pfad direkt ausfuehren</a></li>
+<li class="wiki-toc-link"><a href="#testbare-beispiele">Testbare Beispiele</a></li>
+<li class="wiki-toc-link level-3"><a href="#1-forecast-mit-kuenstlich-erhitzter-telemetrie">1. Forecast mit kuenstlich erhitzter Telemetrie</a></li>
+<li class="wiki-toc-link level-3"><a href="#2-loop-heavy-python-nach-c-kippen-lassen">2. Loop-heavy Python nach C++ kippen lassen</a></li>
+<li class="wiki-toc-link level-3"><a href="#3-numerischen-pfad-auf-gpu-oder-mesh-lenken">3. Numerischen Pfad auf GPU oder Mesh lenken</a></li>
+<li class="wiki-toc-link"><a href="#persistierte-artefakte">Persistierte Artefakte</a></li>
+<li class="wiki-toc-link"><a href="#designentscheidungen">Designentscheidungen</a></li>
+<li class="wiki-toc-link level-3"><a href="#warum-forecast-statt-nur-heuristiken">Warum Forecast statt nur Heuristiken?</a></li>
+<li class="wiki-toc-link level-3"><a href="#warum-atheria-als-forecast-kern">Warum Atheria als Forecast-Kern?</a></li>
+<li class="wiki-toc-link level-3"><a href="#warum-nicht-immer-direkt-auf-mesh">Warum nicht immer direkt auf `mesh`?</a></li>
+<li class="wiki-toc-link"><a href="#typische-fehler-und-fragen">Typische Fehler und Fragen</a></li>
+<li class="wiki-toc-link level-3"><a href="#warum-bleibt-der-forecast-auf-insufficient-history">Warum bleibt der Forecast auf `insufficient_history`?</a></li>
+<li class="wiki-toc-link level-3"><a href="#warum-wird-kein-gpu-vorgeschlagen">Warum wird kein `gpu` vorgeschlagen?</a></li>
+<li class="wiki-toc-link level-3"><a href="#wo-sehe-ich-den-delegierten-zielpfad">Wo sehe ich den delegierten Zielpfad?</a></li>
 <li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
 </ul></div>
         </aside>
@@ -189,7 +296,7 @@ tool show greet</code></pre>
   </div>
   <script>
     window.NOVA_WIKI = {
-      currentPage: "NovaTools.html",
+      currentPage: "NovaSynthPredictiveEngineShifting.html",
       searchIndex: "assets/search-index.json"
     };
   </script>

@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="Nova-shell wiki builder">
-  <title>Nova Tools | Nova-shell Wiki</title>
+  <title>NS Blob Generator | Nova-shell Wiki</title>
   <link rel="stylesheet" href="assets/wiki.css">
 </head>
 <body>
@@ -40,7 +40,7 @@
 <li><a class="wiki-nav-link" data-nav-href="ShellCommandReference.html" href="ShellCommandReference.html">ShellCommandReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="APIReference.html" href="APIReference.html">APIReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ExamplesAndRecipes.html" href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
-<li><a class="wiki-nav-link" data-nav-href="NSBlobGenerator.html" href="NSBlobGenerator.html">NSBlobGenerator</a></li>
+<li><a class="wiki-nav-link active" data-nav-href="NSBlobGenerator.html" href="NSBlobGenerator.html">NSBlobGenerator</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaSynthPredictiveEngineShifting.html" href="NovaSynthPredictiveEngineShifting.html">NovaSynthPredictiveEngineShifting</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ZeroCopyFederatedLearningMesh.html" href="ZeroCopyFederatedLearningMesh.html">ZeroCopyFederatedLearningMesh</a></li>
 <li><a class="wiki-nav-link" data-nav-href="MyceliaAtheriaCoEvolution.html" href="MyceliaAtheriaCoEvolution.html">MyceliaAtheriaCoEvolution</a></li>
@@ -82,13 +82,13 @@
 <ul>
 <li><a class="wiki-nav-link" data-nav-href="NovaAgents.html" href="NovaAgents.html">NovaAgents</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaMesh.html" href="NovaMesh.html">NovaMesh</a></li>
-<li><a class="wiki-nav-link" data-nav-href="NSBlobGenerator.html" href="NSBlobGenerator.html">NSBlobGenerator</a></li>
+<li><a class="wiki-nav-link active" data-nav-href="NSBlobGenerator.html" href="NSBlobGenerator.html">NSBlobGenerator</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaSynthPredictiveEngineShifting.html" href="NovaSynthPredictiveEngineShifting.html">NovaSynthPredictiveEngineShifting</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ZeroCopyFederatedLearningMesh.html" href="ZeroCopyFederatedLearningMesh.html">ZeroCopyFederatedLearningMesh</a></li>
 <li><a class="wiki-nav-link" data-nav-href="MyceliaAtheriaCoEvolution.html" href="MyceliaAtheriaCoEvolution.html">MyceliaAtheriaCoEvolution</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaSensors.html" href="NovaSensors.html">NovaSensors</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaMemory.html" href="NovaMemory.html">NovaMemory</a></li>
-<li><a class="wiki-nav-link active" data-nav-href="NovaTools.html" href="NovaTools.html">NovaTools</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaTools.html" href="NovaTools.html">NovaTools</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Entwicklung und Betrieb</h2>
@@ -124,60 +124,165 @@
         <button type="button" class="wiki-nav-toggle" data-nav-toggle>Menu</button>
         <div class="wiki-header-copy">
           <span class="wiki-kicker">Nova-shell Documentation</span>
-          <h1>Nova Tools</h1>
-          <p>Source: NovaTools.md</p>
+          <h1>NS Blob Generator</h1>
+          <p>Source: NSBlobGenerator.md</p>
         </div>
       </header>
       <div class="wiki-layout">
         <article class="wiki-article">
-          <h1 id="nova-tools">Nova Tools</h1>
+          <h1 id="ns-blob-generator">NS Blob Generator</h1>
 <h2 id="zweck">Zweck</h2>
-<p>Tools sind strukturierte, benannte Operationen mit Eingabeschema und Pipeline-Template. Sie sind der sauberste Weg, wiederverwendbare Shell-Operationen bereitzustellen.</p>
-<h2 id="kernpunkte">Kernpunkte</h2>
+<p>Der NS Blob Generator kapselt Nova-shell-Logik und Daten in ein kompaktes, verifizierbares Seed-Format. Er ist kein bloßer Kompressor, sondern ein Transport- und Rehydrierungspfad fuer:</p>
 <ul>
-<li>Ein Tool besitzt Name, Beschreibung, Schema und Pipeline.</li>
-<li>Tools koennen direkt aus der Shell oder indirekt aus Agent- und Plannerpfaden genutzt werden.</li>
-<li>Tools bilden eine Schicht zwischen Promptlogik und konkreter Kommandokette.</li>
+<li>mobile <code>.ns</code>-Programme</li>
+<li>eingebettete Python-Logik</li>
+<li>kompakte Text- oder Binaerartefakte</li>
+<li>verifizierbare Mesh-Transfers</li>
 </ul>
-<h2 id="praktische-nutzung">Praktische Nutzung</h2>
+<p>Das Format ist auf drei konkrete Vorteile ausgelegt:</p>
 <ul>
-<li>Registriere kleine, stabile Operationen als Tool statt sie jedes Mal neu zu tippen.</li>
-<li>Halte Schemata eng, damit <code>tool call</code> frueh auf fehlende Argumente pruefen kann.</li>
+<li>geringere Transport- und Speicherlast</li>
+<li>Integritaetspruefung vor der Ausfuehrung</li>
+<li>direkte Wiederverwendung in CLI, Mesh und deklarativer Runtime</li>
 </ul>
-<h2 id="testbare-einstiege">Testbare Einstiege</h2>
-<h3 id="ein-tool-definieren-und-ausfuehren">Ein Tool definieren und ausfuehren</h3>
-<pre><code class="language-powershell">tool register greet --description &quot;Greet user&quot; --schema &quot;{\&quot;type\&quot;:\&quot;object\&quot;,\&quot;properties\&quot;:{\&quot;name\&quot;:{\&quot;type\&quot;:\&quot;string\&quot;}},\&quot;required\&quot;:[\&quot;name\&quot;]}&quot; --pipeline &quot;py \&quot;Hello \&quot; + {{py:name}}&quot;
-tool call greet name=Nova
-tool show greet</code></pre>
+<h2 id="kernobjekte">Kernobjekte</h2>
+<table><thead><tr>
+<th>Objekt</th>
+<th>Rolle</th>
+</tr></thead><tbody>
+<tr>
+<td><code>NovaBlobGenerator</code></td>
+<td>erzeugt, schreibt, laedt, verifiziert und rehydriert Seeds</td>
+</tr>
+<tr>
+<td><code>NovaBlobSeed</code></td>
+<td>normierte Seed-Struktur mit Hashes, Metadaten und Payload</td>
+</tr>
+<tr>
+<td><code>INLINE_BLOB_PREFIX</code></td>
+<td>Prefix <code>nsblob:</code> fuer inline transportierbare Seeds</td>
+</tr>
+<tr>
+<td><code>blob</code></td>
+<td>Shell-Kommando fuer Pack, Verify, Unpack, Exec und Mesh-Run</td>
+</tr>
+</tbody></table>
+<h2 id="architektur">Architektur</h2>
+<pre><code class="language-text">source file or inline text
+  -&gt;
+zlib compression
+  -&gt;
+base64url encoding
+  -&gt;
+NovaBlobSeed
+  -&gt;
+verify / unpack / exec / mesh-run</code></pre>
+<h2 id="integritaet">Integritaet</h2>
+<p>Jeder Seed traegt:</p>
+<ul>
+<li><code>sha256</code> des Originalinhalts</li>
+<li><code>compressed_sha256</code> des komprimierten Payloads</li>
+<li>Groessen- und Metadaten</li>
+</ul>
+<p>Nova-shell kann damit vor jeder Rehydrierung pruefen, ob ein Seed veraendert oder beschaedigt wurde.</p>
+<h2 id="cli">CLI</h2>
+<h3 id="datei-in-seed-umwandeln">Datei in Seed umwandeln</h3>
+<pre><code class="language-powershell">blob pack .\workflow.ns --output .\workflow.nsblob.json</code></pre>
+<h3 id="inline-seed-erzeugen">Inline-Seed erzeugen</h3>
+<pre><code class="language-powershell">blob inline .\workflow.nsblob.json</code></pre>
+<h3 id="seed-pruefen">Seed pruefen</h3>
+<pre><code class="language-powershell">blob verify .\workflow.nsblob.json</code></pre>
+<h3 id="seed-lokal-ausfuehren">Seed lokal ausfuehren</h3>
+<pre><code class="language-powershell">blob exec .\workflow.nsblob.json</code></pre>
+<h3 id="seed-auf-einen-worker-schicken">Seed auf einen Worker schicken</h3>
+<pre><code class="language-powershell">blob mesh-run cpu .\workflow.nsblob.json</code></pre>
+<h2 id="deklarative-runtime">Deklarative Runtime</h2>
+<p>Die Blob-Schicht ist auch direkt in der deklarativen Runtime verfuegbar:</p>
+<ul>
+<li><code>blob.verify</code></li>
+<li><code>blob.unpack</code></li>
+<li><code>blob.exec</code></li>
+</ul>
+<p>Beispiel:</p>
+<pre><code class="language-ns">flow inspect_blob {
+  blob.verify &quot;C:/project/workflow.nsblob.json&quot; -&gt; verified
+  blob.unpack &quot;C:/project/workflow.nsblob.json&quot; -&gt; unpacked
+}
+
+flow execute_blob {
+  blob.exec &quot;C:/project/workflow.nsblob.json&quot; -&gt; executed
+}</code></pre>
+<h2 id="testbare-beispiele">Testbare Beispiele</h2>
+<h3 id="1-python-expression-als-seed">1. Python-Expression als Seed</h3>
+<pre><code class="language-powershell">blob pack --text &quot;21 * 2&quot; --type py</code></pre>
+<p>Danach:</p>
+<pre><code class="language-powershell">blob exec-inline nsblob:...</code></pre>
 <p>Erwartung:</p>
 <ul>
-<li>Der Aufruf liefert <code>Hello Nova</code>.</li>
-<li>Die Tooldefinition bleibt ueber <code>tool show</code> inspizierbar.</li>
+<li>Ausgabe <code>42</code></li>
 </ul>
-<h2 id="typische-fragen-und-fehler">Typische Fragen und Fehler</h2>
-<h3 id="tool-call-scheitert"><code>tool call</code> scheitert</h3>
+<h3 id="2-ns-programm-als-seed">2. <code>.ns</code>-Programm als Seed</h3>
+<pre><code class="language-powershell">blob pack .\workflow.ns --type ns --output .\workflow.nsblob.json
+blob verify .\workflow.nsblob.json
+blob exec .\workflow.nsblob.json</code></pre>
+<h3 id="3-seed-ueber-mesh-transportieren">3. Seed ueber Mesh transportieren</h3>
+<pre><code class="language-powershell">mesh start-worker --caps cpu,py
+blob mesh-run cpu .\workflow.nsblob.json</code></pre>
+<h2 id="designentscheidungen">Designentscheidungen</h2>
+<h3 id="warum-zlib-und-base64url">Warum zlib und base64url?</h3>
+<p><code>zlib</code> bringt eine einfache, verlustfreie Dichteoptimierung. <code>base64url</code> macht den komprimierten Inhalt texttauglich fuer JSON, inline Strings und transportfreundliche Shell-Pfade.</p>
+<h3 id="warum-kein-blinder-binary-dump">Warum kein blinder Binary Dump?</h3>
+<p>Weil Nova-shell den Seed sowohl lokal in Dateien als auch inline in Kommandos, JSON-Payloads und Mesh-Requests transportieren koennen soll.</p>
+<h3 id="warum-seeds-statt-nur-pack-archive">Warum Seeds statt nur <code>pack</code>-Archive?</h3>
+<p><code>pack</code> erzeugt groessere Bundle-Artefakte fuer Distribution. Blob-Seeds sind dagegen kleine, schnell bewegliche Logik- und Transportkapseln fuer laufende Systeme.</p>
+<h2 id="typische-fehler-und-fragen">Typische Fehler und Fragen</h2>
+<h3 id="warum-scheitert-blob-exec">Warum scheitert <code>blob.exec</code>?</h3>
+<p>Typische Gruende:</p>
 <ul>
-<li>Ein Pflichtfeld im Schema fehlt.</li>
-<li>Die Pipeline ist syntaktisch fehlerhaft.</li>
-<li>Der Template-Platzhalter passt nicht zum Eingabenamen.</li>
+<li>Hash-Pruefung fehlgeschlagen</li>
+<li>Blob-Typ nicht ausfuehrbar</li>
+<li><code>ns</code>-Blob ist kein deklarativer Nova-Quelltext</li>
+</ul>
+<h3 id="wann-ist-blob-mesh-run-sinnvoll">Wann ist <code>blob mesh-run</code> sinnvoll?</h3>
+<p>Wenn Logik schnell auf einen Worker verschoben werden soll, ohne vorher Dateien, Verzeichnisstrukturen oder Installationen zu synchronisieren.</p>
+<h3 id="wo-liegen-seeds-standardmaessig">Wo liegen Seeds standardmaessig?</h3>
+<p>Unter Atherias/Nova-shells Storage-Root in:</p>
+<ul>
+<li><code>ns_blobs</code></li>
 </ul>
 <h2 id="verwandte-seiten">Verwandte Seiten</h2>
 <ul>
-<li><a href="NovaCLI.html">NovaCLI</a></li>
-<li><a href="NovaPlanner.html">NovaPlanner</a></li>
-<li><a href="AgentsAndKnowledge.html">AgentsAndKnowledge</a></li>
+<li><a href="NovaRuntime.html">NovaRuntime</a></li>
+<li><a href="NovaMesh.html">NovaMesh</a></li>
+<li><a href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
 <li><a href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
 </ul>
         </article>
         <aside class="wiki-toc">
           <div class="wiki-toc-card"><h2>On this page</h2><ul>
 <li class="wiki-toc-link"><a href="#zweck">Zweck</a></li>
-<li class="wiki-toc-link"><a href="#kernpunkte">Kernpunkte</a></li>
-<li class="wiki-toc-link"><a href="#praktische-nutzung">Praktische Nutzung</a></li>
-<li class="wiki-toc-link"><a href="#testbare-einstiege">Testbare Einstiege</a></li>
-<li class="wiki-toc-link level-3"><a href="#ein-tool-definieren-und-ausfuehren">Ein Tool definieren und ausfuehren</a></li>
-<li class="wiki-toc-link"><a href="#typische-fragen-und-fehler">Typische Fragen und Fehler</a></li>
-<li class="wiki-toc-link level-3"><a href="#tool-call-scheitert">`tool call` scheitert</a></li>
+<li class="wiki-toc-link"><a href="#kernobjekte">Kernobjekte</a></li>
+<li class="wiki-toc-link"><a href="#architektur">Architektur</a></li>
+<li class="wiki-toc-link"><a href="#integritaet">Integritaet</a></li>
+<li class="wiki-toc-link"><a href="#cli">CLI</a></li>
+<li class="wiki-toc-link level-3"><a href="#datei-in-seed-umwandeln">Datei in Seed umwandeln</a></li>
+<li class="wiki-toc-link level-3"><a href="#inline-seed-erzeugen">Inline-Seed erzeugen</a></li>
+<li class="wiki-toc-link level-3"><a href="#seed-pruefen">Seed pruefen</a></li>
+<li class="wiki-toc-link level-3"><a href="#seed-lokal-ausfuehren">Seed lokal ausfuehren</a></li>
+<li class="wiki-toc-link level-3"><a href="#seed-auf-einen-worker-schicken">Seed auf einen Worker schicken</a></li>
+<li class="wiki-toc-link"><a href="#deklarative-runtime">Deklarative Runtime</a></li>
+<li class="wiki-toc-link"><a href="#testbare-beispiele">Testbare Beispiele</a></li>
+<li class="wiki-toc-link level-3"><a href="#1-python-expression-als-seed">1. Python-Expression als Seed</a></li>
+<li class="wiki-toc-link level-3"><a href="#2-ns-programm-als-seed">2. `.ns`-Programm als Seed</a></li>
+<li class="wiki-toc-link level-3"><a href="#3-seed-ueber-mesh-transportieren">3. Seed ueber Mesh transportieren</a></li>
+<li class="wiki-toc-link"><a href="#designentscheidungen">Designentscheidungen</a></li>
+<li class="wiki-toc-link level-3"><a href="#warum-zlib-und-base64url">Warum zlib und base64url?</a></li>
+<li class="wiki-toc-link level-3"><a href="#warum-kein-blinder-binary-dump">Warum kein blinder Binary Dump?</a></li>
+<li class="wiki-toc-link level-3"><a href="#warum-seeds-statt-nur-pack-archive">Warum Seeds statt nur `pack`-Archive?</a></li>
+<li class="wiki-toc-link"><a href="#typische-fehler-und-fragen">Typische Fehler und Fragen</a></li>
+<li class="wiki-toc-link level-3"><a href="#warum-scheitert-blob-exec">Warum scheitert `blob.exec`?</a></li>
+<li class="wiki-toc-link level-3"><a href="#wann-ist-blob-mesh-run-sinnvoll">Wann ist `blob mesh-run` sinnvoll?</a></li>
+<li class="wiki-toc-link level-3"><a href="#wo-liegen-seeds-standardmaessig">Wo liegen Seeds standardmaessig?</a></li>
 <li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
 </ul></div>
         </aside>
@@ -189,7 +294,7 @@ tool show greet</code></pre>
   </div>
   <script>
     window.NOVA_WIKI = {
-      currentPage: "NovaTools.html",
+      currentPage: "NSBlobGenerator.html",
       searchIndex: "assets/search-index.json"
     };
   </script>

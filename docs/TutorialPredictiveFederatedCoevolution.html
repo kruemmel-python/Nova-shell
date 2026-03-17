@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="Nova-shell wiki builder">
-  <title>Nova Tools | Nova-shell Wiki</title>
+  <title>Tutorial Predictive, Federated and Co-Evolution | Nova-shell Wiki</title>
   <link rel="stylesheet" href="assets/wiki.css">
 </head>
 <body>
@@ -54,7 +54,7 @@
 <li><a class="wiki-nav-link" data-nav-href="TutorialMultiAgentCluster.html" href="TutorialMultiAgentCluster.html">TutorialMultiAgentCluster</a></li>
 <li><a class="wiki-nav-link" data-nav-href="TutorialLMStudioIntegration.html" href="TutorialLMStudioIntegration.html">TutorialLMStudioIntegration</a></li>
 <li><a class="wiki-nav-link" data-nav-href="TutorialBlobSeeds.html" href="TutorialBlobSeeds.html">TutorialBlobSeeds</a></li>
-<li><a class="wiki-nav-link" data-nav-href="TutorialPredictiveFederatedCoevolution.html" href="TutorialPredictiveFederatedCoevolution.html">TutorialPredictiveFederatedCoevolution</a></li>
+<li><a class="wiki-nav-link active" data-nav-href="TutorialPredictiveFederatedCoevolution.html" href="TutorialPredictiveFederatedCoevolution.html">TutorialPredictiveFederatedCoevolution</a></li>
 <li><a class="wiki-nav-link" data-nav-href="TutorialProjectWatchMonitor.html" href="TutorialProjectWatchMonitor.html">TutorialProjectWatchMonitor</a></li>
 </ul></section>
 <section class="wiki-nav-section">
@@ -88,7 +88,7 @@
 <li><a class="wiki-nav-link" data-nav-href="MyceliaAtheriaCoEvolution.html" href="MyceliaAtheriaCoEvolution.html">MyceliaAtheriaCoEvolution</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaSensors.html" href="NovaSensors.html">NovaSensors</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaMemory.html" href="NovaMemory.html">NovaMemory</a></li>
-<li><a class="wiki-nav-link active" data-nav-href="NovaTools.html" href="NovaTools.html">NovaTools</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaTools.html" href="NovaTools.html">NovaTools</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Entwicklung und Betrieb</h2>
@@ -124,60 +124,117 @@
         <button type="button" class="wiki-nav-toggle" data-nav-toggle>Menu</button>
         <div class="wiki-header-copy">
           <span class="wiki-kicker">Nova-shell Documentation</span>
-          <h1>Nova Tools</h1>
-          <p>Source: NovaTools.md</p>
+          <h1>Tutorial Predictive, Federated and Co-Evolution</h1>
+          <p>Source: TutorialPredictiveFederatedCoevolution.md</p>
         </div>
       </header>
       <div class="wiki-layout">
         <article class="wiki-article">
-          <h1 id="nova-tools">Nova Tools</h1>
-<h2 id="zweck">Zweck</h2>
-<p>Tools sind strukturierte, benannte Operationen mit Eingabeschema und Pipeline-Template. Sie sind der sauberste Weg, wiederverwendbare Shell-Operationen bereitzustellen.</p>
-<h2 id="kernpunkte">Kernpunkte</h2>
+          <h1 id="tutorial-predictive-federated-and-co-evolution">Tutorial Predictive, Federated and Co-Evolution</h1>
+<h2 id="ziel">Ziel</h2>
+<p>Dieses Tutorial fuehrt drei neue Nova-shell-Faehigkeiten als zusammenhaengenden Plattformpfad vor:</p>
+<ol>
+<li>Forecast-basierte Engine-Wahl</li>
+<li>Federated Invariant Sharing im Mesh</li>
+<li>Mycelia-Atheria Co-Evolution</li>
+</ol>
+<p>Am Ende hast du:</p>
 <ul>
-<li>Ein Tool besitzt Name, Beschreibung, Schema und Pipeline.</li>
-<li>Tools koennen direkt aus der Shell oder indirekt aus Agent- und Plannerpfaden genutzt werden.</li>
-<li>Tools bilden eine Schicht zwischen Promptlogik und konkreter Kommandokette.</li>
+<li>einen warmen Predictive-Telemetriezustand</li>
+<li>ein publiziertes Federated-Update</li>
+<li>eine Population, die auf Atheria-Signale mit Co-Evolution reagiert</li>
 </ul>
-<h2 id="praktische-nutzung">Praktische Nutzung</h2>
+<h2 id="voraussetzungen">Voraussetzungen</h2>
 <ul>
-<li>Registriere kleine, stabile Operationen als Tool statt sie jedes Mal neu zu tippen.</li>
-<li>Halte Schemata eng, damit <code>tool call</code> frueh auf fehlende Argumente pruefen kann.</li>
+<li>Nova-shell laeuft lokal</li>
+<li><code>doctor</code> sollte fuer die Kernkomponenten <code>ok</code> anzeigen</li>
+<li>optional: laufender Mesh-Worker fuer Broadcast-Tests</li>
 </ul>
-<h2 id="testbare-einstiege">Testbare Einstiege</h2>
-<h3 id="ein-tool-definieren-und-ausfuehren">Ein Tool definieren und ausfuehren</h3>
-<pre><code class="language-powershell">tool register greet --description &quot;Greet user&quot; --schema &quot;{\&quot;type\&quot;:\&quot;object\&quot;,\&quot;properties\&quot;:{\&quot;name\&quot;:{\&quot;type\&quot;:\&quot;string\&quot;}},\&quot;required\&quot;:[\&quot;name\&quot;]}&quot; --pipeline &quot;py \&quot;Hello \&quot; + {{py:name}}&quot;
-tool call greet name=Nova
-tool show greet</code></pre>
-<p>Erwartung:</p>
+<p>Pruefen:</p>
+<pre><code class="language-powershell">doctor</code></pre>
+<h2 id="schritt-1-predictive-telemetrie-aufbauen">Schritt 1: Predictive-Telemetrie aufbauen</h2>
+<p>Erzeuge zuerst einige echte Laufzeitereignisse:</p>
+<pre><code class="language-powershell">py 1 + 1
+py 2 + 1
+py 3 + 1
+py 4 + 1
+py 5 + 1</code></pre>
+<p>Wenn du moechtest, fuehre noch einige weitere <code>py</code>- oder <code>cpp</code>-Kommandos aus, damit der Forecast nicht nur Minimalhistorie sieht.</p>
+<h2 id="schritt-2-forecast-ansehen">Schritt 2: Forecast ansehen</h2>
+<pre><code class="language-powershell">synth forecast</code></pre>
+<p>Pruefe in der Ausgabe:</p>
 <ul>
-<li>Der Aufruf liefert <code>Hello Nova</code>.</li>
-<li>Die Tooldefinition bleibt ueber <code>tool show</code> inspizierbar.</li>
+<li><code>status</code></li>
+<li><code>engine_pressure</code></li>
+<li><code>projection</code></li>
+<li><code>sample_count</code></li>
 </ul>
-<h2 id="typische-fragen-und-fehler">Typische Fragen und Fehler</h2>
-<h3 id="tool-call-scheitert"><code>tool call</code> scheitert</h3>
+<h2 id="schritt-3-predictive-shift-testen">Schritt 3: Predictive Shift testen</h2>
+<pre><code class="language-powershell">synth shift suggest &quot;for item in rows: total += item&quot;</code></pre>
+<p>Wichtig sind:</p>
 <ul>
-<li>Ein Pflichtfeld im Schema fehlt.</li>
-<li>Die Pipeline ist syntaktisch fehlerhaft.</li>
-<li>Der Template-Platzhalter passt nicht zum Eingabenamen.</li>
+<li><code>engine</code></li>
+<li><code>reasons</code></li>
+<li><code>delegated_command</code></li>
 </ul>
+<p>Danach den delegierten Pfad wirklich ausfuehren:</p>
+<pre><code class="language-powershell">synth shift run &quot;for item in rows: total += item&quot;</code></pre>
+<h2 id="schritt-4-federated-update-publizieren">Schritt 4: Federated Update publizieren</h2>
+<p>Ohne Broadcast:</p>
+<pre><code class="language-powershell">mesh federated publish --statement &quot;New invariant for edge anomaly detection&quot; --namespace lab --project deco</code></pre>
+<p>Mit Broadcast:</p>
+<pre><code class="language-powershell">mesh federated publish --statement &quot;New invariant for edge anomaly detection&quot; --namespace lab --project deco --broadcast</code></pre>
+<p>Status und Historie pruefen:</p>
+<pre><code class="language-powershell">mesh federated status
+mesh federated history 5</code></pre>
+<h2 id="schritt-5-chronik-invariante-ins-mesh-heben">Schritt 5: Chronik-Invariante ins Mesh heben</h2>
+<pre><code class="language-powershell">mesh federated chronik-latest --namespace atheria --project deco --broadcast</code></pre>
+<p>Damit entsteht ein direkter Pfad von Atherias Resonanz-/Chronikzustand in den Federated-Mesh-Layer.</p>
+<h2 id="schritt-6-co-evolution-laufen-lassen">Schritt 6: Co-Evolution laufen lassen</h2>
+<pre><code class="language-powershell">mycelia coevolve run research-pop --cycles 3 --input &quot;edge inference pressure rises&quot;</code></pre>
+<p>Danach:</p>
+<pre><code class="language-powershell">mycelia coevolve status research-pop</code></pre>
+<p>Wenn du die Co-Evolution in einen normalen Population-Tick integrieren willst:</p>
+<pre><code class="language-powershell">mycelia population tick research-pop --cycles 3 --coevolve</code></pre>
+<h2 id="schritt-7-alles-zusammen-als-plattformmuster-denken">Schritt 7: Alles zusammen als Plattformmuster denken</h2>
+<p>Das Zusammenspiel sieht dann so aus:</p>
+<pre><code class="language-text">telemetry
+  -&gt; predictive forecast
+  -&gt; engine shift
+  -&gt; new invariant or report
+  -&gt; federated publish
+  -&gt; shared swarm memory
+  -&gt; coevolved agents and populations</code></pre>
+<h2 id="typische-beobachtungen">Typische Beobachtungen</h2>
+<h3 id="predictive-forecast-bleibt-konservativ">Predictive Forecast bleibt konservativ</h3>
+<p>Dann fehlt meist noch Telemetriehistorie oder die Vorhersagequalitaet ist bewusst niedrig.</p>
+<h3 id="federated-broadcast-zeigt-keine-anwendungen">Federated Broadcast zeigt keine Anwendungen</h3>
+<p>Dann ist kein passender Worker erreichbar oder der Broadcast wurde ohne aktive Gegenstelle ausgefuehrt.</p>
+<h3 id="co-evolution-liefert-wenig-aussagekraeftige-scores">Co-Evolution liefert wenig aussagekraeftige Scores</h3>
+<p>Dann ist das Eingangssignal zu schwach oder es fehlen verwertbare Forecast-/Tool-/Invariantdaten.</p>
 <h2 id="verwandte-seiten">Verwandte Seiten</h2>
 <ul>
-<li><a href="NovaCLI.html">NovaCLI</a></li>
-<li><a href="NovaPlanner.html">NovaPlanner</a></li>
-<li><a href="AgentsAndKnowledge.html">AgentsAndKnowledge</a></li>
+<li><a href="NovaSynthPredictiveEngineShifting.html">NovaSynthPredictiveEngineShifting</a></li>
+<li><a href="ZeroCopyFederatedLearningMesh.html">ZeroCopyFederatedLearningMesh</a></li>
+<li><a href="MyceliaAtheriaCoEvolution.html">MyceliaAtheriaCoEvolution</a></li>
 <li><a href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
 </ul>
         </article>
         <aside class="wiki-toc">
           <div class="wiki-toc-card"><h2>On this page</h2><ul>
-<li class="wiki-toc-link"><a href="#zweck">Zweck</a></li>
-<li class="wiki-toc-link"><a href="#kernpunkte">Kernpunkte</a></li>
-<li class="wiki-toc-link"><a href="#praktische-nutzung">Praktische Nutzung</a></li>
-<li class="wiki-toc-link"><a href="#testbare-einstiege">Testbare Einstiege</a></li>
-<li class="wiki-toc-link level-3"><a href="#ein-tool-definieren-und-ausfuehren">Ein Tool definieren und ausfuehren</a></li>
-<li class="wiki-toc-link"><a href="#typische-fragen-und-fehler">Typische Fragen und Fehler</a></li>
-<li class="wiki-toc-link level-3"><a href="#tool-call-scheitert">`tool call` scheitert</a></li>
+<li class="wiki-toc-link"><a href="#ziel">Ziel</a></li>
+<li class="wiki-toc-link"><a href="#voraussetzungen">Voraussetzungen</a></li>
+<li class="wiki-toc-link"><a href="#schritt-1-predictive-telemetrie-aufbauen">Schritt 1: Predictive-Telemetrie aufbauen</a></li>
+<li class="wiki-toc-link"><a href="#schritt-2-forecast-ansehen">Schritt 2: Forecast ansehen</a></li>
+<li class="wiki-toc-link"><a href="#schritt-3-predictive-shift-testen">Schritt 3: Predictive Shift testen</a></li>
+<li class="wiki-toc-link"><a href="#schritt-4-federated-update-publizieren">Schritt 4: Federated Update publizieren</a></li>
+<li class="wiki-toc-link"><a href="#schritt-5-chronik-invariante-ins-mesh-heben">Schritt 5: Chronik-Invariante ins Mesh heben</a></li>
+<li class="wiki-toc-link"><a href="#schritt-6-co-evolution-laufen-lassen">Schritt 6: Co-Evolution laufen lassen</a></li>
+<li class="wiki-toc-link"><a href="#schritt-7-alles-zusammen-als-plattformmuster-denken">Schritt 7: Alles zusammen als Plattformmuster denken</a></li>
+<li class="wiki-toc-link"><a href="#typische-beobachtungen">Typische Beobachtungen</a></li>
+<li class="wiki-toc-link level-3"><a href="#predictive-forecast-bleibt-konservativ">Predictive Forecast bleibt konservativ</a></li>
+<li class="wiki-toc-link level-3"><a href="#federated-broadcast-zeigt-keine-anwendungen">Federated Broadcast zeigt keine Anwendungen</a></li>
+<li class="wiki-toc-link level-3"><a href="#co-evolution-liefert-wenig-aussagekraeftige-scores">Co-Evolution liefert wenig aussagekraeftige Scores</a></li>
 <li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
 </ul></div>
         </aside>
@@ -189,7 +246,7 @@ tool show greet</code></pre>
   </div>
   <script>
     window.NOVA_WIKI = {
-      currentPage: "NovaTools.html",
+      currentPage: "TutorialPredictiveFederatedCoevolution.html",
       searchIndex: "assets/search-index.json"
     };
   </script>
