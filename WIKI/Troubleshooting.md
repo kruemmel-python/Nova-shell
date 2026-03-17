@@ -56,8 +56,15 @@ Diese beiden Befehle sollten fast immer zuerst laufen, bevor tiefer in Parser-, 
 - `wiki build` im Projektroot ausfuehren
 - bei Installer-Problemen Version und MSI-Stand pruefen
 
+## Watch Monitor zeigt keine Aenderungen oder keine AI-Bewertung
+
+Fuer den projektbezogenen Beobachter gibt es eine eigene Detailseite:
+
+- [WatchMonitorTroubleshooting](./WatchMonitorTroubleshooting.md)
+
 ## Verwandte Seiten
 
 - [Testing](./Testing.md)
 - [OperationsAndObservability](./OperationsAndObservability.md)
 - [NovaCLI](./NovaCLI.md)
+- [WatchMonitorTroubleshooting](./WatchMonitorTroubleshooting.md)

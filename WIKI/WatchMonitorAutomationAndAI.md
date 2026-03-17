@@ -123,6 +123,28 @@ $env:NOVA_PROJECT_MONITOR_AI_MODE = "atheria"
 ns.run nova_project_monitor.ns
 ```
 
+### LM Studio statt Atheria erzwingen
+
+In LM Studio:
+
+1. Modell laden
+2. Local Server starten
+3. OpenAI-kompatiblen Endpoint aktiv lassen
+
+Dann:
+
+```powershell
+$env:NOVA_PROJECT_MONITOR_AI_MODE = "lmstudio"
+$env:LM_STUDIO_BASE_URL = "http://127.0.0.1:1234/v1"
+$env:LM_STUDIO_MODEL = "qwen2.5-coder-7b-instruct"
+ns.run nova_project_monitor.ns
+```
+
+Wichtig:
+
+- `auto` wuerde bei lokaler Atheria-Verfuegbarkeit wieder Atheria bevorzugen
+- fuer LM Studio musst du also explizit `lmstudio` setzen
+
 ### OpenAI erzwingen
 
 ```powershell
@@ -136,9 +158,13 @@ ns.run nova_project_monitor.ns
 
 ```powershell
 $env:NOVA_PROJECT_MONITOR_AI_MODE = "ollama"
+$env:OLLAMA_BASE_URL = "http://127.0.0.1:11434"
 $env:OLLAMA_MODEL = "llama3.2"
 ns.run nova_project_monitor.ns
 ```
+
+Wenn Atheria lokal verfuegbar ist und du trotzdem Ollama willst, reicht `auto` nicht aus.
+Du musst `NOVA_PROJECT_MONITOR_AI_MODE = "ollama"` explizit setzen.
 
 ### Build und Tests immer ausfuehren
 
@@ -174,6 +200,26 @@ $env:NOVA_PROJECT_MONITOR_AI_MODE = "openai"
 $env:OPENAI_API_KEY = "..."
 $env:NOVA_PROJECT_MONITOR_AI_MODEL = "gpt-4o-mini"
 $env:NOVA_PROJECT_MONITOR_AUTOMATION = "on"
+ns.run nova_project_monitor.ns
+```
+
+### LM Studio lokal statt Atheria
+
+```powershell
+$env:NOVA_PROJECT_MONITOR_AI_MODE = "lmstudio"
+$env:LM_STUDIO_BASE_URL = "http://127.0.0.1:1234/v1"
+$env:LM_STUDIO_MODEL = "qwen2.5-coder-7b-instruct"
+$env:NOVA_PROJECT_MONITOR_AUTOMATION = "auto"
+ns.run nova_project_monitor.ns
+```
+
+### Ollama lokal statt Atheria
+
+```powershell
+$env:NOVA_PROJECT_MONITOR_AI_MODE = "ollama"
+$env:OLLAMA_BASE_URL = "http://127.0.0.1:11434"
+$env:OLLAMA_MODEL = "llama3.2"
+$env:NOVA_PROJECT_MONITOR_AUTOMATION = "auto"
 ns.run nova_project_monitor.ns
 ```
 
@@ -222,6 +268,7 @@ Wenn Polling funktioniert, ist der Projektmonitor selbst gesund und nur die Even
 - [WatchMonitor](./WatchMonitor.md)
 - [WatchMonitorQuickStart](./WatchMonitorQuickStart.md)
 - [WatchMonitorReportReference](./WatchMonitorReportReference.md)
+- [WatchMonitorTroubleshooting](./WatchMonitorTroubleshooting.md)
 - [TutorialProjectWatchMonitor](./TutorialProjectWatchMonitor.md)
 - [NovaAgents](./NovaAgents.md)
 - [OperationsAndObservability](./OperationsAndObservability.md)

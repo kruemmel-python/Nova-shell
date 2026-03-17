@@ -160,6 +160,7 @@ Erwartung:
 - [WatchMonitorQuickStart](./WatchMonitorQuickStart.md)
 - [WatchMonitorReportReference](./WatchMonitorReportReference.md)
 - [WatchMonitorAutomationAndAI](./WatchMonitorAutomationAndAI.md)
+- [WatchMonitorTroubleshooting](./WatchMonitorTroubleshooting.md)
 - [TutorialProjectWatchMonitor](./TutorialProjectWatchMonitor.md)
 - [NovaCLI](./NovaCLI.md)
 - [ExamplesAndRecipes](./ExamplesAndRecipes.md)

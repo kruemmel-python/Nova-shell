@@ -42,6 +42,10 @@ Wenn du die Architektur verstehen willst:
 - [NovaRuntime](./NovaRuntime.md)
 - [NovaAgents](./NovaAgents.md)
 - [NovaMesh](./NovaMesh.md)
+- [NSBlobGenerator](./NSBlobGenerator.md)
+- [NovaSynthPredictiveEngineShifting](./NovaSynthPredictiveEngineShifting.md)
+- [ZeroCopyFederatedLearningMesh](./ZeroCopyFederatedLearningMesh.md)
+- [MyceliaAtheriaCoEvolution](./MyceliaAtheriaCoEvolution.md)
 
 Wenn du Klassen, Methoden, Endpunkte und Einstiegspunkte suchst:
 
@@ -66,8 +70,14 @@ Wenn du Klassen, Methoden, Endpunkte und Einstiegspunkte suchst:
 - [ProgrammingWithNovaShell](./ProgrammingWithNovaShell.md): wie man mit CLI, `.ns` und Python wirklich programmiert
 - [ShellCommandReference](./ShellCommandReference.md): Zuordnung von Kommandos zu Handlern
 - [APIReference](./APIReference.md): HTTP-Control-Plane-API mit Beispielen
+- [NSBlobGenerator](./NSBlobGenerator.md): verifizierbare Seed-Kapselung, Rehydrierung und mobiler Mesh-Transport
+- [NovaSynthPredictiveEngineShifting](./NovaSynthPredictiveEngineShifting.md): forecast-basierte Umschaltung zwischen `py`, `cpp`, `gpu` und `mesh`
+- [ZeroCopyFederatedLearningMesh](./ZeroCopyFederatedLearningMesh.md): signierte Invariant-Synchronisation und same-host zero-copy im Mesh
+- [MyceliaAtheriaCoEvolution](./MyceliaAtheriaCoEvolution.md): populationsbasierte Optimierung mit Forecast-, Invariant- und Kruemmungssignalen
 - [WatchMonitor](./WatchMonitor.md): Projektordner live ueberwachen, analysieren und HTML-Reports aktualisieren
 - [TutorialProjectWatchMonitor](./TutorialProjectWatchMonitor.md): Schritt-fuer-Schritt-Aufbau eines echten Projektwaechters
+- [TutorialBlobSeeds](./TutorialBlobSeeds.md): Blob-Seeds bauen, verifizieren, ausfuehren und ueber Mesh verschieben
+- [TutorialPredictiveFederatedCoevolution](./TutorialPredictiveFederatedCoevolution.md): Forecast, Federated Mesh und Co-Evolution als zusammenhaengender Plattformpfad
 - [Tutorials](./Tutorials.md): gefuehrte Workflows
 - [ExamplesAndRecipes](./ExamplesAndRecipes.md): kurze, konkrete Anwendungsrezepte
 
@@ -93,6 +103,10 @@ Wenn du Klassen, Methoden, Endpunkte und Einstiegspunkte suchst:
 - [NovaRuntime](./NovaRuntime.md): Runtime-Lebenszyklus und Plattformdienste
 - [NovaAgents](./NovaAgents.md): Agent-Laufzeit, Governance, Memory und Evals
 - [NovaMesh](./NovaMesh.md): Worker, Protokolle und verteilte Ausfuehrung
+- [NSBlobGenerator](./NSBlobGenerator.md): mobile Logik-Seeds fuer CLI, Runtime und Mesh
+- [NovaSynthPredictiveEngineShifting](./NovaSynthPredictiveEngineShifting.md): Forecast-gesteuerte Engine-Migration
+- [ZeroCopyFederatedLearningMesh](./ZeroCopyFederatedLearningMesh.md): Schwarmgedaechtnis und verifizierte Invariant-Verteilung
+- [MyceliaAtheriaCoEvolution](./MyceliaAtheriaCoEvolution.md): genetische Optimierung ueber Atheria-Signale
 - [ServiceFabricAndTrafficPlane](./ServiceFabricAndTrafficPlane.md): Services, Routing, Probes und Traffic-Shifts
 - [OperationsAndObservability](./OperationsAndObservability.md): Traces, Alerts, Backups, Recovery
 - [WatchMonitorReportReference](./WatchMonitorReportReference.md): HTML-Report, JSON-Dateien, Detailseiten und Hotspots

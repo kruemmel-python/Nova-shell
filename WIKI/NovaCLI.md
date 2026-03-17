@@ -108,6 +108,8 @@ nova-shell --no-plugins -c "ai providers" | ConvertFrom-Json
 | Kommando | Zweck | Direkt testbares Beispiel | Erwartung |
 | --- | --- | --- | --- |
 | `mesh` | Worker und verteilte Ausfuehrung | `mesh start-worker --caps cpu,py` | lokaler Worker startet |
+| `blob` | verifizierbare Seed-Kapselung, Rehydrierung und Mesh-Transport | `blob pack --text "21 * 2" --type py` | `.nsblob.json` und `inline_seed` werden erzeugt |
+| `synth` | prädiktive Engine-Wahl und delegierte Ausfuehrung | `synth forecast` | JSON-Forecast oder Shift-Empfehlung |
 | `wiki` | Markdown-Wiki nach HTML bauen und serven | `wiki build` | HTML-Site wird erzeugt |
 | `remote` | Remote-Ausfuehrung | `remote http://127.0.0.1:PORT py 1 + 1` | Remote-Worker liefert Ergebnis |
 | `vision` | Web- und UI-Flaechen | `vision start 8877` | lokaler Vision-Server startet |
@@ -267,6 +269,60 @@ Erwartung:
 - `queue run` verarbeitet mindestens einen Eintrag
 - `event emit` erzeugt ein Laufzeitereignis
 - `ns.control events ping 0 10` zeigt das eingegangene Event
+
+#### Blob-Seeds lokal testen
+
+```powershell
+blob pack --text "21 * 2" --type py
+blob verify .\calc.nsblob.json
+blob exec .\calc.nsblob.json
+```
+
+Erwartung:
+
+- der Seed ist verifiziert
+- `blob exec` liefert `42`
+
+### Schnell pruefbar: Predictive Shifting
+
+```powershell
+py 1 + 1
+py 2 + 1
+py 3 + 1
+synth forecast
+synth shift suggest "for item in rows: total += item"
+```
+
+Erwartung:
+
+- `synth forecast` liefert `status`, `engine_pressure` und `projection`
+- `synth shift suggest ...` liefert `engine`, `delegated_command`, `pressure_index` und `reasons`
+
+### Schnell pruefbar: Federated Learning Mesh
+
+```powershell
+mesh federated status
+mesh federated publish --statement "Inter-core resonance raised" --namespace swarm --project lab
+mesh federated history 5
+```
+
+Erwartung:
+
+- Status der Federated-Schicht
+- ein signiertes Update
+- sichtbare Historie
+
+### Schnell pruefbar: Co-Evolution
+
+```powershell
+mycelia coevolve run research-pop --cycles 2 --input "edge inference pressure rises"
+mycelia coevolve status research-pop
+```
+
+Erwartung:
+
+- Population wird bewertet
+- Rueckgabe enthaelt Co-Evolution-Daten statt nur simpler Populationstakte
 
 #### Snapshot und Resume
 
@@ -732,6 +788,10 @@ ns.graph .\control.ns
 - [ProgrammingWithNovaShell](./ProgrammingWithNovaShell.md)
 - [ShellCommandReference](./ShellCommandReference.md)
 - [CodeReferenceIndex](./CodeReferenceIndex.md)
+- [NSBlobGenerator](./NSBlobGenerator.md)
+- [NovaSynthPredictiveEngineShifting](./NovaSynthPredictiveEngineShifting.md)
+- [ZeroCopyFederatedLearningMesh](./ZeroCopyFederatedLearningMesh.md)
+- [MyceliaAtheriaCoEvolution](./MyceliaAtheriaCoEvolution.md)
 - [APIReference](./APIReference.md)
 - [NovaLanguage](./NovaLanguage.md)
 - [NovaRuntime](./NovaRuntime.md)

@@ -16,6 +16,7 @@ Sie laedt Programme, kompiliert Graphen, fuehrt Flows aus, emittiert Events und 
 | `BackendRouter` | Zuweisung von Ausfuehrungen auf passende lokale oder native Backends |
 | `DurableControlPlane` | Queue, Schedules, Replay und Status |
 | `NovaControlPlaneAPIServer` | HTTP-API fuer die Plattform |
+| `PredictiveEngineShifter` | forecast-basierte Engine-Wahl und delegierte Ausfuehrung |
 
 ## Lebenszyklus
 
@@ -74,6 +75,8 @@ snapshot / resume / close
 - `list_services()`
 - `list_packages()`
 - `discover_service(...)`
+- `predictive.forecast()`
+- `predictive.recommend_engine(...)`
 
 ## Eingebaute Toolpfade
 
@@ -88,6 +91,24 @@ Die Runtime kennt eingebaute Pfade, die in Flows direkt auftauchen koennen:
 - `state.get`
 - `service.deploy`
 - `package.install`
+
+## Predictive Shifting
+
+Der Runtimepfad bindet den Predictive Engine Shifter direkt in Telemetrie und Engine-Delegation ein.
+
+Dadurch kann Nova-shell:
+
+- Stage-Ausfuehrungen als Telemetrie speichern
+- Last- und Spannungsanstiege prognostizieren
+- Zielpfade fuer `synth shift` aus Forecast und Heuristik gemeinsam ableiten
+
+CLI:
+
+```powershell
+synth forecast
+synth shift suggest "for item in rows: total += item"
+synth shift run "for item in rows: total += item"
+```
 
 ## CLI
 
@@ -153,6 +174,16 @@ ns.snapshot
 ns.resume
 ```
 
+### Predictive Shift live pruefen
+
+```powershell
+py 1 + 1
+py 2 + 1
+py 3 + 1
+synth forecast
+synth shift suggest "matrix multiply tensor embedding"
+```
+
 ## Typische Fehler und Fragen
 
 ### Wann ist ein Problem ein Parser- und wann ein Runtime-Problem?
@@ -172,5 +203,6 @@ Mit `ns.status`, `ns.control` und den API- oder Trace-Pfaden.
 - [RuntimeMethodReference](./RuntimeMethodReference.md)
 - [APIReference](./APIReference.md)
 - [RuntimeAndControlPlane](./RuntimeAndControlPlane.md)
+- [NovaSynthPredictiveEngineShifting](./NovaSynthPredictiveEngineShifting.md)
 - [NovaAgents](./NovaAgents.md)
 - [NovaMesh](./NovaMesh.md)

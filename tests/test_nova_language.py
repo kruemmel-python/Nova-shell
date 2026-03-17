@@ -1,5 +1,6 @@
 import hashlib
 import http.server
+import base64
 import json
 import os
 import sqlite3
@@ -11,7 +12,7 @@ import unittest
 import urllib.request
 from pathlib import Path
 
-from nova import AgentNode, ExecutorTask, NovaGraphCompiler, NovaParser, NovaRuntime, ToolNode
+from nova import AgentNode, ExecutorTask, NovaBlobGenerator, NovaGraphCompiler, NovaParser, NovaRuntime, ToolNode
 from nova.agents.runtime import AgentTask
 from nova.mesh.registry import WorkerNode
 from nova_shell import NovaShell
@@ -349,6 +350,17 @@ service gateway {
   secret_mounts: {"/etc/secrets/db": db_password}
   auto_deploy: true
 }
+""".strip()
+
+BLOB_PROGRAM_TEMPLATE = """
+flow inspect_blob {{
+  blob.verify {blob_path} -> verified
+  blob.unpack {blob_path} -> unpacked
+}}
+
+flow execute_blob {{
+  blob.exec {blob_path} -> executed
+}}
 """.strip()
 
 
@@ -1152,6 +1164,67 @@ flow inspect {
                 self.assertGreaterEqual(load_run["throughput"], 1.0)
                 self.assertGreaterEqual(len(backups), 1)
                 self.assertGreaterEqual(len(restored["restored_files"]), 1)
+
+    def test_runtime_blob_verify_and_unpack_tools(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            blob_store = NovaBlobGenerator(base / ".nova")
+            blob = blob_store.create_from_text("hello from blob", name="hello", kind="text", source_name="<inline>")
+            blob_path = blob_store.write_blob(blob)
+            program = BLOB_PROGRAM_TEMPLATE.format(blob_path=json.dumps(str(blob_path)))
+
+            with NovaRuntime() as runtime:
+                runtime.load(program, base_path=base)
+                flow = runtime.execute_flow("inspect_blob")
+                assert runtime.context is not None
+
+                verified = runtime.context.outputs["verified"]
+                unpacked = runtime.context.outputs["unpacked"]
+
+                self.assertEqual(flow.flow, "inspect_blob")
+                self.assertTrue(verified["verified"])
+                self.assertEqual(unpacked["content"], "hello from blob")
+                self.assertEqual(unpacked["kind"], "text")
+
+    def test_runtime_blob_exec_runs_python_and_declarative_ns_blobs(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            blob_store = NovaBlobGenerator(base / ".nova")
+            py_blob = blob_store.create_from_text("6 * 7", name="calc", kind="py", source_name="<inline>")
+            py_blob_path = blob_store.write_blob(py_blob)
+            ns_blob_source = """
+flow inner {
+  system.log "blob-ns-ok" -> marker
+}
+""".strip()
+            ns_blob = blob_store.create_from_text(ns_blob_source, name="inner", kind="ns", source_name="<inline>")
+            ns_blob_path = blob_store.write_blob(ns_blob)
+
+            py_program = """
+flow execute_blob {{
+  blob.exec {blob_path} -> executed
+}}
+""".strip().format(blob_path=json.dumps(str(py_blob_path)))
+            ns_program = """
+flow execute_blob {{
+  blob.exec {blob_path} -> executed
+}}
+""".strip().format(blob_path=json.dumps(str(ns_blob_path)))
+
+            with NovaRuntime() as runtime:
+                runtime.load(py_program, base_path=base)
+                runtime.execute_flow("execute_blob")
+                assert runtime.context is not None
+                executed = runtime.context.outputs["executed"]
+                self.assertEqual(executed["result"], 42)
+
+            with NovaRuntime() as runtime:
+                runtime.load(ns_program, base_path=base)
+                runtime.execute_flow("execute_blob")
+                assert runtime.context is not None
+                executed = runtime.context.outputs["executed"]
+                self.assertEqual(executed["flows"][0]["flow"], "inner")
+                self.assertEqual(executed["flows"][0]["outputs"]["marker"], "blob-ns-ok")
 
     def test_shell_exposes_api_metrics_and_worker_trust_commands(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

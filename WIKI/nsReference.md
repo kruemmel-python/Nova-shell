@@ -244,6 +244,16 @@ atheria.embed tech_rss -> embedded_news
 researcher summarize tech_rss -> briefing
 ```
 
+### Blob-Built-ins
+
+Die deklarative Runtime kennt auch Blob-Werkzeuge:
+
+```ns
+blob.verify "C:/project/workflow.nsblob.json" -> verified
+blob.unpack "C:/project/workflow.nsblob.json" -> unpacked
+blob.exec "C:/project/workflow.nsblob.json" -> executed
+```
+
 ### Typische Flow-Eigenschaften
 
 Je nach Beispiel oder Runtimepfad koennen zusaetzliche Properties existieren, etwa:

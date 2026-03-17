@@ -210,6 +210,31 @@ Klassen:
 - `search`
 - `snapshot`
 
+### `nova.runtime.blob_seed`
+
+Konstanten:
+
+- `INLINE_BLOB_PREFIX`
+
+Klassen:
+
+- `NovaBlobSeed`
+- `NovaBlobGenerator`
+
+`NovaBlobGenerator`-Methoden:
+
+- `detect_kind`
+- `create_from_bytes`
+- `create_from_text`
+- `create_from_file`
+- `inline_seed`
+- `write_blob`
+- `default_path`
+- `load_blob`
+- `verify`
+- `unpack_bytes`
+- `unpack_text`
+
 ### `nova.agents.prompts`
 
 Klassen:

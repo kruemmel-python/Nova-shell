@@ -10,6 +10,8 @@ Die Tutorials sollen nicht nur erklaeren, was ein Feature ist, sondern einen nac
 - [TutorialTechnologyRadar](./TutorialTechnologyRadar.md)
 - [TutorialMultiAgentCluster](./TutorialMultiAgentCluster.md)
 - [TutorialLMStudioIntegration](./TutorialLMStudioIntegration.md)
+- [TutorialBlobSeeds](./TutorialBlobSeeds.md)
+- [TutorialPredictiveFederatedCoevolution](./TutorialPredictiveFederatedCoevolution.md)
 - [TutorialProjectWatchMonitor](./TutorialProjectWatchMonitor.md)
 
 ## Lernreihenfolge
@@ -52,9 +54,19 @@ Dazu passend:
 - [TutorialProjectWatchMonitor](./TutorialProjectWatchMonitor.md)
 - [WatchMonitor](./WatchMonitor.md)
 
+Wenn du Logik kompakt kapseln, verifizieren und zwischen Nodes bewegen willst, beginne hier:
+
+- [TutorialBlobSeeds](./TutorialBlobSeeds.md)
+
+Wenn du die neuen Plattformfunktionen als zusammenhaengenden Forecast-, Mesh- und Evolutionspfad ausprobieren willst, nimm dieses Tutorial:
+
+- [TutorialPredictiveFederatedCoevolution](./TutorialPredictiveFederatedCoevolution.md)
+
 ## Verwandte Seiten
 
 - [ExamplesAndRecipes](./ExamplesAndRecipes.md)
 - [NovaCLI](./NovaCLI.md)
 - [ProgrammingWithNovaShell](./ProgrammingWithNovaShell.md)
 - [WatchMonitor](./WatchMonitor.md)
+- [TutorialBlobSeeds](./TutorialBlobSeeds.md)
+- [TutorialPredictiveFederatedCoevolution](./TutorialPredictiveFederatedCoevolution.md)

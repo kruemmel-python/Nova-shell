@@ -16,6 +16,7 @@ Agenten sind in Nova-shell deklarierte, wiederverwendbare Laufzeitobjekte mit Pr
 | `DistributedMemoryStore` | Agent-Memory und Suche |
 | `AgentEvalStore` | Auswertungsdaten und Bewertungsartefakte |
 | `ToolSandbox` | Tool-Freigabe, Begrenzung und Governance |
+| `MyceliaAtheriaCoEvolutionLab` | populationsbezogene Co-Evolution ueber Forecast- und Kruemmungssignale |
 
 ## Agent-Lebenszyklus
 
@@ -56,6 +57,24 @@ Wichtige Agentenfelder in `.ns`:
 - `prompts`
 - `prompt_version`
 - `governance`
+
+## Co-Evolution mit Mycelia und Atheria
+
+Nova-shell fuehrt Agenten nicht nur einzeln aus.
+Mit der Co-Evolution-Schicht koennen Populationen ueber mehrere Signale optimiert werden:
+
+- Forecast-Qualitaet
+- Atheria-Invarianten
+- Tool-Erfolgsraten
+- geometrische Komplexitaet
+
+CLI:
+
+```powershell
+mycelia coevolve run research-pop --cycles 5 --input "edge inference pressure rises"
+mycelia coevolve status research-pop
+mycelia population tick research-pop --cycles 5 --coevolve
+```
 
 ## CLI
 
@@ -118,6 +137,13 @@ result = agents.execute(
 print(result.output)
 ```
 
+### Co-Evolution ueber die CLI
+
+```powershell
+mycelia coevolve run trend-rss --cycles 3 --input "news feeds with predictive relevance"
+mycelia coevolve status trend-rss
+```
+
 ## Typische Fehler und Fragen
 
 ### Warum antwortet ein Agent anders als erwartet?
@@ -137,5 +163,6 @@ An Provider, Modell und Runtime-Kontext.
 - [AgentsAndKnowledge](./AgentsAndKnowledge.md)
 - [NovaMemory](./NovaMemory.md)
 - [NovaTools](./NovaTools.md)
+- [MyceliaAtheriaCoEvolution](./MyceliaAtheriaCoEvolution.md)
 - [RuntimeMethodReference](./RuntimeMethodReference.md)
 - [ExamplesAndRecipes](./ExamplesAndRecipes.md)

@@ -245,5 +245,6 @@ Wenn kein valides AI-Review verfuegbar ist, faellt der Monitor auf die heuristis
 - [WatchMonitorQuickStart](./WatchMonitorQuickStart.md)
 - [WatchMonitorReportReference](./WatchMonitorReportReference.md)
 - [WatchMonitorAutomationAndAI](./WatchMonitorAutomationAndAI.md)
+- [WatchMonitorTroubleshooting](./WatchMonitorTroubleshooting.md)
 - [ExamplesAndRecipes](./ExamplesAndRecipes.md)
 - [OperationsAndObservability](./OperationsAndObservability.md)

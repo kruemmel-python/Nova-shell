@@ -1,6 +1,11 @@
 from __future__ import annotations
 
+import base64
+import contextlib
+import io
 import json
+import os
+import re
 import threading
 import time
 import urllib.request
@@ -17,6 +22,7 @@ from nova.parser.parser import NovaParser
 from nova.toolchain import NovaFormatter, NovaLanguageServerFacade, NovaLinter, NovaModuleLoader, NovaPackageRegistry, NovaTestRunner
 
 from .backends import BackendExecutionRequest
+from .blob_seed import NovaBlobGenerator, NovaBlobSeed
 from .context import CommandExecution, CompiledNovaProgram, DatasetSnapshot, FlowExecutionRecord, NodeExecutionRecord, NovaRuntimeResult, RuntimeContext, to_jsonable
 from .security import AuthPrincipal
 
@@ -2301,7 +2307,7 @@ class NovaRuntime:
 
     def _execute_tool(self, node: ToolNode) -> CommandExecution:
         assert self.context is not None
-        if node.tool_name in {"rss.fetch", "atheria.embed", "system.log", "event.emit", "flow.run", "state.set", "state.get", "service.deploy", "service.status", "package.install", "package.status"}:
+        if node.tool_name in {"rss.fetch", "atheria.embed", "system.log", "event.emit", "flow.run", "state.set", "state.get", "service.deploy", "service.status", "package.install", "package.status", "blob.verify", "blob.unpack", "blob.exec"}:
             return self._execute_tool_local(node)
         capability = str(node.metadata.get("capability", "tool") or "tool")
         remote_command = self._build_remote_command(node)
@@ -2337,7 +2343,7 @@ class NovaRuntime:
 
     def _build_remote_command(self, node: ToolNode) -> str | None:
         assert self.context is not None
-        if node.tool_name in {"rss.fetch", "atheria.embed", "system.log", "event.emit", "flow.run", "state.set", "state.get", "service.deploy", "service.status", "package.install", "package.status"}:
+        if node.tool_name in {"rss.fetch", "atheria.embed", "system.log", "event.emit", "flow.run", "state.set", "state.get", "service.deploy", "service.status", "package.install", "package.status", "blob.verify", "blob.unpack", "blob.exec"}:
             return None
         tool_definition = self.context.tool_definitions.get(node.tool_name, {})
         command_template = tool_definition.get("command") or tool_definition.get("pipeline")
@@ -2378,6 +2384,12 @@ class NovaRuntime:
                 return self._tool_package_install(node)
             case "package.status":
                 return self._tool_package_status(node)
+            case "blob.verify":
+                return self._tool_blob_verify(node)
+            case "blob.unpack":
+                return self._tool_blob_unpack(node)
+            case "blob.exec":
+                return self._tool_blob_exec(node)
             case _:
                 assert self.context is not None
                 tool_definition = self.context.tool_definitions.get(node.tool_name, {})
@@ -2516,6 +2528,108 @@ class NovaRuntime:
             return CommandExecution(output=json.dumps(package, ensure_ascii=False), data=package)
         payload = self.list_packages()
         return CommandExecution(output=json.dumps(payload, ensure_ascii=False), data=payload)
+
+    def _blob_generator(self) -> NovaBlobGenerator:
+        assert self.context is not None
+        return NovaBlobGenerator(self.context.base_path / ".nova")
+
+    def _resolve_blob_reference(self, argument: Any) -> NovaBlobSeed:
+        assert self.context is not None
+        generator = self._blob_generator()
+        resolved = self.context.resolve_reference(argument)
+        return generator.load_blob(resolved)
+
+    def _tool_blob_verify(self, node: ToolNode) -> CommandExecution:
+        if not node.arguments:
+            return CommandExecution(error="blob.verify requires <blob_reference>")
+        generator = self._blob_generator()
+        blob = self._resolve_blob_reference(node.arguments[0])
+        payload = {"name": blob.name, "kind": blob.kind, **generator.verify(blob)}
+        return CommandExecution(output=json.dumps(payload, ensure_ascii=False), data=payload)
+
+    def _tool_blob_unpack(self, node: ToolNode) -> CommandExecution:
+        if not node.arguments:
+            return CommandExecution(error="blob.unpack requires <blob_reference> [output_path]")
+        assert self.context is not None
+        generator = self._blob_generator()
+        blob = self._resolve_blob_reference(node.arguments[0])
+        verification = generator.verify(blob)
+        if not verification.get("verified"):
+            return CommandExecution(error=f"blob verification failed: {verification.get('reason') or 'invalid_blob'}")
+        if len(node.arguments) > 1:
+            target = Path(str(self.context.resolve_reference(node.arguments[1]))).expanduser()
+            if not target.is_absolute():
+                target = (self.context.base_path / target).resolve(strict=False)
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(generator.unpack_bytes(blob))
+            payload = {"path": str(target), "name": blob.name, "kind": blob.kind, **verification}
+            return CommandExecution(output=json.dumps(payload, ensure_ascii=False), data=payload)
+        if blob.kind in {"text", "py", "ns"}:
+            text = generator.unpack_text(blob)
+            payload = {"name": blob.name, "kind": blob.kind, "content": text, **verification}
+            return CommandExecution(output=text, data=payload)
+        data = generator.unpack_bytes(blob)
+        payload = {
+            "name": blob.name,
+            "kind": blob.kind,
+            "base64": base64.b64encode(data).decode("ascii"),
+            **verification,
+        }
+        return CommandExecution(output=json.dumps(payload, ensure_ascii=False), data=payload)
+
+    def _tool_blob_exec(self, node: ToolNode) -> CommandExecution:
+        if not node.arguments:
+            return CommandExecution(error="blob.exec requires <blob_reference>")
+        generator = self._blob_generator()
+        blob = self._resolve_blob_reference(node.arguments[0])
+        verification = generator.verify(blob)
+        if not verification.get("verified"):
+            return CommandExecution(error=f"blob verification failed: {verification.get('reason') or 'invalid_blob'}")
+        if blob.kind == "py":
+            source = generator.unpack_text(blob)
+            return self._execute_python_blob_source(source, blob)
+        if blob.kind == "ns":
+            source = generator.unpack_text(blob)
+            return self._execute_ns_blob_source(source, blob)
+        if blob.kind == "text":
+            text = generator.unpack_text(blob)
+            return CommandExecution(output=text, data={"name": blob.name, "kind": blob.kind, "content": text, **verification})
+        return CommandExecution(error=f"blob.exec does not support kind '{blob.kind}'")
+
+    def _execute_python_blob_source(self, source: str, blob: NovaBlobSeed) -> CommandExecution:
+        stdout_buffer = io.StringIO()
+        namespace: dict[str, Any] = {"os": os, "json": json, "Path": Path}
+        try:
+            with contextlib.redirect_stdout(stdout_buffer):
+                try:
+                    value = eval(source, namespace, namespace)
+                    if value is not None:
+                        namespace["_"] = value
+                        print(value)
+                except SyntaxError:
+                    exec(source, namespace, namespace)
+            output = stdout_buffer.getvalue()
+            data = namespace.get("_")
+            return CommandExecution(output=output, data={"name": blob.name, "kind": blob.kind, "result": data, "stdout": output})
+        except Exception as exc:
+            return CommandExecution(error=str(exc))
+
+    def _is_declarative_blob_source(self, source: str) -> bool:
+        for raw in source.splitlines():
+            line = raw.strip()
+            if not line or line.startswith("#"):
+                continue
+            return bool(re.match(r"^(agent|dataset|flow|state|event|tool|system|service|package)\s+[A-Za-z_][A-Za-z0-9_.-]*\s*\{", line))
+        return False
+
+    def _execute_ns_blob_source(self, source: str, blob: NovaBlobSeed) -> CommandExecution:
+        assert self.context is not None
+        if not self._is_declarative_blob_source(source):
+            return CommandExecution(error="blob.exec for ns currently supports declarative Nova source only")
+        with NovaRuntime(command_executor=self.command_executor, event_bridge=self.event_bridge) as nested:
+            result = nested.run(source, source_name=f"<blob:{blob.name}>", base_path=self.context.base_path)
+            payload = result.to_dict()
+            return CommandExecution(output=json.dumps(payload, ensure_ascii=False), data=payload)
 
     def _run_declared_command(self, template: str, node: ToolNode) -> CommandExecution:
         assert self.context is not None

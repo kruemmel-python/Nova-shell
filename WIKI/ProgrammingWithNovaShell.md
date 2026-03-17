@@ -112,6 +112,20 @@ mesh list
 mesh run py py 1 + 1
 ```
 
+### 6. Logik als Blob-Seed kapseln
+
+```powershell
+blob pack --text "21 * 2" --type py
+blob verify .\calc.nsblob.json
+blob exec .\calc.nsblob.json
+```
+
+Das ist der richtige Weg, wenn Logik:
+
+- kompakt transportiert
+- vor Ausfuehrung verifiziert
+- oder ueber Mesh mobil verschoben werden soll
+
 ## Programmieren mit Pipelines
 
 Pipelines sind ideal fuer kleine Automationen ohne `.ns`.
@@ -198,6 +212,19 @@ ns.control events ping 0 10
 ns.snapshot .\control-snapshot.json
 ns.resume .\control-snapshot.json
 ns.status
+```
+
+### Blob-Seeds direkt in `.ns` nutzen
+
+```ns
+flow inspect_blob {
+  blob.verify "C:/project/workflow.nsblob.json" -> verified
+  blob.unpack "C:/project/workflow.nsblob.json" -> unpacked
+}
+
+flow execute_blob {
+  blob.exec "C:/project/workflow.nsblob.json" -> executed
+}
 ```
 
 ## Programmieren mit Python
@@ -306,6 +333,7 @@ Wenn du mit der CLI programmieren willst:
 1. [NovaCLI](./NovaCLI.md)
 2. [ShellCommandReference](./ShellCommandReference.md)
 3. [ExamplesAndRecipes](./ExamplesAndRecipes.md)
+4. [NSBlobGenerator](./NSBlobGenerator.md)
 
 Wenn du `.ns`-Programme schreiben willst:
 
@@ -318,6 +346,7 @@ Wenn du die interne API verstehen willst:
 
 1. [ClassReference](./ClassReference.md)
 2. [RuntimeMethodReference](./RuntimeMethodReference.md)
+3. [NSBlobGenerator](./NSBlobGenerator.md)
 3. [CodeReferenceIndex](./CodeReferenceIndex.md)
 
 ## Verwandte Seiten

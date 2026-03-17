@@ -16,6 +16,7 @@ Sie verbindet Worker-Registrierung, Capability-basierten Dispatch, lokale und en
 | `ExecutorResult` | standardisiertes Ergebnis |
 | `MeshWorkerServer` | Worker-Prozess in der CLI-Runtime |
 | `NativeExecutorManager` | Verwaltung lokaler nativer Executor |
+| `FederatedLearningMesh` | signierte Invariant-Updates, Broadcast und Apply |
 
 ## Worker-Lebenszyklus
 
@@ -67,6 +68,15 @@ mesh stop-worker
 
 Je nach Aufbau kann zusaetzlich mit `mesh add`, `mesh list` oder Control-Plane-Kommandos gearbeitet werden.
 
+Fuer die Federated-Schicht kommen dazu:
+
+```text
+mesh federated status
+mesh federated history 10
+mesh federated publish --statement "..." --broadcast
+mesh federated chronik-latest --broadcast
+```
+
 ## API
 
 Mesh-relevante API-Bereiche umfassen:
@@ -112,6 +122,20 @@ Relevante Metadaten in `.ns`-Programmen:
 - `namespace`
 - `require_tls`
 
+### Federated Invariant Broadcast
+
+```powershell
+mesh federated publish --statement "Edge anomaly detector learned a new invariant" --namespace swarm --project lab --broadcast
+mesh federated history 5
+```
+
+### Same-host Zero-Copy via `zero`
+
+```powershell
+zero put invariant-payload
+mesh federated publish --statement "Shared invariant" --handle <HANDLE> --size <SIZE> --type text --same-host
+```
+
 ## Typische Fehler und Fragen
 
 ### Warum wird ein Task nicht verteilt?
@@ -133,5 +157,6 @@ Sobald Last, Spezialisierung oder Isolation nicht mehr nur lokal abgebildet werd
 
 - [MeshAndDistributedExecution](./MeshAndDistributedExecution.md)
 - [NovaRuntime](./NovaRuntime.md)
+- [ZeroCopyFederatedLearningMesh](./ZeroCopyFederatedLearningMesh.md)
 - [SecurityAndTrust](./SecurityAndTrust.md)
 - [APIReference](./APIReference.md)

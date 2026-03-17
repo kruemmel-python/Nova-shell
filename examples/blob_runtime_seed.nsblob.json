@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "name": "blob-runtime-seed",
+  "kind": "text",
+  "source_name": "<example>",
+  "entrypoint": "",
+  "compression": "zlib",
+  "encoding": "base64url",
+  "sha256": "806080495ded0d97cac6b6fff80f3b81b7442644aa39cf33416c41c8d187dd31",
+  "compressed_sha256": "4207ffd543bf8600020bced131e041ac9fef770af80d47fd5231076583b8c266",
+  "original_size": 23,
+  "compressed_size": 31,
+  "created_at": 1773711574.926673,
+  "metadata": {},
+  "payload": "eNrLSM3JyVdIK8rPVUjKyU9SSK1IzC3ISQUAZ6AItA=="
+}

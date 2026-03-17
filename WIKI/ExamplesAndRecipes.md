@@ -37,6 +37,8 @@ Hauefige Beispielkommandos:
 - `ns.graph`
 - `ns.control`
 - `mesh.*`
+- `blob.*`
+- `synth.*`
 - `ns.format`
 - `ns.lint`
 - `ns.test`
@@ -258,6 +260,85 @@ flow review_loop {
 ```
 
 ### 14. Service mit Traffic-Shift vorbereiten
+
+### 15. Blob-Seed lokal erzeugen und ausfuehren
+
+```powershell
+blob pack --text "21 * 2" --type py
+blob verify .\calc.nsblob.json
+blob exec .\calc.nsblob.json
+```
+
+### 16. Blob-Seed in deklarativer Runtime nutzen
+
+```powershell
+ns.graph examples\blob_runtime.ns
+ns.run examples\blob_runtime.ns
+```
+
+### 17. Blob-Seed ueber Mesh verschieben
+
+```powershell
+mesh start-worker --caps cpu,py
+blob mesh-run cpu .\calc.nsblob.json
+```
+
+### 18. Predictive Engine Shift testen
+
+```powershell
+py 1 + 1
+py 2 + 1
+py 3 + 1
+synth forecast
+synth shift suggest "for item in rows: total += item"
+```
+
+Wenn genug Telemetrie vorhanden ist, liefert Nova-shell neben einer Engine-Empfehlung auch einen `delegated_command`.
+
+### 19. Federated Invariant im Mesh publizieren
+
+```powershell
+mesh federated publish --statement "Inter-core resonance raised" --namespace swarm --project lab --broadcast
+mesh federated history 5
+```
+
+Fuer same-host zero-copy:
+
+```powershell
+zero put federated-invariant-payload
+mesh federated publish --statement "Shared invariant" --handle <HANDLE> --size <SIZE> --type text --same-host
+```
+
+### 20. Aion-Chronik direkt ins Mesh uebertragen
+
+```powershell
+mesh federated chronik-latest --namespace atheria --project swarm --broadcast
+```
+
+### 21. Mycelia-Atheria Co-Evolution laufen lassen
+
+```powershell
+mycelia coevolve run research-pop --cycles 3 --input "edge inference pressure rises"
+mycelia coevolve status research-pop
+```
+
+### 22. Beispielprogramme fuer Federated Memory und Co-Evolution vorbereiten
+
+```powershell
+ns.graph examples\federated_swarm_memory.ns
+ns.run examples\federated_swarm_memory.ns
+
+ns.graph examples\mycelia_coevolution_lab.ns
+ns.run examples\mycelia_coevolution_lab.ns
+```
+
+## Verwandte Seiten
+
+- [NSBlobGenerator](./NSBlobGenerator.md)
+- [NovaSynthPredictiveEngineShifting](./NovaSynthPredictiveEngineShifting.md)
+- [ZeroCopyFederatedLearningMesh](./ZeroCopyFederatedLearningMesh.md)
+- [MyceliaAtheriaCoEvolution](./MyceliaAtheriaCoEvolution.md)
+- [TutorialPredictiveFederatedCoevolution](./TutorialPredictiveFederatedCoevolution.md)
 
 ```python
 from nova.runtime.runtime import NovaRuntime

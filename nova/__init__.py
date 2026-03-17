@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from .graph.compiler import NovaGraphCompiler
 from .graph.model import AgentNode, DatasetNode, EventNode, ExecutionEdge, ExecutionGraph, FlowNode, PackageNode, ServiceNode, ToolNode
-from .mesh import ExecutorResult, ExecutorTask, MeshRegistry, MeshTaskRecord, PROTOCOL_VERSION, PersistentMeshControlPlane, WorkerNode
+from .agents import MyceliaAtheriaCoEvolutionLab
+from .mesh import ExecutorResult, ExecutorTask, FederatedLearningMesh, MeshRegistry, MeshTaskRecord, PROTOCOL_VERSION, PersistentMeshControlPlane, WorkerNode
 from .parser.ast import (
     AgentDeclaration,
     DatasetDeclaration,
@@ -23,6 +24,7 @@ from .runtime import (
     AuthPrincipal,
     BackendExecutionRequest,
     BackendRouter,
+    INLINE_BLOB_PREFIX,
     ClusterPlane,
     ConsensusLogEntry,
     ConsensusPeer,
@@ -34,9 +36,12 @@ from .runtime import (
     DurableControlPlane,
     DurableEventRecord,
     NativeExecutorManager,
+    NovaBlobGenerator,
+    NovaBlobSeed,
     NovaControlPlaneAPIServer,
     PersistentStateStore,
     PersistentWorkflowStore,
+    PredictiveEngineShifter,
     QueuedTask,
     ReplicatedLogStore,
     RuntimeOperations,
@@ -75,6 +80,7 @@ __all__ = [
     "AuditRecord",
     "BackendExecutionRequest",
     "BackendRouter",
+    "INLINE_BLOB_PREFIX",
     "ClusterPlane",
     "CompiledNovaProgram",
     "ConsensusLogEntry",
@@ -92,6 +98,7 @@ __all__ = [
     "EventNode",
     "ExecutionEdge",
     "ExecutionGraph",
+    "FederatedLearningMesh",
     "FlowDeclaration",
     "FlowExecutionRecord",
     "FlowNode",
@@ -100,7 +107,10 @@ __all__ = [
     "LoadedNovaProgram",
     "MeshRegistry",
     "MeshTaskRecord",
+    "MyceliaAtheriaCoEvolutionLab",
     "NativeExecutorManager",
+    "NovaBlobGenerator",
+    "NovaBlobSeed",
     "NodeExecutionRecord",
     "NovaControlPlaneAPIServer",
     "NovaAST",
@@ -127,6 +137,7 @@ __all__ = [
     "QueuedTask",
     "ResolvedNovaModule",
     "ReplicatedLogStore",
+    "PredictiveEngineShifter",
     "RuntimeOperations",
     "RuntimeAuditLog",
     "RuntimeObservability",

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from .backends import BackendExecutionRequest, BackendRouter
+from .blob_seed import INLINE_BLOB_PREFIX, NovaBlobGenerator, NovaBlobSeed
 from .consensus import ConsensusLogEntry, ConsensusPeer, ControlPlaneConsensus
 from .api import NovaControlPlaneAPIServer
 from .cluster import ClusterPlane, DeploymentRevision, LeaderLease
@@ -10,6 +11,7 @@ from .executors import ExecutorRecord, NativeExecutorManager
 from .observability import RuntimeObservability, RuntimeTraceRecord
 from .operations import RuntimeOperations
 from .policy import AuditRecord, RuntimeAuditLog, RuntimePolicy
+from .predictive import PredictiveEngineShifter
 from .replication import ReplicatedLogStore
 from .runtime import NovaRuntime
 from .security import AuthPrincipal, SecurityPlane, TLSProfile
@@ -24,6 +26,7 @@ __all__ = [
     "AuthPrincipal",
     "BackendExecutionRequest",
     "BackendRouter",
+    "INLINE_BLOB_PREFIX",
     "ClusterPlane",
     "CompiledNovaProgram",
     "ConsensusLogEntry",
@@ -36,6 +39,8 @@ __all__ = [
     "FlowExecutionRecord",
     "LeaderLease",
     "NativeExecutorManager",
+    "NovaBlobGenerator",
+    "NovaBlobSeed",
     "NovaControlPlaneAPIServer",
     "NodeExecutionRecord",
     "NovaRuntime",
@@ -43,6 +48,7 @@ __all__ = [
     "RuntimeOperations",
     "PersistentStateStore",
     "PersistentWorkflowStore",
+    "PredictiveEngineShifter",
     "QueuedTask",
     "ReplicatedLogStore",
     "RuntimeAuditLog",

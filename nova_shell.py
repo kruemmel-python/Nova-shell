@@ -46,9 +46,13 @@ from pathlib import Path
 from typing import Any, Callable, Iterable
 
 from nova import NovaRuntime as DeclarativeNovaRuntime, WorkerNode
+from nova.agents.coevolution import MyceliaAtheriaCoEvolutionLab
 from nova.events.bus import Event as DeclarativeEvent
+from nova.mesh.federated import FederatedLearningMesh
 from nova.mesh.protocol import ExecutorResult, ExecutorTask
+from nova.runtime.blob_seed import INLINE_BLOB_PREFIX, NovaBlobGenerator, NovaBlobSeed
 from nova.runtime.context import CommandExecution as DeclarativeCommandExecution
+from nova.runtime.predictive import PredictiveEngineShifter
 from nova.wiki import NovaWikiSiteBuilder, NovaWikiSiteServer
 from novascript import Assignment as NSAssignment, Command as NSCommand, NovaInterpreter, NovaJITCompiler, NovaParser as LegacyNovaParser, WatchHook as NSWatchHook
 from mycelia_runtime import MyceliaRuntime
@@ -59,7 +63,7 @@ except ImportError:  # pragma: no cover - platform dependent
     readline = None
 
 
-__version__ = "0.8.13"
+__version__ = "0.8.14"
 SIDELOAD_PACKAGE_DIR = "vendor-py"
 RUNTIME_CONFIG_FILE = "nova-shell-runtime.json"
 BRIEFING_REPORT_FILES: tuple[tuple[str, str, str], ...] = (
@@ -98,6 +102,13 @@ def cleanup_temp_tree(path: Path, *, attempts: int = 8, delay_seconds: float = 0
             if attempt == attempts - 1:
                 raise
             time.sleep(delay_seconds)
+
+
+def _safe_float(value: Any, default: float = 0.0) -> float:
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return float(default)
 
 
 def safe_machine_name() -> str:
@@ -2863,27 +2874,30 @@ class NovaSynth:
 
         # telemetry bias from optimizer if available
         opt = self.shell.optimizer.suggest_engine("synth", text)
-        if opt.get("engine") in {"py", "cpp", "gpu", "mesh"}:
-            if engine == "py" and opt["engine"] != "py":
-                engine = opt["engine"]
-                reason += "; telemetry override"
+        if opt.get("engine") in {"py", "cpp", "gpu", "mesh"} and engine == "py" and opt["engine"] != "py":
+            engine = opt["engine"]
+            reason += "; telemetry override"
+        blended_scores = {str(key): float(value) for key, value in dict(opt.get("scores") or {}).items()}
+        blended_scores.setdefault(engine, 1.0)
+        blended_scores[engine] = blended_scores.get(engine, 1.0) + 1.35
 
-        return {"engine": engine, "reason": reason, "input": code}
+        predictive = self.shell.predictive.recommend_engine(
+            "synth",
+            text,
+            mesh_available=bool(self.shell.mesh.workers),
+            gpu_available=self.shell._gpu_available(),
+            heuristic={"engine": engine, "scores": blended_scores, "reasons": [reason, *(opt.get("reasons") or [])]},
+        )
+        predictive["input"] = code
+        return predictive
 
     def autotune(self, code: str) -> CommandResult:
         suggestion = self.suggest(code)
-        engine = suggestion["engine"]
-        payload = code.strip()
-
-        if engine == "cpp" and payload.startswith("py "):
-            payload = payload[len("py ") :].strip()
-            if payload:
-                return self.shell.route(f"cpp.expr {payload}")
-        if engine == "gpu":
-            return CommandResult(output="", error="autotune selected gpu; provide kernel file for gpu execution")
-        if engine == "mesh" and self.shell.mesh.workers:
-            return self.shell.route(f"mesh intelligent-run cpu py {payload or '0'}")
-        return self.shell.route(code if code.strip().startswith(("py ", "cpp ", "gpu ", "sys ")) else f"py {payload}")
+        delegated_command = str(suggestion.get("delegated_command") or "").strip()
+        if not delegated_command:
+            payload = code.strip()
+            delegated_command = code if code.strip().startswith(("py ", "cpp ", "gpu ", "sys ", "mesh ")) else f"py {payload}"
+        return self.shell.route(delegated_command)
 
 
 class NovaVectorMemory:
@@ -5297,12 +5311,15 @@ class MeshWorkerServer:
                 if parsed.path == "/protocol/capabilities":
                     self._write_json({"caps": caps, "protocol": "nova-exec/1"})
                     return
+                if parsed.path == "/federated/status":
+                    self._write_json(shell.federated.status())
+                    return
                 self.send_response(404)
                 self.end_headers()
 
             def do_POST(self) -> None:  # noqa: N802
                 parsed = urllib.parse.urlparse(self.path)
-                if parsed.path not in {"/", "/execute", "/protocol/execute"}:
+                if parsed.path not in {"/", "/execute", "/protocol/execute", "/federated/apply"}:
                     self.send_response(404)
                     self.end_headers()
                     return
@@ -5317,6 +5334,10 @@ class MeshWorkerServer:
                     payload = json.loads(body.decode("utf-8"))
                 except Exception:
                     payload = {}
+                if parsed.path == "/federated/apply":
+                    result = shell.federated.apply_update(payload if isinstance(payload, dict) else {}, worker_node_id=shell.node_id)
+                    self._write_json(result, status=200 if result.get("verified") else 400)
+                    return
                 if parsed.path == "/protocol/execute":
                     task = ExecutorTask.from_dict(payload if isinstance(payload, dict) else {})
                     command = protocol_command(task)
@@ -5398,8 +5419,12 @@ class NovaShell:
         self.synth = NovaSynth(self)
         self.memory = NovaVectorMemory()
         self.atheria = NovaAtheriaRuntime(self.runtime_config, self.cwd)
+        self.predictive = PredictiveEngineShifter(self.atheria.storage_root)
+        self.blobs = NovaBlobGenerator(self.atheria.storage_root)
         self.atheria_sensors = AtheriaSensorRegistry(self.atheria.storage_root)
+        self.federated = FederatedLearningMesh(self.atheria.storage_root, atheria_runtime=self.atheria)
         self.mycelia = MyceliaRuntime(self.atheria.storage_root)
+        self.coevolution = MyceliaAtheriaCoEvolutionLab(self.atheria.storage_root)
         self.ai_runtime = NovaAIProviderRuntime(self.runtime_config, self.cwd, atheria_runtime=self.atheria)
         self.guard_store = GuardPolicyStore()
         self.fabric_remote = FabricRemoteBridge()
@@ -5458,6 +5483,7 @@ class NovaShell:
             "pulse": self._run_pulse,
             "fabric": self._run_fabric,
             "zero": self._run_zero,
+            "blob": self._run_blob,
             "mesh": self._run_mesh,
             "event": self._run_event,
             "guard": self._run_guard,
@@ -9555,6 +9581,8 @@ class NovaShell:
         swarm: bool,
         file_path_text: str = "",
         memory_ids: list[str] | None = None,
+        coevolve: bool = False,
+        report_file_text: str = "",
     ) -> CommandResult:
         population = self.mycelia.get_population(population_name)
         if population is None:
@@ -9622,6 +9650,17 @@ class NovaShell:
                     memory_hits=memory_hits,
                     atheria_hits=atheria_hits,
                 )
+                if coevolve:
+                    score_payload = self.coevolution.blend_score(
+                        population_name=population_name,
+                        member=member,
+                        base_score_payload=score_payload,
+                        task_input=enriched_input,
+                        output_text=output_text,
+                        error_text=result.error or "",
+                        atheria_hits=atheria_hits,
+                        report_file=report_file_text,
+                    )
                 self.mycelia.record_evaluation(
                     population_name,
                     member.member_id,
@@ -9637,6 +9676,7 @@ class NovaShell:
                         "species_id": member.species_id,
                         "fitness": score_payload["fitness"],
                         "metrics": score_payload["metrics"],
+                        "coevolution": score_payload.get("coevolution", {}),
                         "error": result.error or "",
                         "output": output_text,
                         "modules": module_plan,
@@ -9687,12 +9727,15 @@ class NovaShell:
             "lineage_tail": self.mycelia.lineage(population_name, limit=12),
             "snapshot": self.mycelia.population_snapshot(population_name),
         }
+        if coevolve:
+            record_payload = json.loads(json.dumps(payload, ensure_ascii=False))
+            payload["coevolution"] = self.coevolution.record_run(population_name=population_name, payload=record_payload)
         return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
 
     def _run_mycelia(self, args: str, pipeline_input: str, pipeline_data: Any) -> CommandResult:
         parts = split_command(args)
         if not parts:
-            return CommandResult(output="", error="usage: mycelia population|breed|fitness|select|lineage|species|ecology ...")
+            return CommandResult(output="", error="usage: mycelia population|breed|fitness|select|lineage|species|ecology|coevolve ...")
         action = parts[0]
         if action == "list":
             payload = self.mycelia.list_populations()
@@ -9823,12 +9866,14 @@ class NovaShell:
                 return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
             if population_action == "tick":
                 if len(parts) < 3:
-                    return CommandResult(output="", error="usage: mycelia population tick <name> [--input text] [--cycles n] [--swarm] [--file path] [--memory id]...")
+                    return CommandResult(output="", error="usage: mycelia population tick <name> [--input text] [--cycles n] [--swarm] [--file path] [--memory id] [--coevolve] [--report-file path]...")
                 population_name = parts[2]
                 context_options, tick_tokens = self._parse_agent_context_args(parts, start_index=3)
                 input_text = ""
                 cycles = 1
                 swarm = False
+                coevolve = False
+                report_file_text = ""
                 i = 0
                 while i < len(tick_tokens):
                     token = tick_tokens[i]
@@ -9845,6 +9890,14 @@ class NovaShell:
                         swarm = True
                         i += 1
                         continue
+                    if token == "--coevolve":
+                        coevolve = True
+                        i += 1
+                        continue
+                    if token == "--report-file" and i + 1 < len(tick_tokens):
+                        report_file_text = str(self._resolve_path(tick_tokens[i + 1]))
+                        i += 2
+                        continue
                     i += 1
                 population = self.mycelia.get_population(population_name)
                 if population is None:
@@ -9857,8 +9910,63 @@ class NovaShell:
                     swarm=swarm,
                     file_path_text=str(context_options["file_path_text"] or ""),
                     memory_ids=list(context_options["memory_ids"] or []),
+                    coevolve=coevolve,
+                    report_file_text=report_file_text,
                 )
             return CommandResult(output="", error="usage: mycelia population create|list|show|tick|stop ...")
+        if action == "coevolve":
+            if len(parts) < 2:
+                return CommandResult(output="", error="usage: mycelia coevolve run|status ...")
+            sub_action = parts[1]
+            if sub_action == "status":
+                population_name = parts[2] if len(parts) > 2 else ""
+                payload = self.coevolution.status(population_name=population_name or None)
+                return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+            if sub_action == "run":
+                if len(parts) < 3:
+                    return CommandResult(output="", error="usage: mycelia coevolve run <population> [--input text] [--cycles n] [--swarm] [--file path] [--memory id] [--report-file path]")
+                population_name = parts[2]
+                context_options, run_tokens = self._parse_agent_context_args(parts, start_index=3)
+                input_text = ""
+                cycles = 1
+                swarm = False
+                report_file_text = ""
+                i = 0
+                while i < len(run_tokens):
+                    token = run_tokens[i]
+                    if token == "--input" and i + 1 < len(run_tokens):
+                        input_text = run_tokens[i + 1]
+                        i += 2
+                        continue
+                    if token == "--cycles" and i + 1 < len(run_tokens):
+                        with contextlib.suppress(Exception):
+                            cycles = max(1, int(run_tokens[i + 1]))
+                        i += 2
+                        continue
+                    if token == "--swarm":
+                        swarm = True
+                        i += 1
+                        continue
+                    if token == "--report-file" and i + 1 < len(run_tokens):
+                        report_file_text = str(self._resolve_path(run_tokens[i + 1]))
+                        i += 2
+                        continue
+                    i += 1
+                population = self.mycelia.get_population(population_name)
+                if population is None:
+                    return CommandResult(output="", error="mycelia population not found")
+                input_text = input_text or (pipeline_input.strip() if pipeline_input.strip() else population.goal)
+                return self._run_mycelia_population_cycles(
+                    population_name,
+                    input_text=input_text,
+                    cycles=cycles,
+                    swarm=swarm,
+                    file_path_text=str(context_options["file_path_text"] or ""),
+                    memory_ids=list(context_options["memory_ids"] or []),
+                    coevolve=True,
+                    report_file_text=report_file_text,
+                )
+            return CommandResult(output="", error="usage: mycelia coevolve run|status ...")
         if action == "breed":
             if len(parts) < 2:
                 return CommandResult(output="", error="usage: mycelia breed <population> [--count n]")
@@ -9935,12 +10043,14 @@ class NovaShell:
             return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
         if action == "ecology":
             if len(parts) < 3 or parts[1] != "run":
-                return CommandResult(output="", error="usage: mycelia ecology run <population> [--input text] [--cycles n] [--swarm] [--file path] [--memory id]...")
+                return CommandResult(output="", error="usage: mycelia ecology run <population> [--input text] [--cycles n] [--swarm] [--file path] [--memory id] [--coevolve] [--report-file path]...")
             population_name = parts[2]
             context_options, ecology_tokens = self._parse_agent_context_args(parts, start_index=3)
             input_text = ""
             cycles = 3
             swarm = False
+            coevolve = False
+            report_file_text = ""
             i = 0
             while i < len(ecology_tokens):
                 token = ecology_tokens[i]
@@ -9957,6 +10067,14 @@ class NovaShell:
                     swarm = True
                     i += 1
                     continue
+                if token == "--coevolve":
+                    coevolve = True
+                    i += 1
+                    continue
+                if token == "--report-file" and i + 1 < len(ecology_tokens):
+                    report_file_text = str(self._resolve_path(ecology_tokens[i + 1]))
+                    i += 2
+                    continue
                 i += 1
             population = self.mycelia.get_population(population_name)
             if population is None:
@@ -9969,8 +10087,10 @@ class NovaShell:
                 swarm=swarm,
                 file_path_text=str(context_options["file_path_text"] or ""),
                 memory_ids=list(context_options["memory_ids"] or []),
+                coevolve=coevolve,
+                report_file_text=report_file_text,
             )
-        return CommandResult(output="", error="usage: mycelia population|breed|fitness|select|lineage|species|ecology ...")
+        return CommandResult(output="", error="usage: mycelia population|breed|fitness|select|lineage|species|ecology|coevolve ...")
 
     def _run_ai(self, args: str, pipeline_input: str, pipeline_data: Any) -> CommandResult:
         parts = split_command(args)
@@ -10653,9 +10773,152 @@ class NovaShell:
     def _run_mesh(self, args: str, _: str, __: Any) -> CommandResult:
         parts = split_command(args)
         if not parts:
-            return CommandResult(output="", error="usage: mesh add|list|run|intelligent-run|beat|start-worker|stop-worker ...")
+            return CommandResult(output="", error="usage: mesh add|list|run|intelligent-run|beat|start-worker|stop-worker|federated ...")
 
         action = parts[0]
+        if action == "federated":
+            if len(parts) < 2:
+                return CommandResult(output="", error="usage: mesh federated status|history|publish|chronik-latest ...")
+            federated_action = parts[1]
+            if federated_action == "status":
+                payload = self.federated.status()
+                return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+            if federated_action == "history":
+                limit = int(parts[2]) if len(parts) > 2 and str(parts[2]).isdigit() else 20
+                payload = self.federated.history(limit=limit)
+                return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+            if federated_action == "publish":
+                statement = ""
+                namespace = self.current_memory_namespace
+                project = self.current_memory_project
+                kind = "atheria_invariant"
+                confidence = 0.0
+                effect_size = 0.0
+                samples = 0
+                summary = ""
+                zero_handle = ""
+                zero_size = 0
+                zero_type = ""
+                same_host_only = False
+                broadcast = False
+                i = 2
+                while i < len(parts):
+                    token = parts[i]
+                    if token == "--statement" and i + 1 < len(parts):
+                        statement = parts[i + 1]
+                        i += 2
+                        continue
+                    if token == "--namespace" and i + 1 < len(parts):
+                        namespace = parts[i + 1]
+                        i += 2
+                        continue
+                    if token == "--project" and i + 1 < len(parts):
+                        project = parts[i + 1]
+                        i += 2
+                        continue
+                    if token == "--kind" and i + 1 < len(parts):
+                        kind = parts[i + 1]
+                        i += 2
+                        continue
+                    if token == "--confidence" and i + 1 < len(parts):
+                        confidence = _safe_float(parts[i + 1], 0.0)
+                        i += 2
+                        continue
+                    if token == "--effect" and i + 1 < len(parts):
+                        effect_size = _safe_float(parts[i + 1], 0.0)
+                        i += 2
+                        continue
+                    if token == "--samples" and i + 1 < len(parts):
+                        samples = int(_safe_float(parts[i + 1], 0.0))
+                        i += 2
+                        continue
+                    if token == "--summary" and i + 1 < len(parts):
+                        summary = parts[i + 1]
+                        i += 2
+                        continue
+                    if token == "--handle" and i + 1 < len(parts):
+                        zero_handle = parts[i + 1]
+                        i += 2
+                        continue
+                    if token == "--size" and i + 1 < len(parts):
+                        zero_size = int(_safe_float(parts[i + 1], 0.0))
+                        i += 2
+                        continue
+                    if token == "--type" and i + 1 < len(parts):
+                        zero_type = parts[i + 1]
+                        i += 2
+                        continue
+                    if token == "--same-host":
+                        same_host_only = True
+                        i += 1
+                        continue
+                    if token == "--broadcast":
+                        broadcast = True
+                        i += 1
+                        continue
+                    i += 1
+                if zero_handle and zero_size <= 0:
+                    zero_row = next((row for row in self.zero.list() if str(row.get("handle") or "") == zero_handle), None)
+                    if zero_row is not None:
+                        zero_size = int(zero_row.get("size") or 0)
+                        zero_type = zero_type or str(zero_row.get("type") or "")
+                if not statement:
+                    return CommandResult(output="", error="usage: mesh federated publish --statement text [--namespace n] [--project p] [--confidence v] [--effect v] [--samples n] [--handle h --size n --type t --same-host] [--broadcast]")
+                payload = self.federated.publish_update(
+                    statement=statement,
+                    namespace=namespace,
+                    project=project,
+                    kind=kind,
+                    confidence=confidence,
+                    effect_size=effect_size,
+                    samples=samples,
+                    summary=summary or statement,
+                    zero_handle=zero_handle,
+                    zero_size=zero_size,
+                    zero_type=zero_type,
+                    same_host_only=same_host_only,
+                    metadata={"source": "mesh federated publish", "node_id": self.node_id},
+                )
+                if broadcast:
+                    payload["broadcast"] = self.federated.broadcast(payload, workers=self.mesh.list_workers(include_secrets=True))
+                return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+            if federated_action == "chronik-latest":
+                report_root = self.atheria.storage_root
+                namespace = self.current_memory_namespace
+                project = self.current_memory_project
+                broadcast = False
+                i = 2
+                while i < len(parts):
+                    token = parts[i]
+                    if token == "--report-root" and i + 1 < len(parts):
+                        report_root = self._resolve_path(parts[i + 1])
+                        i += 2
+                        continue
+                    if token == "--namespace" and i + 1 < len(parts):
+                        namespace = parts[i + 1]
+                        i += 2
+                        continue
+                    if token == "--project" and i + 1 < len(parts):
+                        project = parts[i + 1]
+                        i += 2
+                        continue
+                    if token == "--broadcast":
+                        broadcast = True
+                        i += 1
+                        continue
+                    i += 1
+                try:
+                    payload = self.federated.publish_latest_aion_invariant(
+                        Path(report_root),
+                        namespace=namespace,
+                        project=project,
+                        broadcast=broadcast,
+                        workers=self.mesh.list_workers(include_secrets=True),
+                    )
+                except Exception as exc:
+                    return CommandResult(output="", error=str(exc))
+                return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+            return CommandResult(output="", error="usage: mesh federated status|history|publish|chronik-latest ...")
         if action == "start-worker":
             host = "127.0.0.1"
             port = 0
@@ -10839,7 +11102,7 @@ class NovaShell:
                 return self.remote.execute(worker["url"], command)
             finally:
                 worker["load"] = max(worker["load"] - 1, 0)
-        return CommandResult(output="", error="usage: mesh add|list|run|intelligent-run|beat|start-worker|stop-worker ...")
+        return CommandResult(output="", error="usage: mesh add|list|run|intelligent-run|beat|start-worker|stop-worker|federated ...")
 
     def _run_guard(self, args: str, _: str, __: Any) -> CommandResult:
         parts = split_command(args)
@@ -10980,22 +11243,19 @@ class NovaShell:
 
         task = parts[1]
         payload = " ".join(parts[2:]) if len(parts) > 2 else ""
-        suggestion = self.optimizer.suggest_engine(task, payload)
+        heuristic = self.optimizer.suggest_engine(task, payload)
+        suggestion = self.predictive.recommend_engine(
+            task,
+            payload,
+            mesh_available=bool(self.mesh.workers),
+            gpu_available=self._gpu_available(),
+            heuristic=heuristic,
+        )
 
         if action == "suggest":
             return CommandResult(output=json.dumps(suggestion, ensure_ascii=False) + "\n", data=suggestion, data_type=PipelineType.OBJECT)
 
-        engine = suggestion["engine"]
-        if engine == "mesh" and self.mesh.workers:
-            workers = self.mesh.list_workers()
-            capability = "gpu" if any("gpu" in w["caps"] for w in workers) else "cpu"
-            command = f"mesh run {capability} py {payload or '0'}"
-        elif engine == "gpu":
-            command = f"py {payload}" if not payload else f"py {payload}"  # fallback-friendly path
-        elif engine == "cpp":
-            command = f"py {payload}" if payload else "py 0"
-        else:
-            command = f"py {payload}" if payload else "py 0"
+        command = str(suggestion.get("delegated_command") or "").strip() or (f"py {payload}" if payload else "py 0")
 
         result = self.route(command)
         if result.error:
@@ -11191,6 +11451,201 @@ class NovaShell:
         }
         return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
 
+    def _blob_usage(self) -> str:
+        return (
+            "usage: blob pack <file> [--type auto|ns|py|text|bin] [--name n] [--output file]\n"
+            "       blob pack --text <content> [--type auto|ns|py|text|bin] [--name n] [--output file]\n"
+            "       blob info <blob_file|inline_seed>\n"
+            "       blob verify <blob_file|inline_seed>\n"
+            "       blob inline <blob_file|inline_seed>\n"
+            "       blob unpack <blob_file|inline_seed> [--output file]\n"
+            "       blob exec <blob_file|inline_seed>\n"
+            "       blob exec-inline <inline_seed>\n"
+            "       blob mesh-run <capability> <blob_file|inline_seed>\n"
+        )
+
+    def _pack_blob_reference(
+        self,
+        *,
+        source_ref: str = "",
+        text_value: str = "",
+        kind: str = "auto",
+        name: str = "",
+        output_path: str = "",
+    ) -> dict[str, Any]:
+        if text_value:
+            detected_kind = self.blobs.detect_kind(explicit_kind=kind, data=text_value.encode("utf-8"))
+            entrypoint = detected_kind if detected_kind in {"ns", "py"} else ""
+            blob = self.blobs.create_from_text(
+                text_value,
+                name=name or "inline-blob",
+                kind=detected_kind,
+                source_name="<inline>",
+                entrypoint=entrypoint,
+            )
+        else:
+            if not source_ref:
+                raise ValueError("blob source is required")
+            source_path = self._resolve_path(source_ref)
+            if not source_path.exists():
+                raise FileNotFoundError(f"source file not found: {source_path}")
+            blob = self.blobs.create_from_file(source_path, kind=kind, name=name)
+        target = self.blobs.write_blob(blob, self._resolve_path(output_path) if output_path else None)
+        verification = self.blobs.verify(blob)
+        return {
+            "path": str(target),
+            "inline_seed": self.blobs.inline_seed(blob),
+            "blob": blob.to_dict(),
+            **verification,
+        }
+
+    def _load_blob_reference(self, reference: str) -> tuple[NovaBlobSeed, dict[str, Any]]:
+        blob = self.blobs.load_blob(reference)
+        verification = self.blobs.verify(blob)
+        return blob, verification
+
+    def _execute_blob_seed(self, blob: NovaBlobSeed) -> CommandResult:
+        verification = self.blobs.verify(blob)
+        if not verification.get("verified"):
+            return CommandResult(output="", error=f"blob verification failed: {verification.get('reason') or 'invalid_blob'}")
+        if blob.kind == "py":
+            source = self.blobs.unpack_text(blob)
+            return self.python.execute(source, "", None, cwd=self.cwd)
+        if blob.kind == "ns":
+            source = self.blobs.unpack_text(blob)
+            source_name = f"<blob:{blob.name}>"
+            if self._is_declarative_nova_source(source):
+                return self._run_declarative_nova_source(source, source_name=source_name, base_path=self.cwd)
+            try:
+                parser = LegacyNovaParser()
+                interpreter = NovaInterpreter(self)
+                nodes = parser.parse(source)
+                self._ns_runtime = interpreter
+                self._declarative_nova = None
+                output = interpreter.execute(nodes)
+                return CommandResult(output=output)
+            except Exception as exc:
+                return CommandResult(output="", error=str(exc))
+        if blob.kind == "text":
+            return CommandResult(output=self.blobs.unpack_text(blob))
+        return CommandResult(output="", error=f"blob kind '{blob.kind}' does not support direct execution")
+
+    def _run_blob(self, args: str, _: str, __: Any) -> CommandResult:
+        parts = split_command(args)
+        if not parts:
+            return CommandResult(output="", error=self._blob_usage())
+        action = parts[0]
+        try:
+            if action == "pack":
+                source_ref = ""
+                text_value = ""
+                kind = "auto"
+                name = ""
+                output_path = ""
+                i = 1
+                while i < len(parts):
+                    token = parts[i]
+                    if token == "--text" and i + 1 < len(parts):
+                        text_value = parts[i + 1]
+                        i += 2
+                        continue
+                    if token == "--type" and i + 1 < len(parts):
+                        kind = parts[i + 1]
+                        i += 2
+                        continue
+                    if token == "--name" and i + 1 < len(parts):
+                        name = parts[i + 1]
+                        i += 2
+                        continue
+                    if token == "--output" and i + 1 < len(parts):
+                        output_path = parts[i + 1]
+                        i += 2
+                        continue
+                    if not source_ref:
+                        source_ref = token
+                        i += 1
+                        continue
+                    i += 1
+                payload = self._pack_blob_reference(
+                    source_ref=source_ref,
+                    text_value=text_value,
+                    kind=kind,
+                    name=name,
+                    output_path=output_path,
+                )
+                return self._json_command_result(payload)
+
+            if action in {"info", "verify", "inline", "exec", "exec-inline", "unpack"}:
+                if len(parts) < 2:
+                    return CommandResult(output="", error=self._blob_usage())
+                reference = parts[1]
+                blob, verification = self._load_blob_reference(reference)
+
+                if action == "info":
+                    return self._json_command_result(
+                        {
+                            "blob": blob.to_dict(),
+                            "inline_seed": self.blobs.inline_seed(blob),
+                            **verification,
+                        }
+                    )
+
+                if action == "verify":
+                    return self._json_command_result({"name": blob.name, "kind": blob.kind, **verification})
+
+                if action == "inline":
+                    seed = self.blobs.inline_seed(blob)
+                    return CommandResult(output=seed + "\n", data={"inline_seed": seed}, data_type=PipelineType.OBJECT)
+
+                if action in {"exec", "exec-inline"}:
+                    return self._execute_blob_seed(blob)
+
+                output_path = ""
+                if len(parts) >= 4 and parts[2] == "--output":
+                    output_path = parts[3]
+                if output_path:
+                    target = self._resolve_path(output_path)
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    target.write_bytes(self.blobs.unpack_bytes(blob))
+                    return self._json_command_result({"path": str(target), "name": blob.name, "kind": blob.kind, **verification})
+                if blob.kind in {"text", "py", "ns"}:
+                    return CommandResult(output=self.blobs.unpack_text(blob))
+                return CommandResult(output="", error="binary blob unpack requires --output <file>")
+
+            if action == "mesh-run":
+                if len(parts) < 3:
+                    return CommandResult(output="", error="usage: blob mesh-run <capability> <blob_file|inline_seed>")
+                capability = parts[1]
+                blob, verification = self._load_blob_reference(parts[2])
+                if not verification.get("verified"):
+                    return CommandResult(output="", error=f"blob verification failed: {verification.get('reason') or 'invalid_blob'}")
+                worker = self.mesh.intelligent_select(capability, None)
+                if worker is None:
+                    return CommandResult(output="", error=f"no worker available for capability: {capability}")
+                inline_seed = self.blobs.inline_seed(blob)
+                command = f"blob exec-inline {inline_seed}"
+                try:
+                    remote_result = self.remote.execute(worker["url"], command)
+                finally:
+                    worker["load"] = max(worker["load"] - 1, 0)
+                if remote_result.error:
+                    return remote_result
+                return self._json_command_result(
+                    {
+                        "worker_url": worker["url"],
+                        "capability": capability,
+                        "blob_name": blob.name,
+                        "blob_kind": blob.kind,
+                        "command": command,
+                        "result": remote_result.output,
+                        **verification,
+                    }
+                )
+
+            return CommandResult(output="", error=self._blob_usage())
+        except Exception as exc:
+            return CommandResult(output="", error=str(exc))
+
     def _run_zero(self, args: str, _: str, __: Any) -> CommandResult:
         parts = split_command(args)
         if not parts:
@@ -11219,8 +11674,28 @@ class NovaShell:
     def _run_synth(self, args: str, _: str, __: Any) -> CommandResult:
         parts = split_command(args)
         if not parts:
-            return CommandResult(output="", error="usage: synth suggest <code> | synth autotune <code>")
+            return CommandResult(output="", error="usage: synth forecast | synth suggest <code> | synth autotune <code> | synth shift suggest <code> | synth shift run <code>")
         action = parts[0]
+        if action == "forecast":
+            payload = self.predictive.forecast()
+            return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+        if action == "shift":
+            if len(parts) < 2:
+                return CommandResult(output="", error="usage: synth shift suggest <code> | synth shift run <code>")
+            sub_action = parts[1]
+            payload = args[len(action) + len(sub_action) + 2 :].strip()
+            if not payload:
+                return CommandResult(output="", error=f"usage: synth shift {sub_action} <code>")
+            if sub_action == "suggest":
+                data = self.synth.suggest(payload)
+                return CommandResult(output=json.dumps(data, ensure_ascii=False) + "\n", data=data, data_type=PipelineType.OBJECT)
+            if sub_action == "run":
+                result = self.synth.autotune(payload)
+                if result.error:
+                    return result
+                payload_data = {"result": result.output}
+                return CommandResult(output=json.dumps(payload_data, ensure_ascii=False) + "\n", data=payload_data, data_type=PipelineType.OBJECT)
+            return CommandResult(output="", error="usage: synth shift suggest <code> | synth shift run <code>")
         payload = args[len(action) :].strip()
         if action == "suggest":
             if not payload:
@@ -11235,7 +11710,7 @@ class NovaShell:
                 return result
             payload_data = {"result": result.output}
             return CommandResult(output=json.dumps(payload_data, ensure_ascii=False) + "\n", data=payload_data, data_type=PipelineType.OBJECT)
-        return CommandResult(output="", error="usage: synth suggest <code> | synth autotune <code>")
+        return CommandResult(output="", error="usage: synth forecast | synth suggest <code> | synth autotune <code> | synth shift suggest <code> | synth shift run <code>")
 
     def _run_dflow(self, args: str, _: str, __: Any) -> CommandResult:
         parts = split_command(args)
@@ -11263,16 +11738,40 @@ class NovaShell:
             return CommandResult(output=json.dumps(self._dflow_subscribers, ensure_ascii=False) + "\n", data=self._dflow_subscribers, data_type=PipelineType.OBJECT)
         return CommandResult(output="", error="usage: dflow subscribe|publish|list ...")
 
+    def _pulse_status_payload(self, *, include_predictive: bool = True) -> dict[str, Any]:
+        payload = {
+            "vision_running": self.vision._server is not None,
+            "recent_event_count": len(self.events.events[-25:]),
+            "active_reactive_triggers": len([t for t in self.reactive.triggers.values() if t.active]),
+            "dflow_topics": sorted(self._dflow_subscribers.keys()),
+        }
+        if include_predictive:
+            try:
+                forecast = self.predictive.forecast(limit=64)
+                if forecast.get("status") == "ok":
+                    projection = dict(forecast.get("projection") or {})
+                    scenarios = dict(dict(projection.get("forecast") or {}).get("scenario_probabilities") or {})
+                    quality = dict(projection.get("quality") or {})
+                    payload["predictive_shift"] = {
+                        "sample_count": int(forecast.get("sample_count", 0)),
+                        "stress_up": round(float(scenarios.get("stress_up", 0.0)), 6),
+                        "predictability_index": round(float(quality.get("predictability_index", 0.0)), 6),
+                        "proof_verdict": str(quality.get("proof_verdict") or ""),
+                    }
+                else:
+                    payload["predictive_shift"] = {
+                        "status": str(forecast.get("status") or "unavailable"),
+                        "sample_count": int(forecast.get("sample_count", 0)),
+                    }
+            except Exception as exc:
+                payload["predictive_shift"] = {"status": "error", "error": str(exc)}
+        return payload
+
     def _run_pulse(self, args: str, _: str, __: Any) -> CommandResult:
         parts = split_command(args)
         action = parts[0] if parts else "status"
         if action == "status":
-            payload = {
-                "vision_running": self.vision._server is not None,
-                "recent_event_count": len(self.events.events[-25:]),
-                "active_reactive_triggers": len([t for t in self.reactive.triggers.values() if t.active]),
-                "dflow_topics": sorted(self._dflow_subscribers.keys()),
-            }
+            payload = self._pulse_status_payload()
             return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
         if action == "snapshot":
             tail = self.events.events[-25:]
@@ -11761,6 +12260,14 @@ class NovaShell:
                 "cost_estimate": f"{duration_ms * 0.0001:.6f}",
             }
             self.events.emit(event_payload)
+            with contextlib.suppress(Exception):
+                self.predictive.record_event(
+                    event_payload,
+                    pulse_status=self._pulse_status_payload(include_predictive=False),
+                    atheria_status=self.atheria.status_payload(),
+                    mesh_worker_count=len(self.mesh.workers),
+                    payload_size=len(current_output or ""),
+                )
             self.flow_state.add_event(stage)
 
         data_preview = ""
@@ -11778,6 +12285,14 @@ class NovaShell:
             return proc.cpu_percent(interval=0.0), proc.memory_info().rss / (1024 * 1024)
         except Exception:
             return 0.0, 0.0
+
+    def _gpu_available(self) -> bool:
+        try:
+            import numpy  # noqa: F401
+            import pyopencl  # noqa: F401
+        except Exception:
+            return False
+        return True
 
     def _materialize_if_generator(self, result: CommandResult) -> CommandResult:
         if result.data_type != PipelineType.GENERATOR or result.data is None:

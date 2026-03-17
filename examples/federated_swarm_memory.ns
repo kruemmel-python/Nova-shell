@@ -1,0 +1,21 @@
+system mesh_runtime {
+  mode: distributed
+}
+
+state swarm_state {
+  namespace: federated_swarm
+}
+
+dataset local_findings {
+  items: [{text: "edge anomaly detector learned a new resonance invariant"}, {text: "latency pressure rose across local inference nodes"}]
+}
+
+agent curator {
+  model: local
+}
+
+flow publish_swarm_memory {
+  curator summarize local_findings -> invariant_summary
+  state.set last_invariant_summary invariant_summary
+  system.log invariant_summary
+}

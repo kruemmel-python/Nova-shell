@@ -1,0 +1,4 @@
+flow inspect_blob {
+  blob.verify "examples/blob_runtime_seed.nsblob.json" -> verified
+  blob.unpack "examples/blob_runtime_seed.nsblob.json" -> unpacked
+}

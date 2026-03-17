@@ -96,6 +96,7 @@ Fuer Shell-Arbeit ist `output` relevant, fuer Integrationen und Tests oft `data`
 | Kommando | Handler | Testbarer Einstieg |
 | --- | --- | --- |
 | `mesh` | `_run_mesh` | `mesh list` |
+| `synth` | `_run_synth` | `synth forecast` |
 | `remote` | `_run_remote` | `remote http://127.0.0.1:8766 py 1 + 1` |
 | `vision` | `_run_vision` | `vision status` |
 | `guard` | `_run_guard` | `guard list` |
@@ -171,6 +172,51 @@ Interne Handler:
 - `_active_declarative_runtime`
 - `_require_declarative_access`
 
+### Pfad 4: von Telemetrie zu Predictive Shift
+
+```powershell
+py 1 + 1
+py 2 + 1
+py 3 + 1
+synth forecast
+synth shift suggest "for item in rows: total += item"
+```
+
+Interne Handler und Objekte:
+
+- `_run_python`
+- `_execute_stage`
+- `_run_synth`
+- `NovaSynth.suggest`
+- `PredictiveEngineShifter.forecast`
+- `PredictiveEngineShifter.recommend_engine`
+
+### Pfad 5: von Invariante zu Federated Mesh Broadcast
+
+```powershell
+mesh federated publish --statement "Shared invariant" --namespace swarm --project lab --broadcast
+```
+
+Interne Handler und Objekte:
+
+- `_run_mesh`
+- `FederatedLearningMesh.publish_update`
+- `FederatedLearningMesh.broadcast_update`
+- `MeshWorkerServer`
+
+### Pfad 6: von Population zu Co-Evolution
+
+```powershell
+mycelia coevolve run research-pop --cycles 2 --input "edge inference pressure rises"
+```
+
+Interne Handler und Objekte:
+
+- `_run_mycelia`
+- `_run_mycelia_population_cycles`
+- `MyceliaAtheriaCoEvolutionLab.blend_score`
+- `MyceliaAtheriaCoEvolutionLab.record_run`
+
 ## Pipeline-Programmierung
 
 ### Wichtige Methoden in `NovaShell`
@@ -237,4 +283,7 @@ Wenn du:
 - [ProgrammingWithNovaShell](./ProgrammingWithNovaShell.md)
 - [CodeReferenceIndex](./CodeReferenceIndex.md)
 - [RuntimeMethodReference](./RuntimeMethodReference.md)
+- [NovaSynthPredictiveEngineShifting](./NovaSynthPredictiveEngineShifting.md)
+- [ZeroCopyFederatedLearningMesh](./ZeroCopyFederatedLearningMesh.md)
+- [MyceliaAtheriaCoEvolution](./MyceliaAtheriaCoEvolution.md)
 - [PageTemplate](./PageTemplate.md)

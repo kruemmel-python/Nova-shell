@@ -145,4 +145,5 @@ Wenn Polling funktioniert und `watchdog` nicht, fehlt meist die Event-Bibliothek
 - [TutorialProjectWatchMonitor](./TutorialProjectWatchMonitor.md)
 - [WatchMonitorReportReference](./WatchMonitorReportReference.md)
 - [WatchMonitorAutomationAndAI](./WatchMonitorAutomationAndAI.md)
+- [WatchMonitorTroubleshooting](./WatchMonitorTroubleshooting.md)
 - [Troubleshooting](./Troubleshooting.md)

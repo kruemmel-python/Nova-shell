@@ -1,0 +1,21 @@
+system local_control {
+  mode: local
+}
+
+state evolution_state {
+  namespace: mycelia_coevolution
+}
+
+dataset prompts {
+  items: [{text: "edge inference pressure rises across the mesh"}, {text: "identify stable invariants with low curvature"}, {text: "prefer tool combinations with reliable execution"}]
+}
+
+agent evaluator {
+  model: local
+}
+
+flow prepare_population_signal {
+  evaluator summarize prompts -> summary
+  state.set last_population_signal summary
+  system.log summary
+}

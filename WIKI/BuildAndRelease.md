@@ -36,9 +36,9 @@ Erwartung:
 
 ```powershell
 git push origin main
-git tag v0.8.13
-git push origin v0.8.13
-gh release create v0.8.13 --repo kruemmel-python/Nova-shell --title "Nova-shell 0.8.13" --notes-file H:\Nova-shell-main\dist\release\release-notes-v0.8.13.md H:\Nova-shell-main\dist\release\windows-amd64\core\installers\nova-shell-0.8.13-windows-x64-core.msi
+git tag v0.8.14
+git push origin v0.8.14
+gh release create v0.8.14 --repo kruemmel-python/Nova-shell --title "Nova-shell 0.8.14" --notes-file H:\Nova-shell-main\dist\release\release-notes-v0.8.14.md H:\Nova-shell-main\dist\release\windows-amd64\core\installers\nova-shell-0.8.14-windows-x64-core.msi
 ```
 
 Erwartung:

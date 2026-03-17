@@ -507,6 +507,10 @@ def normalize_file_timestamp(path: Path, source_date_epoch: int | None) -> None:
         os.utime(path, (source_date_epoch, source_date_epoch), follow_symlinks=False)
 
 
+def _relative_archive_name(path: Path, root: Path) -> str:
+    return os.path.relpath(os.fspath(path), os.fspath(root)).replace("\\", "/")
+
+
 def archive_bundle(bundle_dir: Path, archive_base: Path, *, source_date_epoch: int | None) -> Path:
     members = sorted(path for path in bundle_dir.rglob("*"))
     if os.name == "nt":
@@ -515,7 +519,7 @@ def archive_bundle(bundle_dir: Path, archive_base: Path, *, source_date_epoch: i
             for path in members:
                 if path.is_dir():
                     continue
-                rel_name = path.relative_to(bundle_dir.parent).as_posix()
+                rel_name = _relative_archive_name(path, bundle_dir.parent)
                 info = zipfile.ZipInfo(rel_name)
                 dt = (
                     datetime.fromtimestamp(max(source_date_epoch, 315532800), tz=timezone.utc)
@@ -533,7 +537,7 @@ def archive_bundle(bundle_dir: Path, archive_base: Path, *, source_date_epoch: i
     archive_path = archive_base.with_suffix(".tar.gz")
     with tarfile.open(archive_path, "w:gz", format=tarfile.PAX_FORMAT) as tf:
         for path in members:
-            rel_name = path.relative_to(bundle_dir.parent).as_posix()
+            rel_name = _relative_archive_name(path, bundle_dir.parent)
             info = tf.gettarinfo(str(path), arcname=rel_name)
             if source_date_epoch is not None:
                 info.mtime = source_date_epoch

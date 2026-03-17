@@ -3,6 +3,7 @@ import os
 import sys
 import tempfile
 import unittest
+import zipfile
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -47,6 +48,25 @@ class BuildReleaseTests(unittest.TestCase):
                 "def  dist/release/nova-shell.msi",
             ],
         )
+
+    def test_archive_bundle_uses_stable_relative_names_on_windows(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            bundle_dir = root / "standalone" / "nova_shell.dist"
+            nested = bundle_dir / "toolchains" / "emsdk" / "upstream" / "emscripten"
+            nested.mkdir(parents=True)
+            payload = nested / "tool.py"
+            payload.write_text("print('ok')\n", encoding="utf-8")
+
+            with patch.object(build_release.os, "name", "nt"):
+                archive_path = build_release.archive_bundle(bundle_dir, root / "nova-shell-test", source_date_epoch=None)
+
+            self.assertEqual(archive_path.suffix, ".zip")
+            with zipfile.ZipFile(archive_path, "r") as archive:
+                self.assertIn(
+                    "nova_shell.dist/toolchains/emsdk/upstream/emscripten/tool.py",
+                    archive.namelist(),
+                )
 
     def test_collect_nuitka_packages_for_enterprise_profile(self) -> None:
         with (

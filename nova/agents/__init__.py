@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from .coevolution import MyceliaAtheriaCoEvolutionLab
 from .evals import AgentEvalStore
 from .memory import DistributedMemoryStore
 from .prompts import PromptRegistry
@@ -14,6 +15,7 @@ __all__ = [
     "AgentSpecification",
     "AgentTask",
     "DistributedMemoryStore",
+    "MyceliaAtheriaCoEvolutionLab",
     "PromptRegistry",
     "ProviderRegistry",
     "ToolSandbox",

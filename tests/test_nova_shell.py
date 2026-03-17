@@ -2131,6 +2131,57 @@ if len(files_lines) == 2:
         self.assertEqual(snapshot_payload["population"]["name"], "colony")
         self.assertTrue(snapshot_payload["members"])
 
+    def test_mycelia_coevolve_run_records_curvature_and_forecast_metrics(self) -> None:
+        daemon_runtime = self.shell.atheria.storage_root / "daemon_runtime"
+        daemon_runtime.mkdir(parents=True, exist_ok=True)
+        report_file = daemon_runtime / "atheria_daemon_audit.jsonl"
+        rows = []
+        for index in range(14):
+            rows.append(
+                {
+                    "timestamp": float(index),
+                    "reason": "population_tick",
+                    "market": {
+                        "trauma_pressure": 0.18 + (index * 0.01),
+                        "last_signal_strength": 0.22 + (index * 0.015),
+                        "samples_ingested": 12 + index,
+                        "last_packet_quality": 0.82,
+                        "last_market_snapshot": {"symbols": {}},
+                    },
+                    "dashboard": {
+                        "system_temperature": 48.0 + index,
+                        "entropic_index": 0.28 + (index * 0.01),
+                        "structural_tension": 0.24 + (index * 0.02),
+                        "market_guardian_score": 0.64,
+                        "resource_pool": 18 + index,
+                        "selection_pressure": 0.41,
+                        "holographic_energy": 0.33,
+                    },
+                }
+            )
+        report_file.write_text("\n".join(json.dumps(row, ensure_ascii=False) for row in rows) + "\n", encoding="utf-8")
+
+        def fake_complete(prompt: str, *, provider: str | None = None, model: str | None = None, system_prompt: str = "") -> CommandResult:
+            return CommandResult(output="edge ai analysis with evidence\n", data={"text": "analysis"}, data_type=PipelineType.OBJECT)
+
+        with patch.object(self.shell.ai_runtime, "complete_prompt", side_effect=fake_complete):
+            self.assertIsNone(self.shell.route('agent create analyst "Analyze {{input}}" --provider lmstudio --model local-model').error)
+            self.assertIsNone(self.shell.route('mycelia population create colony --goal "edge ai operations report" --seed analyst --target-size 2').error)
+            result = self.shell.route(f'mycelia coevolve run colony --input "edge ai operations report" --cycles 1 --report-file {report_file}')
+
+        self.assertIsNone(result.error)
+        payload = json.loads(result.output)
+        self.assertIn("coevolution", payload)
+        metrics = payload["cycles"][0]["evaluations"][0]["metrics"]
+        self.assertIn("forecast_alignment", metrics)
+        self.assertIn("curvature_penalty", metrics)
+        self.assertIn("tool_integrity", metrics)
+
+        status = self.shell.route("mycelia coevolve status colony")
+        self.assertIsNone(status.error)
+        status_payload = json.loads(status.output)
+        self.assertGreaterEqual(status_payload["run_count"], 1)
+
     def test_agent_run_lmstudio_timeout_returns_local_provider_hint(self) -> None:
         with patch("nova_shell.urllib.request.urlopen", side_effect=TimeoutError("timed out")):
             create = self.shell.route('agent create helper "Summarize {{input}}" --provider lmstudio --model local-model')
@@ -2771,6 +2822,57 @@ if len(files_lines) == 2:
         listed_after = self.shell.route("zero list")
         self.assertFalse(any(row["handle"] == handle for row in json.loads(listed_after.output)))
 
+    def test_blob_pack_verify_unpack_roundtrip_for_ns_file(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            source = Path(tmp) / "hello.ns"
+            blob_file = Path(tmp) / "hello.nsblob.json"
+            restored = Path(tmp) / "restored.ns"
+            source.write_text('py "blob-ok"\n', encoding="utf-8")
+
+            packed = self.shell.route(f"blob pack {source} --output {blob_file}")
+            self.assertIsNone(packed.error)
+            packed_payload = json.loads(packed.output)
+            self.assertTrue(blob_file.exists())
+            self.assertTrue(packed_payload["verified"])
+            self.assertEqual(packed_payload["blob"]["kind"], "ns")
+
+            verified = self.shell.route(f"blob verify {blob_file}")
+            self.assertIsNone(verified.error)
+            self.assertTrue(json.loads(verified.output)["verified"])
+
+            executed = self.shell.route(f"blob exec {blob_file}")
+            self.assertIsNone(executed.error)
+            self.assertIn("blob-ok", executed.output)
+
+            unpacked = self.shell.route(f"blob unpack {blob_file} --output {restored}")
+            self.assertIsNone(unpacked.error)
+            self.assertEqual(restored.read_text(encoding="utf-8"), 'py "blob-ok"\n')
+
+    def test_blob_exec_inline_runs_python_payload(self) -> None:
+        packed = self.shell.route('blob pack --text "21 * 2" --type py')
+        self.assertIsNone(packed.error)
+        packed_payload = json.loads(packed.output)
+        inline_seed = packed_payload["inline_seed"]
+
+        executed = self.shell.route(f"blob exec-inline {inline_seed}")
+        self.assertIsNone(executed.error)
+        self.assertEqual(executed.output.strip(), "42")
+
+    def test_blob_mesh_run_sends_inline_seed_to_remote_worker(self) -> None:
+        packed = self.shell.route('blob pack --text "21 * 2" --type py')
+        self.assertIsNone(packed.error)
+        blob_path = json.loads(packed.output)["path"]
+
+        self.shell.mesh.add_worker("http://127.0.0.1:9999", {"cpu"})
+        with patch.object(self.shell.remote, "execute", return_value=CommandResult(output="42\n")) as execute_mock:
+            ran = self.shell.route(f"blob mesh-run cpu {blob_path}")
+
+        self.assertIsNone(ran.error)
+        payload = json.loads(ran.output)
+        self.assertEqual(payload["worker_url"], "http://127.0.0.1:9999")
+        self.assertIn("blob exec-inline nsblob:", payload["command"])
+        execute_mock.assert_called_once()
+
     def test_clear_and_cls_are_builtin_commands(self) -> None:
         with (
             patch("nova_shell.sys.stdout.isatty", return_value=True),
@@ -2795,6 +2897,56 @@ if len(files_lines) == 2:
             self.assertIn("result", json.loads(tuned.output))
         else:
             self.assertTrue(tuned.error)
+
+    def test_synth_forecast_and_predictive_shift_suggestion(self) -> None:
+        dashboard = {
+            "dashboard": {
+                "system_temperature": 96.0,
+                "structural_tension": 0.83,
+                "market_guardian_score": 0.28,
+            }
+        }
+        with patch.object(self.shell.atheria, "status_payload", return_value=dashboard):
+            for value in range(10):
+                result = self.shell.route(f"py {value} + 1")
+                self.assertIsNone(result.error)
+
+        forecast = self.shell.route("synth forecast")
+        self.assertIsNone(forecast.error)
+        forecast_payload = json.loads(forecast.output)
+        self.assertEqual(forecast_payload["status"], "ok")
+        self.assertIn("projection", forecast_payload)
+
+        suggestion = self.shell.route('synth shift suggest "for item in rows: total += item"')
+        self.assertIsNone(suggestion.error)
+        suggestion_payload = json.loads(suggestion.output)
+        self.assertIn(suggestion_payload["engine"], {"cpp", "mesh"})
+        self.assertIn("delegated_command", suggestion_payload)
+        self.assertIn("forecast", suggestion_payload)
+
+    def test_mesh_federated_publish_apply_and_broadcast(self) -> None:
+        put = self.shell.route("zero put federated-invariant-payload")
+        self.assertIsNone(put.error)
+        zero_payload = json.loads(put.output)
+        handle = zero_payload["handle"]
+        size = int(zero_payload["size"])
+
+        published = self.shell.route(
+            f'mesh federated publish --statement "Inter-core resonance raised" --namespace swarm --project lab --handle {handle} --size {size} --type text --same-host'
+        )
+        self.assertIsNone(published.error)
+        published_payload = json.loads(published.output)
+        applied = self.shell.federated.apply_update(published_payload, worker_node_id="worker-local")
+        self.assertTrue(applied["verified"])
+        self.assertTrue(applied["payload_integrity_ok"])
+        self.assertTrue(applied["applied"])
+
+        self.shell.mesh.add_worker("http://127.0.0.1:9999", {"ai", "cpu"})
+        with patch("nova.mesh.federated.urllib.request.urlopen", return_value=FakeHTTPResponse({"applied": True, "verified": True})):
+            broadcast = self.shell.route('mesh federated publish --statement "Shared invariant" --broadcast')
+        self.assertIsNone(broadcast.error)
+        broadcast_payload = json.loads(broadcast.output)
+        self.assertEqual(broadcast_payload["broadcast"]["applied_count"], 1)
 
     def test_pulse_status_and_snapshot(self) -> None:
         self.shell.route("py 1 + 1")
