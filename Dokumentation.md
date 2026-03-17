@@ -1,6 +1,6 @@
 # Nova-shell Dokumentation
 
-Diese Datei ist die zentrale Gesamt- und Kommandoreferenz fuer Nova-shell `0.8.14`.
+Diese Datei ist die zentrale Gesamt- und Kommandoreferenz fuer Nova-shell `0.8.15`.
 Sie beschreibt die heute vorhandenen Hauptschichten des Systems:
 
 - Shell und polyglotte Runtime

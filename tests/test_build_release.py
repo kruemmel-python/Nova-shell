@@ -75,7 +75,7 @@ class BuildReleaseTests(unittest.TestCase):
         ):
             self.assertEqual(
                 build_release.collect_nuitka_packages("enterprise"),
-                ["psutil", "unittest", "yaml"],
+                ["psutil", "unittest", "xml", "yaml"],
             )
 
     def test_collect_nuitka_modules_for_enterprise_profile(self) -> None:
@@ -361,6 +361,37 @@ class BuildReleaseTests(unittest.TestCase):
             self.assertIn(build_release.EMSDK_WRAPPER_NAME, payload)
             self.assertIn("EMSCRIPTEN_ROOT", config.read_text(encoding="utf-8"))
             self.assertIn("if not defined EM_CACHE", wrapper.read_text(encoding="utf-8"))
+
+    def test_stage_emsdk_runtime_subset_avoids_robocopy_for_windows_copy(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            cache_root = root / "emsdk-cache"
+            (cache_root / "upstream" / "bin").mkdir(parents=True)
+            (cache_root / "upstream" / "bin" / "clang.exe").write_text("clang", encoding="utf-8")
+            target_root = root / "target"
+
+            recorded_calls: list[dict[str, object]] = []
+
+            def _record_copy(src: Path, dst: Path, *, ignore_patterns: tuple[str, ...] = (), prefer_robocopy: bool = True) -> None:
+                recorded_calls.append(
+                    {
+                        "src": src,
+                        "dst": dst,
+                        "ignore_patterns": ignore_patterns,
+                        "prefer_robocopy": prefer_robocopy,
+                    }
+                )
+                dst.mkdir(parents=True, exist_ok=True)
+
+            with (
+                patch.object(build_release, "safe_copytree", side_effect=_record_copy),
+                patch.object(build_release, "stage_minimal_python_runtime"),
+                patch.object(build_release, "stage_minimal_node_runtime"),
+            ):
+                build_release.stage_emsdk_runtime_subset(cache_root, target_root)
+
+            self.assertTrue(recorded_calls)
+            self.assertTrue(all(call["prefer_robocopy"] is False for call in recorded_calls))
 
     def test_stage_local_runtime_directories_copies_runtime_files(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

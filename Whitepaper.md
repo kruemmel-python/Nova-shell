@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-Nova-shell ist mit Version `0.8.14` keine reine polyglotte Compute-Runtime mehr. Das System ist heute eine kombinierte Plattform aus:
+Nova-shell ist mit Version `0.8.15` keine reine polyglotte Compute-Runtime mehr. Das System ist heute eine kombinierte Plattform aus:
 
 - interaktiver Shell
 - deklarativer Sprache (`.ns`)
@@ -370,7 +370,7 @@ Der aktuelle Release-Stack umfasst im Projekt:
 - SHA-256-Checksums
 - GitHub Release-Auslieferung
 
-Fuer `0.8.14` ist der aktuelle verifizierte oeffentliche Releasepfad insbesondere der Windows-Core-Stack mit gruener Test- und Smoke-Test-Kette.
+Fuer `0.8.15` ist der aktuelle verifizierte oeffentliche Releasepfad insbesondere der Windows-Core-Stack mit gruener Test- und Smoke-Test-Kette.
 
 Wesentlich ist dabei nicht nur das Paketformat, sondern die Reproduzierbarkeit:
 
@@ -438,7 +438,7 @@ Diese Abgrenzung ist wichtig, damit Nova-shell als serioese Plattform und nicht 
 
 ## 13. Schlussfolgerung
 
-Nova-shell `0.8.14` ist heute eine wesentlich weiter entwickelte Plattform als die fruehe Beschreibung einer "Unified Compute Runtime".
+Nova-shell `0.8.15` ist heute eine wesentlich weiter entwickelte Plattform als die fruehe Beschreibung einer "Unified Compute Runtime".
 
 Der aktuelle Kernmehrwert liegt in der Kombination:
 

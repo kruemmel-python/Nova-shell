@@ -63,7 +63,7 @@ PROFILE_NUITKA_PACKAGES = {
     "guard": ["yaml"],
     "wasm": ["wasmtime"],
     "gpu": ["numpy", "pyopencl"],
-    "atheria": ["unittest"],
+    "atheria": ["unittest", "xml"],
 }
 PROFILE_NUITKA_MODULES = {
     "arrow": ["pyarrow", "pyarrow.csv", "pyarrow.flight"],
@@ -677,12 +677,18 @@ def ignored_names(names: list[str], patterns: tuple[str, ...]) -> set[str]:
     return ignored
 
 
-def safe_copytree(src: Path, dst: Path, *, ignore_patterns: tuple[str, ...] = ()) -> None:
+def safe_copytree(
+    src: Path,
+    dst: Path,
+    *,
+    ignore_patterns: tuple[str, ...] = (),
+    prefer_robocopy: bool = True,
+) -> None:
     if dst.exists():
         shutil.rmtree(dst)
     src = src.resolve()
     dst.mkdir(parents=True, exist_ok=True)
-    if os.name == "nt":
+    if os.name == "nt" and prefer_robocopy:
         command = [
             "robocopy",
             str(src),
@@ -1183,7 +1189,15 @@ def stage_emsdk_runtime_subset(cache_dir: Path, target_root: Path) -> None:
         source = cache_dir / relative_path
         if not source.exists():
             continue
-        safe_copytree(source, target_root / relative_path, ignore_patterns=ignore_patterns)
+        # robocopy is fast for general staging, but it has proven unstable with the
+        # bundled Emscripten subset on some Windows hosts. Keep this path on the
+        # pure-Python copier so the release build remains reproducible.
+        safe_copytree(
+            source,
+            target_root / relative_path,
+            ignore_patterns=ignore_patterns,
+            prefer_robocopy=False,
+        )
     stage_minimal_node_runtime(cache_dir, target_root / "node")
     stage_minimal_python_runtime(target_root / PYTHON_RUNTIME_DIR)
 

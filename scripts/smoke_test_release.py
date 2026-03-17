@@ -88,6 +88,51 @@ def main(argv: list[str] | None = None) -> int:
             raise SystemExit("doctor atheria availability check failed for enterprise profile")
     if bool(atheria_payload.get("available")):
         run_check([str(executable), "--no-plugins", "-c", "atheria init"], cwd=executable.parent)
+        with tempfile.TemporaryDirectory(dir=str(executable.parent)) as tmp:
+            sensor_env = os.environ.copy()
+            sensor_env["INDUSTRY_TREND_STATE"] = str(Path(tmp) / "trend-state.json")
+            payload_path = Path(tmp) / "trend-payload.json"
+            payload_path.write_text(
+                json.dumps(
+                    [
+                        {
+                            "title": "AI runtime update",
+                            "summary": "new agent workflow runtime release",
+                            "source": "feed-a",
+                            "url": "https://a",
+                        },
+                        {
+                            "title": "Inference benchmark",
+                            "summary": "research benchmark for model inference",
+                            "source": "feed-b",
+                            "url": "https://b",
+                        },
+                    ],
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+            run_check(
+                [str(executable), "--no-plugins", "-c", "atheria sensor load trend_rss_sensor.py --name trend_radar_smoke"],
+                cwd=executable.parent,
+                env=sensor_env,
+            )
+            trend_stdout = run_check(
+                [
+                    str(executable),
+                    "--no-plugins",
+                    "-c",
+                    f"atheria sensor run trend_radar_smoke --file {payload_path}",
+                ],
+                cwd=executable.parent,
+                env=sensor_env,
+            )
+            trend_payload = json.loads(trend_stdout)
+            metadata = trend_payload.get("metadata", {})
+            if metadata.get("forecast_direction") != "warming_baseline":
+                raise SystemExit(
+                    f"trend sensor smoke test returned unexpected forecast_direction: {metadata.get('forecast_direction')!r}"
+                )
     wiki_stdout = run_check([str(executable), "--no-plugins", "-c", "wiki build"], cwd=executable.parent)
     wiki_payload = json.loads(wiki_stdout)
     if int(wiki_payload.get("page_count") or 0) <= 0:
