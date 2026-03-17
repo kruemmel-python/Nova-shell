@@ -47,6 +47,7 @@
 <li><a class="wiki-nav-link" data-nav-href="ZeroCopyFederatedLearningMesh.html" href="ZeroCopyFederatedLearningMesh.html">ZeroCopyFederatedLearningMesh</a></li>
 <li><a class="wiki-nav-link" data-nav-href="MyceliaAtheriaCoEvolution.html" href="MyceliaAtheriaCoEvolution.html">MyceliaAtheriaCoEvolution</a></li>
 <li><a class="wiki-nav-link" data-nav-href="WatchMonitor.html" href="WatchMonitor.html">WatchMonitor</a></li>
+<li><a class="wiki-nav-link" data-nav-href="SystemGuardMonitor.html" href="SystemGuardMonitor.html">SystemGuardMonitor</a></li>
 <li><a class="wiki-nav-link" data-nav-href="WatchMonitorQuickStart.html" href="WatchMonitorQuickStart.html">WatchMonitorQuickStart</a></li>
 <li><a class="wiki-nav-link" data-nav-href="WatchMonitorReportReference.html" href="WatchMonitorReportReference.html">WatchMonitorReportReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="WatchMonitorAutomationAndAI.html" href="WatchMonitorAutomationAndAI.html">WatchMonitorAutomationAndAI</a></li>
@@ -101,6 +102,7 @@
 <li><a class="wiki-nav-link" data-nav-href="Testing.html" href="Testing.html">Testing</a></li>
 <li><a class="wiki-nav-link" data-nav-href="BuildAndRelease.html" href="BuildAndRelease.html">BuildAndRelease</a></li>
 <li><a class="wiki-nav-link" data-nav-href="WatchMonitor.html" href="WatchMonitor.html">WatchMonitor</a></li>
+<li><a class="wiki-nav-link" data-nav-href="SystemGuardMonitor.html" href="SystemGuardMonitor.html">SystemGuardMonitor</a></li>
 <li><a class="wiki-nav-link" data-nav-href="WatchMonitorReportReference.html" href="WatchMonitorReportReference.html">WatchMonitorReportReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="WatchMonitorAutomationAndAI.html" href="WatchMonitorAutomationAndAI.html">WatchMonitorAutomationAndAI</a></li>
 <li><a class="wiki-nav-link" data-nav-href="SecurityModel.html" href="SecurityModel.html">SecurityModel</a></li>
@@ -388,6 +390,29 @@ ns.run nova_project_monitor.ns</code></pre>
 <li>geaenderte Dateien erhalten Detailseiten</li>
 <li>Review-Agent und Build-/Test-Ergebnisse erscheinen im Report</li>
 </ul>
+<h3 id="17-windows-persistenz-und-temp-ausfuehrung-gezielt-ueberwachen">17. Windows-Persistenz und Temp-Ausfuehrung gezielt ueberwachen</h3>
+<p>Lege <code>nova_system_guard.ns</code> in ein Arbeitsverzeichnis und starte den Guard:</p>
+<pre><code class="language-powershell">ns.run nova_system_guard.ns</code></pre>
+<p>Nur die Guard-Logik gegen eigene Testpfade laufen lassen:</p>
+<pre><code class="language-powershell">$env:NOVA_SYSTEM_GUARD_INCLUDE_DEFAULTS = &quot;0&quot;
+$env:NOVA_SYSTEM_GUARD_INCLUDE_PROJECT = &quot;off&quot;
+$env:NOVA_SYSTEM_GUARD_PATHS = &quot;C:/lab/startup;C:/lab/temp&quot;
+$env:NOVA_SYSTEM_GUARD_ONESHOT = &quot;1&quot;
+$env:NOVA_SYSTEM_GUARD_OPEN = &quot;0&quot;
+ns.run nova_system_guard.ns</code></pre>
+<p>Mit Live-Dateisystem-Events:</p>
+<pre><code class="language-powershell">$env:NOVA_SYSTEM_GUARD_WATCH_MODE = &quot;auto&quot;
+ns.run nova_system_guard.ns</code></pre>
+<p>Mit Quarantaene fuer neue Hochrisiko-Dateien:</p>
+<pre><code class="language-powershell">$env:NOVA_SYSTEM_GUARD_ACTION = &quot;high&quot;
+ns.run nova_system_guard.ns</code></pre>
+<p>Erwartung:</p>
+<ul>
+<li><code>.nova_system_guard/system_guard_report.html</code> wird aktualisiert</li>
+<li>kritische Windows-Pfade wie Startup, Temp, Downloads und Treiberbereiche werden fokussiert bewertet</li>
+<li>Textbasierte Aenderungen wie <code>.bat</code> oder <code>.ps1</code> erscheinen mit Zeilen-Diff und Detailseite</li>
+<li>Scheduled Tasks, Registry Run Keys sowie Signatur-/Publisher-Status erscheinen im Report</li>
+</ul>
 <h2 id="wann-diese-seite-benutzt-werden-sollte">Wann diese Seite benutzt werden sollte</h2>
 <p>Diese Seite ist ideal, wenn du:</p>
 <ul>
@@ -403,6 +428,7 @@ ns.run nova_project_monitor.ns</code></pre>
 <li><a href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
 <li><a href="Tutorials.html">Tutorials</a></li>
 <li><a href="WatchMonitor.html">WatchMonitor</a></li>
+<li><a href="SystemGuardMonitor.html">SystemGuardMonitor</a></li>
 <li><a href="WatchMonitorQuickStart.html">WatchMonitorQuickStart</a></li>
 </ul>
         </article>
@@ -439,6 +465,7 @@ ns.run nova_project_monitor.ns</code></pre>
 <li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
 <li class="wiki-toc-link level-3"><a href="#15-die-wiki-als-html-site-bauen-und-oeffnen">15. Die Wiki als HTML-Site bauen und oeffnen</a></li>
 <li class="wiki-toc-link level-3"><a href="#16-einen-projektordner-live-ueberwachen">16. Einen Projektordner live ueberwachen</a></li>
+<li class="wiki-toc-link level-3"><a href="#17-windows-persistenz-und-temp-ausfuehrung-gezielt-ueberwachen">17. Windows-Persistenz und Temp-Ausfuehrung gezielt ueberwachen</a></li>
 <li class="wiki-toc-link"><a href="#wann-diese-seite-benutzt-werden-sollte">Wann diese Seite benutzt werden sollte</a></li>
 <li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
 </ul></div>

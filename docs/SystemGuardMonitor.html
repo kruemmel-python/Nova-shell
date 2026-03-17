@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="Nova-shell wiki builder">
-  <title>Wiki Page Template | Nova-shell Wiki</title>
+  <title>System Guard Monitor | Nova-shell Wiki</title>
   <link rel="stylesheet" href="assets/wiki.css">
 </head>
 <body>
@@ -47,7 +47,7 @@
 <li><a class="wiki-nav-link" data-nav-href="ZeroCopyFederatedLearningMesh.html" href="ZeroCopyFederatedLearningMesh.html">ZeroCopyFederatedLearningMesh</a></li>
 <li><a class="wiki-nav-link" data-nav-href="MyceliaAtheriaCoEvolution.html" href="MyceliaAtheriaCoEvolution.html">MyceliaAtheriaCoEvolution</a></li>
 <li><a class="wiki-nav-link" data-nav-href="WatchMonitor.html" href="WatchMonitor.html">WatchMonitor</a></li>
-<li><a class="wiki-nav-link" data-nav-href="SystemGuardMonitor.html" href="SystemGuardMonitor.html">SystemGuardMonitor</a></li>
+<li><a class="wiki-nav-link active" data-nav-href="SystemGuardMonitor.html" href="SystemGuardMonitor.html">SystemGuardMonitor</a></li>
 <li><a class="wiki-nav-link" data-nav-href="WatchMonitorQuickStart.html" href="WatchMonitorQuickStart.html">WatchMonitorQuickStart</a></li>
 <li><a class="wiki-nav-link" data-nav-href="WatchMonitorReportReference.html" href="WatchMonitorReportReference.html">WatchMonitorReportReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="WatchMonitorAutomationAndAI.html" href="WatchMonitorAutomationAndAI.html">WatchMonitorAutomationAndAI</a></li>
@@ -97,12 +97,12 @@
 <h2>Entwicklung und Betrieb</h2>
 <ul>
 <li><a class="wiki-nav-link" data-nav-href="DevelopmentGuide.html" href="DevelopmentGuide.html">DevelopmentGuide</a></li>
-<li><a class="wiki-nav-link active" data-nav-href="PageTemplate.html" href="PageTemplate.html">PageTemplate</a></li>
+<li><a class="wiki-nav-link" data-nav-href="PageTemplate.html" href="PageTemplate.html">PageTemplate</a></li>
 <li><a class="wiki-nav-link" data-nav-href="RepositoryStructure.html" href="RepositoryStructure.html">RepositoryStructure</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Testing.html" href="Testing.html">Testing</a></li>
 <li><a class="wiki-nav-link" data-nav-href="BuildAndRelease.html" href="BuildAndRelease.html">BuildAndRelease</a></li>
 <li><a class="wiki-nav-link" data-nav-href="WatchMonitor.html" href="WatchMonitor.html">WatchMonitor</a></li>
-<li><a class="wiki-nav-link" data-nav-href="SystemGuardMonitor.html" href="SystemGuardMonitor.html">SystemGuardMonitor</a></li>
+<li><a class="wiki-nav-link active" data-nav-href="SystemGuardMonitor.html" href="SystemGuardMonitor.html">SystemGuardMonitor</a></li>
 <li><a class="wiki-nav-link" data-nav-href="WatchMonitorReportReference.html" href="WatchMonitorReportReference.html">WatchMonitorReportReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="WatchMonitorAutomationAndAI.html" href="WatchMonitorAutomationAndAI.html">WatchMonitorAutomationAndAI</a></li>
 <li><a class="wiki-nav-link" data-nav-href="SecurityModel.html" href="SecurityModel.html">SecurityModel</a></li>
@@ -131,115 +131,141 @@
         <button type="button" class="wiki-nav-toggle" data-nav-toggle>Menu</button>
         <div class="wiki-header-copy">
           <span class="wiki-kicker">Nova-shell Documentation</span>
-          <h1>Wiki Page Template</h1>
-          <p>Source: PageTemplate.md</p>
+          <h1>System Guard Monitor</h1>
+          <p>Source: SystemGuardMonitor.md</p>
         </div>
       </header>
       <div class="wiki-layout">
         <article class="wiki-article">
-          <h1 id="wiki-page-template">Wiki Page Template</h1>
+          <h1 id="system-guard-monitor">System Guard Monitor</h1>
 <h2 id="zweck">Zweck</h2>
-<p>Diese Seite definiert das bevorzugte Format fuer Wiki-Seiten in Nova-shell. Sie ist die redaktionelle Vorlage, mit der die Dokumentation konsistent, technisch brauchbar und testbar bleibt.</p>
-<h2 id="grundprinzipien">Grundprinzipien</h2>
+<p>Der System Guard Monitor ist ein zweites Watch-Modul neben dem Projektmonitor. Er richtet sich nicht auf Quellcode-Churn in einem einzelnen Repo, sondern auf kritische Windows-Pfade, in denen Malware typischerweise Persistenz, Temp-Ausfuehrung oder privilegierte Manipulation etabliert.</p>
+<p>Der Guard ist deshalb kein klassischer Signatur-Scanner, sondern ein gezielter Host-Integrity-Monitor:</p>
 <ul>
-<li>Jede technische Seite braucht einen klaren Zweck.</li>
-<li>Jede Seite soll zeigen, wie etwas benutzt wird, nicht nur was es ist.</li>
-<li>Jede Fachseite soll mindestens ein konkretes Beispiel oder einen testbaren Einstieg enthalten.</li>
-<li>Jede Seite soll sinnvoll auf naechste Seiten verweisen.</li>
+<li>fokussierte Pfade statt Vollscan ueber ganze Laufwerke</li>
+<li>Datei- und Hash-Aenderungserkennung</li>
+<li>Zeilen-Diffs fuer textbasierte Skripte wie <code>.bat</code>, <code>.cmd</code>, <code>.ps1</code>, <code>.js</code></li>
+<li>Authenticode- und Publisher-Pruefung fuer <code>.exe</code>, <code>.dll</code>, <code>.sys</code>, <code>.msi</code>, <code>.ps1</code></li>
+<li>Scheduled-Task- und Registry-Run-Key-Inventar</li>
+<li>optionale Quarantaene fuer neue Hochrisiko-Dateien</li>
+<li>HTML-Report und JSON-Status</li>
+<li>Watchdog-Events oder Polling als Laufzeitmodus</li>
 </ul>
-<h2 id="standardschema-fuer-technische-fachseiten">Standardschema fuer technische Fachseiten</h2>
-<pre><code class="language-text"># Seitentitel
-
-## Zweck
-Kurze Einordnung: Was beschreibt die Seite und warum ist sie relevant?
-
-## Kernobjekte
-Klassen, Komponenten, Datenstrukturen oder Subsysteme.
-
-## Methoden und Schnittstellen
-Wichtige Methoden, Endpunkte, Kommandos oder Integrationspunkte.
-
-## CLI
-Falls es direkte CLI-Pfade gibt.
-
-## API
-Falls es direkte HTTP- oder Programmierschnittstellen gibt.
-
-## Beispiele
-Kurze, echte Anwendungsbeispiele.
-
-## Typische Fehler oder Fragen
-Die ersten sinnvollen Diagnose- oder Denkpfade.
-
-## Verwandte Seiten
-Nahe Architektur-, Referenz- oder Tutorialseiten.</code></pre>
-<h2 id="schema-fuer-tutorial-seiten">Schema fuer Tutorial-Seiten</h2>
-<pre><code class="language-text"># Tutorialtitel
-
-## Ziel
-
-## Voraussetzungen
-
-## Schritte
-
-## Ergebnispruefung
-
-## Typische Fehler
-
-## Verwandte Seiten</code></pre>
-<h2 id="schema-fuer-portal-und-navigationsseiten">Schema fuer Portal- und Navigationsseiten</h2>
-<pre><code class="language-text"># Seitentitel
-
-## Zweck
-
-## Startpunkte oder Bereiche
-
-## Empfohlene Lesepfade
-
-## Verwandte Seiten</code></pre>
-<h2 id="schema-fuer-faq-oder-troubleshooting-seiten">Schema fuer FAQ- oder Troubleshooting-Seiten</h2>
-<pre><code class="language-text"># Seitentitel
-
-## Zweck
-
-## Erster Diagnoseblock
-
-## Fragen oder Fehlerbilder
-
-## Verwandte Seiten</code></pre>
-<h2 id="redaktionsregeln">Redaktionsregeln</h2>
+<h2 id="standardpfade">Standardpfade</h2>
+<p>Standardmaessig bewertet der Guard diese Windows-Bereiche:</p>
 <ul>
-<li>keine reine Schlagwortliste ohne Erklaerung</li>
-<li>keine leeren Kommandotabellen ohne Beispiel</li>
-<li>keine Verweise auf externe Projekt-Markdown-Dateien als Ersatz fuer Inhalt</li>
-<li>keine Theorie ohne Bezug zu realen Kommandos, Klassen oder Ablaufen</li>
+<li>User Startup</li>
+<li>Machine Startup</li>
+<li><code>System32\\drivers</code></li>
+<li><code>System32\\config</code></li>
+<li><code>SysWOW64</code></li>
+<li>User Temp</li>
+<li>Windows Temp</li>
+<li>Downloads</li>
+<li>Chrome Extensions</li>
+<li>Roaming Profile</li>
 </ul>
-<h2 id="qualitaetscheck-fuer-neue-seiten">Qualitaetscheck fuer neue Seiten</h2>
-<p>Eine Seite ist erst dann fertig, wenn sie:</p>
-<ol>
-<li>ihren Zweck klar benennt</li>
-<li>mindestens einen realistischen Einstieg nennt</li>
-<li>intern sinnvoll verlinkt ist</li>
-<li>nicht nur Features aufzaehlt, sondern deren Rolle erklaert</li>
-<li>fuer Nutzer oder Entwickler eine erkennbare naechste Handlung anbietet</li>
-</ol>
+<p>Wenn das Arbeitsverzeichnis wie ein Projekt aussieht, kann zusaetzlich eine <code>Project Integrity</code>-Scope aktiv werden.</p>
+<h2 id="start">Start</h2>
+<p>Lege <code>nova_system_guard.ns</code> in ein Arbeitsverzeichnis und starte:</p>
+<pre><code class="language-powershell">ns.run nova_system_guard.ns</code></pre>
+<p>Ein sicherer Erstlauf ohne Browser:</p>
+<pre><code class="language-powershell">$env:NOVA_SYSTEM_GUARD_ONESHOT = &quot;1&quot;
+$env:NOVA_SYSTEM_GUARD_OPEN = &quot;0&quot;
+ns.run nova_system_guard.ns</code></pre>
+<h2 id="eigene-testpfade">Eigene Testpfade</h2>
+<p>Fuer kontrollierte Tests oder Laborumgebungen kannst du die Standardpfade abschalten und nur gezielte Ordner beobachten:</p>
+<pre><code class="language-powershell">$env:NOVA_SYSTEM_GUARD_INCLUDE_DEFAULTS = &quot;0&quot;
+$env:NOVA_SYSTEM_GUARD_INCLUDE_PROJECT = &quot;off&quot;
+$env:NOVA_SYSTEM_GUARD_PATHS = &quot;C:/lab/startup;C:/lab/temp&quot;
+$env:NOVA_SYSTEM_GUARD_ONESHOT = &quot;1&quot;
+$env:NOVA_SYSTEM_GUARD_OPEN = &quot;0&quot;
+ns.run nova_system_guard.ns</code></pre>
+<p>Der Guard erkennt dabei auch benutzerdefinierte Pfade heuristisch:</p>
+<ul>
+<li><code>startup</code> -&gt; Persistenzpfad</li>
+<li><code>temp</code> -&gt; Temp-Ausfuehrung</li>
+<li><code>downloads</code> -&gt; eingehende ausfuehrbare Dateien</li>
+<li><code>drivers</code> -&gt; Kernel-nahe Dateien</li>
+<li><code>config</code> -&gt; Registry-/Hive-nahe Dateien</li>
+</ul>
+<p>Scheduled Tasks und Run Keys bleiben standardmaessig auch dann aktiv, wenn die Dateisystem-Standardpfade abgeschaltet werden. Wenn du nur Dateipfade ohne Windows-Inventar willst:</p>
+<pre><code class="language-powershell">$env:NOVA_SYSTEM_GUARD_INCLUDE_WINDOWS_INVENTORY = &quot;0&quot;</code></pre>
+<h2 id="watch-modi">Watch-Modi</h2>
+<pre><code class="language-powershell">$env:NOVA_SYSTEM_GUARD_WATCH_MODE = &quot;auto&quot;
+ns.run nova_system_guard.ns</code></pre>
+<p>Verfuegbare Modi:</p>
+<ul>
+<li><code>auto</code></li>
+<li><code>watchdog</code></li>
+<li><code>poll</code></li>
+</ul>
+<h2 id="aktive-schutzaktionen">Aktive Schutzaktionen</h2>
+<p>Der Guard kann neue Hochrisiko-Dateien direkt in Quarantaene verschieben:</p>
+<pre><code class="language-powershell">$env:NOVA_SYSTEM_GUARD_ACTION = &quot;high&quot;
+ns.run nova_system_guard.ns</code></pre>
+<p>Modi:</p>
+<ul>
+<li><code>off</code></li>
+<li><code>critical</code></li>
+<li><code>high</code></li>
+<li><code>all</code></li>
+</ul>
+<h2 id="ausgabe">Ausgabe</h2>
+<p>Artefakte liegen unter:</p>
+<ul>
+<li><code>.nova_system_guard/system_guard_report.html</code></li>
+<li><code>.nova_system_guard/system_guard_analysis.json</code></li>
+<li><code>.nova_system_guard/history.json</code></li>
+<li><code>.nova_system_guard/latest_status.json</code></li>
+<li><code>.nova_system_guard/files/*.html</code></li>
+<li><code>.nova_system_guard/quarantine/*</code></li>
+</ul>
+<h2 id="bewertung">Bewertung</h2>
+<p>Der Guard vergibt pro Datei einen Risiko-Score und stuft Ereignisse in:</p>
+<ul>
+<li><code>low</code></li>
+<li><code>medium</code></li>
+<li><code>high</code></li>
+<li><code>critical</code></li>
+</ul>
+<p>Einflussfaktoren sind unter anderem:</p>
+<ul>
+<li>Scope-Prioritaet</li>
+<li>Dateiart: <code>driver</code>, <code>registry_hive</code>, <code>executable</code>, <code>script</code></li>
+<li>Persistenzpfade</li>
+<li>Scheduled Tasks und Registry-Run-Keys</li>
+<li>ausfuehrbare Dateien in Temp oder Downloads</li>
+<li>fehlende oder nicht vertrauenswuerdige Signatur</li>
+<li>doppelte Dateiendungen</li>
+<li>auffaellige Dateinamen wie <code>autorun</code>, <code>update</code>, <code>driver</code>, <code>inject</code></li>
+</ul>
+<h2 id="typischer-einsatz">Typischer Einsatz</h2>
+<ul>
+<li>neue <code>.exe</code> oder <code>.ps1</code> in Temp-Ordnern erkennen</li>
+<li>geaenderte <code>.bat</code>-Dateien im Startup mit Diff pruefen</li>
+<li>unerklaerte Aenderungen in Treiber- oder Hive-Pfaden sichtbar machen</li>
+<li>Projektordner als zweite Prioritaet gegen Missbrauch oder Seiteneffekte beobachten</li>
+</ul>
 <h2 id="verwandte-seiten">Verwandte Seiten</h2>
 <ul>
-<li><a href="README.html">README</a></li>
-<li><a href="DevelopmentGuide.html">DevelopmentGuide</a></li>
-<li><a href="ReviewsAndReadingPaths.html">ReviewsAndReadingPaths</a></li>
+<li><a href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
+<li><a href="WatchMonitor.html">WatchMonitor</a></li>
+<li><a href="WatchMonitorQuickStart.html">WatchMonitorQuickStart</a></li>
+<li><a href="OperationsAndObservability.html">OperationsAndObservability</a></li>
 </ul>
         </article>
         <aside class="wiki-toc">
           <div class="wiki-toc-card"><h2>On this page</h2><ul>
 <li class="wiki-toc-link"><a href="#zweck">Zweck</a></li>
-<li class="wiki-toc-link"><a href="#grundprinzipien">Grundprinzipien</a></li>
-<li class="wiki-toc-link"><a href="#standardschema-fuer-technische-fachseiten">Standardschema fuer technische Fachseiten</a></li>
-<li class="wiki-toc-link"><a href="#schema-fuer-tutorial-seiten">Schema fuer Tutorial-Seiten</a></li>
-<li class="wiki-toc-link"><a href="#schema-fuer-portal-und-navigationsseiten">Schema fuer Portal- und Navigationsseiten</a></li>
-<li class="wiki-toc-link"><a href="#schema-fuer-faq-oder-troubleshooting-seiten">Schema fuer FAQ- oder Troubleshooting-Seiten</a></li>
-<li class="wiki-toc-link"><a href="#redaktionsregeln">Redaktionsregeln</a></li>
-<li class="wiki-toc-link"><a href="#qualitaetscheck-fuer-neue-seiten">Qualitaetscheck fuer neue Seiten</a></li>
+<li class="wiki-toc-link"><a href="#standardpfade">Standardpfade</a></li>
+<li class="wiki-toc-link"><a href="#start">Start</a></li>
+<li class="wiki-toc-link"><a href="#eigene-testpfade">Eigene Testpfade</a></li>
+<li class="wiki-toc-link"><a href="#watch-modi">Watch-Modi</a></li>
+<li class="wiki-toc-link"><a href="#aktive-schutzaktionen">Aktive Schutzaktionen</a></li>
+<li class="wiki-toc-link"><a href="#ausgabe">Ausgabe</a></li>
+<li class="wiki-toc-link"><a href="#bewertung">Bewertung</a></li>
+<li class="wiki-toc-link"><a href="#typischer-einsatz">Typischer Einsatz</a></li>
 <li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
 </ul></div>
         </aside>
@@ -251,7 +277,7 @@ Nahe Architektur-, Referenz- oder Tutorialseiten.</code></pre>
   </div>
   <script>
     window.NOVA_WIKI = {
-      currentPage: "PageTemplate.html",
+      currentPage: "SystemGuardMonitor.html",
       searchIndex: "assets/search-index.json"
     };
   </script>
