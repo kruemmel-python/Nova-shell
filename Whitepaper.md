@@ -2,280 +2,456 @@
 
 ## Executive Summary
 
-Nova-shell ist eine Unified Compute and Data Orchestration Runtime fuer polyglotte Pipelines. Das System kombiniert interaktive Shell-Bedienung, deklarative Pipeline-Ausfuehrung, verteilte Reaktionsmechanismen, Observability und Security-Enforcement in einer gemeinsamen Laufzeit.
+Nova-shell ist mit Version `0.8.14` keine reine polyglotte Compute-Runtime mehr. Das System ist heute eine kombinierte Plattform aus:
 
-Der Kernnutzen liegt nicht in einer weiteren klassischen Kommandozeile, sondern in einer Runtime, die unterschiedliche Ausfuehrungsmodelle unter einem operativen Dach zusammenfuehrt:
+- interaktiver Shell
+- deklarativer Sprache (`.ns`)
+- AI- und Knowledge-Runtime
+- verteilter Orchestrierungs- und Control-Plane
 
-- Python fuer schnelle Entwicklung und flexible Datenlogik
-- C++ fuer performanzkritische Ausfuehrung
-- GPU- und WASM-Pfade fuer spezialisierte Workloads
-- Mesh- und Remote-Ausfuehrung fuer verteilte Systeme
-- Lineage-, Observability- und Guard-Mechanismen fuer Nachvollziehbarkeit und Kontrolle
+Nova-shell verbindet damit Eigenschaften aus Unix-Shell, Workflow-Engine, Agent-Runtime, Service-Fabric und Mesh-Orchestrierung in einem gemeinsamen Laufzeitmodell.
 
-Mit Version 0.8.1 adressiert Nova-shell vor allem vier Anforderungen moderner Plattformen: geringere Integrationskosten zwischen Engines, reproduzierbare Daten- und Compute-Pipelines, kontrollierte Sicherheitsgrenzen und release-faehige Supply-Chain-Artefakte fuer Windows und Linux.
+Der Kernnutzen liegt in der Vereinheitlichung von bisher getrennten Schichten:
+
+- lokale und verteilte Ausfuehrung
+- Python, C++, GPU, WASM und externe Tools
+- Agenten, Atheria-Knowledge und Event-Flows
+- Security, Trust, Observability und Release-Faehigkeit
+- Dokumentation, Analyse und Betrieb in derselben Plattform
+
+Nova-shell ist damit nicht nur eine Shell mit vielen Befehlen, sondern eine deklarative AI-OS-Runtime fuer Teams, die Compute, Wissen, Agenten und verteilte Reaktionen unter einem konsistenten Modell betreiben wollen.
 
 ## 1. Problemstellung
 
-Moderne Daten- und Compute-Systeme scheitern in der Praxis selten an einzelnen Algorithmen. Die eigentliche Komplexitaet entsteht an den Uebergaengen:
+In modernen Systemen entstehen die groessten Reibungsverluste nicht in einzelnen Algorithmen, sondern an den Uebergaengen:
 
-- Daten muessen zwischen Python, nativen Komponenten, GPU-Pfaden und verteilten Knoten bewegt werden.
-- Performance-kritische Schritte werden oft manuell in andere Sprachen oder Toolchains ausgelagert.
-- Reaktive Workflows, Debugging und Nachvollziehbarkeit wachsen ungeordnet ueber mehrere Systeme hinweg.
-- Sicherheitsgrenzen fuer untrusted Code sind inkonsistent oder zu spaet im Lifecycle verankert.
-- Releasbare Artefakte fuer Enterprise-Umgebungen benoetigen reproduzierbare Builds, Signaturen und attestierbare Metadaten.
+- Code und Daten wechseln zwischen Python, nativen Komponenten, GPU-Pfaden und Remote-Workern.
+- Agentenlogik, Event-Handling, Build-Automation und Wissensspeicher wachsen oft in getrennten Werkzeugen.
+- Orchestrierung, Security, Telemetrie, Dokumentation und Release-Prozesse werden als spaete Nebenaufgaben behandelt.
+- Verteilte Systeme scheitern selten an einer fehlenden Funktion, sondern an inkonsistenter Ausfuehrung, schwacher Beobachtbarkeit und fehlender Integritaet.
 
-Nova-shell setzt genau an diesen Bruchstellen an: Es vereinheitlicht Datenfluss, Ausfuehrung, Beobachtbarkeit, Security und Release-Operations in einer einzigen Runtime.
+Klassische Toolketten loesen Teilprobleme:
 
-## 2. Positionierung
+- Shells orchestrieren Kommandos.
+- Workflow-Tools koordinieren Jobs.
+- Agent-Frameworks steuern LLM-Aufgaben.
+- Cluster-Systeme verteilen Last.
+- Doku-Generatoren bauen Dokumentation.
 
-Nova-shell ist nicht als Ersatz fuer Bash, PowerShell oder klassische System-Shells konzipiert. Es ist eine polyglotte Runtime mit Shell-Oberflaeche.
+Aber diese Schichten bleiben meist organisatorisch und technisch getrennt.
 
-Im Fokus stehen:
+Nova-shell setzt genau dort an: Es fuehrt Sprache, Runtime, Agents, Wissen, Events, Mesh, Security und Release-Operations in einer Plattform zusammen.
 
-- orchestrierte Daten- und Compute-Pipelines
-- Engine-Selektion und Ausfuehrungsoptimierung
-- linearisierte und reaktive Ausfuehrungsmodelle
-- sichere und nachvollziehbare Laufzeitentscheidungen
-- produktionsfaehige Distribution auf Windows und Linux
+## 2. Systemdefinition
 
-## 3. Architekturprinzipien
+Nova-shell ist heute gleichzeitig drei Dinge:
 
-Die Architektur folgt sechs Leitprinzipien:
+### 2.1 Eine deklarative Sprache
 
-1. Ein gemeinsames Bedienmodell
-   Nova-shell bietet einheitliche Kommandos fuer lokale, native, verteilte und beobachtbare Ausfuehrung.
+Mit der Nova Language (`.ns`) koennen Systeme, Flows, Zustandsraeume, Agenten, Datensaetze, Services, Events und Packages beschrieben werden.
 
-2. Daten zuerst
-   Die Runtime behandelt Datenfluss und Speicherpfade als Kernproblem, nicht als Nebeneffekt einzelner Engines.
+Beispielhaft:
 
-3. Engine-Unabhaengigkeit
-   Python, C++, GPU, WASM und Remote-Ausfuehrung werden als austauschbare oder kombinierbare Execution Targets behandelt.
+```ns
+agent researcher {
+  model: local
+}
 
-4. Beobachtbarkeit als Standard
-   Ereignisse, Snapshots, Lineage und Bottleneck-Sicht sind keine spaeten Add-ons, sondern Bestandteil des Systems.
+dataset inbox {
+  path: "."
+  format: "directory"
+}
 
-5. Sicherheitsgrenzen in der Runtime
-   Policies, Sandboxing und Guard-Mechanismen werden direkt in den Ausfuehrungspfad integriert.
+flow analyze {
+  researcher summarize inbox -> summary
+  system.log summary
+}
+```
 
-6. Release-Faehigkeit
-   Ein produktionsreifes Runtime-System muss nicht nur laufen, sondern auch paketierbar, signierbar und attestierbar sein.
+### 2.2 Eine AI- und Knowledge-Runtime
 
-## 4. Systemarchitektur
+Nova-shell enthaelt eine Agent-Schicht mit:
 
-Nova-shell laesst sich in vier Ebenen gliedern.
+- Modell- und Provider-Selektion
+- Tool-Nutzung
+- Memory- und Prompt-Registry
+- Eval- und Governance-Pfaden
+- Atheria als lokales Wissens- und Lernsystem
 
-### 4.1 Execution Layer
+### 2.3 Eine verteilte Orchestrierungsplattform
 
-Die Execution Layer stellt mehrere Engines unter einer gemeinsamen Routing-Oberflaeche bereit:
+Das System enthaelt:
 
-- `py` und `python` fuer Skript- und Ausdrucksausfuehrung
-- `cpp` fuer native Kompilierung und Ausfuehrung
-- `gpu` fuer GPU-nahe Berechnungspfade
-- `wasm` und `cpp.sandbox` fuer kontrollierte Sandbox-Ausfuehrung
-- `remote` und Mesh-Targets fuer verteilte Ausfuehrung
-- `sys` fuer bewusst kontrollierte Systemaufrufe
+- Execution Graphs statt nur linearer Pipelines
+- Event-Bus und Reactive Flows
+- Mesh-Worker und Remote-Ausfuehrung
+- Control Plane mit Queueing, Replay, Snapshots und Konsens
+- Service-Fabric, Traffic Plane und Rollout-Mechanismen
 
-Darauf aufbauend optimiert NovaGraph zusammenhaengende Pipelines, inklusive Fusion geeigneter C++-Expression-Stages.
+## 3. Leitprinzipien
 
-### 4.2 Data Plane
+Die Architektur folgt sieben Leitprinzipien:
 
-Die Data Plane verbindet Compute-Stages mit moeglichst geringem Integrations- und Kopieraufwand:
+1. Minimalismus
+   Nova-shell versucht nicht, unnoetige Schichten zu verstecken. Vieles bleibt bewusst sichtbar und steuerbar.
 
-- objektbasierte und textbasierte Pipeline-Weitergabe
-- Shared-Memory-Handles ueber NovaZero
-- Arrow-basierte IPC-Pfade fuer engine-uebergreifende Uebergabe
-- Fabric- und Remote-Transfermechanismen fuer erweiterte Datenwege
+2. Deklarative Systemprogrammierung
+   Systeme, Flows, Services und Agenten sollen beschreibbar und nicht nur imperativ zusammengeskriptet sein.
 
-Ziel ist nicht nur Performance, sondern auch eine klare Trennung zwischen Datenbewegung, Datenidentitaet und Stage-Ausfuehrung.
+3. Graph statt linearer Befehlskette
+   Abhaengigkeiten, Datenfluss und Ausfuehrung werden als gerichteter Graph verstanden.
 
-### 4.3 Control and Workflow Plane
+4. Agent-Nativitaet
+   Agenten sind kein Fremdkoerper, sondern integraler Teil der Runtime.
 
-Nova-shell kombiniert lineare Pipeline-Ausfuehrung mit reaktiven und verteilten Triggern:
+5. Event-getriebener Betrieb
+   Reaktionen auf Dateiaenderungen, Runtime-Ereignisse oder Wissensupdates gehoeren in die Plattform selbst.
 
-- NovaScript fuer DSL-basierte Ausfuehrungslogik
-- lokale Watch- und Reactive-Mechanismen
-- NovaFlow (`dflow`) fuer verteilte Event-getriebene Workflows
-- Mesh Intelligence fuer Worker-Auswahl und Remote-Offloading
+6. Security und Verifizierbarkeit in der Laufzeit
+   Trust, Isolation, Policies, Signaturen und Integritaetspruefungen muessen in der Ausfuehrungsschicht liegen.
 
-Damit eignet sich das System sowohl fuer ad-hoc Ausfuehrung in einer interaktiven Shell als auch fuer dauerhafte Ereignisverarbeitung.
+7. Release-Faehigkeit
+   Eine Runtime mit Produktionsanspruch muss baubar, paketierbar, attestierbar und reproduzierbar sein.
 
-### 4.4 Observability and Security Plane
+## 4. Gesamtarchitektur
 
-Observability und Security sind als Laufzeitfunktionen integriert:
+Nova-shell laesst sich in sechs Ebenen gliedern.
 
-- NovaLens fuer Snapshots, Replay und CAS-orientierte Lineage
-- NovaPulse fuer Runtime-Status, Event-Tails und Bottleneck-Sicht
-- NovaGuard fuer Policy-Enforcement, eBPF-nahe Guard-Flows und WASM-first-Isolation
-- `doctor` fuer lokale Runtime- und Toolchain-Diagnose
+### 4.1 Interface Layer
 
-Diese Ebene adressiert sowohl operative Fehlersuche als auch Governance-Anforderungen.
+Die Interface Layer umfasst:
 
-## 5. Die Enterprise-Module von Nova-shell
+- interaktive CLI
+- Shell-Pipelines
+- NovaScript- und Legacy-Befehle
+- Nova Language (`ns.run`, `ns.graph`, `ns.exec`)
+- HTML-Wiki-Build und lokales Doku-Serving
 
-### 5.1 NovaZero: Unified Zero-Copy Memory Bridge
+Sie ist nicht nur Bedienoberflaeche, sondern Einstieg in dieselbe Runtime.
 
-NovaZero stellt einen globalen Shared-Memory-Pool fuer Datenobjekte und Arrow-basierte Uebergaben bereit. Ziel ist eine Reduktion von Serialisierungs- und Kopierkosten beim Wechsel zwischen Python, nativen Komponenten und weiteren Engines.
+### 4.2 Language and Graph Layer
 
-Relevante Kommandos:
+Die Nova Language wird ueber Parser, AST und Graph-Compiler verarbeitet:
 
-- `zero put <text>`
-- `zero put-arrow <csv>`
-- `zero get <handle>`
-- `zero list`
-- `zero release <handle>`
+- `NovaParser`
+- typisierte AST-Knoten
+- Graph-Kompilierung in DAG-Strukturen
+- deklarative Tools und Runtime-Knoten
 
-Geeignet fuer:
+Dadurch wird aus einer `.ns`-Datei kein loses Skript, sondern ein ausfuehrbarer Systemgraph.
 
-- grosse CSV- oder Arrow-orientierte Datenpfade
-- mehrstufige Compute-Ketten mit wechselnden Engines
-- speicherkritische Vorverarbeitungspipelines
+### 4.3 Execution and Backend Layer
 
-### 5.2 NovaSynth: AI-Native Engine Selector and Autotuner
+Nova-shell orchestriert mehrere Ausfuehrungsziele:
 
-NovaSynth erweitert die Runtime um heuristische und telemetriegestuetzte Empfehlungen zur Engine-Selektion. In der aktuellen Auspraegung handelt es sich um eine lokale Entscheidungslogik, nicht um einen Zwang zu externen Cloud-Modellen.
+- `py` und `python`
+- `cpp`
+- `gpu`
+- `wasm`
+- `sys`
+- `remote`
+- Mesh-Dispatch
 
-Relevante Kommandos:
+Hinzu kommen native Executor-Daemons, isolierte Jobausfuehrung, Timeout-, Cancel- und Restart-Pfade.
 
-- `synth suggest <code>`
-- `synth autotune <code>`
+### 4.4 AI and Knowledge Layer
 
-Ziel ist eine bessere operative Entscheidung darueber, ob ein Block in Python, C++, GPU- oder Mesh-Richtung optimiert werden sollte.
+Diese Schicht umfasst:
 
-### 5.3 NovaPulse: Real-Time Observability Surface
+- Agent Runtime
+- Provider-Adapter
+- Prompt- und Eval-Registry
+- Tool-Sandboxing
+- lokales und verteiltes Memory
+- Atheria als Wissens-, Trainings- und Embedding-Schicht
+- Mycelia-Co-Evolution fuer populationsbasierte Optimierung
 
-NovaPulse stellt einen konsolidierten Observability-Einstieg fuer die Runtime bereit. Dazu gehoeren Laufzeitstatus, Ereignis-Insights und Bottleneck-Hinweise sowohl in der CLI als auch ueber die Vision-API.
+Hier wird Nova-shell zu einem AI-Betriebssystemkern und nicht nur zu einem Shell-Wrapper fuer Modellaufrufe.
 
-Relevante Schnittstellen:
+### 4.5 Control and Mesh Layer
 
-- `pulse status`
-- `pulse snapshot`
-- `GET /pulse/state`
+Diese Ebene umfasst:
 
-NovaPulse reduziert die Luecke zwischen lokaler Shell-Ausfuehrung und operativem Runtime-Monitoring.
+- Event-Bus
+- Queueing und Scheduling
+- Control Plane
+- Konsens- und Replikationspfade
+- Mesh-Worker
+- Federated Learning Mesh
+- Service-Fabric und Traffic Plane
 
-### 5.4 NovaFlow: Distributed Reactive Workflows
+Die Folge ist, dass Compute, Agenten, Wissen und Services nicht separat orchestriert werden muessen.
 
-NovaFlow erweitert lokale Trigger zu einem verteilten Event-Modell. Dadurch koennen Aenderungen, Signale und Reaktionen ueber Systemgrenzen hinweg gekoppelt werden.
+### 4.6 Operations, Security and Release Layer
 
-Relevante Kommandos und Endpunkte:
+Nova-shell enthaelt:
 
-- `dflow subscribe <event> <pipeline>`
-- `dflow publish <event> <payload> [--broadcast]`
-- `dflow list`
-- `POST /flow/event`
+- PKI-, Trust- und mTLS-Onboarding
+- Policies, Namespace- und Quota-Enforcement
+- Telemetrie, Traces, Alerts, Statusoberflaechen
+- Backups, Replay und Recovery
+- Windows-MSI, Standalone, Wheel, SBOM und Checksums
 
-NovaFlow eignet sich insbesondere fuer Edge-to-Core-Szenarien, Event-Pipelines und koordinierte Reaktionen ueber mehrere Knoten.
+Diese Schicht ist entscheidend, damit das System nicht bei Demos stehen bleibt.
 
-### 5.5 NovaGuard: Sandbox Isolation and Policy Enforcement
+## 5. Wichtige Systemkomponenten
 
-NovaGuard adressiert das Sicherheitsproblem polyglotter Runtime-Systeme. In Nova-shell umfasst dies Policy-Kontrollen, eBPF-nahe Enforcement-Pfade und eine WASM-first-Sandbox fuer isolierte Ausfuehrung.
+### 5.1 Nova Language
 
-Relevante Kommandos:
+Nova Language ist die deklarative Systemsprache von Nova-shell. Sie modelliert:
 
-- `guard sandbox on|off|status`
-- `cpp.sandbox <cpp_code>`
-- `guard ebpf-status`
-- `guard ebpf-compile <policy>`
-- `guard ebpf-enforce <policy>`
-- `guard ebpf-release`
+- `system`
+- `state`
+- `dataset`
+- `agent`
+- `tool`
+- `flow`
+- `event`
+- `service`
+- `package`
 
-Der Sicherheitsnutzen liegt in kontrollierter Ausfuehrung und reduzierter Vertrauensannahme gegenueber eingebrachtem Code.
+Neuere Erweiterungen umfassen ausserdem deklarative Blob-Ausfuehrung ueber:
 
-## 6. Nachvollziehbarkeit und Observability
+- `blob.verify`
+- `blob.unpack`
+- `blob.exec`
 
-Produktionssysteme benoetigen mehr als Logs. Nova-shell adressiert dies ueber zwei komplementaere Mechanismen:
+Nova-shell wird dadurch programmierbar, ohne dass jede Systemfunktion auf Shell-Skripting reduziert bleibt.
 
-- NovaLens fuer artefaktbezogene Nachvollziehbarkeit, Snapshot-Inspektion und Replay
-- NovaPulse fuer aktuelle Betriebszustands- und Event-Sicht
+### 5.2 Atheria
 
-Diese Trennung ist bewusst: Lens beantwortet primaer die Frage "Was ist passiert?", Pulse die Frage "Was passiert gerade?".
+Atheria ist die lokale Knowledge- und Lernschicht von Nova-shell. Sie dient unter anderem fuer:
 
-## 7. Security-Modell
+- Dokument- und Dateitraining
+- Embeddings und Suchpfade
+- lokale AI-gestuetzte Analyse
+- Invarianten und Trendwissen
+- Verbindung von Laufzeitbeobachtung und Wissensraum
 
-Das Sicherheitsmodell von Nova-shell basiert auf kontrollierter Faehigkeitserweiterung statt implizitem Vollzugriff.
+Atheria ist nicht nur ein Beisystem, sondern ein zentraler Teil der semantischen Betriebslogik.
 
-Wesentliche Aspekte:
+### 5.3 Agent Runtime
 
-- Guard-Policies koennen Systemaufrufe und riskante Pfade begrenzen.
-- Sandbox-Modi reduzieren die Angriffsoberflaeche fuer untrusted Workloads.
-- C++-Sandboxing ueber WASM-first reduziert Host-Abhaengigkeit im unsicheren Ausfuehrungspfad.
-- Release-Artefakte koennen mit Signaturen, SBOM und Attestations ausgeliefert werden.
+Die Agent Runtime fuehrt Aufgaben mit Modell-, Tool- und Memory-Kontext aus. Dabei unterstuetzt sie:
 
-Wichtig ist die Abgrenzung: Nova-shell liefert Sicherheitsmechanismen, ersetzt aber keine vollstaendige Organisations-, Netzwerk- oder IAM-Architektur.
+- lokale Modelle
+- OpenAI-kompatible Provider
+- LM Studio
+- Ollama
+- Atheria-zentrierte lokale Review- und Analysepfade
 
-## 8. Release-, Distribution- und Supply-Chain-Modell
+Agenten koennen sowohl ad hoc angesprochen als auch in Graphen, Watches und Projektmonitoren eingebettet werden.
 
-Nova-shell ist auf produktionsfaehige Distribution ausgelegt. Der aktuelle Release-Stack umfasst:
+### 5.4 Blob Seeds
 
-- Python `sdist` und `wheel`
-- Nuitka-basierte Standalone-Bundles
+Mit dem NS-Blob-Generator koennen Logikbausteine als verifizierbare, komprimierte Seeds verpackt werden:
+
+- `blob pack`
+- `blob verify`
+- `blob unpack`
+- `blob exec`
+- `blob mesh-run`
+
+Diese Funktion ist besonders wichtig fuer:
+
+- verifizierbaren Logiktransport
+- mobile Ausfuehrung im Mesh
+- Integritaetspruefung vor Rehydrierung
+- ressourcenschonende Vorhaltung von Logikbausteinen
+
+Blob-Seeds sind damit eine Infrastrukturtechnik fuer portable, sichere Runtime-Module.
+
+### 5.5 Predictive Engine Shifting
+
+NovaSynth ist in Nova-shell inzwischen mehr als ein lokaler Heuristikhelfer. Mit der Predictive-Engine-Shifting-Schicht kann das System Telemetrie und Laufzeitsignale nutzen, um Ausfuehrungspfade proaktiv zu verschieben.
+
+Relevante Befehle:
+
+- `synth forecast`
+- `synth shift suggest <code>`
+- `synth shift run <code>`
+
+Ziel ist nicht bloss "Autotuning", sondern die vorausschauende Wahl des geeigneten Ausfuehrungspfads zwischen Python, C++, GPU und Mesh.
+
+### 5.6 Zero-Copy Federated Learning Mesh
+
+Nova-shell kombiniert NovaZero/Fabric-Pfade, Mesh und Atheria zu einem verteilten Wissens- und Invariantenmodell:
+
+- signierte Invariant-Updates
+- Broadcast im Mesh
+- same-host zero-copy Handles
+- Chronik- und Integritaetsbezug
+
+Relevante Befehle:
+
+- `mesh federated status`
+- `mesh federated publish`
+- `mesh federated history`
+- `mesh federated chronik-latest`
+
+Damit wird Nova-shell zu einer Plattform fuer kollaborative Wissens- und Lernprozesse ueber mehrere Knoten.
+
+### 5.7 Mycelia-Atheria Co-Evolution
+
+Die Co-Evolution-Schicht fuehrt populationsbasierte Optimierung mit Atheria-Metriken, Tool-Erfolg und Forecast-Signalen zusammen.
+
+Relevante Befehle:
+
+- `mycelia coevolve run`
+- `mycelia coevolve status`
+
+Diese Schicht ist noch kein allgemeines Ersatzmodell fuer Data Science oder AutoML, aber sie zeigt die Richtung eines selbstoptimierenden Systems, in dem Agenten, Werkzeuge und Wissensstrukturen gemeinsam verbessert werden.
+
+## 6. Operatives Laufzeitmodell
+
+Nova-shell arbeitet heute in mehreren Betriebsmodi:
+
+### 6.1 Interaktive Shell
+
+Direkte Ausfuehrung lokaler Befehle, Pipelines und Analysepfade.
+
+### 6.2 Deklarative Runtime
+
+`ns.run`, `ns.exec` und `ns.graph` fuehren deklarative Programme aus oder zeigen deren Ausfuehrungsgraph.
+
+### 6.3 Event- und Watch-Betrieb
+
+Watch- und Projektmonitor-Pfade reagieren auf Dateisystemereignisse, aktualisieren HTML-Berichte und fuehren optional Automations- oder AI-Review-Schritte aus.
+
+### 6.4 Verteilte Runtime
+
+Mesh-Worker, Remote-Dispatch, Federated Broadcast und Service-Fabric ermoeglichen verteilte Ausfuehrung.
+
+### 6.5 API- und Daemon-Betrieb
+
+Die Plattform stellt eine Control-Plane-API, Status- und Metrikpfade sowie administrative Kommandos fuer Queue, Konsens, Services, Executor und Rollouts bereit.
+
+## 7. Security- und Trust-Modell
+
+Nova-shell folgt einem Trust-Modell, das Integritaet und kontrollierte Faehigkeitserweiterung priorisiert.
+
+Wichtige Elemente:
+
+- interne CA und Worker-Onboarding
+- mTLS- und Trust-Policies
+- Namespace- und Tenant-Isolation
+- Rollen- und Policy-Enforcement
+- Guard- und Sandbox-Pfade
+- Signatur- und Hash-basierte Integritaetspruefung fuer Blob-Seeds und Release-Artefakte
+
+Wichtig ist die Abgrenzung: Nova-shell liefert technische Sicherheitsmechanismen, ersetzt aber keine vollstaendige Organisations-, IAM- oder Netzwerk-Governance ausserhalb der Plattform.
+
+## 8. Observability, Analyse und Dokumentation
+
+Nova-shell behandelt Dokumentation und Beobachtbarkeit nicht als Nebenprodukte.
+
+Dazu gehoeren:
+
+- `doctor` fuer Runtime-Diagnose
+- Pulse-, Lens- und Statuspfade
+- HTML-Wiki-Build ueber `wiki build`
+- Watch Monitor fuer Projektanalysen mit HTML-Reports
+- JSON-Analysepfade und Detailansichten fuer Codeaenderungen
+
+Der Projektmonitor ist ein gutes Beispiel fuer den Plattformansatz: Eine `.ns`-Datei kann in einen Projektordner gelegt werden und ueberwacht danach Aenderungen, Hotspots, Diffs, Automation und AI-Review in einer laufend aktualisierten HTML-Ausgabe.
+
+## 9. Release- und Supply-Chain-Modell
+
+Nova-shell ist auf nachvollziehbare Distribution ausgelegt.
+
+Der aktuelle Release-Stack umfasst im Projekt:
+
+- Python `sdist`
+- Python `wheel`
+- Nuitka-Standalone-Bundle
 - Windows `MSI`
-- Linux `AppImage` und `.deb`
-- CycloneDX-SBOM pro Build
-- Subject-Checksums fuer Attestations
-- Authenticode-Signierung fuer Windows-Artefakte
-- detached GPG-Signaturen
-- GitHub Artifact Attestations fuer Provenance und SBOM
-- reproduzierbare Build-Zeitstempel ueber `SOURCE_DATE_EPOCH`
+- CycloneDX-SBOM
+- Subject-Checksums
+- SHA-256-Checksums
+- GitHub Release-Auslieferung
 
-Release-Profile:
+Fuer `0.8.14` ist der aktuelle verifizierte oeffentliche Releasepfad insbesondere der Windows-Core-Stack mit gruener Test- und Smoke-Test-Kette.
 
-- `core` fuer eine schmale Runtime-Basis
-- `enterprise` fuer erweitertes Observability-, Guard-, Arrow- und WASM-Profil
+Wesentlich ist dabei nicht nur das Paketformat, sondern die Reproduzierbarkeit:
 
-Diese Trennung erlaubt einen pragmatischen Weg zwischen kleiner Basisdistribution und erweitertem Enterprise-Funktionsumfang.
-
-## 9. Betriebsmodell und Plattformgrenzen
-
-Nova-shell ist derzeit fuer Windows und Linux ausgerichtet. Dabei gelten einige bewusste Rahmenbedingungen:
-
-- `cpp` benoetigt eine lokale C++-Toolchain
-- `cpp.sandbox` benoetigt eine WASM-kompatible Build-Toolchain
-- GPU-Pfade bleiben absichtlich optional, da Treiber- und Vendor-Abhaengigkeiten stark variieren
-- direkte Python-Builds auf Windows sollten nur mit initialisierter MSVC-Umgebung erfolgen; der Windows-Wrapper laedt `VsDevCmd` automatisch
-
-Damit bleibt die Runtime produktionsnah, ohne die Plattformrealitaet nativer Toolchains zu verschleiern.
+- automatisierte Tests
+- Build-Skripte
+- Upgrade-Helfer
+- Release Notes aus Manifesten
+- verifizierbare Artefaktmetadaten
 
 ## 10. Typische Einsatzszenarien
 
-### Forschung und Data Engineering
+### 10.1 Projektueberwachung und Engineering Analytics
 
-Nova-shell eignet sich fuer gemischte Datenpipelines, in denen Vorverarbeitung, native Beschleunigung und nachvollziehbare Zwischenergebnisse in einer gemeinsamen Runtime stattfinden sollen.
+Nova-shell kann Projektordner live beobachten, Diffs analysieren, HTML-Reports erzeugen und Build-/Test-Reaktionen ausloesen.
 
-### Industrie und Edge-Orchestrierung
+### 10.2 Polyglotte Compute-Pipelines
 
-Mit reaktiven Triggern, Mesh-Offloading und verteilter Event-Zustellung kann Nova-shell lokale Signale aufnehmen und gezielt in staerkere Ausfuehrungsumgebungen weiterleiten.
+Teams koennen Python, C++, GPU und WASM in einer Runtime orchestrieren, statt mehrere lose Werkzeugketten zu betreiben.
 
-### Kontrollierte Ausfuehrung von Drittlogik
+### 10.3 Lokale AI- und Knowledge-Systeme
 
-Wenn fremde oder nur begrenzt vertrauenswuerdige Logik verarbeitet werden muss, bietet NovaGuard eine bessere Ausgangsbasis fuer Isolation und Richtliniendurchsetzung als eine ungeschuetzte Host-Ausfuehrung.
+Mit Atheria, Agenten, Blob-Seeds und Event-Flows laesst sich lokales oder hybrides AI-gestuetztes Arbeiten aufbauen.
 
-### Reproduzierbare Enterprise-Releases
+### 10.4 Verteilte Wissens- und Invariantenmodelle
 
-Fuer regulierte oder auditierte Umgebungen ist wichtig, dass Artefakte nicht nur gebaut, sondern auch verifiziert und nachvollzogen werden koennen. Nova-shell integriert diese Kette direkt in den Release-Prozess.
+Federated Mesh und Zero-Copy-Pfade ermoeglichen verteiltes Lernen und signierten Wissensaustausch.
 
-## 11. Nicht-Ziele
+### 10.5 Forschungs- und Evolutionssysteme
 
-Ein professionelles Whitepaper muss auch die Grenzen benennen. Nova-shell beansprucht aktuell nicht:
+Mit Mycelia-Co-Evolution, Forecasting und Atheria-Metriken kann Nova-shell als experimentelle Plattform fuer selbstoptimierende Agenten- und Analysepfade genutzt werden.
 
-- vollstaendige Ersetzung allgemeiner Betriebssystem-Shells
-- automatische Wunderoptimierung fuer jeden Workload
-- hardwareunabhaengige GPU-Portabilitaet
-- regulatorische Zertifizierung allein durch das Vorhandensein einer SBOM
-- Ersatz fuer umfassende Plattform-, Cluster- oder Security-Governance
+## 11. Technische Einordnung
 
-Diese Abgrenzung ist wichtig, um Nova-shell als belastbare Runtime und nicht als ueberdehntes Plattformversprechen zu positionieren.
+Nova-shell ist weder nur:
 
-## 12. Schlussfolgerung
+- eine Shell
+- ein Agent-Framework
+- eine Workflow-Engine
+- ein Cluster-Manager
+- ein Doku-Generator
 
-Nova-shell 0.8.1 ist eine Runtime fuer Teams, die polyglotte Compute-Pfade, Datenfluss, reaktive Workflows, Observability und Security in einem gemeinsamen operativen Modell zusammenfuehren wollen.
+sondern eine Plattform, die diese Faehigkeiten operational zusammenfuehrt.
 
-Der Mehrwert liegt in der Kombination:
+Die passende Einordnung ist deshalb:
 
-- eine gemeinsame Shell- und Runtime-Oberflaeche
-- mehrere Ausfuehrungsziele unter konsistentem Routing
-- integrierte Nachvollziehbarkeit und Runtime-Beobachtung
-- Sicherheits- und Sandbox-Mechanismen in der Laufzeit
-- release-faehige Artefakte mit SBOM, Signaturen und Attestations
+- Shell fuer direkte Steuerung
+- Sprache fuer deklarative Programme
+- Runtime fuer Compute und Agenten
+- Control Plane fuer verteilte Orchestrierung
+- AI-OS-Schicht fuer Wissen, Reaktion und Selbstbeobachtung
 
-Nova-shell ist damit nicht nur ein Entwicklerwerkzeug, sondern eine belastbare Laufzeitbasis fuer daten- und compute-intensive Systeme mit Produktionsanspruch.
+## 12. Nicht-Ziele
+
+Ein belastbares Whitepaper muss auch benennen, was Nova-shell aktuell nicht beansprucht.
+
+Nova-shell ist derzeit nicht:
+
+- Ersatz fuer allgemeine Desktop- oder Server-Betriebssysteme
+- magische Universaloptimierung fuer beliebige Hardware und jeden Workload
+- vollstaendige Organisations- oder Compliance-Architektur
+- automatischer Ersatz fuer SRE, IAM, Netzwerk- oder Teamprozesse
+- Beweis fuer globale Produktionsreife allein durch das Vorhandensein von Mesh, Konsens oder SBOM
+
+Diese Abgrenzung ist wichtig, damit Nova-shell als serioese Plattform und nicht als ueberdehntes Totalversprechen verstanden wird.
+
+## 13. Schlussfolgerung
+
+Nova-shell `0.8.14` ist heute eine wesentlich weiter entwickelte Plattform als die fruehe Beschreibung einer "Unified Compute Runtime".
+
+Der aktuelle Kernmehrwert liegt in der Kombination:
+
+- deklarative Nova Language
+- polyglotte Execution Layer
+- Agent- und Atheria-Runtime
+- Event- und Watch-getriebene Betriebslogik
+- Mesh, Federated Learning und Control Plane
+- verifizierbare Blob-Seeds
+- Predictive Engine Shifting
+- Service-, Security- und Release-Schichten
+- HTML-Wiki und Analyseoberflaechen als Teil des Systems
+
+Nova-shell ist damit nicht nur ein Werkzeug zum Ausfuehren von Code, sondern eine Plattform zum Beschreiben, Beobachten, Verteilen, Optimieren und Absichern von AI- und Compute-Systemen.
+
+Der strategische Unterschied liegt nicht in einem einzelnen Feature, sondern darin, dass Sprache, Runtime, Wissen, Verteilung, Security und Betrieb im selben System zusammengefuehrt werden.
