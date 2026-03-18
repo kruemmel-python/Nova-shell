@@ -515,6 +515,25 @@ def archive_bundle(bundle_dir: Path, archive_base: Path, *, source_date_epoch: i
     members = sorted(path for path in bundle_dir.rglob("*"))
     if os.name == "nt":
         archive_path = archive_base.with_suffix(".zip")
+        tar_executable = shutil.which("tar.exe") or shutil.which("tar")
+        if tar_executable:
+            with contextlib.suppress(FileNotFoundError):
+                archive_path.unlink()
+            subprocess.run(
+                [
+                    tar_executable,
+                    "-a",
+                    "-c",
+                    "-f",
+                    os.fspath(archive_path),
+                    "-C",
+                    os.fspath(bundle_dir.parent),
+                    bundle_dir.name,
+                ],
+                check=True,
+            )
+            normalize_file_timestamp(archive_path, source_date_epoch)
+            return archive_path
         with zipfile.ZipFile(archive_path, "w", compression=zipfile.ZIP_DEFLATED) as zf:
             for path in members:
                 if path.is_dir():

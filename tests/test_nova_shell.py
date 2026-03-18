@@ -1331,6 +1331,54 @@ if len(files_lines) == 2:
             self.assertTrue(latest_status["changed"])
             self.assertGreaterEqual(latest_status["scope_count"], 4)
 
+    def test_system_guard_bootstrap_artifacts_exist_before_first_scan(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        helper_path = root / "examples" / "nova_system_guard_helper.py"
+        helper = runpy.run_path(str(helper_path))
+
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp).resolve()
+            state_dir = project / ".nova_system_guard"
+            state_dir.mkdir(parents=True, exist_ok=True)
+            scopes = [
+                {
+                    "name": "custom_1",
+                    "title": "Custom Path 1",
+                    "path": project,
+                    "category": "custom",
+                    "priority": "high",
+                    "weight": 42,
+                    "recurse": True,
+                    "extensions": None,
+                }
+            ]
+            runtime = {
+                "watch_mode": "watchdog",
+                "watch_requested": "auto",
+                "watch_reason": "",
+                "watchdog_available": True,
+                "scope_titles": [scope["title"] for scope in scopes],
+            }
+
+            helper["write_bootstrap_artifacts"](project, state_dir, scopes, runtime)
+
+            report_path = state_dir / "system_guard_report.html"
+            status_path = state_dir / "latest_status.json"
+            analysis_path = state_dir / "system_guard_analysis.json"
+
+            self.assertTrue(report_path.is_file())
+            self.assertTrue(status_path.is_file())
+            self.assertTrue(analysis_path.is_file())
+
+            html_body = report_path.read_text(encoding="utf-8")
+            self.assertIn("Initialer Sicherheits-Scan läuft", html_body)
+            self.assertIn("Custom Path 1", html_body)
+
+            status_payload = json.loads(status_path.read_text(encoding="utf-8"))
+            self.assertEqual(status_payload["phase"], "initializing")
+            self.assertEqual(status_payload["scope_count"], 1)
+            self.assertEqual(status_payload["status_line"], "Initialer Sicherheits-Scan läuft.")
+
     def test_ns_run_system_guard_supports_signature_inventory_and_quarantine(self) -> None:
         root = Path(__file__).resolve().parents[1]
         helper_path = root / "examples" / "nova_system_guard_helper.py"

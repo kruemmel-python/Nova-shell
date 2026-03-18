@@ -1535,6 +1535,105 @@ code { white-space: pre-wrap; font-family: Consolas, monospace; color: #f8fafc; 
     )
 
 
+def render_bootstrap_html(root: pathlib.Path, scopes: list[dict[str, Any]], runtime: dict[str, Any]) -> str:
+    css = """
+body { font-family: Segoe UI, Arial, sans-serif; background: linear-gradient(180deg, #0f172a 0%, #111827 100%); color: #e5e7eb; margin: 0; }
+.container { max-width: 1080px; margin: 0 auto; padding: 28px; }
+.hero, .panel { background: rgba(15, 23, 42, 0.84); border: 1px solid rgba(148,163,184,.18); border-radius: 18px; padding: 20px; margin-bottom: 18px; box-shadow: 0 18px 45px rgba(15,23,42,.35); }
+.hero { border-left: 6px solid #38bdf8; }
+.kicker { text-transform: uppercase; letter-spacing: .18em; color: #67e8f9; font-size: 12px; margin-bottom: 10px; display: inline-block; }
+.status { display: inline-block; background: rgba(56, 189, 248, .14); color: #bae6fd; border: 1px solid rgba(56,189,248,.3); border-radius: 999px; padding: 6px 12px; font-weight: 600; }
+.meta { color: #94a3b8; margin-top: 8px; }
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.scope-list { margin: 0; padding-left: 18px; }
+.scope-list li { margin-bottom: 8px; }
+code { font-family: Consolas, monospace; }
+@media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+"""
+    scope_rows = "".join(
+        f"<li><strong>{html.escape(str(scope.get('title', '')))}</strong> "
+        f"({html.escape(str(scope.get('priority', '')))} | {html.escape(str(scope.get('category', '')))}): "
+        f"<code>{html.escape(str(scope.get('path', '')))}</code></li>"
+        for scope in scopes[:18]
+    ) or "<li>Keine Scopes konfiguriert.</li>"
+    if len(scopes) > 18:
+        scope_rows += f"<li><em>... {len(scopes) - 18} weitere Scopes</em></li>"
+    return (
+        "<!DOCTYPE html><html lang='de'><head><meta charset='utf-8'>"
+        "<meta name='viewport' content='width=device-width, initial-scale=1'>"
+        "<title>Nova System Guard | Initialisierung</title>"
+        f"<style>{css}</style></head><body><div class='container'>"
+        "<section class='hero'>"
+        "<span class='kicker'>Nova System Guard</span>"
+        "<h1>Initialer Sicherheits-Scan läuft</h1>"
+        "<p>Der erste Baseline-Scan wurde gestartet. Gerade bei Windows-Systempfaden wie "
+        "<code>AppData\\Roaming</code>, <code>SysWOW64</code>, <code>Downloads</code> oder "
+        "<code>Chrome Extensions</code> kann der erste Durchlauf deutlich dauern. "
+        "Dieser Report wird automatisch aktualisiert, sobald die erste Baseline fertig ist.</p>"
+        f"<p><span class='status'>Scan in Arbeit</span></p>"
+        f"<p class='meta'>Root: <code>{html.escape(str(root))}</code> | Watch-Modus: "
+        f"{html.escape(str(runtime.get('watch_mode', 'poll')))} | {fmt_ts()}</p>"
+        "</section>"
+        "<section class='grid'>"
+        "<div class='panel'>"
+        "<h2>Aktueller Zustand</h2>"
+        "<ul>"
+        "<li>Es wurde noch keine fertige Baseline geschrieben.</li>"
+        "<li><code>latest_status.json</code> wird nach dem ersten vollständigen Durchlauf aktualisiert.</li>"
+        "<li>Danach erscheinen hier Risiko-Bewertung, History und Detailseiten.</li>"
+        "</ul>"
+        "</div>"
+        "<div class='panel'>"
+        "<h2>Empfehlung für den Ersttest</h2>"
+        "<p>Zum schnellen Verifizieren zuerst nur einen kleinen Testpfad überwachen, z. B.:</p>"
+        "<pre><code>$env:NOVA_SYSTEM_GUARD_INCLUDE_DEFAULTS = \"0\"\n"
+        "$env:NOVA_SYSTEM_GUARD_INCLUDE_WINDOWS_INVENTORY = \"0\"\n"
+        "$env:NOVA_SYSTEM_GUARD_PATHS = \"C:/NovaShell/monitors\"\n"
+        "$env:NOVA_SYSTEM_GUARD_ONESHOT = \"1\"</code></pre>"
+        "</div>"
+        "</section>"
+        f"<section class='panel'><h2>Überwachte Scopes ({len(scopes)})</h2><ol class='scope-list'>{scope_rows}</ol></section>"
+        f"<div class='panel'><p class='meta'>Generiert von Nova System Guard v{VERSION} | Statusdatei: {STATE_DIR_NAME}/latest_status.json</p></div>"
+        "</div></body></html>"
+    )
+
+
+def write_bootstrap_artifacts(root: pathlib.Path, state_dir: pathlib.Path, scopes: list[dict[str, Any]], runtime: dict[str, Any]) -> None:
+    report_path = state_dir / "system_guard_report.html"
+    status_path = state_dir / "latest_status.json"
+    analysis_path = state_dir / "system_guard_analysis.json"
+    bootstrap_status = {
+        "generated_at": time.time(),
+        "changed": False,
+        "event": {},
+        "review": {},
+        "runtime": runtime,
+        "tracked_files": 0,
+        "scope_count": len(scopes),
+        "report_path": str(report_path),
+        "analysis_path": str(analysis_path),
+        "actions": [],
+        "phase": "initializing",
+        "status_line": "Initialer Sicherheits-Scan läuft.",
+    }
+    report_path.write_text(render_bootstrap_html(root, scopes, runtime), encoding="utf-8")
+    save_json(status_path, bootstrap_status)
+    save_json(
+        analysis_path,
+        {
+            "generated_at": bootstrap_status["generated_at"],
+            "warnings": ["Initialer Sicherheits-Scan läuft noch."],
+            "critical_paths": [],
+            "unsigned_paths": [],
+            "hotspots": [],
+            "scope_activity": [],
+            "scope_rows": [],
+            "extension_ranking": [],
+            "kind_ranking": [],
+        },
+    )
+
+
 def resolve_watch_mode() -> dict[str, Any]:
     requested = str(os.environ.get("NOVA_SYSTEM_GUARD_WATCH_MODE") or "auto").strip().lower()
     if requested in {"off", "none"}:
@@ -1693,6 +1792,8 @@ def main() -> dict[str, Any]:
         "scope_titles": [scope["title"] for scope in scopes],
     }
     latest: dict[str, Any] | None = None
+
+    write_bootstrap_artifacts(root, state_dir, scopes, runtime)
 
     if oneshot:
         return monitor_once(root, state_dir, scopes, runtime=runtime)

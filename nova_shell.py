@@ -63,7 +63,7 @@ except ImportError:  # pragma: no cover - platform dependent
     readline = None
 
 
-__version__ = "0.8.15"
+__version__ = "0.8.16"
 SIDELOAD_PACKAGE_DIR = "vendor-py"
 RUNTIME_CONFIG_FILE = "nova-shell-runtime.json"
 BRIEFING_REPORT_FILES: tuple[tuple[str, str, str], ...] = (

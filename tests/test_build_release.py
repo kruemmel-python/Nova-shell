@@ -58,7 +58,7 @@ class BuildReleaseTests(unittest.TestCase):
             payload = nested / "tool.py"
             payload.write_text("print('ok')\n", encoding="utf-8")
 
-            with patch.object(build_release.os, "name", "nt"):
+            with patch.object(build_release.os, "name", "nt"), patch.object(build_release.shutil, "which", return_value=None):
                 archive_path = build_release.archive_bundle(bundle_dir, root / "nova-shell-test", source_date_epoch=None)
 
             self.assertEqual(archive_path.suffix, ".zip")
@@ -67,6 +67,33 @@ class BuildReleaseTests(unittest.TestCase):
                     "nova_shell.dist/toolchains/emsdk/upstream/emscripten/tool.py",
                     archive.namelist(),
                 )
+
+    def test_archive_bundle_prefers_external_tar_on_windows(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            bundle_dir = root / "standalone" / "nova_shell.dist"
+            bundle_dir.mkdir(parents=True)
+            (bundle_dir / "nova_shell.exe").write_text("binary", encoding="utf-8")
+            created_archive = root / "nova-shell-test.zip"
+
+            def fake_run(command: list[str], check: bool) -> SimpleNamespace:
+                self.assertEqual(command[0], "tar.exe")
+                self.assertIn("-a", command)
+                self.assertEqual(command[-1], "nova_shell.dist")
+                with zipfile.ZipFile(created_archive, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+                    archive.write(bundle_dir / "nova_shell.exe", arcname="nova_shell.dist/nova_shell.exe")
+                return SimpleNamespace(returncode=0)
+
+            with (
+                patch.object(build_release.os, "name", "nt"),
+                patch.object(build_release.shutil, "which", side_effect=lambda name: "tar.exe" if name in {"tar.exe", "tar"} else None),
+                patch.object(build_release.subprocess, "run", side_effect=fake_run) as run_mock,
+            ):
+                archive_path = build_release.archive_bundle(bundle_dir, root / "nova-shell-test", source_date_epoch=None)
+
+            self.assertEqual(archive_path, created_archive)
+            self.assertTrue(created_archive.is_file())
+            run_mock.assert_called_once()
 
     def test_collect_nuitka_packages_for_enterprise_profile(self) -> None:
         with (
