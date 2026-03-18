@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="Nova-shell wiki builder">
-  <title>FAQ | Nova-shell Wiki</title>
+  <title>Tutorial Atheria ALS | Nova-shell Wiki</title>
   <link rel="stylesheet" href="assets/wiki.css">
 </head>
 <body>
@@ -65,7 +65,7 @@
 <li><a class="wiki-nav-link" data-nav-href="TutorialLMStudioIntegration.html" href="TutorialLMStudioIntegration.html">TutorialLMStudioIntegration</a></li>
 <li><a class="wiki-nav-link" data-nav-href="TutorialBlobSeeds.html" href="TutorialBlobSeeds.html">TutorialBlobSeeds</a></li>
 <li><a class="wiki-nav-link" data-nav-href="TutorialPredictiveFederatedCoevolution.html" href="TutorialPredictiveFederatedCoevolution.html">TutorialPredictiveFederatedCoevolution</a></li>
-<li><a class="wiki-nav-link" data-nav-href="TutorialAtheriaALS.html" href="TutorialAtheriaALS.html">TutorialAtheriaALS</a></li>
+<li><a class="wiki-nav-link active" data-nav-href="TutorialAtheriaALS.html" href="TutorialAtheriaALS.html">TutorialAtheriaALS</a></li>
 <li><a class="wiki-nav-link" data-nav-href="TutorialProjectWatchMonitor.html" href="TutorialProjectWatchMonitor.html">TutorialProjectWatchMonitor</a></li>
 </ul></section>
 <section class="wiki-nav-section">
@@ -137,7 +137,7 @@
 <li><a class="wiki-nav-link" data-nav-href="wirtschaftlicher_nutzen.html" href="wirtschaftlicher_nutzen.html">wirtschaftlicher_nutzen</a></li>
 <li><a class="wiki-nav-link" data-nav-href="AgentSystems.html" href="AgentSystems.html">AgentSystems</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Glossary.html" href="Glossary.html">Glossary</a></li>
-<li><a class="wiki-nav-link active" data-nav-href="FAQ.html" href="FAQ.html">FAQ</a></li>
+<li><a class="wiki-nav-link" data-nav-href="FAQ.html" href="FAQ.html">FAQ</a></li>
 </ul></section>
       </nav>
     </aside>
@@ -146,104 +146,107 @@
         <button type="button" class="wiki-nav-toggle" data-nav-toggle>Menu</button>
         <div class="wiki-header-copy">
           <span class="wiki-kicker">Nova-shell Documentation</span>
-          <h1>FAQ</h1>
-          <p>Source: FAQ.md</p>
+          <h1>Tutorial Atheria ALS</h1>
+          <p>Source: TutorialAtheriaALS.md</p>
         </div>
       </header>
       <div class="wiki-layout">
         <article class="wiki-article">
-          <h1 id="faq">FAQ</h1>
-<h2 id="zweck">Zweck</h2>
-<p>Die FAQ ist die Kurzfassung fuer wiederkehrende Fragen. Die eigentliche Projektdokumentation liegt in den Architektur-, Referenz- und Beispielseiten dieser Wiki.</p>
-<h2 id="schnelle-einstiege">Schnelle Einstiege</h2>
+          <h1 id="tutorial-atheria-als">Tutorial Atheria ALS</h1>
+<h2 id="ziel">Ziel</h2>
+<p>Dieses Tutorial zeigt, wie Atheria ALS als residenter Live-Pfad gestartet, befragt und mit Voice betrieben wird.</p>
+<h2 id="voraussetzungen">Voraussetzungen</h2>
 <ul>
-<li><a href="Home.html">Home</a></li>
-<li><a href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
-<li><a href="ClassReference.html">ClassReference</a></li>
-<li><a href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
+<li>Nova-shell ist installiert</li>
+<li><code>atheria status</code> funktioniert</li>
+<li>optional: lokales Windows-Audio fuer Voice</li>
 </ul>
-<h2 id="ist-nova-shell-nur-eine-shell">Ist Nova-shell nur eine Shell?</h2>
-<p>Nein. Es ist Shell, Sprache und Runtime-Plattform zugleich.</p>
-<p>Mehr dazu:</p>
+<h2 id="schritt-1-status-pruefen">Schritt 1: Status pruefen</h2>
+<pre><code class="language-powershell">atheria status
+atheria als status</code></pre>
+<p>Erwartung:</p>
 <ul>
-<li><a href="SystemOverview.html">SystemOverview</a></li>
-<li><a href="Architecture.html">Architecture</a></li>
+<li>Atheria ist verfuegbar</li>
+<li>ALS zeigt sein Basisverzeichnis und die aktuelle Konfiguration</li>
 </ul>
-<h2 id="muss-ich-ns-benutzen">Muss ich <code>.ns</code> benutzen?</h2>
-<p>Nein. Die CLI kann auch ohne deklarative Programme genutzt werden. Fuer reproduzierbare Flows, Services und Agenten ist <code>.ns</code> aber der zentrale Pfad.</p>
-<p>Mehr dazu:</p>
+<h2 id="schritt-2-als-konfigurieren">Schritt 2: ALS konfigurieren</h2>
+<pre><code class="language-powershell">atheria als configure --topic &quot;AI infrastructure agent runtime&quot; --interval 90 --trigger 0.80 --anomaly-threshold 0.72</code></pre>
+<p>Optional mit Audio:</p>
+<pre><code class="language-powershell">atheria als configure --audio on --voice &quot;Microsoft Hedda Desktop&quot;</code></pre>
+<h2 id="schritt-3-einen-einzelnen-zyklus-fahren">Schritt 3: Einen einzelnen Zyklus fahren</h2>
+<pre><code class="language-powershell">atheria als cycle
+atheria als stream tail --limit 3</code></pre>
+<p>Erwartung:</p>
 <ul>
-<li><a href="NovaCLI.html">NovaCLI</a></li>
-<li><a href="NovaLanguage.html">NovaLanguage</a></li>
+<li><code>events.jsonl</code> erhaelt neue Eintraege</li>
+<li><code>state.json</code> aktualisiert sich</li>
+<li><code>aion_chronik.html</code> wird erzeugt oder aktualisiert</li>
 </ul>
-<h2 id="gibt-es-verteilte-ausfuehrung">Gibt es verteilte Ausfuehrung?</h2>
-<p>Ja. Ueber Mesh, Worker und standardisierte Executor-Pfade.</p>
-<p>Mehr dazu:</p>
+<h2 id="schritt-4-residenten-loop-starten">Schritt 4: Residenten Loop starten</h2>
+<pre><code class="language-powershell">atheria als start
+atheria als status</code></pre>
+<p>Erwartung:</p>
 <ul>
-<li><a href="NovaMesh.html">NovaMesh</a></li>
-<li><a href="APIReference.html">APIReference</a></li>
+<li><code>running: true</code></li>
+<li><code>als.pid</code> ist vorhanden</li>
+<li>der Hintergrundprozess arbeitet weiter</li>
 </ul>
-<h2 id="gibt-es-eine-api">Gibt es eine API?</h2>
-<p>Ja. Die Runtime kann eine HTTP-Control-Plane-API starten.</p>
-<p>Mehr dazu:</p>
+<h2 id="schritt-5-dialog-fuehren">Schritt 5: Dialog fuehren</h2>
+<pre><code class="language-powershell">atheria als ask &quot;Was ist im Informationsfeld gerade dominant?&quot;
+atheria als feedback &quot;Achte staerker auf strukturelle Spannung als auf Funding-News.&quot;</code></pre>
+<p>Erwartung:</p>
 <ul>
-<li><a href="APIReference.html">APIReference</a></li>
-<li><a href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
+<li><code>dialog.jsonl</code> waechst</li>
+<li><code>voice.jsonl</code> waechst</li>
+<li>die Antworten enthalten Speech-Act-Daten</li>
 </ul>
-<h2 id="gibt-es-tests-fuer-ns">Gibt es Tests fuer <code>.ns</code>?</h2>
-<p>Ja. Es existiert ein dedizierter Toolchain-Testpfad.</p>
-<p>Mehr dazu:</p>
+<h2 id="schritt-6-voice-pruefen">Schritt 6: Voice pruefen</h2>
+<pre><code class="language-powershell">atheria als voice status
+atheria als voice last
+atheria als voice speak &quot;Manueller Test der Atheria-Stimme.&quot;</code></pre>
+<h2 id="schritt-7-artefakte-lesen">Schritt 7: Artefakte lesen</h2>
+<p>Typische Dateien:</p>
+<pre><code class="language-text">~/.nova_shell_memory/atheria_als/events.jsonl
+~/.nova_shell_memory/atheria_als/dialog.jsonl
+~/.nova_shell_memory/atheria_als/voice.jsonl
+~/.nova_shell_memory/atheria_als/aion_chronik.html</code></pre>
+<h2 id="schritt-8-als-stoppen">Schritt 8: ALS stoppen</h2>
+<pre><code class="language-powershell">atheria als stop
+atheria als status</code></pre>
+<p>Erwartung:</p>
 <ul>
-<li><a href="Testing.html">Testing</a></li>
-<li><a href="DevelopmentGuide.html">DevelopmentGuide</a></li>
+<li>der resident laufende Prozess wird beendet</li>
+<li>der Zustand bleibt erhalten</li>
 </ul>
-<h2 id="wo-finde-ich-klassen-und-methoden">Wo finde ich Klassen und Methoden?</h2>
-<p>In der Referenzschicht der Wiki:</p>
+<h2 id="typische-kontrolle">Typische Kontrolle</h2>
+<p>Wenn du sehen willst, ob ALS wirklich gearbeitet hat:</p>
 <ul>
-<li><a href="ClassReference.html">ClassReference</a></li>
-<li><a href="ParserAndASTReference.html">ParserAndASTReference</a></li>
-<li><a href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
-<li><a href="CodeReferenceIndex.html">CodeReferenceIndex</a></li>
-</ul>
-<h2 id="wie-pruefe-ich-schnell-ob-meine-installation-gesund-ist">Wie pruefe ich schnell, ob meine Installation gesund ist?</h2>
-<p>Mit:</p>
-<pre><code class="language-powershell">doctor</code></pre>
-<h2 id="wie-beginne-ich-mit-einem-ersten-echten-ablauf">Wie beginne ich mit einem ersten echten Ablauf?</h2>
-<p>Mit:</p>
-<pre><code class="language-powershell">ns.graph examples\market_radar.ns
-ns.run examples\market_radar.ns</code></pre>
-<p>Danach weiter mit:</p>
-<ul>
-<li><a href="QuickStart.html">QuickStart</a></li>
-<li><a href="Tutorials.html">Tutorials</a></li>
-</ul>
-<h2 id="warum-funktioniert-ns-graph-aber-ns-run-nicht">Warum funktioniert <code>ns.graph</code>, aber <code>ns.run</code> nicht?</h2>
-<p>Dann ist die Syntax meist korrekt und das Problem liegt eher in Runtime, Tool, Provider oder Datenpfad.</p>
-<p>Mehr dazu:</p>
-<ul>
-<li><a href="NovaRuntime.html">NovaRuntime</a></li>
-<li><a href="Troubleshooting.html">Troubleshooting</a></li>
+<li><code>atheria als status</code></li>
+<li><code>atheria als stream tail --limit 5</code></li>
+<li><code>atheria als voice last</code></li>
+<li><code>lens list 10</code></li>
 </ul>
 <h2 id="verwandte-seiten">Verwandte Seiten</h2>
 <ul>
-<li><a href="QuickStart.html">QuickStart</a></li>
-<li><a href="Troubleshooting.html">Troubleshooting</a></li>
-<li><a href="GeneralLinks.html">GeneralLinks</a></li>
+<li><a href="AtheriaContinuousEvolutionAndLiveStream.html">AtheriaContinuousEvolutionAndLiveStream</a></li>
+<li><a href="AtheriaVoice.html">AtheriaVoice</a></li>
+<li><a href="AtheriaALSForDevelopers.html">AtheriaALSForDevelopers</a></li>
+<li><a href="NovaCLI.html">NovaCLI</a></li>
 </ul>
         </article>
         <aside class="wiki-toc">
           <div class="wiki-toc-card"><h2>On this page</h2><ul>
-<li class="wiki-toc-link"><a href="#zweck">Zweck</a></li>
-<li class="wiki-toc-link"><a href="#schnelle-einstiege">Schnelle Einstiege</a></li>
-<li class="wiki-toc-link"><a href="#ist-nova-shell-nur-eine-shell">Ist Nova-shell nur eine Shell?</a></li>
-<li class="wiki-toc-link"><a href="#muss-ich-ns-benutzen">Muss ich `.ns` benutzen?</a></li>
-<li class="wiki-toc-link"><a href="#gibt-es-verteilte-ausfuehrung">Gibt es verteilte Ausfuehrung?</a></li>
-<li class="wiki-toc-link"><a href="#gibt-es-eine-api">Gibt es eine API?</a></li>
-<li class="wiki-toc-link"><a href="#gibt-es-tests-fuer-ns">Gibt es Tests fuer `.ns`?</a></li>
-<li class="wiki-toc-link"><a href="#wo-finde-ich-klassen-und-methoden">Wo finde ich Klassen und Methoden?</a></li>
-<li class="wiki-toc-link"><a href="#wie-pruefe-ich-schnell-ob-meine-installation-gesund-ist">Wie pruefe ich schnell, ob meine Installation gesund ist?</a></li>
-<li class="wiki-toc-link"><a href="#wie-beginne-ich-mit-einem-ersten-echten-ablauf">Wie beginne ich mit einem ersten echten Ablauf?</a></li>
-<li class="wiki-toc-link"><a href="#warum-funktioniert-ns-graph-aber-ns-run-nicht">Warum funktioniert `ns.graph`, aber `ns.run` nicht?</a></li>
+<li class="wiki-toc-link"><a href="#ziel">Ziel</a></li>
+<li class="wiki-toc-link"><a href="#voraussetzungen">Voraussetzungen</a></li>
+<li class="wiki-toc-link"><a href="#schritt-1-status-pruefen">Schritt 1: Status pruefen</a></li>
+<li class="wiki-toc-link"><a href="#schritt-2-als-konfigurieren">Schritt 2: ALS konfigurieren</a></li>
+<li class="wiki-toc-link"><a href="#schritt-3-einen-einzelnen-zyklus-fahren">Schritt 3: Einen einzelnen Zyklus fahren</a></li>
+<li class="wiki-toc-link"><a href="#schritt-4-residenten-loop-starten">Schritt 4: Residenten Loop starten</a></li>
+<li class="wiki-toc-link"><a href="#schritt-5-dialog-fuehren">Schritt 5: Dialog fuehren</a></li>
+<li class="wiki-toc-link"><a href="#schritt-6-voice-pruefen">Schritt 6: Voice pruefen</a></li>
+<li class="wiki-toc-link"><a href="#schritt-7-artefakte-lesen">Schritt 7: Artefakte lesen</a></li>
+<li class="wiki-toc-link"><a href="#schritt-8-als-stoppen">Schritt 8: ALS stoppen</a></li>
+<li class="wiki-toc-link"><a href="#typische-kontrolle">Typische Kontrolle</a></li>
 <li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
 </ul></div>
         </aside>
@@ -255,7 +258,7 @@ ns.run examples\market_radar.ns</code></pre>
   </div>
   <script>
     window.NOVA_WIKI = {
-      currentPage: "FAQ.html",
+      currentPage: "TutorialAtheriaALS.html",
       searchIndex: "assets/search-index.json"
     };
   </script>

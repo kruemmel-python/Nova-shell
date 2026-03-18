@@ -50,6 +50,9 @@
 <li><a class="wiki-nav-link" data-nav-href="NovaSynthPredictiveEngineShifting.html" href="NovaSynthPredictiveEngineShifting.html">NovaSynthPredictiveEngineShifting</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ZeroCopyFederatedLearningMesh.html" href="ZeroCopyFederatedLearningMesh.html">ZeroCopyFederatedLearningMesh</a></li>
 <li><a class="wiki-nav-link" data-nav-href="MyceliaAtheriaCoEvolution.html" href="MyceliaAtheriaCoEvolution.html">MyceliaAtheriaCoEvolution</a></li>
+<li><a class="wiki-nav-link" data-nav-href="AtheriaContinuousEvolutionAndLiveStream.html" href="AtheriaContinuousEvolutionAndLiveStream.html">AtheriaContinuousEvolutionAndLiveStream</a></li>
+<li><a class="wiki-nav-link" data-nav-href="AtheriaVoice.html" href="AtheriaVoice.html">AtheriaVoice</a></li>
+<li><a class="wiki-nav-link" data-nav-href="AtheriaALSForDevelopers.html" href="AtheriaALSForDevelopers.html">AtheriaALSForDevelopers</a></li>
 <li><a class="wiki-nav-link" data-nav-href="WatchMonitor.html" href="WatchMonitor.html">WatchMonitor</a></li>
 <li><a class="wiki-nav-link" data-nav-href="SystemGuardMonitor.html" href="SystemGuardMonitor.html">SystemGuardMonitor</a></li>
 <li><a class="wiki-nav-link" data-nav-href="WatchMonitorQuickStart.html" href="WatchMonitorQuickStart.html">WatchMonitorQuickStart</a></li>
@@ -62,6 +65,7 @@
 <li><a class="wiki-nav-link" data-nav-href="TutorialLMStudioIntegration.html" href="TutorialLMStudioIntegration.html">TutorialLMStudioIntegration</a></li>
 <li><a class="wiki-nav-link" data-nav-href="TutorialBlobSeeds.html" href="TutorialBlobSeeds.html">TutorialBlobSeeds</a></li>
 <li><a class="wiki-nav-link" data-nav-href="TutorialPredictiveFederatedCoevolution.html" href="TutorialPredictiveFederatedCoevolution.html">TutorialPredictiveFederatedCoevolution</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialAtheriaALS.html" href="TutorialAtheriaALS.html">TutorialAtheriaALS</a></li>
 <li><a class="wiki-nav-link" data-nav-href="TutorialProjectWatchMonitor.html" href="TutorialProjectWatchMonitor.html">TutorialProjectWatchMonitor</a></li>
 </ul></section>
 <section class="wiki-nav-section">
@@ -96,6 +100,9 @@
 <li><a class="wiki-nav-link" data-nav-href="NovaSynthPredictiveEngineShifting.html" href="NovaSynthPredictiveEngineShifting.html">NovaSynthPredictiveEngineShifting</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ZeroCopyFederatedLearningMesh.html" href="ZeroCopyFederatedLearningMesh.html">ZeroCopyFederatedLearningMesh</a></li>
 <li><a class="wiki-nav-link" data-nav-href="MyceliaAtheriaCoEvolution.html" href="MyceliaAtheriaCoEvolution.html">MyceliaAtheriaCoEvolution</a></li>
+<li><a class="wiki-nav-link" data-nav-href="AtheriaContinuousEvolutionAndLiveStream.html" href="AtheriaContinuousEvolutionAndLiveStream.html">AtheriaContinuousEvolutionAndLiveStream</a></li>
+<li><a class="wiki-nav-link" data-nav-href="AtheriaVoice.html" href="AtheriaVoice.html">AtheriaVoice</a></li>
+<li><a class="wiki-nav-link" data-nav-href="AtheriaALSForDevelopers.html" href="AtheriaALSForDevelopers.html">AtheriaALSForDevelopers</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaSensors.html" href="NovaSensors.html">NovaSensors</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaMemory.html" href="NovaMemory.html">NovaMemory</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaTools.html" href="NovaTools.html">NovaTools</a></li>
@@ -189,6 +196,10 @@
 <td><code>PredictiveEngineShifter</code></td>
 <td>forecast-basierte Engine-Wahl und delegierte Ausfuehrung</td>
 </tr>
+<tr>
+<td><code>AtheriaALSRuntime</code></td>
+<td>residenter Atheria-Live-Loop mit Chronik, Lens und Speech Acts</td>
+</tr>
 </tbody></table>
 <h2 id="lebenszyklus">Lebenszyklus</h2>
 <pre><code class="language-text">parse / load
@@ -245,6 +256,16 @@ snapshot / resume / close</code></pre>
 <li><code>predictive.forecast()</code></li>
 <li><code>predictive.recommend_engine(...)</code></li>
 </ul>
+<h3 id="residentes-atheria-als">Residentes Atheria ALS</h3>
+<ul>
+<li><code>als.configure(...)</code></li>
+<li><code>als.status_payload()</code></li>
+<li><code>als.run_cycle(...)</code></li>
+<li><code>als.ask(...)</code></li>
+<li><code>als.feedback(...)</code></li>
+<li><code>als.voice_status()</code></li>
+<li><code>als.serve_forever(...)</code></li>
+</ul>
 <h3 id="shell-lineage-und-replay">Shell-Lineage und Replay</h3>
 <ul>
 <li><code>lens.record(...)</code> im klassischen Shell-Pfad</li>
@@ -254,6 +275,7 @@ snapshot / resume / close</code></pre>
 <li><code>lens fork</code></li>
 </ul>
 <p>Auch wenn <code>NovaLensStore</code> nicht Teil der deklarativen <code>nova.runtime</code>-Klassen ist, gehoert er zur realen Betriebsarchitektur von Nova-shell. Er speichert Shell- und Monitor-Stufen persistent ueber <code>lineage.db</code> und einen content-addressable Store in <code>.nova_lens/cas</code>.</p>
+<p>Mit ALS gibt es jetzt einen zusaetzlichen residenten Atheria-Laufzeitpfad. Er lebt unter <code>~/.nova_shell_memory/atheria_als/</code>, erzeugt kontinuierliche Resonanzereignisse, schreibt eine lokale Aion-Chronik und persistiert Speech Acts als Teil der Kausalspur.</p>
 <h2 id="eingebaute-toolpfade">Eingebaute Toolpfade</h2>
 <p>Die Runtime kennt eingebaute Pfade, die in Flows direkt auftauchen koennen:</p>
 <ul>
@@ -267,6 +289,22 @@ snapshot / resume / close</code></pre>
 <li><code>service.deploy</code></li>
 <li><code>package.install</code></li>
 </ul>
+<h2 id="atheria-als">Atheria ALS</h2>
+<p>ALS ist die resident laufende Live-Form von Atheria in der Shell-Runtime. Es verbindet:</p>
+<ul>
+<li>Feed-Ingestion</li>
+<li>Resonanz- und Triggerlogik</li>
+<li>Atheria-Training</li>
+<li>Lens-Snapshots</li>
+<li>Aion-Chronik</li>
+<li>Voice und Dialog</li>
+</ul>
+<p>CLI:</p>
+<pre><code class="language-powershell">atheria als status
+atheria als cycle
+atheria als start
+atheria als ask &quot;Was dominiert den Stream?&quot;</code></pre>
+<p>Die vertiefte Architektur steht in <a href="AtheriaContinuousEvolutionAndLiveStream.html">AtheriaContinuousEvolutionAndLiveStream</a>.</p>
 <h2 id="predictive-shifting">Predictive Shifting</h2>
 <p>Der Runtimepfad bindet den Predictive Engine Shifter direkt in Telemetrie und Engine-Delegation ein.</p>
 <p>Dadurch kann Nova-shell:</p>
@@ -353,6 +391,9 @@ lens last</code></pre>
 <li><a href="NovaSynthPredictiveEngineShifting.html">NovaSynthPredictiveEngineShifting</a></li>
 <li><a href="NovaAgents.html">NovaAgents</a></li>
 <li><a href="NovaMesh.html">NovaMesh</a></li>
+<li><a href="AtheriaContinuousEvolutionAndLiveStream.html">AtheriaContinuousEvolutionAndLiveStream</a></li>
+<li><a href="AtheriaVoice.html">AtheriaVoice</a></li>
+<li><a href="AtheriaALSForDevelopers.html">AtheriaALSForDevelopers</a></li>
 </ul>
         </article>
         <aside class="wiki-toc">
@@ -367,8 +408,10 @@ lens last</code></pre>
 <li class="wiki-toc-link level-3"><a href="#scheduler-und-control-plane">Scheduler und Control Plane</a></li>
 <li class="wiki-toc-link level-3"><a href="#api-und-betrieb">API und Betrieb</a></li>
 <li class="wiki-toc-link level-3"><a href="#services-und-plattform">Services und Plattform</a></li>
+<li class="wiki-toc-link level-3"><a href="#residentes-atheria-als">Residentes Atheria ALS</a></li>
 <li class="wiki-toc-link level-3"><a href="#shell-lineage-und-replay">Shell-Lineage und Replay</a></li>
 <li class="wiki-toc-link"><a href="#eingebaute-toolpfade">Eingebaute Toolpfade</a></li>
+<li class="wiki-toc-link"><a href="#atheria-als">Atheria ALS</a></li>
 <li class="wiki-toc-link"><a href="#predictive-shifting">Predictive Shifting</a></li>
 <li class="wiki-toc-link"><a href="#cli">CLI</a></li>
 <li class="wiki-toc-link"><a href="#api">API</a></li>

@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="Nova-shell wiki builder">
-  <title>FAQ | Nova-shell Wiki</title>
+  <title>Atheria ALS For Developers | Nova-shell Wiki</title>
   <link rel="stylesheet" href="assets/wiki.css">
 </head>
 <body>
@@ -52,7 +52,7 @@
 <li><a class="wiki-nav-link" data-nav-href="MyceliaAtheriaCoEvolution.html" href="MyceliaAtheriaCoEvolution.html">MyceliaAtheriaCoEvolution</a></li>
 <li><a class="wiki-nav-link" data-nav-href="AtheriaContinuousEvolutionAndLiveStream.html" href="AtheriaContinuousEvolutionAndLiveStream.html">AtheriaContinuousEvolutionAndLiveStream</a></li>
 <li><a class="wiki-nav-link" data-nav-href="AtheriaVoice.html" href="AtheriaVoice.html">AtheriaVoice</a></li>
-<li><a class="wiki-nav-link" data-nav-href="AtheriaALSForDevelopers.html" href="AtheriaALSForDevelopers.html">AtheriaALSForDevelopers</a></li>
+<li><a class="wiki-nav-link active" data-nav-href="AtheriaALSForDevelopers.html" href="AtheriaALSForDevelopers.html">AtheriaALSForDevelopers</a></li>
 <li><a class="wiki-nav-link" data-nav-href="WatchMonitor.html" href="WatchMonitor.html">WatchMonitor</a></li>
 <li><a class="wiki-nav-link" data-nav-href="SystemGuardMonitor.html" href="SystemGuardMonitor.html">SystemGuardMonitor</a></li>
 <li><a class="wiki-nav-link" data-nav-href="WatchMonitorQuickStart.html" href="WatchMonitorQuickStart.html">WatchMonitorQuickStart</a></li>
@@ -102,7 +102,7 @@
 <li><a class="wiki-nav-link" data-nav-href="MyceliaAtheriaCoEvolution.html" href="MyceliaAtheriaCoEvolution.html">MyceliaAtheriaCoEvolution</a></li>
 <li><a class="wiki-nav-link" data-nav-href="AtheriaContinuousEvolutionAndLiveStream.html" href="AtheriaContinuousEvolutionAndLiveStream.html">AtheriaContinuousEvolutionAndLiveStream</a></li>
 <li><a class="wiki-nav-link" data-nav-href="AtheriaVoice.html" href="AtheriaVoice.html">AtheriaVoice</a></li>
-<li><a class="wiki-nav-link" data-nav-href="AtheriaALSForDevelopers.html" href="AtheriaALSForDevelopers.html">AtheriaALSForDevelopers</a></li>
+<li><a class="wiki-nav-link active" data-nav-href="AtheriaALSForDevelopers.html" href="AtheriaALSForDevelopers.html">AtheriaALSForDevelopers</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaSensors.html" href="NovaSensors.html">NovaSensors</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaMemory.html" href="NovaMemory.html">NovaMemory</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaTools.html" href="NovaTools.html">NovaTools</a></li>
@@ -137,7 +137,7 @@
 <li><a class="wiki-nav-link" data-nav-href="wirtschaftlicher_nutzen.html" href="wirtschaftlicher_nutzen.html">wirtschaftlicher_nutzen</a></li>
 <li><a class="wiki-nav-link" data-nav-href="AgentSystems.html" href="AgentSystems.html">AgentSystems</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Glossary.html" href="Glossary.html">Glossary</a></li>
-<li><a class="wiki-nav-link active" data-nav-href="FAQ.html" href="FAQ.html">FAQ</a></li>
+<li><a class="wiki-nav-link" data-nav-href="FAQ.html" href="FAQ.html">FAQ</a></li>
 </ul></section>
       </nav>
     </aside>
@@ -146,104 +146,167 @@
         <button type="button" class="wiki-nav-toggle" data-nav-toggle>Menu</button>
         <div class="wiki-header-copy">
           <span class="wiki-kicker">Nova-shell Documentation</span>
-          <h1>FAQ</h1>
-          <p>Source: FAQ.md</p>
+          <h1>Atheria ALS For Developers</h1>
+          <p>Source: AtheriaALSForDevelopers.md</p>
         </div>
       </header>
       <div class="wiki-layout">
         <article class="wiki-article">
-          <h1 id="faq">FAQ</h1>
+          <h1 id="atheria-als-for-developers">Atheria ALS For Developers</h1>
 <h2 id="zweck">Zweck</h2>
-<p>Die FAQ ist die Kurzfassung fuer wiederkehrende Fragen. Die eigentliche Projektdokumentation liegt in den Architektur-, Referenz- und Beispielseiten dieser Wiki.</p>
-<h2 id="schnelle-einstiege">Schnelle Einstiege</h2>
+<p>Diese Seite erklaert ALS aus Entwicklersicht:</p>
 <ul>
-<li><a href="Home.html">Home</a></li>
-<li><a href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
-<li><a href="ClassReference.html">ClassReference</a></li>
-<li><a href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
+<li>Dateilayout</li>
+<li>Lebenszyklus</li>
+<li>Shell-Anbindung</li>
+<li>Chronik- und Lens-Integration</li>
+<li>Erweiterungspunkte</li>
 </ul>
-<h2 id="ist-nova-shell-nur-eine-shell">Ist Nova-shell nur eine Shell?</h2>
-<p>Nein. Es ist Shell, Sprache und Runtime-Plattform zugleich.</p>
-<p>Mehr dazu:</p>
+<h2 id="kernklassen">Kernklassen</h2>
+<table><thead><tr>
+<th>Klasse</th>
+<th>Datei</th>
+<th>Rolle</th>
+</tr></thead><tbody>
+<tr>
+<td><code>AtheriaALSRuntime</code></td>
+<td><code>nova/runtime/atheria_als.py</code></td>
+<td>residenter Live-Stream-Kern</td>
+</tr>
+<tr>
+<td><code>AtheriaVoiceRuntime</code></td>
+<td><code>nova/runtime/atheria_als.py</code></td>
+<td>Speech Acts und lokale Audioausgabe</td>
+</tr>
+<tr>
+<td><code>NovaAtheriaRuntime</code></td>
+<td><code>nova_shell.py</code></td>
+<td>lokales Training und Suche</td>
+</tr>
+<tr>
+<td><code>NovaAIProviderRuntime</code></td>
+<td><code>nova_shell.py</code></td>
+<td>Provider-Aufrufe fuer Dialoge</td>
+</tr>
+<tr>
+<td><code>NovaLensStore</code></td>
+<td><code>nova_shell.py</code></td>
+<td>replaybare Lineage</td>
+</tr>
+</tbody></table>
+<h2 id="dateilayout">Dateilayout</h2>
+<pre><code class="language-text">~/.nova_shell_memory/atheria_als/
+  config.json
+  state.json
+  status.json
+  events.jsonl
+  dialog.jsonl
+  voice.jsonl
+  als.pid
+  stop.request
+  aion_chronik.html
+  daemon_runtime/
+    atheria_daemon_audit.jsonl
+    core_audit/
+      nova-shell-als_audit.key
+      nova-shell-als_inter_core_resonance.jsonl</code></pre>
+<h2 id="lebenszyklus">Lebenszyklus</h2>
+<pre><code class="language-text">configure()
+  -&gt;
+serve_forever()
+  -&gt;
+run_cycle()
+  -&gt;
+train_rows()
+  -&gt;
+lens.record()
+  -&gt;
+audit append
+  -&gt;
+chronik refresh
+  -&gt;
+speech act append</code></pre>
+<h2 id="shell-anbindung">Shell-Anbindung</h2>
+<p>Der Einstieg liegt in <code>nova_shell.py</code> unter:</p>
 <ul>
-<li><a href="SystemOverview.html">SystemOverview</a></li>
-<li><a href="Architecture.html">Architecture</a></li>
+<li>Instanziierung in <code>NovaShell.__init__</code></li>
+<li>Dispatch in <code>atheria als ...</code></li>
+<li>Daemon-Start in <code>main(... --serve-atheria-als)</code></li>
 </ul>
-<h2 id="muss-ich-ns-benutzen">Muss ich <code>.ns</code> benutzen?</h2>
-<p>Nein. Die CLI kann auch ohne deklarative Programme genutzt werden. Fuer reproduzierbare Flows, Services und Agenten ist <code>.ns</code> aber der zentrale Pfad.</p>
-<p>Mehr dazu:</p>
+<h2 id="dialogpfad">Dialogpfad</h2>
+<p><code>ask(...)</code> arbeitet aktuell so:</p>
+<ol>
+<li>aktuelle Resonanz und letzte ALS-Ereignisse sammeln</li>
+<li>relevante Lens-Referenzen aufnehmen</li>
+<li>Atheria-Trainingstreffer suchen</li>
+<li>bevorzugt ueber Provider <code>atheria</code> antworten</li>
+<li>bei Ausfall kontrolliert heuristisch antworten</li>
+<li>Speech Act und Dialog persistent schreiben</li>
+</ol>
+<h2 id="triggerlogik">Triggerlogik</h2>
+<p>ALS loest aktuell einen Trigger aus, wenn bereits eine Baseline existiert und mindestens einer dieser Werte anspringt:</p>
 <ul>
-<li><a href="NovaCLI.html">NovaCLI</a></li>
-<li><a href="NovaLanguage.html">NovaLanguage</a></li>
+<li><code>trend_acceleration &gt;= trigger_threshold</code></li>
+<li><code>anomaly_score &gt;= anomaly_threshold</code></li>
 </ul>
-<h2 id="gibt-es-verteilte-ausfuehrung">Gibt es verteilte Ausfuehrung?</h2>
-<p>Ja. Ueber Mesh, Worker und standardisierte Executor-Pfade.</p>
-<p>Mehr dazu:</p>
+<p>Ohne Baseline baut der erste Lauf nur den Zustand auf.</p>
+<h2 id="aion-chronik-format">Aion-Chronik-Format</h2>
+<p>ALS schreibt kompatible Audit-Eintraege mit:</p>
 <ul>
-<li><a href="NovaMesh.html">NovaMesh</a></li>
-<li><a href="APIReference.html">APIReference</a></li>
+<li><code>previous</code></li>
+<li><code>journal_key_fingerprint</code></li>
+<li><code>journal_signature</code></li>
+<li><code>reason</code></li>
+<li><code>market</code></li>
+<li><code>extra</code></li>
 </ul>
-<h2 id="gibt-es-eine-api">Gibt es eine API?</h2>
-<p>Ja. Die Runtime kann eine HTTP-Control-Plane-API starten.</p>
-<p>Mehr dazu:</p>
+<p>Damit kann <code>aion_chronik.py</code> dieselbe Spur direkt rendern.</p>
+<h2 id="lens-integration">Lens-Integration</h2>
+<p>ALS nutzt Lens bewusst nur an entscheidenden Knoten:</p>
 <ul>
-<li><a href="APIReference.html">APIReference</a></li>
-<li><a href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
+<li>Zyklus</li>
+<li>Dialogfrage</li>
+<li>Feedback</li>
 </ul>
-<h2 id="gibt-es-tests-fuer-ns">Gibt es Tests fuer <code>.ns</code>?</h2>
-<p>Ja. Es existiert ein dedizierter Toolchain-Testpfad.</p>
-<p>Mehr dazu:</p>
+<p>Damit bleibt die Kausalspur dicht genug fuer Replay, ohne jeden Hilfsschritt zu verrauschen.</p>
+<h2 id="erweiterungspunkte">Erweiterungspunkte</h2>
+<p>Sinnvolle naechste Ausbaustufen:</p>
 <ul>
-<li><a href="Testing.html">Testing</a></li>
-<li><a href="DevelopmentGuide.html">DevelopmentGuide</a></li>
+<li>echte Push-Transportquellen statt nur residentem Pull-Loop</li>
+<li>weitere Voice-Backends</li>
+<li>differenziertere Triggerprofile pro Thema</li>
+<li>feinere Mesh-Offload-Strategien fuer Streamvorverarbeitung</li>
 </ul>
-<h2 id="wo-finde-ich-klassen-und-methoden">Wo finde ich Klassen und Methoden?</h2>
-<p>In der Referenzschicht der Wiki:</p>
+<h2 id="tests">Tests</h2>
+<p>Die aktuelle ALS-Abdeckung prueft:</p>
 <ul>
-<li><a href="ClassReference.html">ClassReference</a></li>
-<li><a href="ParserAndASTReference.html">ParserAndASTReference</a></li>
-<li><a href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
-<li><a href="CodeReferenceIndex.html">CodeReferenceIndex</a></li>
-</ul>
-<h2 id="wie-pruefe-ich-schnell-ob-meine-installation-gesund-ist">Wie pruefe ich schnell, ob meine Installation gesund ist?</h2>
-<p>Mit:</p>
-<pre><code class="language-powershell">doctor</code></pre>
-<h2 id="wie-beginne-ich-mit-einem-ersten-echten-ablauf">Wie beginne ich mit einem ersten echten Ablauf?</h2>
-<p>Mit:</p>
-<pre><code class="language-powershell">ns.graph examples\market_radar.ns
-ns.run examples\market_radar.ns</code></pre>
-<p>Danach weiter mit:</p>
-<ul>
-<li><a href="QuickStart.html">QuickStart</a></li>
-<li><a href="Tutorials.html">Tutorials</a></li>
-</ul>
-<h2 id="warum-funktioniert-ns-graph-aber-ns-run-nicht">Warum funktioniert <code>ns.graph</code>, aber <code>ns.run</code> nicht?</h2>
-<p>Dann ist die Syntax meist korrekt und das Problem liegt eher in Runtime, Tool, Provider oder Datenpfad.</p>
-<p>Mehr dazu:</p>
-<ul>
-<li><a href="NovaRuntime.html">NovaRuntime</a></li>
-<li><a href="Troubleshooting.html">Troubleshooting</a></li>
+<li>Zyklus mit Trigger, Lens, Voice und Chronik</li>
+<li>Dialog ueber <code>atheria als ask</code></li>
+<li>Feedback ueber <code>atheria als feedback</code></li>
+<li>CLI-Startpfad <code>--serve-atheria-als --als-once</code></li>
 </ul>
 <h2 id="verwandte-seiten">Verwandte Seiten</h2>
 <ul>
-<li><a href="QuickStart.html">QuickStart</a></li>
-<li><a href="Troubleshooting.html">Troubleshooting</a></li>
-<li><a href="GeneralLinks.html">GeneralLinks</a></li>
+<li><a href="AtheriaContinuousEvolutionAndLiveStream.html">AtheriaContinuousEvolutionAndLiveStream</a></li>
+<li><a href="AtheriaVoice.html">AtheriaVoice</a></li>
+<li><a href="NovaRuntime.html">NovaRuntime</a></li>
+<li><a href="NovaCLI.html">NovaCLI</a></li>
+<li><a href="NovaLens.html">NovaLens</a></li>
 </ul>
         </article>
         <aside class="wiki-toc">
           <div class="wiki-toc-card"><h2>On this page</h2><ul>
 <li class="wiki-toc-link"><a href="#zweck">Zweck</a></li>
-<li class="wiki-toc-link"><a href="#schnelle-einstiege">Schnelle Einstiege</a></li>
-<li class="wiki-toc-link"><a href="#ist-nova-shell-nur-eine-shell">Ist Nova-shell nur eine Shell?</a></li>
-<li class="wiki-toc-link"><a href="#muss-ich-ns-benutzen">Muss ich `.ns` benutzen?</a></li>
-<li class="wiki-toc-link"><a href="#gibt-es-verteilte-ausfuehrung">Gibt es verteilte Ausfuehrung?</a></li>
-<li class="wiki-toc-link"><a href="#gibt-es-eine-api">Gibt es eine API?</a></li>
-<li class="wiki-toc-link"><a href="#gibt-es-tests-fuer-ns">Gibt es Tests fuer `.ns`?</a></li>
-<li class="wiki-toc-link"><a href="#wo-finde-ich-klassen-und-methoden">Wo finde ich Klassen und Methoden?</a></li>
-<li class="wiki-toc-link"><a href="#wie-pruefe-ich-schnell-ob-meine-installation-gesund-ist">Wie pruefe ich schnell, ob meine Installation gesund ist?</a></li>
-<li class="wiki-toc-link"><a href="#wie-beginne-ich-mit-einem-ersten-echten-ablauf">Wie beginne ich mit einem ersten echten Ablauf?</a></li>
-<li class="wiki-toc-link"><a href="#warum-funktioniert-ns-graph-aber-ns-run-nicht">Warum funktioniert `ns.graph`, aber `ns.run` nicht?</a></li>
+<li class="wiki-toc-link"><a href="#kernklassen">Kernklassen</a></li>
+<li class="wiki-toc-link"><a href="#dateilayout">Dateilayout</a></li>
+<li class="wiki-toc-link"><a href="#lebenszyklus">Lebenszyklus</a></li>
+<li class="wiki-toc-link"><a href="#shell-anbindung">Shell-Anbindung</a></li>
+<li class="wiki-toc-link"><a href="#dialogpfad">Dialogpfad</a></li>
+<li class="wiki-toc-link"><a href="#triggerlogik">Triggerlogik</a></li>
+<li class="wiki-toc-link"><a href="#aion-chronik-format">Aion-Chronik-Format</a></li>
+<li class="wiki-toc-link"><a href="#lens-integration">Lens-Integration</a></li>
+<li class="wiki-toc-link"><a href="#erweiterungspunkte">Erweiterungspunkte</a></li>
+<li class="wiki-toc-link"><a href="#tests">Tests</a></li>
 <li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
 </ul></div>
         </aside>
@@ -255,7 +318,7 @@ ns.run examples\market_radar.ns</code></pre>
   </div>
   <script>
     window.NOVA_WIKI = {
-      currentPage: "FAQ.html",
+      currentPage: "AtheriaALSForDevelopers.html",
       searchIndex: "assets/search-index.json"
     };
   </script>

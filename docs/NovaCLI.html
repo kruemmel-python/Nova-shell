@@ -50,6 +50,9 @@
 <li><a class="wiki-nav-link" data-nav-href="NovaSynthPredictiveEngineShifting.html" href="NovaSynthPredictiveEngineShifting.html">NovaSynthPredictiveEngineShifting</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ZeroCopyFederatedLearningMesh.html" href="ZeroCopyFederatedLearningMesh.html">ZeroCopyFederatedLearningMesh</a></li>
 <li><a class="wiki-nav-link" data-nav-href="MyceliaAtheriaCoEvolution.html" href="MyceliaAtheriaCoEvolution.html">MyceliaAtheriaCoEvolution</a></li>
+<li><a class="wiki-nav-link" data-nav-href="AtheriaContinuousEvolutionAndLiveStream.html" href="AtheriaContinuousEvolutionAndLiveStream.html">AtheriaContinuousEvolutionAndLiveStream</a></li>
+<li><a class="wiki-nav-link" data-nav-href="AtheriaVoice.html" href="AtheriaVoice.html">AtheriaVoice</a></li>
+<li><a class="wiki-nav-link" data-nav-href="AtheriaALSForDevelopers.html" href="AtheriaALSForDevelopers.html">AtheriaALSForDevelopers</a></li>
 <li><a class="wiki-nav-link" data-nav-href="WatchMonitor.html" href="WatchMonitor.html">WatchMonitor</a></li>
 <li><a class="wiki-nav-link" data-nav-href="SystemGuardMonitor.html" href="SystemGuardMonitor.html">SystemGuardMonitor</a></li>
 <li><a class="wiki-nav-link" data-nav-href="WatchMonitorQuickStart.html" href="WatchMonitorQuickStart.html">WatchMonitorQuickStart</a></li>
@@ -62,6 +65,7 @@
 <li><a class="wiki-nav-link" data-nav-href="TutorialLMStudioIntegration.html" href="TutorialLMStudioIntegration.html">TutorialLMStudioIntegration</a></li>
 <li><a class="wiki-nav-link" data-nav-href="TutorialBlobSeeds.html" href="TutorialBlobSeeds.html">TutorialBlobSeeds</a></li>
 <li><a class="wiki-nav-link" data-nav-href="TutorialPredictiveFederatedCoevolution.html" href="TutorialPredictiveFederatedCoevolution.html">TutorialPredictiveFederatedCoevolution</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialAtheriaALS.html" href="TutorialAtheriaALS.html">TutorialAtheriaALS</a></li>
 <li><a class="wiki-nav-link" data-nav-href="TutorialProjectWatchMonitor.html" href="TutorialProjectWatchMonitor.html">TutorialProjectWatchMonitor</a></li>
 </ul></section>
 <section class="wiki-nav-section">
@@ -96,6 +100,9 @@
 <li><a class="wiki-nav-link" data-nav-href="NovaSynthPredictiveEngineShifting.html" href="NovaSynthPredictiveEngineShifting.html">NovaSynthPredictiveEngineShifting</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ZeroCopyFederatedLearningMesh.html" href="ZeroCopyFederatedLearningMesh.html">ZeroCopyFederatedLearningMesh</a></li>
 <li><a class="wiki-nav-link" data-nav-href="MyceliaAtheriaCoEvolution.html" href="MyceliaAtheriaCoEvolution.html">MyceliaAtheriaCoEvolution</a></li>
+<li><a class="wiki-nav-link" data-nav-href="AtheriaContinuousEvolutionAndLiveStream.html" href="AtheriaContinuousEvolutionAndLiveStream.html">AtheriaContinuousEvolutionAndLiveStream</a></li>
+<li><a class="wiki-nav-link" data-nav-href="AtheriaVoice.html" href="AtheriaVoice.html">AtheriaVoice</a></li>
+<li><a class="wiki-nav-link" data-nav-href="AtheriaALSForDevelopers.html" href="AtheriaALSForDevelopers.html">AtheriaALSForDevelopers</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaSensors.html" href="NovaSensors.html">NovaSensors</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaMemory.html" href="NovaMemory.html">NovaMemory</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaTools.html" href="NovaTools.html">NovaTools</a></li>
@@ -616,6 +623,7 @@ ai prompt &lt;prompt&gt;</code></pre>
 <p>Syntax:</p>
 <pre><code class="language-text">atheria status
 atheria init
+atheria als status|configure|cycle|start|stop|ask|feedback|voice|stream ...
 atheria search &lt;query&gt;
 atheria chat &lt;prompt&gt;
 atheria sensor gallery|list|show ...
@@ -623,10 +631,35 @@ atheria evolve status|plan|simulate|apply ...</code></pre>
 <p>Wann benutzen:</p>
 <ul>
 <li><code>status</code> und <code>init</code> als erster Integrationscheck</li>
+<li><code>als</code> fuer residenten Live-Stream, Dialog und Voice</li>
 <li><code>search</code> fuer lokales Wissens-Querying</li>
 <li><code>chat</code> fuer Atheria-gestuetzte Interaktion</li>
 <li><code>sensor</code> fuer Plugin- und Sensorpfade</li>
 <li><code>evolve</code> fuer adaptive Wissens- und Systemanpassung</li>
+</ul>
+<h4 id="als-residenter-atheria-live-pfad">ALS: residenter Atheria-Live-Pfad</h4>
+<pre><code class="language-powershell">atheria als status
+atheria als configure --topic &quot;AI infrastructure agent runtime&quot; --interval 90 --trigger 0.80
+atheria als cycle
+atheria als start
+atheria als ask &quot;Was heizt die Resonanz gerade auf?&quot;
+atheria als feedback &quot;Gewichte GPU-Runtime-Anomalien hoeher.&quot;
+atheria als voice status
+atheria als stream tail --limit 5
+atheria als stop</code></pre>
+<p>Erwartung:</p>
+<ul>
+<li><code>status</code> zeigt Laufzustand, Resonanz und Voice-Metadaten</li>
+<li><code>cycle</code> erzeugt einen einzelnen kontinuierlichen ALS-Zyklus</li>
+<li><code>start</code> startet den residenten Hintergrundpfad</li>
+<li><code>ask</code> und <code>feedback</code> erzeugen Dialog- und Speech-Act-Eintraege</li>
+<li><code>stream tail</code> zeigt letzte ALS-Events</li>
+</ul>
+<p>Vertiefung:</p>
+<ul>
+<li><a href="AtheriaContinuousEvolutionAndLiveStream.html">AtheriaContinuousEvolutionAndLiveStream</a></li>
+<li><a href="AtheriaVoice.html">AtheriaVoice</a></li>
+<li><a href="TutorialAtheriaALS.html">TutorialAtheriaALS</a></li>
 </ul>
 <h3 id="agent"><code>agent</code></h3>
 <p>Zweck: Agent-Definitionen, Laufzeitinstanzen, Agent-Workflows und Agent-Graphen.</p>
@@ -846,6 +879,9 @@ cpp.sandbox int main(){ return 0; }</code></pre>
 <li><a href="NovaSynthPredictiveEngineShifting.html">NovaSynthPredictiveEngineShifting</a></li>
 <li><a href="ZeroCopyFederatedLearningMesh.html">ZeroCopyFederatedLearningMesh</a></li>
 <li><a href="MyceliaAtheriaCoEvolution.html">MyceliaAtheriaCoEvolution</a></li>
+<li><a href="AtheriaContinuousEvolutionAndLiveStream.html">AtheriaContinuousEvolutionAndLiveStream</a></li>
+<li><a href="AtheriaVoice.html">AtheriaVoice</a></li>
+<li><a href="AtheriaALSForDevelopers.html">AtheriaALSForDevelopers</a></li>
 <li><a href="APIReference.html">APIReference</a></li>
 <li><a href="NovaLanguage.html">NovaLanguage</a></li>
 <li><a href="NovaRuntime.html">NovaRuntime</a></li>

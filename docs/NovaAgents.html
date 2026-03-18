@@ -50,6 +50,9 @@
 <li><a class="wiki-nav-link" data-nav-href="NovaSynthPredictiveEngineShifting.html" href="NovaSynthPredictiveEngineShifting.html">NovaSynthPredictiveEngineShifting</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ZeroCopyFederatedLearningMesh.html" href="ZeroCopyFederatedLearningMesh.html">ZeroCopyFederatedLearningMesh</a></li>
 <li><a class="wiki-nav-link" data-nav-href="MyceliaAtheriaCoEvolution.html" href="MyceliaAtheriaCoEvolution.html">MyceliaAtheriaCoEvolution</a></li>
+<li><a class="wiki-nav-link" data-nav-href="AtheriaContinuousEvolutionAndLiveStream.html" href="AtheriaContinuousEvolutionAndLiveStream.html">AtheriaContinuousEvolutionAndLiveStream</a></li>
+<li><a class="wiki-nav-link" data-nav-href="AtheriaVoice.html" href="AtheriaVoice.html">AtheriaVoice</a></li>
+<li><a class="wiki-nav-link" data-nav-href="AtheriaALSForDevelopers.html" href="AtheriaALSForDevelopers.html">AtheriaALSForDevelopers</a></li>
 <li><a class="wiki-nav-link" data-nav-href="WatchMonitor.html" href="WatchMonitor.html">WatchMonitor</a></li>
 <li><a class="wiki-nav-link" data-nav-href="SystemGuardMonitor.html" href="SystemGuardMonitor.html">SystemGuardMonitor</a></li>
 <li><a class="wiki-nav-link" data-nav-href="WatchMonitorQuickStart.html" href="WatchMonitorQuickStart.html">WatchMonitorQuickStart</a></li>
@@ -62,6 +65,7 @@
 <li><a class="wiki-nav-link" data-nav-href="TutorialLMStudioIntegration.html" href="TutorialLMStudioIntegration.html">TutorialLMStudioIntegration</a></li>
 <li><a class="wiki-nav-link" data-nav-href="TutorialBlobSeeds.html" href="TutorialBlobSeeds.html">TutorialBlobSeeds</a></li>
 <li><a class="wiki-nav-link" data-nav-href="TutorialPredictiveFederatedCoevolution.html" href="TutorialPredictiveFederatedCoevolution.html">TutorialPredictiveFederatedCoevolution</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialAtheriaALS.html" href="TutorialAtheriaALS.html">TutorialAtheriaALS</a></li>
 <li><a class="wiki-nav-link" data-nav-href="TutorialProjectWatchMonitor.html" href="TutorialProjectWatchMonitor.html">TutorialProjectWatchMonitor</a></li>
 </ul></section>
 <section class="wiki-nav-section">
@@ -96,6 +100,9 @@
 <li><a class="wiki-nav-link" data-nav-href="NovaSynthPredictiveEngineShifting.html" href="NovaSynthPredictiveEngineShifting.html">NovaSynthPredictiveEngineShifting</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ZeroCopyFederatedLearningMesh.html" href="ZeroCopyFederatedLearningMesh.html">ZeroCopyFederatedLearningMesh</a></li>
 <li><a class="wiki-nav-link" data-nav-href="MyceliaAtheriaCoEvolution.html" href="MyceliaAtheriaCoEvolution.html">MyceliaAtheriaCoEvolution</a></li>
+<li><a class="wiki-nav-link" data-nav-href="AtheriaContinuousEvolutionAndLiveStream.html" href="AtheriaContinuousEvolutionAndLiveStream.html">AtheriaContinuousEvolutionAndLiveStream</a></li>
+<li><a class="wiki-nav-link" data-nav-href="AtheriaVoice.html" href="AtheriaVoice.html">AtheriaVoice</a></li>
+<li><a class="wiki-nav-link" data-nav-href="AtheriaALSForDevelopers.html" href="AtheriaALSForDevelopers.html">AtheriaALSForDevelopers</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaSensors.html" href="NovaSensors.html">NovaSensors</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaMemory.html" href="NovaMemory.html">NovaMemory</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaTools.html" href="NovaTools.html">NovaTools</a></li>
@@ -189,6 +196,10 @@
 <td><code>MyceliaAtheriaCoEvolutionLab</code></td>
 <td>populationsbezogene Co-Evolution ueber Forecast- und Kruemmungssignale</td>
 </tr>
+<tr>
+<td><code>AtheriaALSRuntime</code></td>
+<td>residenter Atheria-Live-Pfad mit Dialog, Triggern und Voice</td>
+</tr>
 </tbody></table>
 <h2 id="agent-lebenszyklus">Agent-Lebenszyklus</h2>
 <pre><code class="language-text">Declaration
@@ -237,6 +248,19 @@ Evaluation</code></pre>
 <pre><code class="language-powershell">mycelia coevolve run research-pop --cycles 5 --input &quot;edge inference pressure rises&quot;
 mycelia coevolve status research-pop
 mycelia population tick research-pop --cycles 5 --coevolve</code></pre>
+<h2 id="als-als-dauerhafte-atheria-instanz">ALS als dauerhafte Atheria-Instanz</h2>
+<p>ALS ist kein einzelner Agent, aber es verhaelt sich aus Plattformsicht wie eine laufende kognitive Instanz:</p>
+<ul>
+<li>permanenter Stream-Zustand</li>
+<li>lokale Wissensintegration</li>
+<li>belegbare Dialoge</li>
+<li>Voice als First-Class-Ausgang</li>
+</ul>
+<p>Es ist damit die Bruecke zwischen klassischer Agent-Ausfuehrung und einer dauerhaft existierenden Atheria-Praesenz.</p>
+<p>CLI:</p>
+<pre><code class="language-powershell">atheria als start
+atheria als ask &quot;Was ist die aktuelle Hypothese?&quot;
+atheria als feedback &quot;Verfolge Supply-Chain-Risiken strenger.&quot;</code></pre>
 <h2 id="cli">CLI</h2>
 <p>Typische Agent-Kommandos:</p>
 <ul>
@@ -299,6 +323,8 @@ mycelia coevolve status trend-rss</code></pre>
 <li><a href="NovaMemory.html">NovaMemory</a></li>
 <li><a href="NovaTools.html">NovaTools</a></li>
 <li><a href="MyceliaAtheriaCoEvolution.html">MyceliaAtheriaCoEvolution</a></li>
+<li><a href="AtheriaContinuousEvolutionAndLiveStream.html">AtheriaContinuousEvolutionAndLiveStream</a></li>
+<li><a href="AtheriaVoice.html">AtheriaVoice</a></li>
 <li><a href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
 <li><a href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
 </ul>
@@ -310,6 +336,7 @@ mycelia coevolve status trend-rss</code></pre>
 <li class="wiki-toc-link"><a href="#agent-lebenszyklus">Agent-Lebenszyklus</a></li>
 <li class="wiki-toc-link"><a href="#methoden-und-schnittstellen">Methoden und Schnittstellen</a></li>
 <li class="wiki-toc-link"><a href="#co-evolution-mit-mycelia-und-atheria">Co-Evolution mit Mycelia und Atheria</a></li>
+<li class="wiki-toc-link"><a href="#als-als-dauerhafte-atheria-instanz">ALS als dauerhafte Atheria-Instanz</a></li>
 <li class="wiki-toc-link"><a href="#cli">CLI</a></li>
 <li class="wiki-toc-link"><a href="#api">API</a></li>
 <li class="wiki-toc-link"><a href="#testbare-beispiele">Testbare Beispiele</a></li>

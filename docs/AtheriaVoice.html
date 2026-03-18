@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="Nova-shell wiki builder">
-  <title>FAQ | Nova-shell Wiki</title>
+  <title>Atheria Voice | Nova-shell Wiki</title>
   <link rel="stylesheet" href="assets/wiki.css">
 </head>
 <body>
@@ -51,7 +51,7 @@
 <li><a class="wiki-nav-link" data-nav-href="ZeroCopyFederatedLearningMesh.html" href="ZeroCopyFederatedLearningMesh.html">ZeroCopyFederatedLearningMesh</a></li>
 <li><a class="wiki-nav-link" data-nav-href="MyceliaAtheriaCoEvolution.html" href="MyceliaAtheriaCoEvolution.html">MyceliaAtheriaCoEvolution</a></li>
 <li><a class="wiki-nav-link" data-nav-href="AtheriaContinuousEvolutionAndLiveStream.html" href="AtheriaContinuousEvolutionAndLiveStream.html">AtheriaContinuousEvolutionAndLiveStream</a></li>
-<li><a class="wiki-nav-link" data-nav-href="AtheriaVoice.html" href="AtheriaVoice.html">AtheriaVoice</a></li>
+<li><a class="wiki-nav-link active" data-nav-href="AtheriaVoice.html" href="AtheriaVoice.html">AtheriaVoice</a></li>
 <li><a class="wiki-nav-link" data-nav-href="AtheriaALSForDevelopers.html" href="AtheriaALSForDevelopers.html">AtheriaALSForDevelopers</a></li>
 <li><a class="wiki-nav-link" data-nav-href="WatchMonitor.html" href="WatchMonitor.html">WatchMonitor</a></li>
 <li><a class="wiki-nav-link" data-nav-href="SystemGuardMonitor.html" href="SystemGuardMonitor.html">SystemGuardMonitor</a></li>
@@ -101,7 +101,7 @@
 <li><a class="wiki-nav-link" data-nav-href="ZeroCopyFederatedLearningMesh.html" href="ZeroCopyFederatedLearningMesh.html">ZeroCopyFederatedLearningMesh</a></li>
 <li><a class="wiki-nav-link" data-nav-href="MyceliaAtheriaCoEvolution.html" href="MyceliaAtheriaCoEvolution.html">MyceliaAtheriaCoEvolution</a></li>
 <li><a class="wiki-nav-link" data-nav-href="AtheriaContinuousEvolutionAndLiveStream.html" href="AtheriaContinuousEvolutionAndLiveStream.html">AtheriaContinuousEvolutionAndLiveStream</a></li>
-<li><a class="wiki-nav-link" data-nav-href="AtheriaVoice.html" href="AtheriaVoice.html">AtheriaVoice</a></li>
+<li><a class="wiki-nav-link active" data-nav-href="AtheriaVoice.html" href="AtheriaVoice.html">AtheriaVoice</a></li>
 <li><a class="wiki-nav-link" data-nav-href="AtheriaALSForDevelopers.html" href="AtheriaALSForDevelopers.html">AtheriaALSForDevelopers</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaSensors.html" href="NovaSensors.html">NovaSensors</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaMemory.html" href="NovaMemory.html">NovaMemory</a></li>
@@ -137,7 +137,7 @@
 <li><a class="wiki-nav-link" data-nav-href="wirtschaftlicher_nutzen.html" href="wirtschaftlicher_nutzen.html">wirtschaftlicher_nutzen</a></li>
 <li><a class="wiki-nav-link" data-nav-href="AgentSystems.html" href="AgentSystems.html">AgentSystems</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Glossary.html" href="Glossary.html">Glossary</a></li>
-<li><a class="wiki-nav-link active" data-nav-href="FAQ.html" href="FAQ.html">FAQ</a></li>
+<li><a class="wiki-nav-link" data-nav-href="FAQ.html" href="FAQ.html">FAQ</a></li>
 </ul></section>
       </nav>
     </aside>
@@ -146,104 +146,145 @@
         <button type="button" class="wiki-nav-toggle" data-nav-toggle>Menu</button>
         <div class="wiki-header-copy">
           <span class="wiki-kicker">Nova-shell Documentation</span>
-          <h1>FAQ</h1>
-          <p>Source: FAQ.md</p>
+          <h1>Atheria Voice</h1>
+          <p>Source: AtheriaVoice.md</p>
         </div>
       </header>
       <div class="wiki-layout">
         <article class="wiki-article">
-          <h1 id="faq">FAQ</h1>
+          <h1 id="atheria-voice">Atheria Voice</h1>
 <h2 id="zweck">Zweck</h2>
-<p>Die FAQ ist die Kurzfassung fuer wiederkehrende Fragen. Die eigentliche Projektdokumentation liegt in den Architektur-, Referenz- und Beispielseiten dieser Wiki.</p>
-<h2 id="schnelle-einstiege">Schnelle Einstiege</h2>
+<p><code>Atheria Voice</code> ist die Sprachschicht von ALS. Sie ist nicht als spaeteres Zusatzfeature gedacht, sondern als direkter kognitiver Ausgangskanal.</p>
+<p>Der Kernpunkt ist:</p>
 <ul>
-<li><a href="Home.html">Home</a></li>
-<li><a href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
-<li><a href="ClassReference.html">ClassReference</a></li>
-<li><a href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
+<li>Atheria spricht nicht nur Ergebnisse aus</li>
+<li>Atheria spricht aus ihrer aktuellen Resonanzlage heraus</li>
 </ul>
-<h2 id="ist-nova-shell-nur-eine-shell">Ist Nova-shell nur eine Shell?</h2>
-<p>Nein. Es ist Shell, Sprache und Runtime-Plattform zugleich.</p>
-<p>Mehr dazu:</p>
+<h2 id="speech-acts">Speech Acts</h2>
+<p>Die kleinste Einheit ist nicht eine Audiodatei, sondern ein <code>speech_act</code>.</p>
+<p>Ein Speech Act enthaelt:</p>
 <ul>
-<li><a href="SystemOverview.html">SystemOverview</a></li>
-<li><a href="Architecture.html">Architecture</a></li>
+<li><code>mode</code></li>
+<li><code>utterance_text</code></li>
+<li><code>evidence_refs</code></li>
+<li><code>resonance</code></li>
+<li><code>prosody</code></li>
+<li><code>provider</code></li>
+<li><code>model</code></li>
+<li><code>spoken</code></li>
+<li><code>backend</code></li>
+<li><code>error</code></li>
 </ul>
-<h2 id="muss-ich-ns-benutzen">Muss ich <code>.ns</code> benutzen?</h2>
-<p>Nein. Die CLI kann auch ohne deklarative Programme genutzt werden. Fuer reproduzierbare Flows, Services und Agenten ist <code>.ns</code> aber der zentrale Pfad.</p>
-<p>Mehr dazu:</p>
+<p>Diese Eintraege werden in <code>voice.jsonl</code> persistiert.</p>
+<h2 id="prosodie-aus-resonanz">Prosodie aus Resonanz</h2>
+<p>Die Prosodie wird aus Laufzeitwerten abgeleitet, nicht zufaellig gewaehlt.</p>
+<p>Wichtige Eingangssignale:</p>
 <ul>
-<li><a href="NovaCLI.html">NovaCLI</a></li>
-<li><a href="NovaLanguage.html">NovaLanguage</a></li>
+<li><code>system_temperature</code></li>
+<li><code>anomaly_score</code></li>
+<li><code>confidence</code></li>
+<li><code>trend_acceleration</code></li>
+<li><code>structural_tension</code></li>
 </ul>
-<h2 id="gibt-es-verteilte-ausfuehrung">Gibt es verteilte Ausfuehrung?</h2>
-<p>Ja. Ueber Mesh, Worker und standardisierte Executor-Pfade.</p>
-<p>Mehr dazu:</p>
+<p>Abgeleitete Merkmale:</p>
 <ul>
-<li><a href="NovaMesh.html">NovaMesh</a></li>
-<li><a href="APIReference.html">APIReference</a></li>
+<li><code>style</code></li>
+<li><code>urgency</code></li>
+<li><code>rate</code></li>
+<li><code>pitch_percent</code></li>
+<li><code>volume</code></li>
 </ul>
-<h2 id="gibt-es-eine-api">Gibt es eine API?</h2>
-<p>Ja. Die Runtime kann eine HTTP-Control-Plane-API starten.</p>
-<p>Mehr dazu:</p>
+<p>Beispiele:</p>
+<table><thead><tr>
+<th>Zustand</th>
+<th>Wirkung</th>
+</tr></thead><tbody>
+<tr>
+<td>hohe Anomalie oder hohe Beschleunigung</td>
+<td>warnender oder dringlicher Stil</td>
+</tr>
+<tr>
+<td>hohe Konfidenz bei mittlerer Temperatur</td>
+<td>fokussierter Stil</td>
+</tr>
+<tr>
+<td>niedrige Spannung und geringe Anomalie</td>
+<td>analytischer Stil</td>
+</tr>
+</tbody></table>
+<h2 id="audio-und-text">Audio und Text</h2>
+<p>Voice besteht in ALS immer aus Speech Acts. Audio ist optional.</p>
+<p>Das bedeutet:</p>
 <ul>
-<li><a href="APIReference.html">APIReference</a></li>
-<li><a href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
+<li>ohne Audio entsteht trotzdem ein vollwertiger Voice-Eintrag</li>
+<li>mit Audio versucht ALS lokal zu sprechen</li>
+<li>auf Windows nutzt die aktuelle Implementierung SAPI ueber PowerShell und <code>System.Speech</code></li>
 </ul>
-<h2 id="gibt-es-tests-fuer-ns">Gibt es Tests fuer <code>.ns</code>?</h2>
-<p>Ja. Es existiert ein dedizierter Toolchain-Testpfad.</p>
-<p>Mehr dazu:</p>
+<h2 id="cli">CLI</h2>
+<pre><code class="language-powershell">atheria als voice status
+atheria als voice last
+atheria als voice speak &quot;Manuelle Ausgabe&quot;</code></pre>
+<h2 id="konfiguration">Konfiguration</h2>
+<h3 id="audio-aktivieren">Audio aktivieren</h3>
+<pre><code class="language-powershell">atheria als configure --audio on</code></pre>
+<h3 id="windows-stimme-setzen">Windows-Stimme setzen</h3>
+<pre><code class="language-powershell">atheria als configure --voice &quot;Microsoft Hedda Desktop&quot;</code></pre>
+<h3 id="ueber-umgebungsvariablen">Ueber Umgebungsvariablen</h3>
+<pre><code class="language-powershell">$env:NOVA_ALS_VOICE_AUDIO = &quot;1&quot;
+$env:NOVA_ALS_VOICE_NAME = &quot;Microsoft Hedda Desktop&quot;
+atheria als start</code></pre>
+<h2 id="testbare-beispiele">Testbare Beispiele</h2>
+<h3 id="letzten-speech-act-ansehen">Letzten Speech Act ansehen</h3>
+<pre><code class="language-powershell">atheria als voice last</code></pre>
+<h3 id="einen-manuellen-speech-act-erzeugen">Einen manuellen Speech Act erzeugen</h3>
+<pre><code class="language-powershell">atheria als voice speak &quot;Atheria meldet stabile Resonanz.&quot;</code></pre>
+<h3 id="dialog-mit-voice-spur-erzeugen">Dialog mit Voice-Spur erzeugen</h3>
+<pre><code class="language-powershell">atheria als ask &quot;Wie hoch ist die aktuelle strukturelle Spannung?&quot;</code></pre>
+<p>Erwartung:</p>
 <ul>
-<li><a href="Testing.html">Testing</a></li>
-<li><a href="DevelopmentGuide.html">DevelopmentGuide</a></li>
+<li>Antwort in JSON</li>
+<li>neuer Eintrag in <code>voice.jsonl</code></li>
+<li>neuer Eintrag in <code>dialog.jsonl</code></li>
 </ul>
-<h2 id="wo-finde-ich-klassen-und-methoden">Wo finde ich Klassen und Methoden?</h2>
-<p>In der Referenzschicht der Wiki:</p>
+<h2 id="forensische-bedeutung">Forensische Bedeutung</h2>
+<p>Voice ist in ALS nicht nur UX. Speech Acts sind Teil der auditierbaren Erkenntnisspur.</p>
+<p>Dadurch kann man spaeter nachvollziehen:</p>
 <ul>
-<li><a href="ClassReference.html">ClassReference</a></li>
-<li><a href="ParserAndASTReference.html">ParserAndASTReference</a></li>
-<li><a href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
-<li><a href="CodeReferenceIndex.html">CodeReferenceIndex</a></li>
+<li>was Atheria gesagt hat</li>
+<li>auf welcher Resonanzlage das beruhte</li>
+<li>auf welche Evidenzen sich die Aussage stützte</li>
 </ul>
-<h2 id="wie-pruefe-ich-schnell-ob-meine-installation-gesund-ist">Wie pruefe ich schnell, ob meine Installation gesund ist?</h2>
-<p>Mit:</p>
-<pre><code class="language-powershell">doctor</code></pre>
-<h2 id="wie-beginne-ich-mit-einem-ersten-echten-ablauf">Wie beginne ich mit einem ersten echten Ablauf?</h2>
-<p>Mit:</p>
-<pre><code class="language-powershell">ns.graph examples\market_radar.ns
-ns.run examples\market_radar.ns</code></pre>
-<p>Danach weiter mit:</p>
-<ul>
-<li><a href="QuickStart.html">QuickStart</a></li>
-<li><a href="Tutorials.html">Tutorials</a></li>
-</ul>
-<h2 id="warum-funktioniert-ns-graph-aber-ns-run-nicht">Warum funktioniert <code>ns.graph</code>, aber <code>ns.run</code> nicht?</h2>
-<p>Dann ist die Syntax meist korrekt und das Problem liegt eher in Runtime, Tool, Provider oder Datenpfad.</p>
-<p>Mehr dazu:</p>
-<ul>
-<li><a href="NovaRuntime.html">NovaRuntime</a></li>
-<li><a href="Troubleshooting.html">Troubleshooting</a></li>
-</ul>
+<h2 id="typische-fragen">Typische Fragen</h2>
+<h3 id="was-passiert-wenn-audio-fehlschlaegt">Was passiert, wenn Audio fehlschlaegt?</h3>
+<p>Der Speech Act wird trotzdem gespeichert. <code>spoken</code> bleibt dann <code>false</code>, und <code>error</code> beschreibt das Audio-Problem.</p>
+<h3 id="ist-voice-auf-windows-beschraenkt">Ist Voice auf Windows beschraenkt?</h3>
+<p>Die persistente Voice-Schicht nein. Die aktuelle lokale Audioausgabe ja.</p>
 <h2 id="verwandte-seiten">Verwandte Seiten</h2>
 <ul>
-<li><a href="QuickStart.html">QuickStart</a></li>
-<li><a href="Troubleshooting.html">Troubleshooting</a></li>
-<li><a href="GeneralLinks.html">GeneralLinks</a></li>
+<li><a href="AtheriaContinuousEvolutionAndLiveStream.html">AtheriaContinuousEvolutionAndLiveStream</a></li>
+<li><a href="AtheriaALSForDevelopers.html">AtheriaALSForDevelopers</a></li>
+<li><a href="TutorialAtheriaALS.html">TutorialAtheriaALS</a></li>
 </ul>
         </article>
         <aside class="wiki-toc">
           <div class="wiki-toc-card"><h2>On this page</h2><ul>
 <li class="wiki-toc-link"><a href="#zweck">Zweck</a></li>
-<li class="wiki-toc-link"><a href="#schnelle-einstiege">Schnelle Einstiege</a></li>
-<li class="wiki-toc-link"><a href="#ist-nova-shell-nur-eine-shell">Ist Nova-shell nur eine Shell?</a></li>
-<li class="wiki-toc-link"><a href="#muss-ich-ns-benutzen">Muss ich `.ns` benutzen?</a></li>
-<li class="wiki-toc-link"><a href="#gibt-es-verteilte-ausfuehrung">Gibt es verteilte Ausfuehrung?</a></li>
-<li class="wiki-toc-link"><a href="#gibt-es-eine-api">Gibt es eine API?</a></li>
-<li class="wiki-toc-link"><a href="#gibt-es-tests-fuer-ns">Gibt es Tests fuer `.ns`?</a></li>
-<li class="wiki-toc-link"><a href="#wo-finde-ich-klassen-und-methoden">Wo finde ich Klassen und Methoden?</a></li>
-<li class="wiki-toc-link"><a href="#wie-pruefe-ich-schnell-ob-meine-installation-gesund-ist">Wie pruefe ich schnell, ob meine Installation gesund ist?</a></li>
-<li class="wiki-toc-link"><a href="#wie-beginne-ich-mit-einem-ersten-echten-ablauf">Wie beginne ich mit einem ersten echten Ablauf?</a></li>
-<li class="wiki-toc-link"><a href="#warum-funktioniert-ns-graph-aber-ns-run-nicht">Warum funktioniert `ns.graph`, aber `ns.run` nicht?</a></li>
+<li class="wiki-toc-link"><a href="#speech-acts">Speech Acts</a></li>
+<li class="wiki-toc-link"><a href="#prosodie-aus-resonanz">Prosodie aus Resonanz</a></li>
+<li class="wiki-toc-link"><a href="#audio-und-text">Audio und Text</a></li>
+<li class="wiki-toc-link"><a href="#cli">CLI</a></li>
+<li class="wiki-toc-link"><a href="#konfiguration">Konfiguration</a></li>
+<li class="wiki-toc-link level-3"><a href="#audio-aktivieren">Audio aktivieren</a></li>
+<li class="wiki-toc-link level-3"><a href="#windows-stimme-setzen">Windows-Stimme setzen</a></li>
+<li class="wiki-toc-link level-3"><a href="#ueber-umgebungsvariablen">Ueber Umgebungsvariablen</a></li>
+<li class="wiki-toc-link"><a href="#testbare-beispiele">Testbare Beispiele</a></li>
+<li class="wiki-toc-link level-3"><a href="#letzten-speech-act-ansehen">Letzten Speech Act ansehen</a></li>
+<li class="wiki-toc-link level-3"><a href="#einen-manuellen-speech-act-erzeugen">Einen manuellen Speech Act erzeugen</a></li>
+<li class="wiki-toc-link level-3"><a href="#dialog-mit-voice-spur-erzeugen">Dialog mit Voice-Spur erzeugen</a></li>
+<li class="wiki-toc-link"><a href="#forensische-bedeutung">Forensische Bedeutung</a></li>
+<li class="wiki-toc-link"><a href="#typische-fragen">Typische Fragen</a></li>
+<li class="wiki-toc-link level-3"><a href="#was-passiert-wenn-audio-fehlschlaegt">Was passiert, wenn Audio fehlschlaegt?</a></li>
+<li class="wiki-toc-link level-3"><a href="#ist-voice-auf-windows-beschraenkt">Ist Voice auf Windows beschraenkt?</a></li>
 <li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
 </ul></div>
         </aside>
@@ -255,7 +296,7 @@ ns.run examples\market_radar.ns</code></pre>
   </div>
   <script>
     window.NOVA_WIKI = {
-      currentPage: "FAQ.html",
+      currentPage: "AtheriaVoice.html",
       searchIndex: "assets/search-index.json"
     };
   </script>
