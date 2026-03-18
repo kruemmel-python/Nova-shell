@@ -265,6 +265,15 @@ class BuildReleaseTests(unittest.TestCase):
             self.assertTrue((sideload_root / "torch" / "__init__.py").exists())
             self.assertTrue((sideload_root / "torchgen" / "__init__.py").exists())
 
+    def test_safe_path_helpers_return_false_on_oserror(self) -> None:
+        path = Path("Z:/definitely-not-real")
+
+        with patch.object(Path, "exists", side_effect=OSError("stat failed")):
+            self.assertFalse(build_release.safe_path_exists(path))
+
+        with patch.object(Path, "is_dir", side_effect=OSError("stat failed")):
+            self.assertFalse(build_release.safe_path_is_dir(path))
+
     def test_build_nuitka_command_includes_enterprise_packages_and_modules(self) -> None:
         with (
             tempfile.TemporaryDirectory() as tmp,

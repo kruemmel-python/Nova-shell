@@ -151,6 +151,20 @@ def extract_requirement_names(requirements: list[str]) -> list[str]:
     return names
 
 
+def safe_path_exists(path: Path) -> bool:
+    try:
+        return path.exists()
+    except OSError:
+        return False
+
+
+def safe_path_is_dir(path: Path) -> bool:
+    try:
+        return path.is_dir()
+    except OSError:
+        return False
+
+
 def _is_windows_runtime() -> bool:
     return os.name == "nt" or sys.platform.startswith("win")
 
@@ -850,11 +864,14 @@ def stage_sideload_top_level_entries(
     *,
     top_level_entries: list[str] | None = None,
 ) -> None:
-    distribution_path = Path(distribution._path).resolve()
+    try:
+        distribution_path = Path(distribution._path).resolve()
+    except OSError:
+        return
     site_packages = distribution_path.parent
-    if distribution_path.exists():
+    if safe_path_exists(distribution_path):
         target = sideload_root / distribution_path.name
-        if distribution_path.is_dir():
+        if safe_path_is_dir(distribution_path):
             copytree_filtered(distribution_path, target)
         else:
             copy_file_filtered(distribution_path, target)
@@ -867,9 +884,9 @@ def stage_sideload_top_level_entries(
             site_packages / f"{entry}.dll",
         ]
         for candidate in root_candidates:
-            if not candidate.exists():
+            if not safe_path_exists(candidate):
                 continue
-            if candidate.is_dir():
+            if safe_path_is_dir(candidate):
                 copytree_filtered(candidate, sideload_root / candidate.name)
             else:
                 copy_file_filtered(candidate, sideload_root / candidate.name)
@@ -883,13 +900,19 @@ def stage_sideload_distribution(distribution: importlib_metadata.Distribution, s
         stage_sideload_top_level_entries(distribution, sideload_root, copied, top_level_entries=top_level_entries)
         return
 
-    distribution_path = Path(distribution._path).resolve()
+    try:
+        distribution_path = Path(distribution._path).resolve()
+    except OSError:
+        return
     site_packages = distribution_path.parent
     copied_any = False
 
     for record_path in list(distribution.files or []):
-        source = Path(distribution.locate_file(record_path)).resolve()
-        if not source.exists() or source.is_dir():
+        try:
+            source = Path(distribution.locate_file(record_path)).resolve()
+        except OSError:
+            continue
+        if not safe_path_exists(source) or safe_path_is_dir(source):
             continue
         try:
             relative_path = source.relative_to(site_packages)
@@ -902,9 +925,9 @@ def stage_sideload_distribution(distribution: importlib_metadata.Distribution, s
         copied.add(relative_key)
         copied_any = True
 
-    if not copied_any and distribution_path.exists():
+    if not copied_any and safe_path_exists(distribution_path):
         target = sideload_root / distribution_path.name
-        if distribution_path.is_dir():
+        if safe_path_is_dir(distribution_path):
             copytree_filtered(distribution_path, target)
         else:
             copy_file_filtered(distribution_path, target)
@@ -925,9 +948,9 @@ def stage_sideload_distribution(distribution: importlib_metadata.Distribution, s
         ]
         entry_copied = False
         for candidate in root_candidates:
-            if not candidate.exists():
+            if not safe_path_exists(candidate):
                 continue
-            if candidate.is_dir():
+            if safe_path_is_dir(candidate):
                 for source in candidate.rglob("*"):
                     if not source.is_file():
                         continue

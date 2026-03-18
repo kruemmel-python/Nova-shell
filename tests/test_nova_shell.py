@@ -2238,6 +2238,24 @@ if len(files_lines) == 2:
         train_mock.assert_called_once()
         self.assertTrue(self.shell.als.dialog_path.exists())
 
+    def test_atheria_als_stream_tail_returns_recent_events_without_crashing(self) -> None:
+        event_rows = [
+            {"event_id": "als_1", "summary": "first", "metrics": {"signal_strength": 0.10}},
+            {"event_id": "als_2", "summary": "second", "metrics": {"signal_strength": 0.20}},
+            {"event_id": "als_3", "summary": "third", "metrics": {"signal_strength": 0.30}},
+            {"event_id": "als_4", "summary": "fourth", "metrics": {"signal_strength": 0.40}},
+        ]
+        for row in event_rows:
+            self.shell.als._append_jsonl(self.shell.als.events_path, row)
+
+        result = self.shell.route("atheria als stream tail --limit 3")
+
+        self.assertIsNone(result.error)
+        payload = json.loads(result.output)
+        self.assertEqual(len(payload), 3)
+        self.assertEqual([item["event_id"] for item in payload], ["als_2", "als_3", "als_4"])
+        self.assertEqual(result.data_type, PipelineType.OBJECT)
+
     def test_cli_main_serve_atheria_als_once_routes_to_runtime(self) -> None:
         with patch("nova_shell.AtheriaALSRuntime.serve_forever", return_value=0) as serve_mock:
             exit_code = main(["--no-plugins", "--serve-atheria-als", "--als-once"])
