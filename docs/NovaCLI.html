@@ -40,6 +40,10 @@
 <li><a class="wiki-nav-link active" data-nav-href="NovaCLI.html" href="NovaCLI.html">NovaCLI</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ShellCommandReference.html" href="ShellCommandReference.html">ShellCommandReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaLens.html" href="NovaLens.html">NovaLens</a></li>
+<li><a class="wiki-nav-link" data-nav-href="LensForDevelopers.html" href="LensForDevelopers.html">LensForDevelopers</a></li>
+<li><a class="wiki-nav-link" data-nav-href="LensTroubleshooting.html" href="LensTroubleshooting.html">LensTroubleshooting</a></li>
+<li><a class="wiki-nav-link" data-nav-href="LensRecipes.html" href="LensRecipes.html">LensRecipes</a></li>
 <li><a class="wiki-nav-link" data-nav-href="APIReference.html" href="APIReference.html">APIReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ExamplesAndRecipes.html" href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NSBlobGenerator.html" href="NSBlobGenerator.html">NSBlobGenerator</a></li>
@@ -73,12 +77,15 @@
 <li><a class="wiki-nav-link" data-nav-href="nsReference.html" href="nsReference.html">nsReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="nsPatterns.html" href="nsPatterns.html">nsPatterns</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaRuntime.html" href="NovaRuntime.html">NovaRuntime</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaLens.html" href="NovaLens.html">NovaLens</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaGraphEngine.html" href="NovaGraphEngine.html">NovaGraphEngine</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaPlanner.html" href="NovaPlanner.html">NovaPlanner</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ParserAndASTReference.html" href="ParserAndASTReference.html">ParserAndASTReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="RuntimeMethodReference.html" href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ClassReference.html" href="ClassReference.html">ClassReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="CodeReferenceIndex.html" href="CodeReferenceIndex.html">CodeReferenceIndex</a></li>
+<li><a class="wiki-nav-link" data-nav-href="LensForDevelopers.html" href="LensForDevelopers.html">LensForDevelopers</a></li>
+<li><a class="wiki-nav-link" data-nav-href="LensRecipes.html" href="LensRecipes.html">LensRecipes</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Plattformfunktionen</h2>
@@ -108,6 +115,7 @@
 <li><a class="wiki-nav-link" data-nav-href="SecurityModel.html" href="SecurityModel.html">SecurityModel</a></li>
 <li><a class="wiki-nav-link" data-nav-href="PerformanceAndScaling.html" href="PerformanceAndScaling.html">PerformanceAndScaling</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Troubleshooting.html" href="Troubleshooting.html">Troubleshooting</a></li>
+<li><a class="wiki-nav-link" data-nav-href="LensTroubleshooting.html" href="LensTroubleshooting.html">LensTroubleshooting</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Roadmap.html" href="Roadmap.html">Roadmap</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Contributing.html" href="Contributing.html">Contributing</a></li>
 <li><a class="wiki-nav-link" data-nav-href="License.html" href="License.html">License</a></li>
@@ -330,6 +338,12 @@ nova-shell --no-plugins -c &quot;ai providers&quot; | ConvertFrom-Json</code></p
 <td>lokaler Worker startet</td>
 </tr>
 <tr>
+<td><code>lens</code></td>
+<td>persistente Shell-Snapshots und Replay ueber <code>lineage.db</code> und CAS</td>
+<td><code>lens last</code></td>
+<td>JSON des letzten Snapshot-Eintrags</td>
+</tr>
+<tr>
 <td><code>blob</code></td>
 <td>verifizierbare Seed-Kapselung, Rehydrierung und Mesh-Transport</td>
 <td><code>blob pack --text &quot;21 * 2&quot; --type py</code></td>
@@ -429,6 +443,17 @@ agent show helper</code></pre>
 <li><code>agent show</code> liefert Definition, Provider und Modell</li>
 </ul>
 <p>Hinweis: <code>agent</code> ist absichtlich nicht rein lokal wie <code>memory</code> oder <code>tool</code>. Fuer produktive Tests muss ein funktionierender Provider oder lokaler Modellserver verfuegbar sein.</p>
+<h4 id="lens-shell-lineage-und-replay-pruefen">Lens: Shell-Lineage und Replay pruefen</h4>
+<pre><code class="language-powershell">py 2 + 2
+lens last
+lens list 5</code></pre>
+<p>Erwartung:</p>
+<ul>
+<li><code>py 2 + 2</code> erzeugt eine normale Shell-Stage</li>
+<li><code>lens last</code> liefert den juengsten Snapshot mit <code>output_hash</code> und <code>data_hash</code></li>
+<li><code>lens list 5</code> zeigt die letzten gespeicherten Stufen</li>
+</ul>
+<p>Wenn du verstehen willst, warum unter <code>.nova_lens/cas</code> Hash-Dateien liegen und warum das speichereffizient ist, lies <a href="NovaLens.html">NovaLens</a>.</p>
 <h3 id="schnell-pruefbar-deklarative-runtime">Schnell pruefbar: Deklarative Runtime</h3>
 <p>Die folgenden Beispiele erzeugen erst eine kleine <code>.ns</code>-Datei und arbeiten dann mit <code>ns.run</code>, <code>ns.graph</code>, Queue und Snapshot.</p>
 <h4 id="minimales-control-plane-beispiel-anlegen">Minimales Control-Plane-Beispiel anlegen</h4>

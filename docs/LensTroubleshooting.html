@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="Nova-shell wiki builder">
+  <title>Lens Troubleshooting | Nova-shell Wiki</title>
+  <link rel="stylesheet" href="assets/wiki.css">
+</head>
+<body>
+  <div class="wiki-shell">
+    <aside class="wiki-sidebar" data-sidebar>
+      <div class="wiki-brand">
+        <a href="Home.html">Nova-shell Wiki</a>
+        <p>HTML documentation for the Nova-shell platform.</p>
+      </div>
+      <label class="wiki-search">
+        <span>Search</span>
+        <input type="search" placeholder="Find pages, classes, methods..." data-wiki-search>
+      </label>
+      <div class="wiki-search-results" data-search-results></div>
+      <nav class="wiki-nav">
+        <section class="wiki-nav-section">
+<h2>Einstieg</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="Home.html" href="Home.html">Home</a></li>
+<li><a class="wiki-nav-link" data-nav-href="GermanLanguage.html" href="GermanLanguage.html">GermanLanguage</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Dokumentation.html" href="Dokumentation.html">Dokumentation</a></li>
+<li><a class="wiki-nav-link" data-nav-href="QuickStart.html" href="QuickStart.html">QuickStart</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Installation.html" href="Installation.html">Installation</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
+<li><a class="wiki-nav-link" data-nav-href="nsCreate.html" href="nsCreate.html">nsCreate</a></li>
+<li><a class="wiki-nav-link" data-nav-href="nsReference.html" href="nsReference.html">nsReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="nsPatterns.html" href="nsPatterns.html">nsPatterns</a></li>
+</ul></section>
+<section class="wiki-nav-section">
+<h2>Nutzung</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="Dokumentation.html" href="Dokumentation.html">Dokumentation</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaCLI.html" href="NovaCLI.html">NovaCLI</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ShellCommandReference.html" href="ShellCommandReference.html">ShellCommandReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaLens.html" href="NovaLens.html">NovaLens</a></li>
+<li><a class="wiki-nav-link" data-nav-href="LensForDevelopers.html" href="LensForDevelopers.html">LensForDevelopers</a></li>
+<li><a class="wiki-nav-link active" data-nav-href="LensTroubleshooting.html" href="LensTroubleshooting.html">LensTroubleshooting</a></li>
+<li><a class="wiki-nav-link" data-nav-href="LensRecipes.html" href="LensRecipes.html">LensRecipes</a></li>
+<li><a class="wiki-nav-link" data-nav-href="APIReference.html" href="APIReference.html">APIReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ExamplesAndRecipes.html" href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NSBlobGenerator.html" href="NSBlobGenerator.html">NSBlobGenerator</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaSynthPredictiveEngineShifting.html" href="NovaSynthPredictiveEngineShifting.html">NovaSynthPredictiveEngineShifting</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ZeroCopyFederatedLearningMesh.html" href="ZeroCopyFederatedLearningMesh.html">ZeroCopyFederatedLearningMesh</a></li>
+<li><a class="wiki-nav-link" data-nav-href="MyceliaAtheriaCoEvolution.html" href="MyceliaAtheriaCoEvolution.html">MyceliaAtheriaCoEvolution</a></li>
+<li><a class="wiki-nav-link" data-nav-href="WatchMonitor.html" href="WatchMonitor.html">WatchMonitor</a></li>
+<li><a class="wiki-nav-link" data-nav-href="SystemGuardMonitor.html" href="SystemGuardMonitor.html">SystemGuardMonitor</a></li>
+<li><a class="wiki-nav-link" data-nav-href="WatchMonitorQuickStart.html" href="WatchMonitorQuickStart.html">WatchMonitorQuickStart</a></li>
+<li><a class="wiki-nav-link" data-nav-href="WatchMonitorReportReference.html" href="WatchMonitorReportReference.html">WatchMonitorReportReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="WatchMonitorAutomationAndAI.html" href="WatchMonitorAutomationAndAI.html">WatchMonitorAutomationAndAI</a></li>
+<li><a class="wiki-nav-link" data-nav-href="WatchMonitorTroubleshooting.html" href="WatchMonitorTroubleshooting.html">WatchMonitorTroubleshooting</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Tutorials.html" href="Tutorials.html">Tutorials</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialTechnologyRadar.html" href="TutorialTechnologyRadar.html">TutorialTechnologyRadar</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialMultiAgentCluster.html" href="TutorialMultiAgentCluster.html">TutorialMultiAgentCluster</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialLMStudioIntegration.html" href="TutorialLMStudioIntegration.html">TutorialLMStudioIntegration</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialBlobSeeds.html" href="TutorialBlobSeeds.html">TutorialBlobSeeds</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialPredictiveFederatedCoevolution.html" href="TutorialPredictiveFederatedCoevolution.html">TutorialPredictiveFederatedCoevolution</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialProjectWatchMonitor.html" href="TutorialProjectWatchMonitor.html">TutorialProjectWatchMonitor</a></li>
+</ul></section>
+<section class="wiki-nav-section">
+<h2>Architektur</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="Architecture.html" href="Architecture.html">Architecture</a></li>
+<li><a class="wiki-nav-link" data-nav-href="SystemOverview.html" href="SystemOverview.html">SystemOverview</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ComponentModel.html" href="ComponentModel.html">ComponentModel</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ExecutionModel.html" href="ExecutionModel.html">ExecutionModel</a></li>
+<li><a class="wiki-nav-link" data-nav-href="DataFlow.html" href="DataFlow.html">DataFlow</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaLanguage.html" href="NovaLanguage.html">NovaLanguage</a></li>
+<li><a class="wiki-nav-link" data-nav-href="nsCreate.html" href="nsCreate.html">nsCreate</a></li>
+<li><a class="wiki-nav-link" data-nav-href="nsReference.html" href="nsReference.html">nsReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="nsPatterns.html" href="nsPatterns.html">nsPatterns</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaRuntime.html" href="NovaRuntime.html">NovaRuntime</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaLens.html" href="NovaLens.html">NovaLens</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaGraphEngine.html" href="NovaGraphEngine.html">NovaGraphEngine</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaPlanner.html" href="NovaPlanner.html">NovaPlanner</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ParserAndASTReference.html" href="ParserAndASTReference.html">ParserAndASTReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="RuntimeMethodReference.html" href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ClassReference.html" href="ClassReference.html">ClassReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="CodeReferenceIndex.html" href="CodeReferenceIndex.html">CodeReferenceIndex</a></li>
+<li><a class="wiki-nav-link" data-nav-href="LensForDevelopers.html" href="LensForDevelopers.html">LensForDevelopers</a></li>
+<li><a class="wiki-nav-link" data-nav-href="LensRecipes.html" href="LensRecipes.html">LensRecipes</a></li>
+</ul></section>
+<section class="wiki-nav-section">
+<h2>Plattformfunktionen</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="NovaAgents.html" href="NovaAgents.html">NovaAgents</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaMesh.html" href="NovaMesh.html">NovaMesh</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NSBlobGenerator.html" href="NSBlobGenerator.html">NSBlobGenerator</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaSynthPredictiveEngineShifting.html" href="NovaSynthPredictiveEngineShifting.html">NovaSynthPredictiveEngineShifting</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ZeroCopyFederatedLearningMesh.html" href="ZeroCopyFederatedLearningMesh.html">ZeroCopyFederatedLearningMesh</a></li>
+<li><a class="wiki-nav-link" data-nav-href="MyceliaAtheriaCoEvolution.html" href="MyceliaAtheriaCoEvolution.html">MyceliaAtheriaCoEvolution</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaSensors.html" href="NovaSensors.html">NovaSensors</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaMemory.html" href="NovaMemory.html">NovaMemory</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaTools.html" href="NovaTools.html">NovaTools</a></li>
+</ul></section>
+<section class="wiki-nav-section">
+<h2>Entwicklung und Betrieb</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="DevelopmentGuide.html" href="DevelopmentGuide.html">DevelopmentGuide</a></li>
+<li><a class="wiki-nav-link" data-nav-href="PageTemplate.html" href="PageTemplate.html">PageTemplate</a></li>
+<li><a class="wiki-nav-link" data-nav-href="RepositoryStructure.html" href="RepositoryStructure.html">RepositoryStructure</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Testing.html" href="Testing.html">Testing</a></li>
+<li><a class="wiki-nav-link" data-nav-href="BuildAndRelease.html" href="BuildAndRelease.html">BuildAndRelease</a></li>
+<li><a class="wiki-nav-link" data-nav-href="WatchMonitor.html" href="WatchMonitor.html">WatchMonitor</a></li>
+<li><a class="wiki-nav-link" data-nav-href="SystemGuardMonitor.html" href="SystemGuardMonitor.html">SystemGuardMonitor</a></li>
+<li><a class="wiki-nav-link" data-nav-href="WatchMonitorReportReference.html" href="WatchMonitorReportReference.html">WatchMonitorReportReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="WatchMonitorAutomationAndAI.html" href="WatchMonitorAutomationAndAI.html">WatchMonitorAutomationAndAI</a></li>
+<li><a class="wiki-nav-link" data-nav-href="SecurityModel.html" href="SecurityModel.html">SecurityModel</a></li>
+<li><a class="wiki-nav-link" data-nav-href="PerformanceAndScaling.html" href="PerformanceAndScaling.html">PerformanceAndScaling</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Troubleshooting.html" href="Troubleshooting.html">Troubleshooting</a></li>
+<li><a class="wiki-nav-link active" data-nav-href="LensTroubleshooting.html" href="LensTroubleshooting.html">LensTroubleshooting</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Roadmap.html" href="Roadmap.html">Roadmap</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Contributing.html" href="Contributing.html">Contributing</a></li>
+<li><a class="wiki-nav-link" data-nav-href="License.html" href="License.html">License</a></li>
+</ul></section>
+<section class="wiki-nav-section">
+<h2>Theorie</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="Research.html" href="Research.html">Research</a></li>
+<li><a class="wiki-nav-link" data-nav-href="AIOSConcept.html" href="AIOSConcept.html">AIOSConcept</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Whitepaper.html" href="Whitepaper.html">Whitepaper</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Was-es-Ist.html" href="Was-es-Ist.html">Was-es-Ist</a></li>
+<li><a class="wiki-nav-link" data-nav-href="wirtschaftlicher_nutzen.html" href="wirtschaftlicher_nutzen.html">wirtschaftlicher_nutzen</a></li>
+<li><a class="wiki-nav-link" data-nav-href="AgentSystems.html" href="AgentSystems.html">AgentSystems</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Glossary.html" href="Glossary.html">Glossary</a></li>
+<li><a class="wiki-nav-link" data-nav-href="FAQ.html" href="FAQ.html">FAQ</a></li>
+</ul></section>
+      </nav>
+    </aside>
+    <main class="wiki-main">
+      <header class="wiki-header">
+        <button type="button" class="wiki-nav-toggle" data-nav-toggle>Menu</button>
+        <div class="wiki-header-copy">
+          <span class="wiki-kicker">Nova-shell Documentation</span>
+          <h1>Lens Troubleshooting</h1>
+          <p>Source: LensTroubleshooting.md</p>
+        </div>
+      </header>
+      <div class="wiki-layout">
+        <article class="wiki-article">
+          <h1 id="lens-troubleshooting">Lens Troubleshooting</h1>
+<h2 id="zweck">Zweck</h2>
+<p>Diese Seite sammelt typische Stoerungsbilder rund um <code>Nova Lens</code> und zeigt, wie man sie als Entwickler oder Betreiber sauber diagnostiziert.</p>
+<p>Im Fokus stehen:</p>
+<ul>
+<li>kaputte oder fehlende CAS-Referenzen</li>
+<li>leere Replays</li>
+<li>unerwartet grosser Lens-Ordner</li>
+<li>Reset und Cleanup</li>
+<li>sichere und unsichere Loeschaktionen</li>
+</ul>
+<p>Die Grundlagen stehen in:</p>
+<ul>
+<li><a href="NovaLens.html">NovaLens</a></li>
+<li><a href="LensForDevelopers.html">LensForDevelopers</a></li>
+</ul>
+<h2 id="schnellpruefung">Schnellpruefung</h2>
+<p>Wenn Lens merkwuerdig wirkt, zuerst:</p>
+<pre><code class="language-powershell">lens last
+lens list 10</code></pre>
+<p>Danach den Zustand auf Platte pruefen:</p>
+<pre><code class="language-powershell">Get-ChildItem .\.nova_lens
+Get-ChildItem .\.nova_lens\cas | Measure-Object</code></pre>
+<p>Wenn du die Datenbank direkt pruefen willst:</p>
+<pre><code class="language-powershell">python - &lt;&lt;&#x27;PY&#x27;
+import sqlite3
+from pathlib import Path
+
+db = Path(&quot;.nova_lens/lineage.db&quot;)
+conn = sqlite3.connect(db)
+print(&quot;snapshots&quot;, conn.execute(&quot;select count(*) from snapshots&quot;).fetchone()[0])
+print(&quot;forks&quot;, conn.execute(&quot;select count(*) from forks&quot;).fetchone()[0])
+conn.close()
+PY</code></pre>
+<h2 id="problem-lens-show-findet-einen-snapshot-aber-output-fehlt">Problem: <code>lens show</code> findet einen Snapshot, aber Output fehlt</h2>
+<h3 id="symptom">Symptom</h3>
+<ul>
+<li><code>lens show &lt;id&gt;</code> liefert Metadaten</li>
+<li><code>output</code> oder <code>data_preview</code> ist leer</li>
+<li>obwohl du eigentlich Inhalt erwartest</li>
+</ul>
+<h3 id="typische-ursache">Typische Ursache</h3>
+<p>Die Datenbankzeile existiert, aber die referenzierte CAS-Datei fehlt oder ist manuell geloescht worden.</p>
+<h3 id="pruefung">Pruefung</h3>
+<ol>
+<li><code>lens show &lt;id&gt;</code> ausfuehren</li>
+<li><code>output_hash</code> und <code>data_hash</code> notieren</li>
+<li>pruefen, ob beide Dateien in <code>.nova_lens/cas/</code> existieren</li>
+</ol>
+<p>Beispiel:</p>
+<pre><code class="language-powershell">Get-ChildItem .\.nova_lens\cas\&lt;output_hash&gt;
+Get-ChildItem .\.nova_lens\cas\&lt;data_hash&gt;</code></pre>
+<h3 id="bewertung">Bewertung</h3>
+<p>Wenn die Hash-Datei fehlt:</p>
+<ul>
+<li>die Datenbank ist nicht komplett rekonstruierbar</li>
+<li>Replay dieses Snapshots ist dann nur noch teilweise moeglich</li>
+</ul>
+<h2 id="problem-lens-replay-gibt-nichts-oder-fast-nichts-aus">Problem: <code>lens replay</code> gibt nichts oder fast nichts aus</h2>
+<h3 id="symptom">Symptom</h3>
+<ul>
+<li><code>lens replay &lt;id&gt;</code> laeuft</li>
+<li>aber der sichtbare Output ist leer oder unerwartet klein</li>
+</ul>
+<h3 id="typische-ursachen">Typische Ursachen</h3>
+<ul>
+<li>die Stage hatte tatsaechlich keinen sichtbaren Output</li>
+<li>die CAS-Datei fuer <code>output_hash</code> ist leer</li>
+<li>die Stage hat nur <code>data_preview</code>, aber keinen relevanten <code>output</code> geschrieben</li>
+</ul>
+<h3 id="pruefung">Pruefung</h3>
+<pre><code class="language-powershell">lens show &lt;id&gt;</code></pre>
+<p>Wichtige Felder:</p>
+<ul>
+<li><code>output_hash</code></li>
+<li><code>data_hash</code></li>
+<li><code>output</code></li>
+<li><code>data_preview</code></li>
+</ul>
+<p>Bei Lens ist ein leerer Output nicht automatisch ein Fehler. Einige Stages speichern nur wenig sichtbaren Text, aber trotzdem eine sinnvolle Datenvorschau.</p>
+<h2 id="problem-nova-lens-cas-enthaelt-viele-kleine-dateien">Problem: <code>.nova_lens/cas</code> enthaelt viele kleine Dateien</h2>
+<h3 id="symptom">Symptom</h3>
+<p>Im <code>cas</code>-Ordner liegen:</p>
+<ul>
+<li><code>0 B</code></li>
+<li><code>1 B</code></li>
+<li><code>22 B</code></li>
+<li><code>41 B</code></li>
+</ul>
+<p>große und kleine Hash-Dateien gemischt.</p>
+<h3 id="bewertung">Bewertung</h3>
+<p>Das ist normal. Lens speichert auch:</p>
+<ul>
+<li>leere Strings</li>
+<li>Zeilenumbrueche</li>
+<li>kurze Pfadfragmente</li>
+<li>kleine Vorschautexte</li>
+</ul>
+<p>Gerade diese kleinen Dateien sind ein Zeichen dafuer, dass das CAS-Modell dedupliziert arbeitet.</p>
+<h3 id="kein-fehlerfall">Kein Fehlerfall</h3>
+<p>Kleine CAS-Dateien bedeuten nicht:</p>
+<ul>
+<li>Malware</li>
+<li>Dateikorruption</li>
+<li>Build-Artefakt-Muell</li>
+</ul>
+<p>Sie sind meist legitime Snapshot-Payloads.</p>
+<h2 id="problem-nova-lens-wird-unerwartet-gross">Problem: <code>.nova_lens</code> wird unerwartet gross</h2>
+<h3 id="symptom">Symptom</h3>
+<p><code>.nova_lens/</code> waechst deutlich an, besonders bei:</p>
+<ul>
+<li>langen Watch-Monitor- oder Guard-Laeufen</li>
+<li>grossen eingebetteten <code>.ns</code>-Stages</li>
+<li>vielen Shell-Kommandos mit grossen Outputs</li>
+</ul>
+<h3 id="ursachen">Ursachen</h3>
+<ul>
+<li>viele unterschiedliche Outputs</li>
+<li>grosse Text- oder JSON-Outputs</li>
+<li>wenige Wiederholungen, also wenig Deduplikationseffekt</li>
+</ul>
+<h3 id="was-du-tun-kannst">Was du tun kannst</h3>
+<ol>
+<li>erst messen:</li>
+</ol>
+<pre><code class="language-powershell">Get-ChildItem .\.nova_lens\cas | Measure-Object -Property Length -Sum</code></pre>
+<ol>
+<li>dann pruefen, ob der Store wirklich gebraucht wird</li>
+<li>nur dann bereinigen, wenn alte Snapshots nicht mehr benoetigt werden</li>
+</ol>
+<h2 id="problem-ich-will-lens-zuruecksetzen">Problem: Ich will Lens zuruecksetzen</h2>
+<h3 id="sicherer-kompletter-reset">Sicherer kompletter Reset</h3>
+<p>Wenn du die Lens-Historie dieses Arbeitsverzeichnisses wirklich komplett verwerfen willst:</p>
+<pre><code class="language-powershell">Remove-Item .\.nova_lens -Recurse -Force</code></pre>
+<p>Beim naechsten Lauf wird der Store neu aufgebaut.</p>
+<h3 id="wirkung">Wirkung</h3>
+<p>Das entfernt:</p>
+<ul>
+<li>alle Snapshots</li>
+<li>alle Forks</li>
+<li>alle CAS-Dateien</li>
+<li>jede Replay-Basis</li>
+</ul>
+<p>Deshalb ist das ein echter Reset, kein harmloser Cleanup.</p>
+<h2 id="problem-ich-will-nur-muellspeicher-bereinigen">Problem: Ich will nur &quot;Muellspeicher&quot; bereinigen</h2>
+<h3 id="wichtig">Wichtig</h3>
+<p>Nicht blind einzelne Dateien in <code>.nova_lens/cas</code> loeschen.</p>
+<p>Warum:</p>
+<ul>
+<li><code>lineage.db</code> referenziert diese Hash-Dateien direkt</li>
+<li>geloeschte CAS-Dateien fuehren spaeter zu leeren <code>output</code>- oder <code>data_preview</code>-Feldern</li>
+</ul>
+<h3 id="sichere-regel">Sichere Regel</h3>
+<ul>
+<li>entweder den Store ganz behalten</li>
+<li>oder den Store ganz loeschen</li>
+</ul>
+<p>Selektives manuelles Loeschen einzelner CAS-Dateien ist fuer normale Entwicklerablaeufe nicht empfehlenswert.</p>
+<h2 id="problem-ich-sehe-nova-lens-wollte-aber-nur-den-system-guard">Problem: Ich sehe <code>.nova_lens</code>, wollte aber nur den System Guard</h2>
+<h3 id="erklaerung">Erklaerung</h3>
+<p><code>System Guard</code> und <code>Nova Lens</code> sind zwei verschiedene Persistenzpfade:</p>
+<ul>
+<li><code>.nova_system_guard/</code> -&gt; Fachartefakte des Guards</li>
+<li><code>.nova_lens/</code> -&gt; allgemeine Shell-Lineage</li>
+</ul>
+<p>Der Guard kann also:</p>
+<ul>
+<li>seine HTML- und JSON-Berichte schreiben</li>
+<li>und parallel Shell-Snapshots nach Lens ausloesen</li>
+</ul>
+<p>Das ist beabsichtigt.</p>
+<h2 id="problem-warum-fehlt-nova-lens-im-release-bundle">Problem: Warum fehlt <code>.nova_lens</code> im Release-Bundle?</h2>
+<h3 id="erklaerung">Erklaerung</h3>
+<p><code>.nova_lens</code> ist Laufzeitstatus, kein statischer Programmteil. Deshalb wird er in Release-Bundles nicht als persistente Anwendungsnutzlast mitgeliefert, sondern bei Bedarf auf dem Zielsystem neu erzeugt.</p>
+<p>Fuer Entwickler heisst das:</p>
+<ul>
+<li>im Arbeitsverzeichnis ist <code>.nova_lens</code> normal</li>
+<li>im gebauten Release-Bundle sollte er nicht als alter Runtime-Zustand</li>
+<p>mitgeschleppt werden</p>
+</ul>
+<h2 id="problem-wie-pr-fe-ich-konsistenz-zwischen-db-und-cas">Problem: Wie prüfe ich Konsistenz zwischen DB und CAS?</h2>
+<h3 id="praktischer-check">Praktischer Check</h3>
+<ol>
+<li>alle Hashes aus <code>lineage.db</code> sammeln</li>
+<li>alle Dateinamen in <code>cas/</code> sammeln</li>
+<li>Differenzen betrachten</li>
+</ol>
+<p>Wenn du nur schnell einen Zustand beurteilen willst:</p>
+<ul>
+<li>fehlende Hash-Dateien -&gt; problematisch</li>
+<li>unreferenzierte CAS-Dateien -&gt; meist Cleanup-/Historienrest</li>
+</ul>
+<p>Im aktuellen lokalen Beispiel unter <code>C:\NovaShell\monitors\.nova_lens</code> war der Zustand sauber:</p>
+<ul>
+<li><code>33</code> CAS-Dateien</li>
+<li><code>33</code> referenzierte Hashes</li>
+<li><code>0</code> unreferenzierte Dateien</li>
+</ul>
+<h2 id="was-du-gefahrlos-loeschen-kannst">Was du gefahrlos loeschen kannst</h2>
+<h3 id="sicher-loeschbar-wenn-du-historie-bewusst-verwerfen-willst">Sicher loeschbar, wenn du Historie bewusst verwerfen willst</h3>
+<ul>
+<li>der gesamte Ordner <code>.nova_lens/</code></li>
+</ul>
+<h3 id="nicht-selektiv-loeschen">Nicht selektiv loeschen</h3>
+<ul>
+<li>einzelne Dateien unter <code>.nova_lens/cas/</code></li>
+<li>nur <code>lineage.db</code> ohne <code>cas/</code></li>
+<li>nur <code>cas/</code> ohne <code>lineage.db</code></li>
+</ul>
+<h3 id="warum-nicht">Warum nicht?</h3>
+<p>Weil du sonst inkonsistente Halbzustände erzeugst:</p>
+<ul>
+<li>DB ohne Payload</li>
+<li>Payload ohne Index</li>
+<li>Snapshots ohne Replay-Basis</li>
+</ul>
+<h2 id="empfohlene-diagnose-reihenfolge">Empfohlene Diagnose-Reihenfolge</h2>
+<ol>
+<li><code>lens last</code></li>
+<li><code>lens show &lt;id&gt;</code></li>
+<li><code>.nova_lens/lineage.db</code> vorhanden?</li>
+<li><code>.nova_lens/cas/</code> vorhanden?</li>
+<li>referenzierte Hash-Datei vorhanden?</li>
+<li>erst danach Reset oder Cleanup</li>
+</ol>
+<h2 id="verwandte-seiten">Verwandte Seiten</h2>
+<ul>
+<li><a href="NovaLens.html">NovaLens</a></li>
+<li><a href="LensForDevelopers.html">LensForDevelopers</a></li>
+<li><a href="LensRecipes.html">LensRecipes</a></li>
+<li><a href="Troubleshooting.html">Troubleshooting</a></li>
+<li><a href="OperationsAndObservability.html">OperationsAndObservability</a></li>
+<li><a href="SystemGuardMonitor.html">SystemGuardMonitor</a></li>
+</ul>
+        </article>
+        <aside class="wiki-toc">
+          <div class="wiki-toc-card"><h2>On this page</h2><ul>
+<li class="wiki-toc-link"><a href="#zweck">Zweck</a></li>
+<li class="wiki-toc-link"><a href="#schnellpruefung">Schnellpruefung</a></li>
+<li class="wiki-toc-link"><a href="#problem-lens-show-findet-einen-snapshot-aber-output-fehlt">Problem: `lens show` findet einen Snapshot, aber Output fehlt</a></li>
+<li class="wiki-toc-link level-3"><a href="#symptom">Symptom</a></li>
+<li class="wiki-toc-link level-3"><a href="#typische-ursache">Typische Ursache</a></li>
+<li class="wiki-toc-link level-3"><a href="#pruefung">Pruefung</a></li>
+<li class="wiki-toc-link level-3"><a href="#bewertung">Bewertung</a></li>
+<li class="wiki-toc-link"><a href="#problem-lens-replay-gibt-nichts-oder-fast-nichts-aus">Problem: `lens replay` gibt nichts oder fast nichts aus</a></li>
+<li class="wiki-toc-link level-3"><a href="#symptom">Symptom</a></li>
+<li class="wiki-toc-link level-3"><a href="#typische-ursachen">Typische Ursachen</a></li>
+<li class="wiki-toc-link level-3"><a href="#pruefung">Pruefung</a></li>
+<li class="wiki-toc-link"><a href="#problem-nova-lens-cas-enthaelt-viele-kleine-dateien">Problem: `.nova_lens/cas` enthaelt viele kleine Dateien</a></li>
+<li class="wiki-toc-link level-3"><a href="#symptom">Symptom</a></li>
+<li class="wiki-toc-link level-3"><a href="#bewertung">Bewertung</a></li>
+<li class="wiki-toc-link level-3"><a href="#kein-fehlerfall">Kein Fehlerfall</a></li>
+<li class="wiki-toc-link"><a href="#problem-nova-lens-wird-unerwartet-gross">Problem: `.nova_lens` wird unerwartet gross</a></li>
+<li class="wiki-toc-link level-3"><a href="#symptom">Symptom</a></li>
+<li class="wiki-toc-link level-3"><a href="#ursachen">Ursachen</a></li>
+<li class="wiki-toc-link level-3"><a href="#was-du-tun-kannst">Was du tun kannst</a></li>
+<li class="wiki-toc-link"><a href="#problem-ich-will-lens-zuruecksetzen">Problem: Ich will Lens zuruecksetzen</a></li>
+<li class="wiki-toc-link level-3"><a href="#sicherer-kompletter-reset">Sicherer kompletter Reset</a></li>
+<li class="wiki-toc-link level-3"><a href="#wirkung">Wirkung</a></li>
+<li class="wiki-toc-link"><a href="#problem-ich-will-nur-muellspeicher-bereinigen">Problem: Ich will nur &quot;Muellspeicher&quot; bereinigen</a></li>
+<li class="wiki-toc-link level-3"><a href="#wichtig">Wichtig</a></li>
+<li class="wiki-toc-link level-3"><a href="#sichere-regel">Sichere Regel</a></li>
+<li class="wiki-toc-link"><a href="#problem-ich-sehe-nova-lens-wollte-aber-nur-den-system-guard">Problem: Ich sehe `.nova_lens`, wollte aber nur den System Guard</a></li>
+<li class="wiki-toc-link level-3"><a href="#erklaerung">Erklaerung</a></li>
+<li class="wiki-toc-link"><a href="#problem-warum-fehlt-nova-lens-im-release-bundle">Problem: Warum fehlt `.nova_lens` im Release-Bundle?</a></li>
+<li class="wiki-toc-link level-3"><a href="#erklaerung">Erklaerung</a></li>
+<li class="wiki-toc-link"><a href="#problem-wie-pr-fe-ich-konsistenz-zwischen-db-und-cas">Problem: Wie prüfe ich Konsistenz zwischen DB und CAS?</a></li>
+<li class="wiki-toc-link level-3"><a href="#praktischer-check">Praktischer Check</a></li>
+<li class="wiki-toc-link"><a href="#was-du-gefahrlos-loeschen-kannst">Was du gefahrlos loeschen kannst</a></li>
+<li class="wiki-toc-link level-3"><a href="#sicher-loeschbar-wenn-du-historie-bewusst-verwerfen-willst">Sicher loeschbar, wenn du Historie bewusst verwerfen willst</a></li>
+<li class="wiki-toc-link level-3"><a href="#nicht-selektiv-loeschen">Nicht selektiv loeschen</a></li>
+<li class="wiki-toc-link level-3"><a href="#warum-nicht">Warum nicht?</a></li>
+<li class="wiki-toc-link"><a href="#empfohlene-diagnose-reihenfolge">Empfohlene Diagnose-Reihenfolge</a></li>
+<li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
+</ul></div>
+        </aside>
+      </div>
+      <footer class="wiki-footer">
+        <p><a href="Home.html">Home</a> | <a href="QuickStart.html">QuickStart</a> | <a href="Architecture.html">Architecture</a> | <a href="NovaCLI.html">NovaCLI</a> | <a href="DevelopmentGuide.html">DevelopmentGuide</a> | <a href="FAQ.html">FAQ</a></p>
+      </footer>
+    </main>
+  </div>
+  <script>
+    window.NOVA_WIKI = {
+      currentPage: "LensTroubleshooting.html",
+      searchIndex: "assets/search-index.json"
+    };
+  </script>
+  <script src="assets/wiki.js" defer></script>
+</body>
+</html>

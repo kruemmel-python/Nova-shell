@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="Nova-shell wiki builder">
-  <title>API Reference | Nova-shell Wiki</title>
+  <title>Lens For Developers | Nova-shell Wiki</title>
   <link rel="stylesheet" href="assets/wiki.css">
 </head>
 <body>
@@ -41,10 +41,10 @@
 <li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ShellCommandReference.html" href="ShellCommandReference.html">ShellCommandReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaLens.html" href="NovaLens.html">NovaLens</a></li>
-<li><a class="wiki-nav-link" data-nav-href="LensForDevelopers.html" href="LensForDevelopers.html">LensForDevelopers</a></li>
+<li><a class="wiki-nav-link active" data-nav-href="LensForDevelopers.html" href="LensForDevelopers.html">LensForDevelopers</a></li>
 <li><a class="wiki-nav-link" data-nav-href="LensTroubleshooting.html" href="LensTroubleshooting.html">LensTroubleshooting</a></li>
 <li><a class="wiki-nav-link" data-nav-href="LensRecipes.html" href="LensRecipes.html">LensRecipes</a></li>
-<li><a class="wiki-nav-link active" data-nav-href="APIReference.html" href="APIReference.html">APIReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="APIReference.html" href="APIReference.html">APIReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ExamplesAndRecipes.html" href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NSBlobGenerator.html" href="NSBlobGenerator.html">NSBlobGenerator</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaSynthPredictiveEngineShifting.html" href="NovaSynthPredictiveEngineShifting.html">NovaSynthPredictiveEngineShifting</a></li>
@@ -84,7 +84,7 @@
 <li><a class="wiki-nav-link" data-nav-href="RuntimeMethodReference.html" href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ClassReference.html" href="ClassReference.html">ClassReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="CodeReferenceIndex.html" href="CodeReferenceIndex.html">CodeReferenceIndex</a></li>
-<li><a class="wiki-nav-link" data-nav-href="LensForDevelopers.html" href="LensForDevelopers.html">LensForDevelopers</a></li>
+<li><a class="wiki-nav-link active" data-nav-href="LensForDevelopers.html" href="LensForDevelopers.html">LensForDevelopers</a></li>
 <li><a class="wiki-nav-link" data-nav-href="LensRecipes.html" href="LensRecipes.html">LensRecipes</a></li>
 </ul></section>
 <section class="wiki-nav-section">
@@ -139,310 +139,292 @@
         <button type="button" class="wiki-nav-toggle" data-nav-toggle>Menu</button>
         <div class="wiki-header-copy">
           <span class="wiki-kicker">Nova-shell Documentation</span>
-          <h1>API Reference</h1>
-          <p>Source: APIReference.md</p>
+          <h1>Lens For Developers</h1>
+          <p>Source: LensForDevelopers.md</p>
         </div>
       </header>
       <div class="wiki-layout">
         <article class="wiki-article">
-          <h1 id="api-reference">API Reference</h1>
+          <h1 id="lens-for-developers">Lens For Developers</h1>
 <h2 id="zweck">Zweck</h2>
-<p>Die HTTP-Control-Plane-API wird von <code>NovaControlPlaneAPIServer</code> bereitgestellt. Sie macht Runtime-, Queue-, Service-, Traffic-, Agent- und Betriebsfunktionen ueber HTTP verfgbar.</p>
+<p>Diese Seite ist der Low-Level-Guide fuer Entwickler, die <code>Nova Lens</code> nicht nur benutzen, sondern debuggen, erweitern oder betrieblich einordnen wollen.</p>
+<p>Im Fokus stehen:</p>
+<ul>
+<li>SQLite-Schema</li>
+<li>Content-Addressable Store</li>
+<li>Snapshot-Lookup</li>
+<li>Replay und Forks</li>
+<li>typische Debug-Rezepte</li>
+</ul>
+<p>Die konzeptionelle Einfuehrung steht in <a href="NovaLens.html">NovaLens</a>. Diese Seite geht absichtlich eine Ebene tiefer.</p>
 <h2 id="kernobjekte">Kernobjekte</h2>
+<table><thead><tr>
+<th>Objekt</th>
+<th>Rolle</th>
+</tr></thead><tbody>
+<tr>
+<td><code>NovaLensStore</code></td>
+<td>zentraler Store fuer Snapshots und Forks</td>
+</tr>
+<tr>
+<td><code>lineage.db</code></td>
+<td>Metadaten-Index</td>
+</tr>
+<tr>
+<td><code>cas/</code></td>
+<td>eigentliche, per Hash benannte Payload-Dateien</td>
+</tr>
+<tr>
+<td><code>snapshots</code></td>
+<td>Tabelle fuer normale Shell-Stages</td>
+</tr>
+<tr>
+<td><code>forks</code></td>
+<td>Tabelle fuer hypothetische Varianten</td>
+</tr>
+</tbody></table>
+<h2 id="speicherlayout">Speicherlayout</h2>
+<pre><code class="language-text">.nova_lens/
+  lineage.db
+  cas/
+    &lt;sha256&gt;
+    &lt;sha256&gt;
+    &lt;sha256&gt;</code></pre>
+<h3 id="trennung-von-metadaten-und-payload">Trennung von Metadaten und Payload</h3>
+<p>Lens trennt sehr bewusst:</p>
 <ul>
-<li><code>nova.runtime.api.NovaControlPlaneAPIServer</code></li>
-<li><code>NovaRuntime</code></li>
-<li><code>DurableControlPlane</code></li>
-<li><code>ControlPlaneConsensus</code></li>
-<li><code>ServiceTrafficPlane</code></li>
+<li>Metadaten in SQLite</li>
+<li>Nutzinhalte als einzelne Dateien im CAS</li>
 </ul>
-<h2 id="methoden-und-schnittstellen">Methoden und Schnittstellen</h2>
-<p>Wichtige API-Server-Methoden:</p>
+<p>Das vermeidet zwei typische Probleme:</p>
+<ol>
+<li>unstrukturierte Text- oder JSON-Dumps in der Datenbank</li>
+<li>redundante Mehrfachspeicherung identischer Inhalte</li>
+</ol>
+<h2 id="sqlite-schema">SQLite-Schema</h2>
+<p>Der Store initialisiert zwei Haupttabellen:</p>
+<h3 id="snapshots"><code>snapshots</code></h3>
+<p>Felder:</p>
 <ul>
-<li><code>start()</code></li>
-<li><code>stop()</code></li>
-<li><code>status()</code></li>
+<li><code>id</code></li>
+<li><code>ts</code></li>
+<li><code>trace_id</code></li>
+<li><code>stage</code></li>
+<li><code>error</code></li>
+<li><code>data_type</code></li>
+<li><code>output_hash</code></li>
+<li><code>data_hash</code></li>
 </ul>
-<h2 id="cli">CLI</h2>
-<p>Typische Wege zur API ueber die CLI:</p>
+<p>Bedeutung:</p>
 <ul>
-<li><code>ns.control api start</code></li>
-<li><code>ns.control api stop</code></li>
-<li><code>ns.control metrics</code></li>
-<li><code>ns.status</code></li>
+<li><code>id</code>: kurze Snapshot-ID fuer CLI und Replay</li>
+<li><code>ts</code>: Zeitstempel</li>
+<li><code>trace_id</code>: Ablauf- oder Trace-Kontext</li>
+<li><code>stage</code>: Shell- oder Pipeline-Stufe</li>
+<li><code>error</code>: eventueller Fehlertext</li>
+<li><code>data_type</code>: Typisierung des Ergebnisses</li>
+<li><code>output_hash</code>: Hash des sichtbaren Outputs</li>
+<li><code>data_hash</code>: Hash der <code>data_preview</code></li>
 </ul>
-<h2 id="api">API</h2>
-<h3 id="health-und-status">Health und Status</h3>
+<h3 id="forks"><code>forks</code></h3>
+<p>Felder:</p>
+<ul>
+<li><code>id</code></li>
+<li><code>snapshot_id</code></li>
+<li><code>ts</code></li>
+<li><code>namespace</code></li>
+<li><code>project</code></li>
+<li><code>inject_json</code></li>
+<li><code>diff_hash</code></li>
+<li><code>simulation_hash</code></li>
+<li><code>fork_output_hash</code></li>
+<li><code>fork_data_hash</code></li>
+</ul>
+<p>Bedeutung:</p>
+<ul>
+<li><code>snapshot_id</code>: Referenz auf den Ursprungssnapshot</li>
+<li><code>inject_json</code>: hypothetische Eingabe fuer den Fork</li>
+<li><code>diff_hash</code>: serialisierter Diff im CAS</li>
+<li><code>simulation_hash</code>: Simulationsdaten im CAS</li>
+<li><code>fork_output_hash</code>: hypothetischer Output im CAS</li>
+<li><code>fork_data_hash</code>: hypothetische Datenvorschau im CAS</li>
+</ul>
+<h2 id="cas-prinzip">CAS-Prinzip</h2>
+<p>Jede CAS-Datei ist direkt ueber ihren Inhalt adressiert:</p>
+<pre><code class="language-text">dateiname = sha256(payload)</code></pre>
+<p>Wenn zwei Snapshots denselben Output haben:</p>
+<ul>
+<li>gibt es nur eine CAS-Datei</li>
+<li>beide Datenbankzeilen verweisen auf denselben Hash</li>
+</ul>
+<p>Das ist der Kern der Effizienz.</p>
+<h3 id="typische-sonderfaelle">Typische Sonderfaelle</h3>
 <table><thead><tr>
-<th>Methode</th>
-<th>Pfad</th>
-<th>Zweck</th>
+<th>Inhalt</th>
+<th>Erwarteter Effekt</th>
 </tr></thead><tbody>
 <tr>
-<td><code>GET</code></td>
-<td><code>/health</code></td>
-<td>Healthcheck und API-Status</td>
+<td>leerer String</td>
+<td>eine einzelne leere CAS-Datei</td>
 </tr>
 <tr>
-<td><code>GET</code></td>
-<td><code>/status</code></td>
-<td>umfassender Runtime-Status</td>
+<td>nur <code>\n</code></td>
+<td>eine einzelne 1-Byte-Datei</td>
+</tr>
+<tr>
+<td>identischer Pfadtext</td>
+<td>mehrfach referenziert, aber nur einmal gespeichert</td>
+</tr>
+<tr>
+<td>grosser Stage-Output</td>
+<td>eigene CAS-Datei, nur wenn Inhalt neu ist</td>
 </tr>
 </tbody></table>
-<h3 id="metrics-und-traces">Metrics und Traces</h3>
-<table><thead><tr>
-<th>Methode</th>
-<th>Pfad</th>
-<th>Zweck</th>
-</tr></thead><tbody>
-<tr>
-<td><code>GET</code></td>
-<td><code>/metrics/prometheus</code></td>
-<td>Prometheus-Format</td>
-</tr>
-<tr>
-<td><code>GET</code></td>
-<td><code>/metrics/otlp</code></td>
-<td>OTLP-artiger JSON-Export</td>
-</tr>
-<tr>
-<td><code>GET</code></td>
-<td><code>/traces</code></td>
-<td>Trace-Liste</td>
-</tr>
-<tr>
-<td><code>GET</code></td>
-<td><code>/alerts</code></td>
-<td>aktive Alerts</td>
-</tr>
-</tbody></table>
-<h3 id="queue-und-scheduling">Queue und Scheduling</h3>
-<table><thead><tr>
-<th>Methode</th>
-<th>Pfad</th>
-<th>Zweck</th>
-</tr></thead><tbody>
-<tr>
-<td><code>GET</code></td>
-<td><code>/queue</code></td>
-<td>Queue-Tasks listen</td>
-</tr>
-<tr>
-<td><code>POST</code></td>
-<td><code>/queue/enqueue</code></td>
-<td>Flow in Queue stellen</td>
-</tr>
-<tr>
-<td><code>POST</code></td>
-<td><code>/queue/run</code></td>
-<td>Queue sofort drainen</td>
-</tr>
-<tr>
-<td><code>GET</code></td>
-<td><code>/schedules</code></td>
-<td>Schedules listen</td>
-</tr>
-<tr>
-<td><code>POST</code></td>
-<td><code>/schedules/flow</code></td>
-<td>periodischen Flow anlegen</td>
-</tr>
-<tr>
-<td><code>POST</code></td>
-<td><code>/schedules/event</code></td>
-<td>periodisches Event anlegen</td>
-</tr>
-</tbody></table>
-<h3 id="events-state-und-workflows">Events, State und Workflows</h3>
-<table><thead><tr>
-<th>Methode</th>
-<th>Pfad</th>
-<th>Zweck</th>
-</tr></thead><tbody>
-<tr>
-<td><code>GET</code></td>
-<td><code>/events</code></td>
-<td>Event-Log lesen</td>
-</tr>
-<tr>
-<td><code>GET</code></td>
-<td><code>/state</code></td>
-<td>State-Eintraege lesen</td>
-</tr>
-<tr>
-<td><code>GET</code></td>
-<td><code>/workflows</code></td>
-<td>Workflow-Laeufe listen</td>
-</tr>
-</tbody></table>
-<h3 id="replication-und-consensus">Replication und Consensus</h3>
-<table><thead><tr>
-<th>Methode</th>
-<th>Pfad</th>
-<th>Zweck</th>
-</tr></thead><tbody>
-<tr>
-<td><code>GET</code></td>
-<td><code>/replication/peers</code></td>
-<td>Replikationspeers</td>
-</tr>
-<tr>
-<td><code>GET</code></td>
-<td><code>/replication/records</code></td>
-<td>replizierte Records</td>
-</tr>
-<tr>
-<td><code>GET</code></td>
-<td><code>/consensus/status</code></td>
-<td>Konsensstatus</td>
-</tr>
-<tr>
-<td><code>GET</code></td>
-<td><code>/consensus/peers</code></td>
-<td>Konsenspeers</td>
-</tr>
-<tr>
-<td><code>GET</code></td>
-<td><code>/consensus/log</code></td>
-<td>Konsenslog</td>
-</tr>
-<tr>
-<td><code>GET</code></td>
-<td><code>/consensus/snapshot</code></td>
-<td>Snapshot</td>
-</tr>
-</tbody></table>
-<h3 id="services-und-traffic">Services und Traffic</h3>
-<table><thead><tr>
-<th>Methode</th>
-<th>Pfad</th>
-<th>Zweck</th>
-</tr></thead><tbody>
-<tr>
-<td><code>GET</code></td>
-<td><code>/services</code></td>
-<td>Services listen</td>
-</tr>
-<tr>
-<td><code>GET</code></td>
-<td><code>/services/discover</code></td>
-<td>Service-Discovery</td>
-</tr>
-<tr>
-<td><code>GET</code></td>
-<td><code>/services/ingress</code></td>
-<td>Ingress-Regeln</td>
-</tr>
-<tr>
-<td><code>GET</code></td>
-<td><code>/services/configs</code></td>
-<td>Configs</td>
-</tr>
-<tr>
-<td><code>GET</code></td>
-<td><code>/services/volumes</code></td>
-<td>Volumes</td>
-</tr>
-<tr>
-<td><code>GET</code></td>
-<td><code>/traffic/routes</code></td>
-<td>Traffic-Routen</td>
-</tr>
-<tr>
-<td><code>GET</code></td>
-<td><code>/traffic/probes</code></td>
-<td>Health-Probes</td>
-</tr>
-<tr>
-<td><code>GET</code></td>
-<td><code>/traffic/mounts</code></td>
-<td>Secret-Mounts</td>
-</tr>
-<tr>
-<td><code>GET</code></td>
-<td><code>/traffic/proxy</code></td>
-<td>Proxy-Status</td>
-</tr>
-</tbody></table>
-<h3 id="toolchain-agents-und-operations">Toolchain, Agents und Operations</h3>
-<table><thead><tr>
-<th>Methode</th>
-<th>Pfad</th>
-<th>Zweck</th>
-</tr></thead><tbody>
-<tr>
-<td><code>GET</code></td>
-<td><code>/toolchain/packages</code></td>
-<td>Registry-Pakete</td>
-</tr>
-<tr>
-<td><code>GET</code></td>
-<td><code>/agents/prompts</code></td>
-<td>Prompt-Versionen</td>
-</tr>
-<tr>
-<td><code>GET</code></td>
-<td><code>/agents/evals</code></td>
-<td>Agent-Evaluationen</td>
-</tr>
-<tr>
-<td><code>GET</code></td>
-<td><code>/agents/memory</code></td>
-<td>Agent-Memory durchsuchen</td>
-</tr>
-<tr>
-<td><code>GET</code></td>
-<td><code>/operations/backups</code></td>
-<td>Backups</td>
-</tr>
-<tr>
-<td><code>GET</code></td>
-<td><code>/operations/failpoints</code></td>
-<td>Failpoints</td>
-</tr>
-<tr>
-<td><code>GET</code></td>
-<td><code>/packages</code></td>
-<td>Packages</td>
-</tr>
-<tr>
-<td><code>GET</code></td>
-<td><code>/executors</code></td>
-<td>Executor-Status</td>
-</tr>
-<tr>
-<td><code>GET</code></td>
-<td><code>/executors/stream</code></td>
-<td>Stream-/Jobdaten</td>
-</tr>
-</tbody></table>
-<h2 id="beispiele">Beispiele</h2>
-<pre><code class="language-bash">curl http://127.0.0.1:8781/health
-curl http://127.0.0.1:8781/status
-curl &quot;http://127.0.0.1:8781/traces?limit=20&quot;</code></pre>
+<h2 id="lookup-ablauf">Lookup-Ablauf</h2>
+<p>Ein <code>lens show &lt;id&gt;</code> ist logisch:</p>
+<pre><code class="language-text">snapshot_id
+  -&gt;
+lineage.db / snapshots
+  -&gt;
+output_hash + data_hash
+  -&gt;
+cas/&lt;output_hash&gt; + cas/&lt;data_hash&gt;
+  -&gt;
+rekonstruierter Snapshot</code></pre>
+<p>Das ist wichtig: Die CLI arbeitet nicht direkt auf Dateinamen, sondern auf Snapshot-IDs. Die Hash-Dateien sind nur das Payload-Backend.</p>
+<h2 id="beispiel-aktueller-lauf-unter-c-novashell-monitors">Beispiel: aktueller Lauf unter <code>C:\NovaShell\monitors</code></h2>
+<p>Im aktuellen lokalen Zustand war:</p>
+<ul>
+<li><code>.nova_lens/lineage.db</code> vorhanden</li>
+<li><code>.nova_lens/cas/</code> vorhanden</li>
+<li><code>33</code> CAS-Dateien vorhanden</li>
+<li>alle <code>33</code> CAS-Dateien referenziert</li>
+<li><code>0</code> unreferenzierte CAS-Dateien</li>
+<li><code>0</code> Fork-Eintraege</li>
+</ul>
+<p>Das ist ein sauberer Zustand.</p>
+<h3 id="was-die-kleinen-dateien-praktisch-bedeuten">Was die kleinen Dateien praktisch bedeuten</h3>
+<p>Beispiele aus dem aktuellen Lauf:</p>
+<ul>
+<li><code>e3b0c442...</code> -&gt; leerer String</li>
+<li><code>01ba4719...</code> -&gt; nur Zeilenumbruch</li>
+<li><code>9dbfc775...</code> -&gt; <code>C:\NovaShell\monitors\n</code></li>
+<li><code>d9431da0...</code> -&gt; <code>C:\NovaShell\monitors\.nova_system_guard\n</code></li>
+</ul>
+<p>Das ist nicht &quot;Muell&quot;, sondern absichtlich deduplizierter Snapshot-Inhalt.</p>
+<h3 id="was-die-grossen-dateien-praktisch-bedeuten">Was die grossen Dateien praktisch bedeuten</h3>
+<p>Mehrere CAS-Dateien mit etwa <code>17 KB</code> bis <code>24 KB</code> stammen aus laengeren Shell-Stages des System-Guard-Laufs, insbesondere aus grossen eingebetteten Text-Outputs im <code>.ns</code>-Pfad.</p>
+<p>Das zeigt:</p>
+<ul>
+<li>Lens speichert nicht nur Statusbruchstuecke</li>
+<li>auch grosse Stage-Outputs werden persistiert</li>
+<li>trotzdem bleibt das Modell konsistent, weil alles ueber Hashes referenziert wird</li>
+</ul>
+<h2 id="debug-rezepte">Debug-Rezepte</h2>
+<h3 id="1-letzte-snapshots-ansehen">1. Letzte Snapshots ansehen</h3>
+<pre><code class="language-powershell">lens list 10
+lens last</code></pre>
+<p>Nutzen:</p>
+<ul>
+<li>Snapshot-ID finden</li>
+<li>Stage-Verlauf schnell ueberblicken</li>
+</ul>
+<h3 id="2-einen-snapshot-vollstaendig-lesen">2. Einen Snapshot vollstaendig lesen</h3>
+<pre><code class="language-powershell">lens show &lt;snapshot_id&gt;</code></pre>
+<p>Nutzen:</p>
+<ul>
+<li><code>output_hash</code> sehen</li>
+<li><code>data_hash</code> sehen</li>
+<li>rekonstruierten Output lesen</li>
+</ul>
+<h3 id="3-snapshot-output-erneut-ausgeben">3. Snapshot-Output erneut ausgeben</h3>
+<pre><code class="language-powershell">lens replay &lt;snapshot_id&gt;</code></pre>
+<p>Nutzen:</p>
+<ul>
+<li>gespeicherten Output erneut ausgeben</li>
+<li>ohne die Stage neu auszufuehren</li>
+</ul>
+<h3 id="4-datenbank-direkt-pruefen">4. Datenbank direkt pruefen</h3>
+<p>PowerShell:</p>
+<pre><code class="language-powershell">python - &lt;&lt;&#x27;PY&#x27;
+import sqlite3
+from pathlib import Path
+
+db = Path(r&quot;C:\NovaShell\monitors\.nova_lens\lineage.db&quot;)
+conn = sqlite3.connect(db)
+for row in conn.execute(&quot;select id, stage, output_hash, data_hash from snapshots order by ts desc limit 5&quot;):
+    print(row)
+conn.close()
+PY</code></pre>
+<p>Nutzen:</p>
+<ul>
+<li>direkte Sicht auf den Index</li>
+<li>hilfreich bei Debugging ausserhalb der CLI</li>
+</ul>
+<h3 id="5-einen-hash-manuell-nachschlagen">5. Einen Hash manuell nachschlagen</h3>
+<p>Wenn du <code>output_hash</code> oder <code>data_hash</code> kennst:</p>
+<pre><code class="language-powershell">Get-Content C:\NovaShell\monitors\.nova_lens\cas\&lt;hash&gt;</code></pre>
+<p>Nutzen:</p>
+<ul>
+<li>Payload direkt lesen</li>
+<li>schnelle Verifikation von CAS-Inhalten</li>
+</ul>
+<h2 id="typische-entwicklerfragen">Typische Entwicklerfragen</h2>
+<h3 id="warum-speichert-lens-output-und-data-preview-getrennt">Warum speichert Lens Output und <code>data_preview</code> getrennt?</h3>
+<p>Weil sichtbarer Text und strukturierte oder reduzierte Datenvorschau nicht immer identisch sind. Die Trennung macht Replay und Analyse klarer.</p>
+<h3 id="warum-nicht-alles-nur-in-sqlite-speichern">Warum nicht alles nur in SQLite speichern?</h3>
+<p>Weil grosse oder viele wiederholte Inhalte dort ineffizienter und unhandlicher waeren. Das CAS-Modell ist fuer Deduplikation deutlich besser geeignet.</p>
+<h3 id="kann-cas-unreferenzierte-dateien-enthalten">Kann <code>cas/</code> unreferenzierte Dateien enthalten?</h3>
+<p>Ja, theoretisch nach manuellen Eingriffen oder zukuenftigen Migrationsszenarien. Im aktuellen Lauf war das aber nicht der Fall: <code>0</code> unreferenzierte Dateien.</p>
+<h3 id="ist-lens-teil-der-deklarativen-runtime">Ist Lens Teil der deklarativen Runtime?</h3>
+<p>Nicht direkt. Lens sitzt im klassischen Shell-Pfad und wird von dort automatisch beschrieben. Fuer die Gesamtarchitektur ist es trotzdem ein relevanter Persistenzbaustein.</p>
+<h2 id="wann-entwickler-lens-bewusst-brauchen">Wann Entwickler Lens bewusst brauchen</h2>
+<ul>
+<li>bei Debugging von Watchern und Guards</li>
+<li>bei Shell- und Pipeline-Regressionen</li>
+<li>wenn Outputs spaeter reproduzierbar sein muessen</li>
+<li>fuer hypothetische Forks und Diff-Simulationen</li>
+<li>um zu verstehen, warum <code>.nova_lens/cas</code> viele Hash-Dateien enthaelt</li>
+</ul>
 <h2 id="verwandte-seiten">Verwandte Seiten</h2>
 <ul>
+<li><a href="NovaLens.html">NovaLens</a></li>
+<li><a href="LensTroubleshooting.html">LensTroubleshooting</a></li>
+<li><a href="LensRecipes.html">LensRecipes</a></li>
+<li><a href="NovaCLI.html">NovaCLI</a></li>
+<li><a href="ShellCommandReference.html">ShellCommandReference</a></li>
 <li><a href="NovaRuntime.html">NovaRuntime</a></li>
-<li><a href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
-<li><a href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
-<li><a href="PageTemplate.html">PageTemplate</a></li>
+<li><a href="SystemGuardMonitor.html">SystemGuardMonitor</a></li>
+<li><a href="CodeReferenceIndex.html">CodeReferenceIndex</a></li>
 </ul>
         </article>
         <aside class="wiki-toc">
           <div class="wiki-toc-card"><h2>On this page</h2><ul>
 <li class="wiki-toc-link"><a href="#zweck">Zweck</a></li>
 <li class="wiki-toc-link"><a href="#kernobjekte">Kernobjekte</a></li>
-<li class="wiki-toc-link"><a href="#methoden-und-schnittstellen">Methoden und Schnittstellen</a></li>
-<li class="wiki-toc-link"><a href="#cli">CLI</a></li>
-<li class="wiki-toc-link"><a href="#api">API</a></li>
-<li class="wiki-toc-link level-3"><a href="#health-und-status">Health und Status</a></li>
-<li class="wiki-toc-link level-3"><a href="#metrics-und-traces">Metrics und Traces</a></li>
-<li class="wiki-toc-link level-3"><a href="#queue-und-scheduling">Queue und Scheduling</a></li>
-<li class="wiki-toc-link level-3"><a href="#events-state-und-workflows">Events, State und Workflows</a></li>
-<li class="wiki-toc-link level-3"><a href="#replication-und-consensus">Replication und Consensus</a></li>
-<li class="wiki-toc-link level-3"><a href="#services-und-traffic">Services und Traffic</a></li>
-<li class="wiki-toc-link level-3"><a href="#toolchain-agents-und-operations">Toolchain, Agents und Operations</a></li>
-<li class="wiki-toc-link"><a href="#beispiele">Beispiele</a></li>
+<li class="wiki-toc-link"><a href="#speicherlayout">Speicherlayout</a></li>
+<li class="wiki-toc-link level-3"><a href="#trennung-von-metadaten-und-payload">Trennung von Metadaten und Payload</a></li>
+<li class="wiki-toc-link"><a href="#sqlite-schema">SQLite-Schema</a></li>
+<li class="wiki-toc-link level-3"><a href="#snapshots">`snapshots`</a></li>
+<li class="wiki-toc-link level-3"><a href="#forks">`forks`</a></li>
+<li class="wiki-toc-link"><a href="#cas-prinzip">CAS-Prinzip</a></li>
+<li class="wiki-toc-link level-3"><a href="#typische-sonderfaelle">Typische Sonderfaelle</a></li>
+<li class="wiki-toc-link"><a href="#lookup-ablauf">Lookup-Ablauf</a></li>
+<li class="wiki-toc-link"><a href="#beispiel-aktueller-lauf-unter-c-novashell-monitors">Beispiel: aktueller Lauf unter `C:\NovaShell\monitors`</a></li>
+<li class="wiki-toc-link level-3"><a href="#was-die-kleinen-dateien-praktisch-bedeuten">Was die kleinen Dateien praktisch bedeuten</a></li>
+<li class="wiki-toc-link level-3"><a href="#was-die-grossen-dateien-praktisch-bedeuten">Was die grossen Dateien praktisch bedeuten</a></li>
+<li class="wiki-toc-link"><a href="#debug-rezepte">Debug-Rezepte</a></li>
+<li class="wiki-toc-link level-3"><a href="#1-letzte-snapshots-ansehen">1. Letzte Snapshots ansehen</a></li>
+<li class="wiki-toc-link level-3"><a href="#2-einen-snapshot-vollstaendig-lesen">2. Einen Snapshot vollstaendig lesen</a></li>
+<li class="wiki-toc-link level-3"><a href="#3-snapshot-output-erneut-ausgeben">3. Snapshot-Output erneut ausgeben</a></li>
+<li class="wiki-toc-link level-3"><a href="#4-datenbank-direkt-pruefen">4. Datenbank direkt pruefen</a></li>
+<li class="wiki-toc-link level-3"><a href="#5-einen-hash-manuell-nachschlagen">5. Einen Hash manuell nachschlagen</a></li>
+<li class="wiki-toc-link"><a href="#typische-entwicklerfragen">Typische Entwicklerfragen</a></li>
+<li class="wiki-toc-link level-3"><a href="#warum-speichert-lens-output-und-data-preview-getrennt">Warum speichert Lens Output und `data_preview` getrennt?</a></li>
+<li class="wiki-toc-link level-3"><a href="#warum-nicht-alles-nur-in-sqlite-speichern">Warum nicht alles nur in SQLite speichern?</a></li>
+<li class="wiki-toc-link level-3"><a href="#kann-cas-unreferenzierte-dateien-enthalten">Kann `cas/` unreferenzierte Dateien enthalten?</a></li>
+<li class="wiki-toc-link level-3"><a href="#ist-lens-teil-der-deklarativen-runtime">Ist Lens Teil der deklarativen Runtime?</a></li>
+<li class="wiki-toc-link"><a href="#wann-entwickler-lens-bewusst-brauchen">Wann Entwickler Lens bewusst brauchen</a></li>
 <li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
 </ul></div>
         </aside>
@@ -454,7 +436,7 @@ curl &quot;http://127.0.0.1:8781/traces?limit=20&quot;</code></pre>
   </div>
   <script>
     window.NOVA_WIKI = {
-      currentPage: "APIReference.html",
+      currentPage: "LensForDevelopers.html",
       searchIndex: "assets/search-index.json"
     };
   </script>

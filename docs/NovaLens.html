@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="Nova-shell wiki builder">
-  <title>Operations and Observability | Nova-shell Wiki</title>
+  <title>Nova Lens | Nova-shell Wiki</title>
   <link rel="stylesheet" href="assets/wiki.css">
 </head>
 <body>
@@ -40,7 +40,7 @@
 <li><a class="wiki-nav-link" data-nav-href="NovaCLI.html" href="NovaCLI.html">NovaCLI</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ShellCommandReference.html" href="ShellCommandReference.html">ShellCommandReference</a></li>
-<li><a class="wiki-nav-link" data-nav-href="NovaLens.html" href="NovaLens.html">NovaLens</a></li>
+<li><a class="wiki-nav-link active" data-nav-href="NovaLens.html" href="NovaLens.html">NovaLens</a></li>
 <li><a class="wiki-nav-link" data-nav-href="LensForDevelopers.html" href="LensForDevelopers.html">LensForDevelopers</a></li>
 <li><a class="wiki-nav-link" data-nav-href="LensTroubleshooting.html" href="LensTroubleshooting.html">LensTroubleshooting</a></li>
 <li><a class="wiki-nav-link" data-nav-href="LensRecipes.html" href="LensRecipes.html">LensRecipes</a></li>
@@ -77,7 +77,7 @@
 <li><a class="wiki-nav-link" data-nav-href="nsReference.html" href="nsReference.html">nsReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="nsPatterns.html" href="nsPatterns.html">nsPatterns</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaRuntime.html" href="NovaRuntime.html">NovaRuntime</a></li>
-<li><a class="wiki-nav-link" data-nav-href="NovaLens.html" href="NovaLens.html">NovaLens</a></li>
+<li><a class="wiki-nav-link active" data-nav-href="NovaLens.html" href="NovaLens.html">NovaLens</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaGraphEngine.html" href="NovaGraphEngine.html">NovaGraphEngine</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaPlanner.html" href="NovaPlanner.html">NovaPlanner</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ParserAndASTReference.html" href="ParserAndASTReference.html">ParserAndASTReference</a></li>
@@ -139,106 +139,263 @@
         <button type="button" class="wiki-nav-toggle" data-nav-toggle>Menu</button>
         <div class="wiki-header-copy">
           <span class="wiki-kicker">Nova-shell Documentation</span>
-          <h1>Operations and Observability</h1>
-          <p>Source: OperationsAndObservability.md</p>
+          <h1>Nova Lens</h1>
+          <p>Source: NovaLens.md</p>
         </div>
       </header>
       <div class="wiki-layout">
         <article class="wiki-article">
-          <h1 id="operations-and-observability">Operations and Observability</h1>
+          <h1 id="nova-lens">Nova Lens</h1>
 <h2 id="zweck">Zweck</h2>
-<p>Diese Seite beschreibt die Betriebs- und Diagnosepfade von Nova-shell. Sie deckt Telemetrie, Statusabfragen, Backups, Replay, Restore und Laufzeitdiagnose ab.</p>
-<h2 id="kernpunkte">Kernpunkte</h2>
+<p><code>Nova Lens</code> ist die persistente Verlaufs- und Snapshot-Schicht der klassischen Nova-shell-Runtime.</p>
+<p>Sie speichert nicht einfach nur &quot;Logs&quot;, sondern legt nach jeder wichtigen Shell-Stage nachvollziehbare Snapshots ab:</p>
 <ul>
-<li>Traces und Laufzeitereignisse fuer Flows, Services und Agenten</li>
-<li>Alerts und Diagnosepfade fuer Fehler und Regressionen</li>
-<li>Telemetrieexport ueber CLI und API</li>
-<li>Lens-Lineage und Replay fuer klassische Shell-Stages</li>
-<li>Backups, Restore und Snapshot-Validierung</li>
-<li>Failpoints, Lasttests und Recovery-gestuetzte Betriebspruefung</li>
+<li>welche Stage gelaufen ist</li>
+<li>welcher Output entstanden ist</li>
+<li>welche Datenvorschau zur Stage gehoerte</li>
+<li>welcher Trace-Kontext aktiv war</li>
 </ul>
-<h2 id="wichtige-zugriffe">Wichtige Zugriffe</h2>
-<h3 id="cli">CLI</h3>
-<ul>
-<li><code>doctor</code></li>
-<li><code>ns.status</code></li>
-<li><code>ns.control</code></li>
-<li><code>ns.snapshot</code></li>
-<li><code>ns.resume</code></li>
-</ul>
-<h3 id="api">API</h3>
-<ul>
-<li>Runtime- und Control-Plane-Endpunkte aus <a href="APIReference.html">APIReference</a></li>
-<li>Status-, Queue-, Replay- und Metrics-Endpunkte</li>
-</ul>
-<h2 id="testbare-einstiege">Testbare Einstiege</h2>
-<h3 id="lokalen-runtime-status-pruefen">Lokalen Runtime-Status pruefen</h3>
-<pre><code class="language-powershell">doctor
-ns.status</code></pre>
-<h3 id="snapshot-schreiben-und-wieder-laden">Snapshot schreiben und wieder laden</h3>
-<pre><code class="language-powershell">ns.snapshot
-ns.resume</code></pre>
-<h3 id="html-wiki-als-diagnoseschritt-bauen">HTML-Wiki als Diagnoseschritt bauen</h3>
-<pre><code class="language-powershell">wiki build</code></pre>
-<p>Der letzte Schritt ist kein Betriebsfeature der Runtime selbst, aber ein schneller Integrationscheck fuer Toolchain und lokale Installation.</p>
-<h3 id="projektordner-mit-watch-monitor-beobachten">Projektordner mit Watch Monitor beobachten</h3>
-<pre><code class="language-powershell">cd F:\DeCoG-TRI
-$env:NOVA_PROJECT_MONITOR_AUTOMATION = &quot;auto&quot;
-$env:NOVA_PROJECT_MONITOR_AI_MODE = &quot;auto&quot;
-ns.run nova_project_monitor.ns</code></pre>
-<p>Das ist der direkteste Betriebsweg, um:</p>
-<ul>
-<li>Datei-Hotspots zu sehen</li>
-<li>Zeilen-Diffs pro Aenderung nachzuverfolgen</li>
-<li>Review-Agent-Ergebnisse sichtbar zu machen</li>
-<li>Build- und Testlaeufe nach Aenderungen zu protokollieren</li>
-</ul>
-<p>Die erzeugten Artefakte liegen unter <code>.nova_project_monitor/</code>.</p>
-<h3 id="lens-snapshots-im-klassischen-shell-pfad-pruefen">Lens-Snapshots im klassischen Shell-Pfad pruefen</h3>
-<pre><code class="language-powershell">py 2 + 2
-lens last
-lens list 5</code></pre>
-<p>Das ist der schnellste Weg, um die persistente Shell-Lineage zu sehen. Die genauen Speicherstrukturen unter <code>.nova_lens/lineage.db</code> und <code>.nova_lens/cas</code> sind in <a href="NovaLens.html">NovaLens</a> erklaert.</p>
-<h2 id="typische-betriebsfragen">Typische Betriebsfragen</h2>
-<h3 id="wo-sehe-ich-ob-die-runtime-gesund-wirkt">Wo sehe ich, ob die Runtime gesund wirkt?</h3>
-<p>Mit <code>doctor</code> fuer Installationsfaehigkeiten und <code>ns.status</code> fuer den Plattformzustand.</p>
-<h3 id="wie-sichere-ich-den-runtime-zustand">Wie sichere ich den Runtime-Zustand?</h3>
-<p>Ueber Snapshot- und Control-Plane-Pfade. Fuer umfangreichere Release- oder Betriebspfade siehe <a href="BuildAndRelease.html">BuildAndRelease</a>.</p>
-<h3 id="was-pruefe-ich-bei-einem-unklaren-fehler-zuerst">Was pruefe ich bei einem unklaren Fehler zuerst?</h3>
+<p>Das ist fuer Entwickler wichtig, weil damit Shell-, Monitor- und Automationslaeufe spaeter reproduzierbar, inspizierbar und effizient speicherbar werden.</p>
+<h2 id="kernobjekte">Kernobjekte</h2>
+<table><thead><tr>
+<th>Objekt</th>
+<th>Rolle</th>
+</tr></thead><tbody>
+<tr>
+<td><code>NovaLensStore</code></td>
+<td>persistenter Lens-Store</td>
+</tr>
+<tr>
+<td><code>.nova_lens/lineage.db</code></td>
+<td>SQLite-Index fuer Snapshots und Forks</td>
+</tr>
+<tr>
+<td><code>.nova_lens/cas/</code></td>
+<td>Content-Addressable Store fuer die eigentlichen Inhalte</td>
+</tr>
+<tr>
+<td><code>lens list</code>, <code>lens show</code>, <code>lens replay</code></td>
+<td>CLI zum Lesen der gespeicherten Snapshots</td>
+</tr>
+<tr>
+<td><code>lens fork</code>, <code>lens diff</code></td>
+<td>hypothetische Abzweigungen und Diffs ueber Snapshots</td>
+</tr>
+</tbody></table>
+<h2 id="wie-lens-arbeitet">Wie Lens arbeitet</h2>
+<p>Das Speichermodell ist zweistufig:</p>
 <ol>
-<li><code>doctor</code></li>
-<li><code>ns.status</code></li>
-<li><code>ns.control</code></li>
-<li>relevante Logs oder Trace-Daten</li>
+<li>Metadaten landen in <code>lineage.db</code></li>
+<li>eigentliche Inhalte landen in <code>.nova_lens/cas</code></li>
 </ol>
+<p><code>cas</code> steht fuer <code>content-addressable store</code>. Das bedeutet:</p>
+<ul>
+<li>der Dateiname ist nicht &quot;report.txt&quot; oder &quot;output-17.json&quot;</li>
+<li>der Dateiname ist der <code>sha256</code>-Hash des Inhalts</li>
+<li>identischer Inhalt wird nur einmal gespeichert</li>
+</ul>
+<p>Das ist deutlich effizienter als jede Stage separat in eigene Output-Dateien zu duplizieren.</p>
+<h2 id="struktur-auf-der-festplatte">Struktur auf der Festplatte</h2>
+<p>Ein typischer Lens-Ordner sieht so aus:</p>
+<pre><code class="language-text">.nova_lens/
+  lineage.db
+  cas/
+    e3b0c44298fc...
+    01ba4719c80b...
+    95e9064a54dc...</code></pre>
+<h3 id="lineage-db"><code>lineage.db</code></h3>
+<p>Die Datenbank ist der Index. Sie speichert unter anderem:</p>
+<ul>
+<li>Snapshot-ID</li>
+<li>Zeitstempel</li>
+<li>Stage-Name</li>
+<li>Trace-ID</li>
+<li>Hash des Outputs</li>
+<li>Hash der Datenvorschau</li>
+</ul>
+<p>Die eigentlichen Inhalte selbst liegen nicht direkt in der Tabelle, sondern werden ueber ihre Hashes auf Dateien in <code>cas/</code> referenziert.</p>
+<h3 id="cas"><code>cas/</code></h3>
+<p>Hier liegen die echten Payloads. Jede Datei repraesentiert genau einen Inhalt. Wenn zwei Snapshots denselben Output oder dieselbe Vorschau haben, zeigen beide nur auf dieselbe CAS-Datei.</p>
+<h2 id="warum-das-effizient-ist">Warum das effizient ist</h2>
+<p>Die Effizienz entsteht durch Deduplikation.</p>
+<p>Beispiele:</p>
+<ul>
+<li>ein leerer String wird nicht 50-mal gespeichert, sondern nur einmal</li>
+<li>ein einzelner Zeilenumbruch wird nicht immer neu geschrieben</li>
+<li>gleiche Pfad- oder Statusfragmente werden wiederverwendet</li>
+<li>groessere Stage-Outputs werden nur dann neu geschrieben, wenn sich ihr Inhalt</li>
+<p>wirklich unterscheidet</p>
+</ul>
+<p>Praktisch bedeutet das:</p>
+<ul>
+<li><code>lineage.db</code> bleibt ein kompakter Index</li>
+<li><code>cas/</code> speichert nur einzigartige Inhalte</li>
+<li>Replay und Debugging bleiben moeglich</li>
+<li>wiederholte Monitor- oder Shell-Laufe erzeugen weniger redundante Dateien</li>
+</ul>
+<h2 id="echtes-beispiel-aus-dem-aktuellen-lauf">Echtes Beispiel aus dem aktuellen Lauf</h2>
+<p>Am aktuellen lokalen Lauf in:</p>
+<pre><code class="language-text">C:\NovaShell\monitors\.nova_lens</code></pre>
+<p>zeigt sich das sehr gut.</p>
+<p>In diesem Beispielstand gab es:</p>
+<ul>
+<li><code>33</code> CAS-Dateien</li>
+<li><code>33</code> davon waren von <code>lineage.db</code> referenziert</li>
+<li><code>0</code> unreferenzierte CAS-Dateien</li>
+<li><code>0</code> Lens-Forks</li>
+</ul>
+<p>Das ist wichtig: Der Store ist in diesem Lauf vollstaendig konsistent. Es liegen keine losen Altdateien im CAS-Ordner herum.</p>
+<h3 id="konkrete-cas-dateien-aus-diesem-lauf">Konkrete CAS-Dateien aus diesem Lauf</h3>
+<table><thead><tr>
+<th>Hash-Datei</th>
+<th>Groesse</th>
+<th>Inhalt</th>
+<th>Bedeutung</th>
+</tr></thead><tbody>
+<tr>
+<td><code>e3b0c44298fc...</code></td>
+<td><code>0 B</code></td>
+<td>leerer String</td>
+<td>deduplizierte leere Vorschau</td>
+</tr>
+<tr>
+<td><code>01ba4719c80b...</code></td>
+<td><code>1 B</code></td>
+<td><code>&quot;\n&quot;</code></td>
+<td>deduplizierter einzelner Zeilenumbruch</td>
+</tr>
+<tr>
+<td><code>9dbfc775adc4...</code></td>
+<td><code>22 B</code></td>
+<td><code>C:\NovaShell\monitors\n</code></td>
+<td>kurze Datenvorschau mit Root-Pfad</td>
+</tr>
+<tr>
+<td><code>d9431da0f26c...</code></td>
+<td><code>41 B</code></td>
+<td><code>C:\NovaShell\monitors\.nova_system_guard\n</code></td>
+<td>kurze Datenvorschau auf den Guard-State-Pfad</td>
+</tr>
+</tbody></table>
+<p>Diese kleinen Dateien sind kein Fehler. Sie zeigen gerade den Vorteil des CAS-Modells:</p>
+<ul>
+<li>ein leerer Inhalt bekommt einen stabilen Hash</li>
+<li>ein einfacher Zeilenumbruch bekommt einen stabilen Hash</li>
+<li>dieselben Mini-Payloads werden nicht dupliziert</li>
+</ul>
+<h3 id="warum-einige-cas-dateien-deutlich-groesser-sind">Warum einige CAS-Dateien deutlich groesser sind</h3>
+<p>Im selben Lauf gab es auch CAS-Dateien mit etwa <code>17 KB</code> bis <code>24 KB</code>. Diese stammen im aktuellen Monitor-Lauf von laengeren Stage-Outputs, unter anderem aus dem selbstbootstrappenden <code>nova_system_guard.ns</code>-Pfad.</p>
+<p>Das bedeutet:</p>
+<ul>
+<li>Lens speichert nicht nur Mini-Vorschauen</li>
+<li>es kann auch groessere Text-Outputs sichern</li>
+<li>trotzdem bleibt die Speicherung effizient, weil identischer Inhalt ueber den</li>
+<p>Hash wiederverwendet wird</p>
+</ul>
+<h2 id="beziehung-zum-system-guard">Beziehung zum System Guard</h2>
+<p>Beim <code>System Guard</code> musst du zwei getrennte Persistenzpfade unterscheiden:</p>
+<ul>
+<li><code>.nova_system_guard/</code></li>
+<li><code>.nova_lens/</code></li>
+</ul>
+<h3 id="nova-system-guard"><code>.nova_system_guard/</code></h3>
+<p>Das ist der Guard-spezifische Betriebszustand:</p>
+<ul>
+<li>HTML-Report</li>
+<li>JSON-Status</li>
+<li>History</li>
+<li>Quarantaene</li>
+<li>Detailseiten</li>
+</ul>
+<h3 id="nova-lens"><code>.nova_lens/</code></h3>
+<p>Das ist die allgemeine Shell-Lineage:</p>
+<ul>
+<li>Stage-Snapshots</li>
+<li>Output- und Preview-Blobs</li>
+<li>Replay und Fork-Basis</li>
+</ul>
+<p>Kurz: Der Guard schreibt seine Fachartefakte nach <code>.nova_system_guard</code>. Lens speichert parallel die allgemeine Shell-Verlaufsspur.</p>
+<h2 id="cli-fuer-entwickler">CLI fuer Entwickler</h2>
+<h3 id="letzte-snapshots-ansehen">Letzte Snapshots ansehen</h3>
+<pre><code class="language-powershell">lens list 8
+lens last</code></pre>
+<h3 id="einen-snapshot-im-detail-laden">Einen Snapshot im Detail laden</h3>
+<pre><code class="language-powershell">lens show &lt;snapshot_id&gt;</code></pre>
+<p>Erwartung:</p>
+<ul>
+<li>Stage-Name</li>
+<li>Zeitstempel</li>
+<li>Trace-ID</li>
+<li><code>output_hash</code></li>
+<li><code>data_hash</code></li>
+<li>rekonstruierter <code>output</code></li>
+<li>rekonstruierte <code>data_preview</code></li>
+</ul>
+<h3 id="snapshot-erneut-ausgeben">Snapshot erneut ausgeben</h3>
+<pre><code class="language-powershell">lens replay &lt;snapshot_id&gt;</code></pre>
+<p>Das ist kein &quot;Neuberechnen&quot; der Stage, sondern ein Replay des gespeicherten Snapshot-Outputs.</p>
+<h3 id="forks-und-diff">Forks und Diff</h3>
+<pre><code class="language-powershell">lens fork &lt;snapshot_id&gt; --inject &quot;{\&quot;severity\&quot;: \&quot;high\&quot;}&quot;
+lens forks 10
+lens diff &lt;fork_id&gt;</code></pre>
+<p>Damit koennen Entwickler hypothetische Varianten eines Snapshots aufspannen, ohne den Originalzustand zu ueberschreiben.</p>
+<h2 id="warum-das-fuer-entwickler-relevant-ist">Warum das fuer Entwickler relevant ist</h2>
+<p><code>Nova Lens</code> ist mehr als eine Komfortfunktion. Es ist die Bruecke zwischen:</p>
+<ul>
+<li>operativer Shell-Nutzung</li>
+<li>reproduzierbaren Entwicklungsablaeufen</li>
+<li>effizienter Speicherung</li>
+<li>spaeterer Analyse</li>
+</ul>
+<p>Gerade fuer Watcher, Guards und laengere Automationspfade ist das wichtig, weil man nicht nur den letzten HTML-Report sehen will, sondern auch die einzelnen Shell-Stufen nachvollziehen koennen muss.</p>
+<h2 id="typische-missverstaendnisse">Typische Missverstaendnisse</h2>
+<h3 id="sind-die-hash-dateien-in-cas-malware-oder-fremddateien">Sind die Hash-Dateien in <code>cas/</code> Malware oder Fremddateien?</h3>
+<p>Nein. Das sind interne Nova-shell-Payloads. Der Dateiname ist der Hash des Inhalts.</p>
+<h3 id="warum-gibt-es-dort-leere-oder-winzige-dateien">Warum gibt es dort leere oder winzige Dateien?</h3>
+<p>Weil auch leere oder sehr kleine Inhalte legitime Snapshot-Bloecke sind und dedupliziert gespeichert werden.</p>
+<h3 id="warum-steht-in-cas-kein-sprechender-dateiname">Warum steht in <code>cas/</code> kein sprechender Dateiname?</h3>
+<p>Weil nicht der Name, sondern der Inhalt die Identitaet bildet. Das ist der Kern eines content-addressable stores.</p>
+<h3 id="wird-dadurch-speicher-verschwendet">Wird dadurch Speicher verschwendet?</h3>
+<p>Im Gegenteil. Genau dadurch wird redundante Speicherung reduziert.</p>
 <h2 id="verwandte-seiten">Verwandte Seiten</h2>
 <ul>
+<li><a href="LensForDevelopers.html">LensForDevelopers</a></li>
+<li><a href="LensTroubleshooting.html">LensTroubleshooting</a></li>
+<li><a href="LensRecipes.html">LensRecipes</a></li>
+<li><a href="NovaCLI.html">NovaCLI</a></li>
+<li><a href="ShellCommandReference.html">ShellCommandReference</a></li>
 <li><a href="NovaRuntime.html">NovaRuntime</a></li>
-<li><a href="NovaLens.html">NovaLens</a></li>
-<li><a href="RuntimeAndControlPlane.html">RuntimeAndControlPlane</a></li>
-<li><a href="APIReference.html">APIReference</a></li>
-<li><a href="Troubleshooting.html">Troubleshooting</a></li>
-<li><a href="WatchMonitor.html">WatchMonitor</a></li>
-<li><a href="WatchMonitorReportReference.html">WatchMonitorReportReference</a></li>
+<li><a href="SystemGuardMonitor.html">SystemGuardMonitor</a></li>
+<li><a href="OperationsAndObservability.html">OperationsAndObservability</a></li>
+<li><a href="CodeReferenceIndex.html">CodeReferenceIndex</a></li>
 </ul>
         </article>
         <aside class="wiki-toc">
           <div class="wiki-toc-card"><h2>On this page</h2><ul>
 <li class="wiki-toc-link"><a href="#zweck">Zweck</a></li>
-<li class="wiki-toc-link"><a href="#kernpunkte">Kernpunkte</a></li>
-<li class="wiki-toc-link"><a href="#wichtige-zugriffe">Wichtige Zugriffe</a></li>
-<li class="wiki-toc-link level-3"><a href="#cli">CLI</a></li>
-<li class="wiki-toc-link level-3"><a href="#api">API</a></li>
-<li class="wiki-toc-link"><a href="#testbare-einstiege">Testbare Einstiege</a></li>
-<li class="wiki-toc-link level-3"><a href="#lokalen-runtime-status-pruefen">Lokalen Runtime-Status pruefen</a></li>
-<li class="wiki-toc-link level-3"><a href="#snapshot-schreiben-und-wieder-laden">Snapshot schreiben und wieder laden</a></li>
-<li class="wiki-toc-link level-3"><a href="#html-wiki-als-diagnoseschritt-bauen">HTML-Wiki als Diagnoseschritt bauen</a></li>
-<li class="wiki-toc-link level-3"><a href="#projektordner-mit-watch-monitor-beobachten">Projektordner mit Watch Monitor beobachten</a></li>
-<li class="wiki-toc-link level-3"><a href="#lens-snapshots-im-klassischen-shell-pfad-pruefen">Lens-Snapshots im klassischen Shell-Pfad pruefen</a></li>
-<li class="wiki-toc-link"><a href="#typische-betriebsfragen">Typische Betriebsfragen</a></li>
-<li class="wiki-toc-link level-3"><a href="#wo-sehe-ich-ob-die-runtime-gesund-wirkt">Wo sehe ich, ob die Runtime gesund wirkt?</a></li>
-<li class="wiki-toc-link level-3"><a href="#wie-sichere-ich-den-runtime-zustand">Wie sichere ich den Runtime-Zustand?</a></li>
-<li class="wiki-toc-link level-3"><a href="#was-pruefe-ich-bei-einem-unklaren-fehler-zuerst">Was pruefe ich bei einem unklaren Fehler zuerst?</a></li>
+<li class="wiki-toc-link"><a href="#kernobjekte">Kernobjekte</a></li>
+<li class="wiki-toc-link"><a href="#wie-lens-arbeitet">Wie Lens arbeitet</a></li>
+<li class="wiki-toc-link"><a href="#struktur-auf-der-festplatte">Struktur auf der Festplatte</a></li>
+<li class="wiki-toc-link level-3"><a href="#lineage-db">`lineage.db`</a></li>
+<li class="wiki-toc-link level-3"><a href="#cas">`cas/`</a></li>
+<li class="wiki-toc-link"><a href="#warum-das-effizient-ist">Warum das effizient ist</a></li>
+<li class="wiki-toc-link"><a href="#echtes-beispiel-aus-dem-aktuellen-lauf">Echtes Beispiel aus dem aktuellen Lauf</a></li>
+<li class="wiki-toc-link level-3"><a href="#konkrete-cas-dateien-aus-diesem-lauf">Konkrete CAS-Dateien aus diesem Lauf</a></li>
+<li class="wiki-toc-link level-3"><a href="#warum-einige-cas-dateien-deutlich-groesser-sind">Warum einige CAS-Dateien deutlich groesser sind</a></li>
+<li class="wiki-toc-link"><a href="#beziehung-zum-system-guard">Beziehung zum System Guard</a></li>
+<li class="wiki-toc-link level-3"><a href="#nova-system-guard">`.nova_system_guard/`</a></li>
+<li class="wiki-toc-link level-3"><a href="#nova-lens">`.nova_lens/`</a></li>
+<li class="wiki-toc-link"><a href="#cli-fuer-entwickler">CLI fuer Entwickler</a></li>
+<li class="wiki-toc-link level-3"><a href="#letzte-snapshots-ansehen">Letzte Snapshots ansehen</a></li>
+<li class="wiki-toc-link level-3"><a href="#einen-snapshot-im-detail-laden">Einen Snapshot im Detail laden</a></li>
+<li class="wiki-toc-link level-3"><a href="#snapshot-erneut-ausgeben">Snapshot erneut ausgeben</a></li>
+<li class="wiki-toc-link level-3"><a href="#forks-und-diff">Forks und Diff</a></li>
+<li class="wiki-toc-link"><a href="#warum-das-fuer-entwickler-relevant-ist">Warum das fuer Entwickler relevant ist</a></li>
+<li class="wiki-toc-link"><a href="#typische-missverstaendnisse">Typische Missverstaendnisse</a></li>
+<li class="wiki-toc-link level-3"><a href="#sind-die-hash-dateien-in-cas-malware-oder-fremddateien">Sind die Hash-Dateien in `cas/` Malware oder Fremddateien?</a></li>
+<li class="wiki-toc-link level-3"><a href="#warum-gibt-es-dort-leere-oder-winzige-dateien">Warum gibt es dort leere oder winzige Dateien?</a></li>
+<li class="wiki-toc-link level-3"><a href="#warum-steht-in-cas-kein-sprechender-dateiname">Warum steht in `cas/` kein sprechender Dateiname?</a></li>
+<li class="wiki-toc-link level-3"><a href="#wird-dadurch-speicher-verschwendet">Wird dadurch Speicher verschwendet?</a></li>
 <li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
 </ul></div>
         </aside>
@@ -250,7 +407,7 @@ lens list 5</code></pre>
   </div>
   <script>
     window.NOVA_WIKI = {
-      currentPage: "OperationsAndObservability.html",
+      currentPage: "NovaLens.html",
       searchIndex: "assets/search-index.json"
     };
   </script>

@@ -40,6 +40,10 @@
 <li><a class="wiki-nav-link" data-nav-href="NovaCLI.html" href="NovaCLI.html">NovaCLI</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ShellCommandReference.html" href="ShellCommandReference.html">ShellCommandReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaLens.html" href="NovaLens.html">NovaLens</a></li>
+<li><a class="wiki-nav-link" data-nav-href="LensForDevelopers.html" href="LensForDevelopers.html">LensForDevelopers</a></li>
+<li><a class="wiki-nav-link" data-nav-href="LensTroubleshooting.html" href="LensTroubleshooting.html">LensTroubleshooting</a></li>
+<li><a class="wiki-nav-link" data-nav-href="LensRecipes.html" href="LensRecipes.html">LensRecipes</a></li>
 <li><a class="wiki-nav-link" data-nav-href="APIReference.html" href="APIReference.html">APIReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ExamplesAndRecipes.html" href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NSBlobGenerator.html" href="NSBlobGenerator.html">NSBlobGenerator</a></li>
@@ -73,12 +77,15 @@
 <li><a class="wiki-nav-link" data-nav-href="nsReference.html" href="nsReference.html">nsReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="nsPatterns.html" href="nsPatterns.html">nsPatterns</a></li>
 <li><a class="wiki-nav-link active" data-nav-href="NovaRuntime.html" href="NovaRuntime.html">NovaRuntime</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaLens.html" href="NovaLens.html">NovaLens</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaGraphEngine.html" href="NovaGraphEngine.html">NovaGraphEngine</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaPlanner.html" href="NovaPlanner.html">NovaPlanner</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ParserAndASTReference.html" href="ParserAndASTReference.html">ParserAndASTReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="RuntimeMethodReference.html" href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ClassReference.html" href="ClassReference.html">ClassReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="CodeReferenceIndex.html" href="CodeReferenceIndex.html">CodeReferenceIndex</a></li>
+<li><a class="wiki-nav-link" data-nav-href="LensForDevelopers.html" href="LensForDevelopers.html">LensForDevelopers</a></li>
+<li><a class="wiki-nav-link" data-nav-href="LensRecipes.html" href="LensRecipes.html">LensRecipes</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Plattformfunktionen</h2>
@@ -108,6 +115,7 @@
 <li><a class="wiki-nav-link" data-nav-href="SecurityModel.html" href="SecurityModel.html">SecurityModel</a></li>
 <li><a class="wiki-nav-link" data-nav-href="PerformanceAndScaling.html" href="PerformanceAndScaling.html">PerformanceAndScaling</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Troubleshooting.html" href="Troubleshooting.html">Troubleshooting</a></li>
+<li><a class="wiki-nav-link" data-nav-href="LensTroubleshooting.html" href="LensTroubleshooting.html">LensTroubleshooting</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Roadmap.html" href="Roadmap.html">Roadmap</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Contributing.html" href="Contributing.html">Contributing</a></li>
 <li><a class="wiki-nav-link" data-nav-href="License.html" href="License.html">License</a></li>
@@ -164,6 +172,10 @@
 <tr>
 <td><code>BackendRouter</code></td>
 <td>Zuweisung von Ausfuehrungen auf passende lokale oder native Backends</td>
+</tr>
+<tr>
+<td><code>NovaLensStore</code></td>
+<td>Shell-Lineage mit Replay und content-addressable Speicherung</td>
 </tr>
 <tr>
 <td><code>DurableControlPlane</code></td>
@@ -233,6 +245,15 @@ snapshot / resume / close</code></pre>
 <li><code>predictive.forecast()</code></li>
 <li><code>predictive.recommend_engine(...)</code></li>
 </ul>
+<h3 id="shell-lineage-und-replay">Shell-Lineage und Replay</h3>
+<ul>
+<li><code>lens.record(...)</code> im klassischen Shell-Pfad</li>
+<li><code>lens list</code></li>
+<li><code>lens show</code></li>
+<li><code>lens replay</code></li>
+<li><code>lens fork</code></li>
+</ul>
+<p>Auch wenn <code>NovaLensStore</code> nicht Teil der deklarativen <code>nova.runtime</code>-Klassen ist, gehoert er zur realen Betriebsarchitektur von Nova-shell. Er speichert Shell- und Monitor-Stufen persistent ueber <code>lineage.db</code> und einen content-addressable Store in <code>.nova_lens/cas</code>.</p>
 <h2 id="eingebaute-toolpfade">Eingebaute Toolpfade</h2>
 <p>Die Runtime kennt eingebaute Pfade, die in Flows direkt auftauchen koennen:</p>
 <ul>
@@ -312,6 +333,10 @@ py 2 + 1
 py 3 + 1
 synth forecast
 synth shift suggest &quot;matrix multiply tensor embedding&quot;</code></pre>
+<h3 id="lens-im-klassischen-shell-pfad-pruefen">Lens im klassischen Shell-Pfad pruefen</h3>
+<pre><code class="language-powershell">py 2 + 2
+lens last</code></pre>
+<p>Wenn du nachvollziehen willst, wie <code>.nova_lens/lineage.db</code> und <code>.nova_lens/cas</code> zusammenarbeiten, lies <a href="NovaLens.html">NovaLens</a>.</p>
 <h2 id="typische-fehler-und-fragen">Typische Fehler und Fragen</h2>
 <h3 id="wann-ist-ein-problem-ein-parser-und-wann-ein-runtime-problem">Wann ist ein Problem ein Parser- und wann ein Runtime-Problem?</h3>
 <p>Wenn <code>ns.graph</code> funktioniert, aber <code>ns.run</code> nicht, ist die Syntax meist korrekt und der Fehler liegt spaeter im Laufzeitpfad.</p>
@@ -322,6 +347,7 @@ synth shift suggest &quot;matrix multiply tensor embedding&quot;</code></pre>
 <h2 id="verwandte-seiten">Verwandte Seiten</h2>
 <ul>
 <li><a href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
+<li><a href="NovaLens.html">NovaLens</a></li>
 <li><a href="APIReference.html">APIReference</a></li>
 <li><a href="RuntimeAndControlPlane.html">RuntimeAndControlPlane</a></li>
 <li><a href="NovaSynthPredictiveEngineShifting.html">NovaSynthPredictiveEngineShifting</a></li>
@@ -341,6 +367,7 @@ synth shift suggest &quot;matrix multiply tensor embedding&quot;</code></pre>
 <li class="wiki-toc-link level-3"><a href="#scheduler-und-control-plane">Scheduler und Control Plane</a></li>
 <li class="wiki-toc-link level-3"><a href="#api-und-betrieb">API und Betrieb</a></li>
 <li class="wiki-toc-link level-3"><a href="#services-und-plattform">Services und Plattform</a></li>
+<li class="wiki-toc-link level-3"><a href="#shell-lineage-und-replay">Shell-Lineage und Replay</a></li>
 <li class="wiki-toc-link"><a href="#eingebaute-toolpfade">Eingebaute Toolpfade</a></li>
 <li class="wiki-toc-link"><a href="#predictive-shifting">Predictive Shifting</a></li>
 <li class="wiki-toc-link"><a href="#cli">CLI</a></li>
@@ -350,6 +377,7 @@ synth shift suggest &quot;matrix multiply tensor embedding&quot;</code></pre>
 <li class="wiki-toc-link level-3"><a href="#ein-bestehendes-beispiel-ueber-die-cli-ausfuehren">Ein bestehendes Beispiel ueber die CLI ausfuehren</a></li>
 <li class="wiki-toc-link level-3"><a href="#snapshot-schreiben-und-laden">Snapshot schreiben und laden</a></li>
 <li class="wiki-toc-link level-3"><a href="#predictive-shift-live-pruefen">Predictive Shift live pruefen</a></li>
+<li class="wiki-toc-link level-3"><a href="#lens-im-klassischen-shell-pfad-pruefen">Lens im klassischen Shell-Pfad pruefen</a></li>
 <li class="wiki-toc-link"><a href="#typische-fehler-und-fragen">Typische Fehler und Fragen</a></li>
 <li class="wiki-toc-link level-3"><a href="#wann-ist-ein-problem-ein-parser-und-wann-ein-runtime-problem">Wann ist ein Problem ein Parser- und wann ein Runtime-Problem?</a></li>
 <li class="wiki-toc-link level-3"><a href="#wo-fuehrt-die-runtime-agenten-aus">Wo fuehrt die Runtime Agenten aus?</a></li>

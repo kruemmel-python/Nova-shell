@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="Nova-shell wiki builder">
-  <title>Operations and Observability | Nova-shell Wiki</title>
+  <title>Lens Recipes | Nova-shell Wiki</title>
   <link rel="stylesheet" href="assets/wiki.css">
 </head>
 <body>
@@ -43,7 +43,7 @@
 <li><a class="wiki-nav-link" data-nav-href="NovaLens.html" href="NovaLens.html">NovaLens</a></li>
 <li><a class="wiki-nav-link" data-nav-href="LensForDevelopers.html" href="LensForDevelopers.html">LensForDevelopers</a></li>
 <li><a class="wiki-nav-link" data-nav-href="LensTroubleshooting.html" href="LensTroubleshooting.html">LensTroubleshooting</a></li>
-<li><a class="wiki-nav-link" data-nav-href="LensRecipes.html" href="LensRecipes.html">LensRecipes</a></li>
+<li><a class="wiki-nav-link active" data-nav-href="LensRecipes.html" href="LensRecipes.html">LensRecipes</a></li>
 <li><a class="wiki-nav-link" data-nav-href="APIReference.html" href="APIReference.html">APIReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ExamplesAndRecipes.html" href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NSBlobGenerator.html" href="NSBlobGenerator.html">NSBlobGenerator</a></li>
@@ -85,7 +85,7 @@
 <li><a class="wiki-nav-link" data-nav-href="ClassReference.html" href="ClassReference.html">ClassReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="CodeReferenceIndex.html" href="CodeReferenceIndex.html">CodeReferenceIndex</a></li>
 <li><a class="wiki-nav-link" data-nav-href="LensForDevelopers.html" href="LensForDevelopers.html">LensForDevelopers</a></li>
-<li><a class="wiki-nav-link" data-nav-href="LensRecipes.html" href="LensRecipes.html">LensRecipes</a></li>
+<li><a class="wiki-nav-link active" data-nav-href="LensRecipes.html" href="LensRecipes.html">LensRecipes</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Plattformfunktionen</h2>
@@ -139,106 +139,218 @@
         <button type="button" class="wiki-nav-toggle" data-nav-toggle>Menu</button>
         <div class="wiki-header-copy">
           <span class="wiki-kicker">Nova-shell Documentation</span>
-          <h1>Operations and Observability</h1>
-          <p>Source: OperationsAndObservability.md</p>
+          <h1>Lens Recipes</h1>
+          <p>Source: LensRecipes.md</p>
         </div>
       </header>
       <div class="wiki-layout">
         <article class="wiki-article">
-          <h1 id="operations-and-observability">Operations and Observability</h1>
+          <h1 id="lens-recipes">Lens Recipes</h1>
 <h2 id="zweck">Zweck</h2>
-<p>Diese Seite beschreibt die Betriebs- und Diagnosepfade von Nova-shell. Sie deckt Telemetrie, Statusabfragen, Backups, Replay, Restore und Laufzeitdiagnose ab.</p>
-<h2 id="kernpunkte">Kernpunkte</h2>
+<p>Diese Seite sammelt direkte Copy-Paste-Rezepte fuer typische Arbeiten mit <code>Nova Lens</code>.</p>
+<p>Sie ist absichtlich praktisch aufgebaut:</p>
 <ul>
-<li>Traces und Laufzeitereignisse fuer Flows, Services und Agenten</li>
-<li>Alerts und Diagnosepfade fuer Fehler und Regressionen</li>
-<li>Telemetrieexport ueber CLI und API</li>
-<li>Lens-Lineage und Replay fuer klassische Shell-Stages</li>
-<li>Backups, Restore und Snapshot-Validierung</li>
-<li>Failpoints, Lasttests und Recovery-gestuetzte Betriebspruefung</li>
+<li>wenig Theorie</li>
+<li>konkrete Befehle</li>
+<li>kurze Einordnung</li>
 </ul>
-<h2 id="wichtige-zugriffe">Wichtige Zugriffe</h2>
-<h3 id="cli">CLI</h3>
+<p>Die Grundlagen stehen in:</p>
 <ul>
-<li><code>doctor</code></li>
-<li><code>ns.status</code></li>
-<li><code>ns.control</code></li>
-<li><code>ns.snapshot</code></li>
-<li><code>ns.resume</code></li>
+<li><a href="NovaLens.html">NovaLens</a></li>
+<li><a href="LensForDevelopers.html">LensForDevelopers</a></li>
+<li><a href="LensTroubleshooting.html">LensTroubleshooting</a></li>
 </ul>
-<h3 id="api">API</h3>
+<h2 id="rezept-1-letzten-snapshot-sofort-ansehen">Rezept 1: letzten Snapshot sofort ansehen</h2>
+<pre><code class="language-powershell">lens last</code></pre>
+<p>Nutzen:</p>
 <ul>
-<li>Runtime- und Control-Plane-Endpunkte aus <a href="APIReference.html">APIReference</a></li>
-<li>Status-, Queue-, Replay- und Metrics-Endpunkte</li>
+<li>schnellster Einstieg in den aktuellen Lens-Zustand</li>
+<li>zeigt den juengsten Snapshot ohne lange Listenansicht</li>
 </ul>
-<h2 id="testbare-einstiege">Testbare Einstiege</h2>
-<h3 id="lokalen-runtime-status-pruefen">Lokalen Runtime-Status pruefen</h3>
-<pre><code class="language-powershell">doctor
-ns.status</code></pre>
-<h3 id="snapshot-schreiben-und-wieder-laden">Snapshot schreiben und wieder laden</h3>
-<pre><code class="language-powershell">ns.snapshot
-ns.resume</code></pre>
-<h3 id="html-wiki-als-diagnoseschritt-bauen">HTML-Wiki als Diagnoseschritt bauen</h3>
-<pre><code class="language-powershell">wiki build</code></pre>
-<p>Der letzte Schritt ist kein Betriebsfeature der Runtime selbst, aber ein schneller Integrationscheck fuer Toolchain und lokale Installation.</p>
-<h3 id="projektordner-mit-watch-monitor-beobachten">Projektordner mit Watch Monitor beobachten</h3>
-<pre><code class="language-powershell">cd F:\DeCoG-TRI
-$env:NOVA_PROJECT_MONITOR_AUTOMATION = &quot;auto&quot;
-$env:NOVA_PROJECT_MONITOR_AI_MODE = &quot;auto&quot;
-ns.run nova_project_monitor.ns</code></pre>
-<p>Das ist der direkteste Betriebsweg, um:</p>
+<h2 id="rezept-2-die-letzten-10-snapshots-anzeigen">Rezept 2: die letzten 10 Snapshots anzeigen</h2>
+<pre><code class="language-powershell">lens list 10</code></pre>
+<p>Nutzen:</p>
 <ul>
-<li>Datei-Hotspots zu sehen</li>
-<li>Zeilen-Diffs pro Aenderung nachzuverfolgen</li>
-<li>Review-Agent-Ergebnisse sichtbar zu machen</li>
-<li>Build- und Testlaeufe nach Aenderungen zu protokollieren</li>
+<li>Verlauf sehen</li>
+<li>Snapshot-ID fuer weitere Schritte finden</li>
 </ul>
-<p>Die erzeugten Artefakte liegen unter <code>.nova_project_monitor/</code>.</p>
-<h3 id="lens-snapshots-im-klassischen-shell-pfad-pruefen">Lens-Snapshots im klassischen Shell-Pfad pruefen</h3>
-<pre><code class="language-powershell">py 2 + 2
-lens last
+<h2 id="rezept-3-einen-snapshot-komplett-lesen">Rezept 3: einen Snapshot komplett lesen</h2>
+<pre><code class="language-powershell">lens show &lt;snapshot_id&gt;</code></pre>
+<p>Beispiel:</p>
+<pre><code class="language-powershell">lens show 8ba80d6cac4f</code></pre>
+<p>Nutzen:</p>
+<ul>
+<li><code>stage</code></li>
+<li><code>trace_id</code></li>
+<li><code>output_hash</code></li>
+<li><code>data_hash</code></li>
+<li>rekonstruierter Output</li>
+<li>rekonstruierte Datenvorschau</li>
+</ul>
+<h2 id="rezept-4-gespeicherten-output-erneut-ausgeben">Rezept 4: gespeicherten Output erneut ausgeben</h2>
+<pre><code class="language-powershell">lens replay &lt;snapshot_id&gt;</code></pre>
+<p>Beispiel:</p>
+<pre><code class="language-powershell">lens replay 8ba80d6cac4f</code></pre>
+<p>Nutzen:</p>
+<ul>
+<li>gespeicherten Output wieder anzeigen</li>
+<li>ohne die eigentliche Stage neu auszufuehren</li>
+</ul>
+<h2 id="rezept-5-von-snapshot-id-zu-cas-datei-gehen">Rezept 5: von Snapshot-ID zu CAS-Datei gehen</h2>
+<p>Schritt 1:</p>
+<pre><code class="language-powershell">lens show &lt;snapshot_id&gt;</code></pre>
+<p>Schritt 2: <code>output_hash</code> und <code>data_hash</code> aus dem Ergebnis nehmen</p>
+<p>Schritt 3:</p>
+<pre><code class="language-powershell">Get-Content .\.nova_lens\cas\&lt;output_hash&gt;
+Get-Content .\.nova_lens\cas\&lt;data_hash&gt;</code></pre>
+<p>Nutzen:</p>
+<ul>
+<li>direkte Sicht auf die gespeicherte Payload</li>
+<li>hilfreich fuer Debugging ausserhalb der Lens-CLI</li>
+</ul>
+<h2 id="rezept-6-cas-groessen-schnell-messen">Rezept 6: CAS-Groessen schnell messen</h2>
+<pre><code class="language-powershell">Get-ChildItem .\.nova_lens\cas | Measure-Object -Property Length -Sum -Average</code></pre>
+<p>Nutzen:</p>
+<ul>
+<li>Gesamtgroesse des CAS</li>
+<li>Durchschnittsgroesse der Eintraege</li>
+</ul>
+<h2 id="rezept-7-alle-cas-dateien-auflisten">Rezept 7: alle CAS-Dateien auflisten</h2>
+<pre><code class="language-powershell">Get-ChildItem .\.nova_lens\cas | Select-Object Name,Length,LastWriteTime</code></pre>
+<p>Nutzen:</p>
+<ul>
+<li>schnelle Sicht auf kleine, leere und grosse Hash-Dateien</li>
+<li>hilfreich fuer visuelle Plausibilitaetspruefung</li>
+</ul>
+<h2 id="rezept-8-snapshot-zahlen-direkt-aus-sqlite-holen">Rezept 8: Snapshot-Zahlen direkt aus SQLite holen</h2>
+<pre><code class="language-powershell">python - &lt;&lt;&#x27;PY&#x27;
+import sqlite3
+from pathlib import Path
+
+db = Path(&quot;.nova_lens/lineage.db&quot;)
+conn = sqlite3.connect(db)
+print(&quot;snapshots&quot;, conn.execute(&quot;select count(*) from snapshots&quot;).fetchone()[0])
+print(&quot;forks&quot;, conn.execute(&quot;select count(*) from forks&quot;).fetchone()[0])
+conn.close()
+PY</code></pre>
+<p>Nutzen:</p>
+<ul>
+<li>schneller struktureller Check</li>
+<li>unabhaengig von Lens-CLI-Ausgabe</li>
+</ul>
+<h2 id="rezept-9-alle-referenzierten-hashes-gegen-den-cas-pruefen">Rezept 9: alle referenzierten Hashes gegen den CAS pruefen</h2>
+<pre><code class="language-powershell">python - &lt;&lt;&#x27;PY&#x27;
+import sqlite3
+from pathlib import Path
+
+base = Path(&quot;.nova_lens&quot;)
+conn = sqlite3.connect(base / &quot;lineage.db&quot;)
+hashes = set()
+for row in conn.execute(&quot;select output_hash, data_hash from snapshots&quot;):
+    hashes.update([x for x in row if x])
+for row in conn.execute(&quot;select diff_hash, simulation_hash, fork_output_hash, fork_data_hash from forks&quot;):
+    hashes.update([x for x in row if x])
+cas_files = {p.name for p in (base / &quot;cas&quot;).iterdir() if p.is_file()}
+print(&quot;referenced&quot;, len(hashes))
+print(&quot;cas_files&quot;, len(cas_files))
+print(&quot;missing&quot;, sorted(hashes - cas_files)[:10])
+print(&quot;unreferenced&quot;, sorted(cas_files - hashes)[:10])
+conn.close()
+PY</code></pre>
+<p>Nutzen:</p>
+<ul>
+<li>fehlende Hash-Dateien finden</li>
+<li>unreferenzierte Restdateien finden</li>
+</ul>
+<h2 id="rezept-10-nur-lesend-pr-fen-ob-ein-leerer-hash-normal-ist">Rezept 10: nur lesend prüfen, ob ein leerer Hash normal ist</h2>
+<pre><code class="language-powershell">Get-Content .\.nova_lens\cas\e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855</code></pre>
+<p>Erwartung:</p>
+<ul>
+<li>keine sichtbare Ausgabe</li>
+</ul>
+<p>Das ist normal. Dieser Hash steht fuer einen leeren Inhalt.</p>
+<h2 id="rezept-11-den-gesamten-lens-store-bewusst-zuruecksetzen">Rezept 11: den gesamten Lens-Store bewusst zuruecksetzen</h2>
+<pre><code class="language-powershell">Remove-Item .\.nova_lens -Recurse -Force</code></pre>
+<p>Wirkung:</p>
+<ul>
+<li>alle Snapshots weg</li>
+<li>alle Forks weg</li>
+<li>alle CAS-Dateien weg</li>
+</ul>
+<p>Nur verwenden, wenn du die Historie wirklich verwerfen willst.</p>
+<h2 id="rezept-12-einen-watch-oder-guard-lauf-mit-lens-zusammendenken">Rezept 12: einen Watch- oder Guard-Lauf mit Lens zusammendenken</h2>
+<p>Wenn du mit einem Watcher arbeitest:</p>
+<pre><code class="language-powershell">ns.run nova_project_monitor.ns</code></pre>
+<p>oder:</p>
+<pre><code class="language-powershell">ns.run nova_system_guard.ns</code></pre>
+<p>Dann prüfst du parallel:</p>
+<pre><code class="language-powershell">lens last
 lens list 5</code></pre>
-<p>Das ist der schnellste Weg, um die persistente Shell-Lineage zu sehen. Die genauen Speicherstrukturen unter <code>.nova_lens/lineage.db</code> und <code>.nova_lens/cas</code> sind in <a href="NovaLens.html">NovaLens</a> erklaert.</p>
-<h2 id="typische-betriebsfragen">Typische Betriebsfragen</h2>
-<h3 id="wo-sehe-ich-ob-die-runtime-gesund-wirkt">Wo sehe ich, ob die Runtime gesund wirkt?</h3>
-<p>Mit <code>doctor</code> fuer Installationsfaehigkeiten und <code>ns.status</code> fuer den Plattformzustand.</p>
-<h3 id="wie-sichere-ich-den-runtime-zustand">Wie sichere ich den Runtime-Zustand?</h3>
-<p>Ueber Snapshot- und Control-Plane-Pfade. Fuer umfangreichere Release- oder Betriebspfade siehe <a href="BuildAndRelease.html">BuildAndRelease</a>.</p>
-<h3 id="was-pruefe-ich-bei-einem-unklaren-fehler-zuerst">Was pruefe ich bei einem unklaren Fehler zuerst?</h3>
-<ol>
-<li><code>doctor</code></li>
-<li><code>ns.status</code></li>
-<li><code>ns.control</code></li>
-<li>relevante Logs oder Trace-Daten</li>
-</ol>
+<p>Nutzen:</p>
+<ul>
+<li>Fachreport in <code>.nova_project_monitor/</code> oder <code>.nova_system_guard/</code></li>
+<li>Shell-Lineage in <code>.nova_lens/</code></li>
+</ul>
+<p>So kannst du HTML-Report und interne Shell-Stufen zusammen nachvollziehen.</p>
+<h2 id="rezept-13-den-aktuellen-lokalen-beispielzustand-pr-fen">Rezept 13: den aktuellen lokalen Beispielzustand prüfen</h2>
+<p>Wenn du denselben Typ Zustand wie im aktuellen <code>C:\NovaShell\monitors</code>-Lauf prüfen willst:</p>
+<pre><code class="language-powershell">Get-ChildItem C:\NovaShell\monitors\.nova_lens\cas | Measure-Object
+python - &lt;&lt;&#x27;PY&#x27;
+import sqlite3
+from pathlib import Path
+
+base = Path(r&quot;C:\NovaShell\monitors\.nova_lens&quot;)
+conn = sqlite3.connect(base / &quot;lineage.db&quot;)
+hashes = set()
+for row in conn.execute(&quot;select output_hash, data_hash from snapshots&quot;):
+    hashes.update([x for x in row if x])
+for row in conn.execute(&quot;select diff_hash, simulation_hash, fork_output_hash, fork_data_hash from forks&quot;):
+    hashes.update([x for x in row if x])
+cas_files = {p.name for p in (base / &quot;cas&quot;).iterdir() if p.is_file()}
+print(&quot;cas_files&quot;, len(cas_files))
+print(&quot;referenced&quot;, len(hashes))
+print(&quot;unreferenced&quot;, len(cas_files - hashes))
+conn.close()
+PY</code></pre>
+<p>Nutzen:</p>
+<ul>
+<li>konsistenter Schnellcheck fuer einen echten Arbeitslauf</li>
+</ul>
+<h2 id="rezept-14-sicher-herausfinden-was-man-nicht-loeschen-sollte">Rezept 14: sicher herausfinden, was man nicht loeschen sollte</h2>
+<p>Nicht selektiv loeschen:</p>
+<pre><code class="language-text">.nova_lens\cas\&lt;einzelne_hash_datei&gt;
+.nova_lens\lineage.db</code></pre>
+<p>wenn der restliche Store erhalten bleiben soll.</p>
+<p>Sichere Regel:</p>
+<ul>
+<li>entweder nur lesen</li>
+<li>oder den gesamten <code>.nova_lens</code>-Ordner bewusst zuruecksetzen</li>
+</ul>
 <h2 id="verwandte-seiten">Verwandte Seiten</h2>
 <ul>
-<li><a href="NovaRuntime.html">NovaRuntime</a></li>
 <li><a href="NovaLens.html">NovaLens</a></li>
-<li><a href="RuntimeAndControlPlane.html">RuntimeAndControlPlane</a></li>
-<li><a href="APIReference.html">APIReference</a></li>
+<li><a href="LensForDevelopers.html">LensForDevelopers</a></li>
+<li><a href="LensTroubleshooting.html">LensTroubleshooting</a></li>
 <li><a href="Troubleshooting.html">Troubleshooting</a></li>
-<li><a href="WatchMonitor.html">WatchMonitor</a></li>
-<li><a href="WatchMonitorReportReference.html">WatchMonitorReportReference</a></li>
 </ul>
         </article>
         <aside class="wiki-toc">
           <div class="wiki-toc-card"><h2>On this page</h2><ul>
 <li class="wiki-toc-link"><a href="#zweck">Zweck</a></li>
-<li class="wiki-toc-link"><a href="#kernpunkte">Kernpunkte</a></li>
-<li class="wiki-toc-link"><a href="#wichtige-zugriffe">Wichtige Zugriffe</a></li>
-<li class="wiki-toc-link level-3"><a href="#cli">CLI</a></li>
-<li class="wiki-toc-link level-3"><a href="#api">API</a></li>
-<li class="wiki-toc-link"><a href="#testbare-einstiege">Testbare Einstiege</a></li>
-<li class="wiki-toc-link level-3"><a href="#lokalen-runtime-status-pruefen">Lokalen Runtime-Status pruefen</a></li>
-<li class="wiki-toc-link level-3"><a href="#snapshot-schreiben-und-wieder-laden">Snapshot schreiben und wieder laden</a></li>
-<li class="wiki-toc-link level-3"><a href="#html-wiki-als-diagnoseschritt-bauen">HTML-Wiki als Diagnoseschritt bauen</a></li>
-<li class="wiki-toc-link level-3"><a href="#projektordner-mit-watch-monitor-beobachten">Projektordner mit Watch Monitor beobachten</a></li>
-<li class="wiki-toc-link level-3"><a href="#lens-snapshots-im-klassischen-shell-pfad-pruefen">Lens-Snapshots im klassischen Shell-Pfad pruefen</a></li>
-<li class="wiki-toc-link"><a href="#typische-betriebsfragen">Typische Betriebsfragen</a></li>
-<li class="wiki-toc-link level-3"><a href="#wo-sehe-ich-ob-die-runtime-gesund-wirkt">Wo sehe ich, ob die Runtime gesund wirkt?</a></li>
-<li class="wiki-toc-link level-3"><a href="#wie-sichere-ich-den-runtime-zustand">Wie sichere ich den Runtime-Zustand?</a></li>
-<li class="wiki-toc-link level-3"><a href="#was-pruefe-ich-bei-einem-unklaren-fehler-zuerst">Was pruefe ich bei einem unklaren Fehler zuerst?</a></li>
+<li class="wiki-toc-link"><a href="#rezept-1-letzten-snapshot-sofort-ansehen">Rezept 1: letzten Snapshot sofort ansehen</a></li>
+<li class="wiki-toc-link"><a href="#rezept-2-die-letzten-10-snapshots-anzeigen">Rezept 2: die letzten 10 Snapshots anzeigen</a></li>
+<li class="wiki-toc-link"><a href="#rezept-3-einen-snapshot-komplett-lesen">Rezept 3: einen Snapshot komplett lesen</a></li>
+<li class="wiki-toc-link"><a href="#rezept-4-gespeicherten-output-erneut-ausgeben">Rezept 4: gespeicherten Output erneut ausgeben</a></li>
+<li class="wiki-toc-link"><a href="#rezept-5-von-snapshot-id-zu-cas-datei-gehen">Rezept 5: von Snapshot-ID zu CAS-Datei gehen</a></li>
+<li class="wiki-toc-link"><a href="#rezept-6-cas-groessen-schnell-messen">Rezept 6: CAS-Groessen schnell messen</a></li>
+<li class="wiki-toc-link"><a href="#rezept-7-alle-cas-dateien-auflisten">Rezept 7: alle CAS-Dateien auflisten</a></li>
+<li class="wiki-toc-link"><a href="#rezept-8-snapshot-zahlen-direkt-aus-sqlite-holen">Rezept 8: Snapshot-Zahlen direkt aus SQLite holen</a></li>
+<li class="wiki-toc-link"><a href="#rezept-9-alle-referenzierten-hashes-gegen-den-cas-pruefen">Rezept 9: alle referenzierten Hashes gegen den CAS pruefen</a></li>
+<li class="wiki-toc-link"><a href="#rezept-10-nur-lesend-pr-fen-ob-ein-leerer-hash-normal-ist">Rezept 10: nur lesend prüfen, ob ein leerer Hash normal ist</a></li>
+<li class="wiki-toc-link"><a href="#rezept-11-den-gesamten-lens-store-bewusst-zuruecksetzen">Rezept 11: den gesamten Lens-Store bewusst zuruecksetzen</a></li>
+<li class="wiki-toc-link"><a href="#rezept-12-einen-watch-oder-guard-lauf-mit-lens-zusammendenken">Rezept 12: einen Watch- oder Guard-Lauf mit Lens zusammendenken</a></li>
+<li class="wiki-toc-link"><a href="#rezept-13-den-aktuellen-lokalen-beispielzustand-pr-fen">Rezept 13: den aktuellen lokalen Beispielzustand prüfen</a></li>
+<li class="wiki-toc-link"><a href="#rezept-14-sicher-herausfinden-was-man-nicht-loeschen-sollte">Rezept 14: sicher herausfinden, was man nicht loeschen sollte</a></li>
 <li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
 </ul></div>
         </aside>
@@ -250,7 +362,7 @@ lens list 5</code></pre>
   </div>
   <script>
     window.NOVA_WIKI = {
-      currentPage: "OperationsAndObservability.html",
+      currentPage: "LensRecipes.html",
       searchIndex: "assets/search-index.json"
     };
   </script>

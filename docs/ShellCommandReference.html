@@ -40,6 +40,10 @@
 <li><a class="wiki-nav-link" data-nav-href="NovaCLI.html" href="NovaCLI.html">NovaCLI</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
 <li><a class="wiki-nav-link active" data-nav-href="ShellCommandReference.html" href="ShellCommandReference.html">ShellCommandReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaLens.html" href="NovaLens.html">NovaLens</a></li>
+<li><a class="wiki-nav-link" data-nav-href="LensForDevelopers.html" href="LensForDevelopers.html">LensForDevelopers</a></li>
+<li><a class="wiki-nav-link" data-nav-href="LensTroubleshooting.html" href="LensTroubleshooting.html">LensTroubleshooting</a></li>
+<li><a class="wiki-nav-link" data-nav-href="LensRecipes.html" href="LensRecipes.html">LensRecipes</a></li>
 <li><a class="wiki-nav-link" data-nav-href="APIReference.html" href="APIReference.html">APIReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ExamplesAndRecipes.html" href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NSBlobGenerator.html" href="NSBlobGenerator.html">NSBlobGenerator</a></li>
@@ -73,12 +77,15 @@
 <li><a class="wiki-nav-link" data-nav-href="nsReference.html" href="nsReference.html">nsReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="nsPatterns.html" href="nsPatterns.html">nsPatterns</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaRuntime.html" href="NovaRuntime.html">NovaRuntime</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaLens.html" href="NovaLens.html">NovaLens</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaGraphEngine.html" href="NovaGraphEngine.html">NovaGraphEngine</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaPlanner.html" href="NovaPlanner.html">NovaPlanner</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ParserAndASTReference.html" href="ParserAndASTReference.html">ParserAndASTReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="RuntimeMethodReference.html" href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ClassReference.html" href="ClassReference.html">ClassReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="CodeReferenceIndex.html" href="CodeReferenceIndex.html">CodeReferenceIndex</a></li>
+<li><a class="wiki-nav-link" data-nav-href="LensForDevelopers.html" href="LensForDevelopers.html">LensForDevelopers</a></li>
+<li><a class="wiki-nav-link" data-nav-href="LensRecipes.html" href="LensRecipes.html">LensRecipes</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Plattformfunktionen</h2>
@@ -108,6 +115,7 @@
 <li><a class="wiki-nav-link" data-nav-href="SecurityModel.html" href="SecurityModel.html">SecurityModel</a></li>
 <li><a class="wiki-nav-link" data-nav-href="PerformanceAndScaling.html" href="PerformanceAndScaling.html">PerformanceAndScaling</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Troubleshooting.html" href="Troubleshooting.html">Troubleshooting</a></li>
+<li><a class="wiki-nav-link" data-nav-href="LensTroubleshooting.html" href="LensTroubleshooting.html">LensTroubleshooting</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Roadmap.html" href="Roadmap.html">Roadmap</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Contributing.html" href="Contributing.html">Contributing</a></li>
 <li><a class="wiki-nav-link" data-nav-href="License.html" href="License.html">License</a></li>
@@ -334,6 +342,11 @@ CommandResult(output, error, data, data_type)</code></pre>
 <td><code>mesh list</code></td>
 </tr>
 <tr>
+<td><code>lens</code></td>
+<td><code>_run_lens</code></td>
+<td><code>lens last</code></td>
+</tr>
+<tr>
 <td><code>synth</code></td>
 <td><code>_run_synth</code></td>
 <td><code>synth forecast</code></td>
@@ -489,6 +502,22 @@ synth shift suggest &quot;for item in rows: total += item&quot;</code></pre>
 <li><code>PredictiveEngineShifter.forecast</code></li>
 <li><code>PredictiveEngineShifter.recommend_engine</code></li>
 </ul>
+<h3 id="pfad-4b-von-shell-stage-zu-lens-snapshot">Pfad 4b: von Shell-Stage zu Lens-Snapshot</h3>
+<pre><code class="language-powershell">py 2 + 2
+lens last
+lens show &lt;snapshot_id&gt;
+lens replay &lt;snapshot_id&gt;</code></pre>
+<p>Interne Handler und Objekte:</p>
+<ul>
+<li><code>_run_python</code></li>
+<li><code>_execute_stage</code></li>
+<li><code>_run_lens</code></li>
+<li><code>NovaLensStore.record</code></li>
+<li><code>NovaLensStore.get</code></li>
+<li><code>NovaLensStore.replay</code></li>
+</ul>
+<p>Der wichtige Punkt fuer Entwickler ist: Nach der Stage landet nicht nur Text auf dem Bildschirm, sondern auch ein persistenter Snapshot in <code>.nova_lens/lineage.db</code> plus referenzierte Inhalte in <code>.nova_lens/cas</code>.</p>
+<p>Die Speicherschicht dahinter ist in <a href="NovaLens.html">NovaLens</a> erklaert.</p>
 <h3 id="pfad-5-von-invariante-zu-federated-mesh-broadcast">Pfad 5: von Invariante zu Federated Mesh Broadcast</h3>
 <pre><code class="language-powershell">mesh federated publish --statement &quot;Shared invariant&quot; --namespace swarm --project lab --broadcast</code></pre>
 <p>Interne Handler und Objekte:</p>
@@ -578,6 +607,7 @@ synth shift suggest &quot;for item in rows: total += item&quot;</code></pre>
 <li class="wiki-toc-link level-3"><a href="#pfad-2-von-text-zu-memory-und-agent">Pfad 2: von Text zu Memory und Agent</a></li>
 <li class="wiki-toc-link level-3"><a href="#pfad-3-von-datei-zu-deklarativer-runtime">Pfad 3: von Datei zu deklarativer Runtime</a></li>
 <li class="wiki-toc-link level-3"><a href="#pfad-4-von-telemetrie-zu-predictive-shift">Pfad 4: von Telemetrie zu Predictive Shift</a></li>
+<li class="wiki-toc-link level-3"><a href="#pfad-4b-von-shell-stage-zu-lens-snapshot">Pfad 4b: von Shell-Stage zu Lens-Snapshot</a></li>
 <li class="wiki-toc-link level-3"><a href="#pfad-5-von-invariante-zu-federated-mesh-broadcast">Pfad 5: von Invariante zu Federated Mesh Broadcast</a></li>
 <li class="wiki-toc-link level-3"><a href="#pfad-6-von-population-zu-co-evolution">Pfad 6: von Population zu Co-Evolution</a></li>
 <li class="wiki-toc-link"><a href="#pipeline-programmierung">Pipeline-Programmierung</a></li>
