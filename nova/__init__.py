@@ -22,6 +22,8 @@ from .parser.errors import NovaSyntaxError
 from .parser.parser import NovaParser
 from .runtime import (
     AuthPrincipal,
+    AtheriaALSRuntime,
+    AtheriaVoiceRuntime,
     BackendExecutionRequest,
     BackendRouter,
     INLINE_BLOB_PREFIX,
@@ -75,6 +77,8 @@ from .toolchain import (
 
 __all__ = [
     "AuthPrincipal",
+    "AtheriaALSRuntime",
+    "AtheriaVoiceRuntime",
     "AgentDeclaration",
     "AgentNode",
     "AuditRecord",

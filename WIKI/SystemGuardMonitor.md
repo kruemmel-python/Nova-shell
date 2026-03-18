@@ -123,6 +123,11 @@ Artefakte liegen unter:
 - `.nova_system_guard/files/*.html`
 - `.nova_system_guard/quarantine/*`
 
+Parallel dazu kann Nova-shell auch allgemeine Shell-Lineage nach
+`.nova_lens/` schreiben. Das ist nicht der Fachreport des Guards, sondern die
+separate Snapshot- und Replay-Schicht. Details dazu stehen in
+[NovaLens](./NovaLens.md).
+
 ## Bewertung
 
 Der Guard vergibt pro Datei einen Risiko-Score und stuft Ereignisse in:
@@ -153,6 +158,7 @@ Einflussfaktoren sind unter anderem:
 ## Verwandte Seiten
 
 - [ExamplesAndRecipes](./ExamplesAndRecipes.md)
+- [NovaLens](./NovaLens.md)
 - [WatchMonitor](./WatchMonitor.md)
 - [WatchMonitorQuickStart](./WatchMonitorQuickStart.md)
 - [OperationsAndObservability](./OperationsAndObservability.md)

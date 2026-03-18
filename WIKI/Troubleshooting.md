@@ -62,9 +62,17 @@ Fuer den projektbezogenen Beobachter gibt es eine eigene Detailseite:
 
 - [WatchMonitorTroubleshooting](./WatchMonitorTroubleshooting.md)
 
+## Lens zeigt leere Replays oder fragwuerdige Hash-Dateien
+
+Fuer `.nova_lens`, `lineage.db`, `cas/`, fehlende Hash-Referenzen und sichere
+Cleanup-Regeln gibt es eine eigene Detailseite:
+
+- [LensTroubleshooting](./LensTroubleshooting.md)
+
 ## Verwandte Seiten
 
 - [Testing](./Testing.md)
 - [OperationsAndObservability](./OperationsAndObservability.md)
 - [NovaCLI](./NovaCLI.md)
 - [WatchMonitorTroubleshooting](./WatchMonitorTroubleshooting.md)
+- [LensTroubleshooting](./LensTroubleshooting.md)

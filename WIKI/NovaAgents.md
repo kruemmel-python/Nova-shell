@@ -17,6 +17,7 @@ Agenten sind in Nova-shell deklarierte, wiederverwendbare Laufzeitobjekte mit Pr
 | `AgentEvalStore` | Auswertungsdaten und Bewertungsartefakte |
 | `ToolSandbox` | Tool-Freigabe, Begrenzung und Governance |
 | `MyceliaAtheriaCoEvolutionLab` | populationsbezogene Co-Evolution ueber Forecast- und Kruemmungssignale |
+| `AtheriaALSRuntime` | residenter Atheria-Live-Pfad mit Dialog, Triggern und Voice |
 
 ## Agent-Lebenszyklus
 
@@ -74,6 +75,27 @@ CLI:
 mycelia coevolve run research-pop --cycles 5 --input "edge inference pressure rises"
 mycelia coevolve status research-pop
 mycelia population tick research-pop --cycles 5 --coevolve
+```
+
+## ALS als dauerhafte Atheria-Instanz
+
+ALS ist kein einzelner Agent, aber es verhaelt sich aus Plattformsicht wie eine
+laufende kognitive Instanz:
+
+- permanenter Stream-Zustand
+- lokale Wissensintegration
+- belegbare Dialoge
+- Voice als First-Class-Ausgang
+
+Es ist damit die Bruecke zwischen klassischer Agent-Ausfuehrung und einer
+dauerhaft existierenden Atheria-Praesenz.
+
+CLI:
+
+```powershell
+atheria als start
+atheria als ask "Was ist die aktuelle Hypothese?"
+atheria als feedback "Verfolge Supply-Chain-Risiken strenger."
 ```
 
 ## CLI
@@ -164,5 +186,7 @@ An Provider, Modell und Runtime-Kontext.
 - [NovaMemory](./NovaMemory.md)
 - [NovaTools](./NovaTools.md)
 - [MyceliaAtheriaCoEvolution](./MyceliaAtheriaCoEvolution.md)
+- [AtheriaContinuousEvolutionAndLiveStream](./AtheriaContinuousEvolutionAndLiveStream.md)
+- [AtheriaVoice](./AtheriaVoice.md)
 - [RuntimeMethodReference](./RuntimeMethodReference.md)
 - [ExamplesAndRecipes](./ExamplesAndRecipes.md)

@@ -14,9 +14,11 @@ Sie laedt Programme, kompiliert Graphen, fuehrt Flows aus, emittiert Events und 
 | `CompiledNovaProgram` | geladene und kompilierte Programmdarstellung |
 | `NovaRuntimeResult` | Ergebnis einer Programmausfuehrung |
 | `BackendRouter` | Zuweisung von Ausfuehrungen auf passende lokale oder native Backends |
+| `NovaLensStore` | Shell-Lineage mit Replay und content-addressable Speicherung |
 | `DurableControlPlane` | Queue, Schedules, Replay und Status |
 | `NovaControlPlaneAPIServer` | HTTP-API fuer die Plattform |
 | `PredictiveEngineShifter` | forecast-basierte Engine-Wahl und delegierte Ausfuehrung |
+| `AtheriaALSRuntime` | residenter Atheria-Live-Loop mit Chronik, Lens und Speech Acts |
 
 ## Lebenszyklus
 
@@ -78,6 +80,34 @@ snapshot / resume / close
 - `predictive.forecast()`
 - `predictive.recommend_engine(...)`
 
+### Residentes Atheria ALS
+
+- `als.configure(...)`
+- `als.status_payload()`
+- `als.run_cycle(...)`
+- `als.ask(...)`
+- `als.feedback(...)`
+- `als.voice_status()`
+- `als.serve_forever(...)`
+
+### Shell-Lineage und Replay
+
+- `lens.record(...)` im klassischen Shell-Pfad
+- `lens list`
+- `lens show`
+- `lens replay`
+- `lens fork`
+
+Auch wenn `NovaLensStore` nicht Teil der deklarativen `nova.runtime`-Klassen
+ist, gehoert er zur realen Betriebsarchitektur von Nova-shell.
+Er speichert Shell- und Monitor-Stufen persistent ueber `lineage.db` und einen
+content-addressable Store in `.nova_lens/cas`.
+
+Mit ALS gibt es jetzt einen zusaetzlichen residenten Atheria-Laufzeitpfad.
+Er lebt unter `~/.nova_shell_memory/atheria_als/`, erzeugt kontinuierliche
+Resonanzereignisse, schreibt eine lokale Aion-Chronik und persistiert Speech
+Acts als Teil der Kausalspur.
+
 ## Eingebaute Toolpfade
 
 Die Runtime kennt eingebaute Pfade, die in Flows direkt auftauchen koennen:
@@ -91,6 +121,29 @@ Die Runtime kennt eingebaute Pfade, die in Flows direkt auftauchen koennen:
 - `state.get`
 - `service.deploy`
 - `package.install`
+
+## Atheria ALS
+
+ALS ist die resident laufende Live-Form von Atheria in der Shell-Runtime.
+Es verbindet:
+
+- Feed-Ingestion
+- Resonanz- und Triggerlogik
+- Atheria-Training
+- Lens-Snapshots
+- Aion-Chronik
+- Voice und Dialog
+
+CLI:
+
+```powershell
+atheria als status
+atheria als cycle
+atheria als start
+atheria als ask "Was dominiert den Stream?"
+```
+
+Die vertiefte Architektur steht in [AtheriaContinuousEvolutionAndLiveStream](./AtheriaContinuousEvolutionAndLiveStream.md).
 
 ## Predictive Shifting
 
@@ -184,6 +237,16 @@ synth forecast
 synth shift suggest "matrix multiply tensor embedding"
 ```
 
+### Lens im klassischen Shell-Pfad pruefen
+
+```powershell
+py 2 + 2
+lens last
+```
+
+Wenn du nachvollziehen willst, wie `.nova_lens/lineage.db` und `.nova_lens/cas`
+zusammenarbeiten, lies [NovaLens](./NovaLens.md).
+
 ## Typische Fehler und Fragen
 
 ### Wann ist ein Problem ein Parser- und wann ein Runtime-Problem?
@@ -201,8 +264,12 @@ Mit `ns.status`, `ns.control` und den API- oder Trace-Pfaden.
 ## Verwandte Seiten
 
 - [RuntimeMethodReference](./RuntimeMethodReference.md)
+- [NovaLens](./NovaLens.md)
 - [APIReference](./APIReference.md)
 - [RuntimeAndControlPlane](./RuntimeAndControlPlane.md)
 - [NovaSynthPredictiveEngineShifting](./NovaSynthPredictiveEngineShifting.md)
 - [NovaAgents](./NovaAgents.md)
 - [NovaMesh](./NovaMesh.md)
+- [AtheriaContinuousEvolutionAndLiveStream](./AtheriaContinuousEvolutionAndLiveStream.md)
+- [AtheriaVoice](./AtheriaVoice.md)
+- [AtheriaALSForDevelopers](./AtheriaALSForDevelopers.md)

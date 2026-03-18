@@ -1276,10 +1276,12 @@ if len(files_lines) == 2:
 
             guard_dir = project / ".nova_system_guard"
             report_path = guard_dir / "system_guard_report.html"
+            results_path = guard_dir / "system_guard_results.html"
             history_path = guard_dir / "history.json"
             status_path = guard_dir / "latest_status.json"
             helper_copy = guard_dir / "system_guard_helper.py"
             self.assertTrue(report_path.is_file())
+            self.assertTrue(results_path.is_file())
             self.assertTrue(status_path.is_file())
             self.assertTrue(helper_copy.is_file())
             baseline_payload = json.loads(history_path.read_text(encoding="utf-8"))
@@ -1319,17 +1321,27 @@ if len(files_lines) == 2:
             self.assertGreaterEqual(modified["removed_lines"], 1)
             self.assertIn(change_event["review"]["severity"], {"high", "critical"})
             self.assertIn("detail_page", modified)
-            self.assertTrue((guard_dir / modified["detail_page"]).is_file())
+            detail_page_path = guard_dir / modified["detail_page"]
+            self.assertTrue(detail_page_path.is_file())
             html_body = report_path.read_text(encoding="utf-8")
+            results_body = results_path.read_text(encoding="utf-8")
             self.assertIn("Nova System Guard", html_body)
+            self.assertIn("Letzte abgeschlossene Ergebnisseite", html_body)
             self.assertIn("Custom Startup Path", html_body)
             self.assertIn("Custom Temp Path", html_body)
             self.assertIn("autorun.bat", html_body)
             self.assertIn("dropper.exe", html_body)
             self.assertIn("Sicherheitsrelevante Aenderung erkannt", html_body)
+            self.assertIn("Stabile Ergebnisseite", results_body)
+            self.assertIn("autorun.bat", results_body)
+            self.assertIn("dropper.exe", results_body)
+            detail_body = detail_page_path.read_text(encoding="utf-8")
+            self.assertIn("system_guard_results.html", detail_body)
+            self.assertIn("system_guard_report.html", detail_body)
             latest_status = json.loads(status_path.read_text(encoding="utf-8"))
             self.assertTrue(latest_status["changed"])
             self.assertGreaterEqual(latest_status["scope_count"], 4)
+            self.assertEqual(Path(latest_status["results_path"]).name, "system_guard_results.html")
 
     def test_system_guard_bootstrap_artifacts_exist_before_first_scan(self) -> None:
         root = Path(__file__).resolve().parents[1]
@@ -1363,21 +1375,241 @@ if len(files_lines) == 2:
             helper["write_bootstrap_artifacts"](project, state_dir, scopes, runtime)
 
             report_path = state_dir / "system_guard_report.html"
+            results_path = state_dir / "system_guard_results.html"
             status_path = state_dir / "latest_status.json"
             analysis_path = state_dir / "system_guard_analysis.json"
 
             self.assertTrue(report_path.is_file())
+            self.assertTrue(results_path.is_file())
             self.assertTrue(status_path.is_file())
             self.assertTrue(analysis_path.is_file())
 
             html_body = report_path.read_text(encoding="utf-8")
+            results_body = results_path.read_text(encoding="utf-8")
             self.assertIn("Initialer Sicherheits-Scan läuft", html_body)
             self.assertIn("Custom Path 1", html_body)
+            self.assertIn("Letzte abgeschlossene Ergebnisseite", html_body)
+            self.assertIn("Noch keine abgeschlossene Ergebnisseite vorhanden", results_body)
 
             status_payload = json.loads(status_path.read_text(encoding="utf-8"))
             self.assertEqual(status_payload["phase"], "initializing")
             self.assertEqual(status_payload["scope_count"], 1)
             self.assertEqual(status_payload["status_line"], "Initialer Sicherheits-Scan läuft.")
+            self.assertEqual(Path(status_payload["results_path"]).name, "system_guard_results.html")
+
+    def test_system_guard_bootstrap_keeps_existing_results_page(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        helper_path = root / "examples" / "nova_system_guard_helper.py"
+        helper = runpy.run_path(str(helper_path))
+
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp).resolve()
+            state_dir = project / ".nova_system_guard"
+            state_dir.mkdir(parents=True, exist_ok=True)
+            scopes = [
+                {
+                    "name": "custom_1",
+                    "title": "Custom Path 1",
+                    "path": project,
+                    "category": "custom",
+                    "priority": "high",
+                    "weight": 42,
+                    "recurse": True,
+                    "extensions": None,
+                }
+            ]
+            runtime = {
+                "watch_mode": "poll",
+                "watch_requested": "auto",
+                "watch_reason": "",
+                "watchdog_available": False,
+                "scope_titles": [scope["title"] for scope in scopes],
+            }
+            results_path = state_dir / "system_guard_results.html"
+            results_path.write_text("stable-results-marker", encoding="utf-8")
+
+            helper["write_bootstrap_artifacts"](project, state_dir, scopes, runtime, phase="scanning")
+
+            self.assertEqual(results_path.read_text(encoding="utf-8"), "stable-results-marker")
+
+    def test_system_guard_poll_probe_only_requests_rescan_on_real_changes(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        helper_path = root / "examples" / "nova_system_guard_helper.py"
+        helper = runpy.run_path(str(helper_path))
+
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp).resolve()
+            startup_dir = project / "startup"
+            startup_dir.mkdir(parents=True, exist_ok=True)
+            watched = startup_dir / "autorun.bat"
+            watched.write_text("@echo off\necho baseline\n", encoding="utf-8")
+            scopes = [
+                {
+                    "name": "custom_startup",
+                    "title": "Custom Startup Path",
+                    "path": startup_dir,
+                    "category": "persistence",
+                    "priority": "critical",
+                    "weight": 90,
+                    "recurse": True,
+                    "extensions": None,
+                }
+            ]
+
+            snapshot = helper["scan_targets"](scopes)
+            self.assertFalse(helper["poll_requires_rescan"](scopes, snapshot))
+
+            time.sleep(0.02)
+            watched.write_text("@echo off\necho changed\n", encoding="utf-8")
+            self.assertTrue(helper["poll_requires_rescan"](scopes, snapshot))
+
+    def test_system_guard_main_reuses_existing_snapshot_without_bootstrap_rescan(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        helper_path = root / "examples" / "nova_system_guard_helper.py"
+        helper = runpy.run_path(str(helper_path))
+
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp).resolve()
+            startup_dir = project / "startup"
+            startup_dir.mkdir(parents=True, exist_ok=True)
+            watched = startup_dir / "autorun.bat"
+            watched.write_text("@echo off\necho baseline\n", encoding="utf-8")
+            state_dir = project / ".nova_system_guard"
+            state_dir.mkdir(parents=True, exist_ok=True)
+
+            with patch.dict(
+                os.environ,
+                {
+                    "NOVA_SYSTEM_GUARD_ROOT": str(project),
+                    "NOVA_SYSTEM_GUARD_INCLUDE_DEFAULTS": "0",
+                    "NOVA_SYSTEM_GUARD_INCLUDE_WINDOWS_INVENTORY": "0",
+                    "NOVA_SYSTEM_GUARD_INCLUDE_PROJECT": "off",
+                    "NOVA_SYSTEM_GUARD_PATHS": str(startup_dir),
+                    "NOVA_SYSTEM_GUARD_ONESHOT": "1",
+                    "NOVA_SYSTEM_GUARD_OPEN": "0",
+                },
+                clear=False,
+            ):
+                scopes = helper["resolve_scope_specs"](project)
+                snapshot = helper["scan_targets"](scopes)
+                event = {
+                    "id": "baseline-1",
+                    "timestamp": snapshot["generated_at"],
+                    "kind": "baseline",
+                    "summary": "Erster Sicherheitsstand wurde aufgenommen.",
+                    "created": [],
+                    "modified": [],
+                    "deleted": [],
+                    "actions": [],
+                    "review": {
+                        "severity": "low",
+                        "score": 5,
+                        "headline": "Baseline",
+                        "summary": "Keine Auffaelligkeiten.",
+                        "findings": [],
+                        "recommendations": [],
+                    },
+                }
+                analysis = helper["build_analysis"]([event], snapshot)
+                (state_dir / "snapshot.json").write_text(json.dumps(snapshot, ensure_ascii=False), encoding="utf-8")
+                (state_dir / "history.json").write_text(
+                    json.dumps({"generated_at": snapshot["generated_at"], "events": [event]}, ensure_ascii=False),
+                    encoding="utf-8",
+                )
+                (state_dir / "system_guard_analysis.json").write_text(json.dumps(analysis, ensure_ascii=False), encoding="utf-8")
+                (state_dir / "latest_status.json").write_text(
+                    json.dumps(
+                        {
+                            "generated_at": snapshot["generated_at"],
+                            "changed": False,
+                            "event": event,
+                            "review": event["review"],
+                            "runtime": {"watch_mode": "poll"},
+                            "tracked_files": snapshot["file_count"],
+                            "scope_count": len(scopes),
+                            "report_path": str(state_dir / "system_guard_report.html"),
+                            "results_path": str(state_dir / "system_guard_results.html"),
+                            "analysis_path": str(state_dir / "system_guard_analysis.json"),
+                            "actions": [],
+                            "status_line": "Baseline gespeichert.",
+                        },
+                        ensure_ascii=False,
+                    ),
+                    encoding="utf-8",
+                )
+                payload = helper["main"]()
+
+            self.assertFalse(payload["changed"])
+            self.assertEqual(payload["phase"], "idle")
+            self.assertIn("Keine neuen Aenderungen erkannt", payload["status_line"])
+            live_body = (state_dir / "system_guard_report.html").read_text(encoding="utf-8")
+            self.assertIn("Bestehende Baseline wiederverwendet", live_body)
+            self.assertIn("Letzter Vollscan", live_body)
+            self.assertIn("Keine neuen Aenderungen seitdem erkannt", live_body)
+            self.assertIn("Keine neuen Aenderungen erkannt", live_body)
+            self.assertNotIn("Initialer Sicherheits-Scan läuft", live_body)
+
+    def test_system_guard_bootstrap_artifacts_include_live_progress(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        helper_path = root / "examples" / "nova_system_guard_helper.py"
+        helper = runpy.run_path(str(helper_path))
+
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp).resolve()
+            state_dir = project / ".nova_system_guard"
+            state_dir.mkdir(parents=True, exist_ok=True)
+            scopes = [
+                {
+                    "name": "downloads_watch",
+                    "title": "Downloads Watch",
+                    "path": project / "downloads",
+                    "category": "downloads",
+                    "priority": "high",
+                    "weight": 75,
+                    "recurse": True,
+                    "extensions": None,
+                }
+            ]
+            runtime = {
+                "watch_mode": "poll",
+                "watch_requested": "auto",
+                "watch_reason": "",
+                "watchdog_available": False,
+                "scope_titles": [scope["title"] for scope in scopes],
+            }
+            progress = {
+                "phase": "scanning",
+                "current_scope_name": "downloads_watch",
+                "current_scope_title": "Downloads Watch",
+                "current_scope_path": str(project / "downloads"),
+                "last_path": str(project / "downloads" / "payload.exe"),
+                "processed_files": 17,
+                "processed_scope_files": 5,
+                "scanned_scopes": 0,
+                "total_scopes": 1,
+            }
+
+            helper["write_bootstrap_artifacts"](
+                project,
+                state_dir,
+                scopes,
+                runtime,
+                progress=progress,
+                phase="scanning",
+            )
+
+            html_body = (state_dir / "system_guard_report.html").read_text(encoding="utf-8")
+            self.assertIn("Downloads Watch", html_body)
+            self.assertIn("payload.exe", html_body)
+            self.assertIn("17", html_body)
+            self.assertIn("5", html_body)
+            self.assertIn("Letzte abgeschlossene Ergebnisseite", html_body)
+
+            status_payload = json.loads((state_dir / "latest_status.json").read_text(encoding="utf-8"))
+            self.assertEqual(status_payload["phase"], "scanning")
+            self.assertEqual(status_payload["progress"]["current_scope_title"], "Downloads Watch")
+            self.assertEqual(status_payload["progress"]["processed_files"], 17)
+            self.assertIn("payload.exe", status_payload["status_line"])
 
     def test_ns_run_system_guard_supports_signature_inventory_and_quarantine(self) -> None:
         root = Path(__file__).resolve().parents[1]
@@ -1894,6 +2126,123 @@ if len(files_lines) == 2:
         self.assertEqual(prompted.output.strip(), "Atheria knows Nova-shell")
         complete_mock.assert_called_once()
         self.assertEqual(complete_mock.call_args.args[0], "what is nova-shell?")
+
+    def test_atheria_als_cycle_persists_chronik_lens_and_voice(self) -> None:
+        quiet_rows = [
+            {
+                "title": "Runtime note",
+                "summary": "agent workflow release",
+                "source": "feed-a",
+                "url": "https://quiet/a",
+            }
+        ]
+        hot_rows = [
+            {
+                "title": "AI data center boom",
+                "summary": "gpu cluster power cooling capacity expansion for agent runtime inference",
+                "source": "feed-a",
+                "url": "https://hot/1",
+            },
+            {
+                "title": "Inference bottleneck risk",
+                "summary": "latency deployment outage risk and runtime orchestration pressure increase",
+                "source": "feed-b",
+                "url": "https://hot/2",
+            },
+            {
+                "title": "Research benchmark surge",
+                "summary": "training inference reasoning paper and model benchmark acceleration",
+                "source": "feed-c",
+                "url": "https://hot/3",
+            },
+            {
+                "title": "Infrastructure investment spike",
+                "summary": "market capex funding data center rack cooling and chip capacity investment",
+                "source": "feed-d",
+                "url": "https://hot/4",
+            },
+        ]
+
+        class DummyLens:
+            def __init__(self) -> None:
+                self.calls: list[tuple[str, str]] = []
+
+            def record(self, stage: str, result: CommandResult, trace_id: str, data_preview: str) -> str:
+                self.calls.append((stage, result.output))
+                return "alssnap123"
+
+            def list(self, limit: int = 10) -> list[dict[str, object]]:
+                return [{"id": "alssnap123", "stage": "atheria.als.cycle"}]
+
+        self.shell.als.lens_store = DummyLens()
+        with patch.object(self.shell.atheria, "train_rows", return_value=1), patch.object(
+            self.shell.federated, "publish_update", return_value={"update_id": "fed123"}
+        ):
+            first = self.shell.als.run_cycle(rows=quiet_rows)
+            second = self.shell.als.run_cycle(rows=hot_rows)
+
+        self.assertFalse(first["triggered"])
+        self.assertTrue(second["triggered"])
+        self.assertEqual(second["lens_snapshot_id"], "alssnap123")
+        self.assertIn("speech_act", second)
+        self.assertEqual(second["speech_act"]["mode"], "alert")
+        self.assertTrue(self.shell.als.audit_log_path.exists())
+        self.assertTrue(self.shell.als.chronik_html_path.exists())
+        self.assertTrue(self.shell.als.resonance_path.exists())
+
+    def test_atheria_als_ask_routes_through_atheria_and_creates_speech_act(self) -> None:
+        class DummyLens:
+            def list(self, limit: int = 10) -> list[dict[str, object]]:
+                return [{"id": "alssnap123", "stage": "atheria.als.cycle"}]
+
+        self.shell.als.lens_store = DummyLens()
+        self.shell.als._append_jsonl(
+            self.shell.als.events_path,
+            {
+                "event_id": "als_event_1",
+                "summary": "Atheria erkennt steigende Laufzeitspannung.",
+                "metrics": {"signal_strength": 0.82, "system_temperature": 0.77, "anomaly_score": 0.21},
+            },
+        )
+        with patch.object(self.shell.ai_runtime, "is_configured", side_effect=lambda provider: provider == "atheria"), patch.object(
+            self.shell.ai_runtime,
+            "get_active_model",
+            side_effect=lambda provider=None: "atheria-core" if provider == "atheria" else "",
+        ), patch.object(
+            self.shell.ai_runtime,
+            "complete_prompt",
+            return_value=CommandResult(
+                output="Atheria answer\n",
+                data={"text": "Atheria answer", "provider": "atheria", "model": "atheria-core"},
+                data_type=PipelineType.OBJECT,
+            ),
+        ):
+            result = self.shell.route('atheria als ask "What is the current resonance?"')
+
+        self.assertIsNone(result.error)
+        payload = json.loads(result.output)
+        self.assertEqual(payload["provider"], "atheria")
+        self.assertEqual(payload["answer"], "Atheria answer")
+        self.assertEqual(payload["speech_act"]["mode"], "dialog")
+        self.assertTrue(self.shell.als.voice_path.exists())
+
+    def test_atheria_als_feedback_trains_and_logs_dialog(self) -> None:
+        with patch.object(self.shell.atheria, "train_rows", return_value=1) as train_mock:
+            result = self.shell.route('atheria als feedback "Focus more on GPU runtime anomalies."')
+
+        self.assertIsNone(result.error)
+        payload = json.loads(result.output)
+        self.assertEqual(payload["inserted_rows"], 1)
+        self.assertEqual(payload["kind"], "feedback")
+        self.assertEqual(payload["speech_act"]["mode"], "feedback")
+        train_mock.assert_called_once()
+        self.assertTrue(self.shell.als.dialog_path.exists())
+
+    def test_cli_main_serve_atheria_als_once_routes_to_runtime(self) -> None:
+        with patch("nova_shell.AtheriaALSRuntime.serve_forever", return_value=0) as serve_mock:
+            exit_code = main(["--no-plugins", "--serve-atheria-als", "--als-once"])
+        self.assertEqual(exit_code, 0)
+        serve_mock.assert_called_once_with(once=True)
 
     def test_tool_register_and_call_with_schema(self) -> None:
         register = self.shell.route(

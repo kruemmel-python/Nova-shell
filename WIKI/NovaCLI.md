@@ -108,6 +108,7 @@ nova-shell --no-plugins -c "ai providers" | ConvertFrom-Json
 | Kommando | Zweck | Direkt testbares Beispiel | Erwartung |
 | --- | --- | --- | --- |
 | `mesh` | Worker und verteilte Ausfuehrung | `mesh start-worker --caps cpu,py` | lokaler Worker startet |
+| `lens` | persistente Shell-Snapshots und Replay ueber `lineage.db` und CAS | `lens last` | JSON des letzten Snapshot-Eintrags |
 | `blob` | verifizierbare Seed-Kapselung, Rehydrierung und Mesh-Transport | `blob pack --text "21 * 2" --type py` | `.nsblob.json` und `inline_seed` werden erzeugt |
 | `synth` | prädiktive Engine-Wahl und delegierte Ausfuehrung | `synth forecast` | JSON-Forecast oder Shift-Empfehlung |
 | `wiki` | Markdown-Wiki nach HTML bauen und serven | `wiki build` | HTML-Site wird erzeugt |
@@ -214,6 +215,23 @@ Erwartung:
 Hinweis:
 `agent` ist absichtlich nicht rein lokal wie `memory` oder `tool`.
 Fuer produktive Tests muss ein funktionierender Provider oder lokaler Modellserver verfuegbar sein.
+
+#### Lens: Shell-Lineage und Replay pruefen
+
+```powershell
+py 2 + 2
+lens last
+lens list 5
+```
+
+Erwartung:
+
+- `py 2 + 2` erzeugt eine normale Shell-Stage
+- `lens last` liefert den juengsten Snapshot mit `output_hash` und `data_hash`
+- `lens list 5` zeigt die letzten gespeicherten Stufen
+
+Wenn du verstehen willst, warum unter `.nova_lens/cas` Hash-Dateien liegen und
+warum das speichereffizient ist, lies [NovaLens](./NovaLens.md).
 
 ### Schnell pruefbar: Deklarative Runtime
 
@@ -448,6 +466,7 @@ Syntax:
 ```text
 atheria status
 atheria init
+atheria als status|configure|cycle|start|stop|ask|feedback|voice|stream ...
 atheria search <query>
 atheria chat <prompt>
 atheria sensor gallery|list|show ...
@@ -457,10 +476,39 @@ atheria evolve status|plan|simulate|apply ...
 Wann benutzen:
 
 - `status` und `init` als erster Integrationscheck
+- `als` fuer residenten Live-Stream, Dialog und Voice
 - `search` fuer lokales Wissens-Querying
 - `chat` fuer Atheria-gestuetzte Interaktion
 - `sensor` fuer Plugin- und Sensorpfade
 - `evolve` fuer adaptive Wissens- und Systemanpassung
+
+#### ALS: residenter Atheria-Live-Pfad
+
+```powershell
+atheria als status
+atheria als configure --topic "AI infrastructure agent runtime" --interval 90 --trigger 0.80
+atheria als cycle
+atheria als start
+atheria als ask "Was heizt die Resonanz gerade auf?"
+atheria als feedback "Gewichte GPU-Runtime-Anomalien hoeher."
+atheria als voice status
+atheria als stream tail --limit 5
+atheria als stop
+```
+
+Erwartung:
+
+- `status` zeigt Laufzustand, Resonanz und Voice-Metadaten
+- `cycle` erzeugt einen einzelnen kontinuierlichen ALS-Zyklus
+- `start` startet den residenten Hintergrundpfad
+- `ask` und `feedback` erzeugen Dialog- und Speech-Act-Eintraege
+- `stream tail` zeigt letzte ALS-Events
+
+Vertiefung:
+
+- [AtheriaContinuousEvolutionAndLiveStream](./AtheriaContinuousEvolutionAndLiveStream.md)
+- [AtheriaVoice](./AtheriaVoice.md)
+- [TutorialAtheriaALS](./TutorialAtheriaALS.md)
 
 ### `agent`
 
@@ -792,6 +840,9 @@ ns.graph .\control.ns
 - [NovaSynthPredictiveEngineShifting](./NovaSynthPredictiveEngineShifting.md)
 - [ZeroCopyFederatedLearningMesh](./ZeroCopyFederatedLearningMesh.md)
 - [MyceliaAtheriaCoEvolution](./MyceliaAtheriaCoEvolution.md)
+- [AtheriaContinuousEvolutionAndLiveStream](./AtheriaContinuousEvolutionAndLiveStream.md)
+- [AtheriaVoice](./AtheriaVoice.md)
+- [AtheriaALSForDevelopers](./AtheriaALSForDevelopers.md)
 - [APIReference](./APIReference.md)
 - [NovaLanguage](./NovaLanguage.md)
 - [NovaRuntime](./NovaRuntime.md)

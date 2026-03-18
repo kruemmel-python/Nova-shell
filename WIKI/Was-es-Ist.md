@@ -124,12 +124,16 @@ Atheria dient unter anderem fuer:
 - Sensoren
 - Guardian- und Review-Pfade
 - Wissens- und Invariantenarbeit im Zusammenspiel mit Agenten und Mesh
+- residenten Live-Stream-Betrieb ueber ALS
+- belegbare Sprach- und Dialogpfade ueber Atheria Voice
 
 Damit ergaenzt Atheria Nova-shell um:
 
 - lokales Wissensgedaechtnis
 - semantischen Langzeitkontext
 - analysierende und reaktive Wissenspfade
+- kontinuierliche Resonanzbeobachtung statt nur manueller Einzelruns
+- eine sprechende, belegbare Interaktionsschicht fuer laufende Erkenntnisarbeit
 
 ## Was Nova-shell heute zusaetzlich besonders macht
 
@@ -185,6 +189,23 @@ Relevante Befehle:
 - `mycelia coevolve run`
 - `mycelia coevolve status`
 
+### Atheria Continuous Evolution & Live Stream
+
+Mit ALS wird Atheria als residenter Live-Prozess betreibbar. Das System ingestiert fortlaufend RSS-, News- und API-Signale, bewertet sie in Resonanzmetriken, schreibt die Kausalspur in Lens und Chronik fort und erzeugt Speech Acts als unmittelbaren Ausgangskanal.
+
+Relevante Befehle:
+
+- `atheria als status`
+- `atheria als configure`
+- `atheria als cycle`
+- `atheria als start`
+- `atheria als stop`
+- `atheria als ask`
+- `atheria als feedback`
+- `atheria als voice status`
+- `atheria als voice speak`
+- `atheria als stream tail`
+
 ### Watch Monitor
 
 Nova-shell kann Projektordner live beobachten, Codeaenderungen analysieren, Diffs protokollieren, optional Tests oder Build-Schritte ausloesen und HTML-Reports laufend aktualisieren.
@@ -205,6 +226,7 @@ blob pack --text "21 * 2" --type py
 synth forecast
 mesh federated status
 mycelia coevolve status research-pop
+atheria als status
 wiki build
 ```
 
@@ -237,7 +259,7 @@ Korrekt ist:
 
 Die treffendste kurze Beschreibung ist:
 
-**Nova-shell ist eine AI-OS-Runtime mit Shell, Nova Language, Graph-Ausfuehrung, Agenten, Atheria, Blob-Seeds und verteilter Control Plane.**
+**Nova-shell ist eine AI-OS-Runtime mit Shell, Nova Language, Graph-Ausfuehrung, Agenten, Atheria inklusive ALS, Blob-Seeds und verteilter Control Plane.**
 
 ## Fazit
 

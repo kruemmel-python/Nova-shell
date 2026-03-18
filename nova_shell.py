@@ -50,6 +50,7 @@ from nova.agents.coevolution import MyceliaAtheriaCoEvolutionLab
 from nova.events.bus import Event as DeclarativeEvent
 from nova.mesh.federated import FederatedLearningMesh
 from nova.mesh.protocol import ExecutorResult, ExecutorTask
+from nova.runtime.atheria_als import AtheriaALSRuntime
 from nova.runtime.blob_seed import INLINE_BLOB_PREFIX, NovaBlobGenerator, NovaBlobSeed
 from nova.runtime.context import CommandExecution as DeclarativeCommandExecution
 from nova.runtime.predictive import PredictiveEngineShifter
@@ -63,7 +64,7 @@ except ImportError:  # pragma: no cover - platform dependent
     readline = None
 
 
-__version__ = "0.8.16"
+__version__ = "0.8.17"
 SIDELOAD_PACKAGE_DIR = "vendor-py"
 RUNTIME_CONFIG_FILE = "nova-shell-runtime.json"
 BRIEFING_REPORT_FILES: tuple[tuple[str, str, str], ...] = (
@@ -5455,6 +5456,16 @@ class NovaShell:
         self.mesh_log_dir = Path(tempfile.gettempdir()) / "nova-shell-mesh-workers"
         self.mesh_log_dir.mkdir(parents=True, exist_ok=True)
         self._wiki_site_server: NovaWikiSiteServer | None = None
+        self.als = AtheriaALSRuntime(
+            self.atheria.storage_root,
+            self.runtime_config,
+            atheria_runtime=self.atheria,
+            ai_runtime=self.ai_runtime,
+            lens_store=self.lens,
+            federated=self.federated,
+            event_publisher=lambda event_name, payload, broadcast=False: self._publish_event(event_name, payload, broadcast=broadcast),
+            default_feed_factory=self._default_briefing_feeds,
+        )
 
         self.commands: dict[str, Callable[[str, str, Any], CommandResult]] = {
             "py": self._run_python,
@@ -7898,6 +7909,225 @@ class NovaShell:
                 source = pipeline_input.strip()
         return source, source_label, plan_payload, force, reason, None
 
+    def _parse_atheria_als_options(
+        self,
+        parts: list[str],
+        *,
+        start_index: int,
+        pipeline_input: str,
+        pipeline_data: Any,
+    ) -> tuple[dict[str, Any], list[dict[str, str]] | None, CommandResult | None]:
+        updates: dict[str, Any] = {}
+        feed_rows: list[dict[str, str]] | None = None
+        i = start_index
+        while i < len(parts):
+            token = parts[i]
+            if token == "--topic" and i + 1 < len(parts):
+                updates["topic"] = parts[i + 1]
+                i += 2
+                continue
+            if token == "--feeds" and i + 1 < len(parts):
+                updates["feeds"] = parts[i + 1]
+                i += 2
+                continue
+            if token == "--interval" and i + 1 < len(parts):
+                updates["interval_seconds"] = _safe_float(parts[i + 1], 90.0)
+                i += 2
+                continue
+            if token == "--trigger" and i + 1 < len(parts):
+                updates["trigger_threshold"] = _safe_float(parts[i + 1], 0.80)
+                i += 2
+                continue
+            if token == "--anomaly-threshold" and i + 1 < len(parts):
+                updates["anomaly_threshold"] = _safe_float(parts[i + 1], 0.72)
+                i += 2
+                continue
+            if token == "--audio" and i + 1 < len(parts):
+                updates.setdefault("voice", {})["audio_enabled"] = parts[i + 1].strip().lower() in {"1", "true", "on", "yes"}
+                i += 2
+                continue
+            if token == "--voice" and i + 1 < len(parts):
+                updates.setdefault("voice", {})["voice_name"] = parts[i + 1]
+                i += 2
+                continue
+            if token == "--broadcast" and i + 1 < len(parts):
+                updates.setdefault("federated", {})["broadcast"] = parts[i + 1].strip().lower() in {"1", "true", "on", "yes"}
+                i += 2
+                continue
+            if token == "--input" and i + 1 < len(parts):
+                try:
+                    loaded = self._load_structured_payload(parts[i + 1])
+                except Exception as exc:
+                    return {}, None, CommandResult(output="", error=f"invalid als input payload: {exc}")
+                feed_rows = loaded if isinstance(loaded, list) else loaded.get("items") if isinstance(loaded, dict) else None
+                if not isinstance(feed_rows, list):
+                    return {}, None, CommandResult(output="", error="ALS input payload must be a list or an object with items")
+                i += 2
+                continue
+            if token == "--file" and i + 1 < len(parts):
+                source_path = self._resolve_path(parts[i + 1])
+                if not source_path.exists() or not source_path.is_file():
+                    return {}, None, CommandResult(output="", error=f"ALS input file not found: {parts[i + 1]}")
+                try:
+                    loaded = self._load_structured_payload(source_path.read_text(encoding="utf-8"))
+                except Exception as exc:
+                    return {}, None, CommandResult(output="", error=f"invalid ALS input file: {exc}")
+                feed_rows = loaded if isinstance(loaded, list) else loaded.get("items") if isinstance(loaded, dict) else None
+                if not isinstance(feed_rows, list):
+                    return {}, None, CommandResult(output="", error="ALS input file must contain a list or an object with items")
+                i += 2
+                continue
+            return {}, None, CommandResult(output="", error=f"unknown atheria als option: {token}")
+        if feed_rows is None:
+            payload_source = pipeline_data
+            if payload_source is None and pipeline_input.strip():
+                with contextlib.suppress(Exception):
+                    payload_source = self._load_structured_payload(pipeline_input)
+            candidate_rows = payload_source if isinstance(payload_source, list) else payload_source.get("items") if isinstance(payload_source, dict) else None
+            if isinstance(candidate_rows, list):
+                feed_rows = candidate_rows
+        return updates, feed_rows, None
+
+    def _atheria_als_launch_command(self, *, once: bool = False) -> list[str]:
+        if getattr(sys, "frozen", False):
+            command = [sys.executable, "--serve-atheria-als"]
+        elif Path(sys.executable).resolve().name.lower().startswith("python"):
+            command = [sys.executable, str(Path(__file__).resolve()), "--serve-atheria-als"]
+        else:
+            command = [sys.executable, "--serve-atheria-als"]
+        if once:
+            command.append("--als-once")
+        return command
+
+    def _run_atheria_als(self, parts: list[str], pipeline_input: str, pipeline_data: Any) -> CommandResult:
+        if len(parts) < 2:
+            return CommandResult(output="", error="usage: atheria als status|configure|cycle|start|stop|ask|feedback|voice|stream ...")
+        action = parts[1]
+        if action == "status":
+            payload = self.als.status_payload()
+            return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+        if action == "configure":
+            updates, _feed_rows, error = self._parse_atheria_als_options(parts, start_index=2, pipeline_input=pipeline_input, pipeline_data=pipeline_data)
+            if error is not None:
+                return error
+            payload = self.als.configure(updates)
+            return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+        if action == "cycle":
+            updates, feed_rows, error = self._parse_atheria_als_options(parts, start_index=2, pipeline_input=pipeline_input, pipeline_data=pipeline_data)
+            if error is not None:
+                return error
+            if updates:
+                self.als.configure(updates)
+            try:
+                payload = self.als.run_cycle(rows=feed_rows)
+            except Exception as exc:
+                return CommandResult(output="", error=str(exc))
+            return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+        if action == "start":
+            updates, _feed_rows, error = self._parse_atheria_als_options(parts, start_index=2, pipeline_input=pipeline_input, pipeline_data=pipeline_data)
+            if error is not None:
+                return error
+            if updates:
+                self.als.configure(updates)
+            if self.als.is_running():
+                payload = self.als.status_payload()
+                return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+            command = self._atheria_als_launch_command(once=False)
+            stdout_path = self.als.base_dir / "als.stdout.log"
+            stderr_path = self.als.base_dir / "als.stderr.log"
+            stdout_path.parent.mkdir(parents=True, exist_ok=True)
+            creationflags = 0
+            kwargs: dict[str, Any] = {}
+            if os.name == "nt":
+                creationflags = int(getattr(subprocess, "DETACHED_PROCESS", 0x00000008)) | int(getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0x00000200))
+            else:
+                kwargs["start_new_session"] = True
+            with stdout_path.open("a", encoding="utf-8") as stdout_handle, stderr_path.open("a", encoding="utf-8") as stderr_handle:
+                process = subprocess.Popen(
+                    command,
+                    stdout=stdout_handle,
+                    stderr=stderr_handle,
+                    cwd=str(self.cwd),
+                    creationflags=creationflags,
+                    **kwargs,
+                )
+            payload = {
+                "started": True,
+                "pid": process.pid,
+                "command": command,
+                "stdout_log": str(stdout_path),
+                "stderr_log": str(stderr_path),
+                "status": self.als.status_payload(),
+            }
+            return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+        if action == "stop":
+            if not self.als.is_running():
+                payload = self.als.status_payload()
+                payload["requested_stop"] = False
+                return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+            payload = self.als.request_stop()
+            deadline = time.time() + 10.0
+            while time.time() < deadline and self.als.is_running():
+                time.sleep(0.25)
+            if self.als.is_running():
+                pid = _safe_int(self.als.pid_path.read_text(encoding="utf-8", errors="replace").strip(), 0) if self.als.pid_path.exists() else 0
+                if pid > 0 and os.name == "nt":
+                    subprocess.run(["taskkill", "/PID", str(pid), "/T", "/F"], capture_output=True, text=True, check=False)
+                elif pid > 0:
+                    with contextlib.suppress(Exception):
+                        os.kill(pid, 15)
+            payload["status"] = self.als.status_payload()
+            return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+        if action == "ask":
+            prompt = " ".join(parts[2:]).strip()
+            if not prompt:
+                return CommandResult(output="", error="usage: atheria als ask <question>")
+            try:
+                payload = self.als.ask(prompt)
+            except Exception as exc:
+                return CommandResult(output="", error=str(exc))
+            return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+        if action == "feedback":
+            feedback = " ".join(parts[2:]).strip()
+            if not feedback:
+                return CommandResult(output="", error="usage: atheria als feedback <text>")
+            try:
+                payload = self.als.feedback(feedback)
+            except Exception as exc:
+                return CommandResult(output="", error=str(exc))
+            return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+        if action == "voice":
+            if len(parts) < 3:
+                return CommandResult(output="", error="usage: atheria als voice status|last|speak ...")
+            voice_action = parts[2]
+            if voice_action == "status":
+                payload = self.als.voice_status()
+                return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+            if voice_action == "last":
+                payload = self.als.last_voice()
+                return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+            if voice_action == "speak":
+                text = " ".join(parts[3:]).strip()
+                if not text:
+                    return CommandResult(output="", error="usage: atheria als voice speak <text>")
+                payload = self.als.voice_speak(text)
+                return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+            return CommandResult(output="", error="usage: atheria als voice status|last|speak ...")
+        if action == "stream":
+            if len(parts) < 3 or parts[2] != "tail":
+                return CommandResult(output="", error="usage: atheria als stream tail [--limit n]")
+            limit = 10
+            i = 3
+            while i < len(parts):
+                if parts[i] == "--limit" and i + 1 < len(parts):
+                    limit = max(1, _safe_int(parts[i + 1], 10))
+                    i += 2
+                    continue
+                return CommandResult(output="", error=f"unknown atheria als stream option: {parts[i]}")
+            payload = self.als.tail_events(limit=limit)
+            return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+        return CommandResult(output="", error="usage: atheria als status|configure|cycle|start|stop|ask|feedback|voice|stream ...")
+
     def _deep_merge_payload(self, base: Any, patch: Any) -> Any:
         if isinstance(base, dict) and isinstance(patch, dict):
             merged = dict(base)
@@ -8604,7 +8834,7 @@ class NovaShell:
     def _run_atheria(self, args: str, pipeline_input: str, pipeline_data: Any) -> CommandResult:
         parts = split_command(args)
         if not parts:
-            return CommandResult(output="", error="usage: atheria status|init|sensor|guardian|train|search|chat|evolve ...")
+            return CommandResult(output="", error="usage: atheria status|init|als|sensor|guardian|train|search|chat|evolve ...")
 
         action = parts[0]
 
@@ -8624,6 +8854,9 @@ class NovaShell:
                 return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
             payload = self.atheria.status_payload()
             return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+
+        if action == "als":
+            return self._run_atheria_als(parts, pipeline_input, pipeline_data)
 
         if action == "evolve":
             if len(parts) < 2:
@@ -9176,7 +9409,7 @@ class NovaShell:
                 system_prompt=system_prompt,
             )
 
-        return CommandResult(output="", error="usage: atheria status|init|sensor|guardian|train|search|chat|evolve ...")
+        return CommandResult(output="", error="usage: atheria status|init|als|sensor|guardian|train|search|chat|evolve ...")
 
     def _run_tool(self, args: str, pipeline_input: str, pipeline_data: Any) -> CommandResult:
         parts = split_command(args)
@@ -12465,6 +12698,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--worker-cert", default="", help="TLS certificate path for --serve-worker")
     parser.add_argument("--worker-key", default="", help="TLS private key path for --serve-worker")
     parser.add_argument("--worker-ca", default="", help="optional CA bundle path for --serve-worker")
+    parser.add_argument("--serve-atheria-als", action="store_true", help="run the Atheria ALS resident loop")
+    parser.add_argument("--als-once", action="store_true", help="run a single ALS cycle and exit with --serve-atheria-als")
     args = parser.parse_args(argv)
 
     if args.version:
@@ -12486,6 +12721,9 @@ def main(argv: list[str] | None = None) -> int:
             cafile=args.worker_ca or None,
         )
         return worker_server.serve(args.worker_host, args.worker_port)
+
+    if args.serve_atheria_als:
+        return shell.als.serve_forever(once=bool(args.als_once))
 
     if args.command is not None:
         result = shell.route(args.command)

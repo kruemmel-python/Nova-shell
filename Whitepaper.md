@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-Nova-shell ist mit Version `0.8.15` keine reine polyglotte Compute-Runtime mehr. Das System ist heute eine kombinierte Plattform aus:
+Nova-shell ist mit Version `0.8.17` keine reine polyglotte Compute-Runtime mehr. Das System ist heute eine kombinierte Plattform aus:
 
 - interaktiver Shell
 - deklarativer Sprache (`.ns`)
@@ -238,6 +238,16 @@ Atheria ist die lokale Knowledge- und Lernschicht von Nova-shell. Sie dient unte
 
 Atheria ist im aktuellen Nova-shell-Stand der wichtigste Hebel fuer lokale Wissensnutzung, wiederverwendbare Analyse und projektnahe AI-Unterstuetzung.
 
+Neu hinzugekommen ist mit dem `Atheria Continuous Evolution & Live Stream`-Modell (ALS) eine resident laufende Betriebsform fuer Atheria. Damit arbeitet Atheria nicht mehr nur als punktuell gestartete Analyse- oder Report-Engine, sondern als kontinuierliche Erkenntnisinstanz mit:
+
+- dauerhaftem Feed- und Signal-Ingest
+- Resonanzbewertung pro Ereignis
+- Triggern bei beschleunigten Trend- oder Anomalielagen
+- kontinuierlicher Fortschreibung von Lens-Lineage und Aion-Chronik
+- dialogischer Sprachschicht als primaerem kognitiven Ausgangskanal
+
+ALS ist strategisch wichtig, weil es Atheria von einer lokalen Wissensbibliothek in Richtung einer laufenden epistemischen Infrastruktur verschiebt.
+
 ### 5.3 Agent Runtime
 
 Die Agent Runtime fuehrt Aufgaben mit Modell-, Tool- und Memory-Kontext aus. Dabei unterstuetzt sie:
@@ -363,6 +373,55 @@ Dazu gehoeren:
 
 Der Projektmonitor ist ein gutes Beispiel fuer den Plattformansatz: Eine `.ns`-Datei kann in einen Projektordner gelegt werden und ueberwacht danach Aenderungen, Hotspots, Diffs, Automation und AI-Review in einer laufend aktualisierten HTML-Ausgabe.
 
+### 8.1 Lens als operative Lineage-Schicht
+
+Ein besonderer Teil dieser Beobachtbarkeit ist `Nova Lens`.
+Lens speichert Shell- und Stage-Verlaeufe nicht nur als lose Logs, sondern als
+persistente, replaybare Snapshots mit content-addressable Payloads.
+
+Konkret bedeutet das:
+
+- Metadaten liegen in `lineage.db`
+- Outputs und Datenvorschauen liegen im CAS (`.nova_lens/cas`)
+- identische Inhalte werden ueber ihren Hash dedupliziert
+- gespeicherte Stufen koennen spaeter ueber `lens show` und `lens replay`
+  wieder gelesen werden
+
+Fuer die Plattform ist das relevant, weil Beobachtbarkeit damit nicht nur
+"Metrik und Log" bedeutet, sondern nachvollziehbare operative Geschichte.
+
+### 8.2 Optics of Sovereignty
+
+Lens ist nicht nur eine technische Hilfsstruktur fuer Replay.
+Es steht auch fuer eine tiefere Designhaltung von Nova-shell.
+
+`Optics of Sovereignty` meint in diesem Zusammenhang:
+
+- das System soll seine eigene Kausalspur lokal lesbar halten
+- operative Wahrheit soll nicht ausschliesslich in externen Log- oder
+  Telemetriesystemen liegen
+- Speicher, Analyse und Rekonstruktion sollen unter eigener Plattformkontrolle
+  bleiben
+
+Der Mehrwert liegt in drei Punkten:
+
+1. Sichtbarkeit statt Black Box
+   Nova-shell bewahrt nicht nur den letzten Zustand, sondern eine adressierbare
+   Spur der relevanten Stufen.
+
+2. Effizienz als Autonomie
+   Die CAS-Speicherung reduziert Redundanz und macht langfristige
+   Verlaufsspeicherung praktikabler.
+
+3. Erkenntnisfaehigkeit im Betrieb
+   Ein System, das seine operative Geschichte lokal, kompakt und replaybar
+   sichern kann, ist fuer Entwickler, Betreiber und Auditoren wesentlich besser
+   beherrschbar.
+
+Lens wird damit zu einem kleinen, aber strategisch wichtigen Baustein fuer
+eine Plattform, die nicht nur handelt, sondern ihre Handlungsreste lesbar
+konserviert.
+
 ## 9. Release- und Supply-Chain-Modell
 
 Nova-shell ist auf nachvollziehbare Distribution ausgelegt.
@@ -378,7 +437,7 @@ Der aktuelle Release-Stack umfasst im Projekt:
 - SHA-256-Checksums
 - GitHub Release-Auslieferung
 
-Fuer `0.8.15` ist der aktuelle verifizierte oeffentliche Releasepfad insbesondere der Windows-Core-Stack mit gruener Test- und Smoke-Test-Kette.
+Fuer `0.8.17` ist der aktuelle verifizierte oeffentliche Releasepfad insbesondere der Windows-Core-Stack mit gruener Test- und Smoke-Test-Kette.
 
 Wesentlich ist dabei nicht nur das Paketformat, sondern die Reproduzierbarkeit:
 
@@ -408,13 +467,24 @@ Mit Atheria, Agenten, Blob-Seeds und Event-Flows laesst sich lokales oder hybrid
 
 Das ist wirtschaftlich besonders dort sinnvoll, wo Wissen im Unternehmen verbleiben, aber trotzdem in operative Prozesse eingebunden werden soll.
 
-### 10.4 Verteilte Wissens- und Invariantenmodelle
+### 10.4 Kontinuierliche Erkenntnis- und Dialogsysteme
+
+Mit ALS kann Atheria als residenter Erkenntnisprozess betrieben werden, der globale Signale laufend bewertet, Hypothesen fortschreibt und ueber eine nachvollziehbare Voice-Schicht mit dem Architekten in Dialog tritt.
+
+Der wirtschaftliche Nutzen liegt hier weniger in einmaligen Reports als in:
+
+- frueherer Erkennung von Themenbeschleunigungen
+- kontinuierlicher Lagepflege statt manueller Sammelreports
+- besserer Nutzbarkeit lokaler Wissenssysteme im Tagesbetrieb
+- hoehere operative Souveraenitaet durch lokal kontrollierte Kausalspur
+
+### 10.5 Verteilte Wissens- und Invariantenmodelle
 
 Federated Mesh und Zero-Copy-Pfade ermoeglichen verteiltes Lernen und signierten Wissensaustausch.
 
 Das reduziert in geeigneten Szenarien Bandbreiten-, Synchronisations- und Integrationskosten.
 
-### 10.5 Forschungs- und Evolutionssysteme
+### 10.6 Forschungs- und Evolutionssysteme
 
 Mit Mycelia-Co-Evolution, Forecasting und Atheria-Metriken kann Nova-shell als experimentelle Plattform fuer selbstoptimierende Agenten- und Analysepfade genutzt werden.
 
@@ -456,13 +526,14 @@ Diese Abgrenzung ist wichtig, damit Nova-shell als serioese Plattform und nicht 
 
 ## 13. Schlussfolgerung
 
-Nova-shell `0.8.15` ist heute eine wesentlich weiter entwickelte Plattform als die fruehe Beschreibung einer "Unified Compute Runtime".
+Nova-shell `0.8.17` ist heute eine wesentlich weiter entwickelte Plattform als die fruehe Beschreibung einer "Unified Compute Runtime".
 
 Der aktuelle Kernmehrwert liegt in der Kombination:
 
 - deklarative Nova Language
 - polyglotte Execution Layer
 - Agent- und Atheria-Runtime
+- residenter ALS-Live-Stream mit Voice und Chronik-Lineage
 - Event- und Watch-getriebene Betriebslogik
 - Mesh, Federated Learning und Control Plane
 - verifizierbare Blob-Seeds

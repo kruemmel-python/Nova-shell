@@ -10,6 +10,7 @@ Sie deckt Telemetrie, Statusabfragen, Backups, Replay, Restore und Laufzeitdiagn
 - Traces und Laufzeitereignisse fuer Flows, Services und Agenten
 - Alerts und Diagnosepfade fuer Fehler und Regressionen
 - Telemetrieexport ueber CLI und API
+- Lens-Lineage und Replay fuer klassische Shell-Stages
 - Backups, Restore und Snapshot-Validierung
 - Failpoints, Lasttests und Recovery-gestuetzte Betriebspruefung
 
@@ -70,6 +71,18 @@ Das ist der direkteste Betriebsweg, um:
 
 Die erzeugten Artefakte liegen unter `.nova_project_monitor/`.
 
+### Lens-Snapshots im klassischen Shell-Pfad pruefen
+
+```powershell
+py 2 + 2
+lens last
+lens list 5
+```
+
+Das ist der schnellste Weg, um die persistente Shell-Lineage zu sehen. Die
+genauen Speicherstrukturen unter `.nova_lens/lineage.db` und `.nova_lens/cas`
+sind in [NovaLens](./NovaLens.md) erklaert.
+
 ## Typische Betriebsfragen
 
 ### Wo sehe ich, ob die Runtime gesund wirkt?
@@ -90,6 +103,7 @@ Ueber Snapshot- und Control-Plane-Pfade. Fuer umfangreichere Release- oder Betri
 ## Verwandte Seiten
 
 - [NovaRuntime](./NovaRuntime.md)
+- [NovaLens](./NovaLens.md)
 - [RuntimeAndControlPlane](./RuntimeAndControlPlane.md)
 - [APIReference](./APIReference.md)
 - [Troubleshooting](./Troubleshooting.md)

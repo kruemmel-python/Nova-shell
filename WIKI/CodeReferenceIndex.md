@@ -1113,6 +1113,7 @@ Klassen:
 - `GCounterCRDT`
 - `LWWMapCRDT`
 - `NovaLensStore`
+- [NovaLens](./NovaLens.md): Entwicklererklaerung fuer `lineage.db`, `cas/` und effiziente Snapshot-Speicherung
 - `BaseAtheriaSensorPlugin`
 - `AtheriaSensorRegistry`
 - `NovaComputeJIT`

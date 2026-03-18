@@ -109,6 +109,8 @@ Praktische Nutzungen:
 - lokale oder hybride AI-Analyse ohne ausschliessliche Cloud-Abhaengigkeit
 - Prompt-, Memory- und Tool-basierte Agentenablaeufe
 - projekt- oder teambezogene Wissensraeume
+- residenter Atheria-ALS-Betrieb fuer kontinuierliche Themen- und Signalerkennung
+- lokale Voice- und Dialogpfade fuer belegbare Lagekommunikation
 
 Wirtschaftlicher Nutzen:
 
@@ -116,6 +118,8 @@ Wirtschaftlicher Nutzen:
 - weniger Such- und Kontextwechselkosten
 - schnellere Einarbeitung in komplexe Projekte
 - geringere Abhaengigkeit von isolierten Einzeltools
+- weniger manuelle Lageberichte und Ad-hoc-Recherche
+- schnellere Weitergabe von Erkenntnissen an technische oder strategische Entscheider
 
 Relevante Nova-shell-Bereiche:
 
@@ -156,6 +160,8 @@ Praktische Nutzungen:
 - Trend-Radar- und Morning-Briefing-Workflows
 - Frueherkennung von Themenverschiebungen
 - HTML- und JSON-Reports fuer wiederkehrende Lagebilder
+- kontinuierliche ALS-Streams statt rein intervallbasierter Einmal-Reports
+- dialogische Rueckfragen an Atheria mit lokaler Evidenzkette
 
 Wirtschaftlicher Nutzen:
 
@@ -261,6 +267,7 @@ Beispiele:
 - schnellere Umsetzung interner Tools
 - weniger Medienbrueche zwischen Analyse, Automation und Dokumentation
 - bessere Wiederverwendung von Projektroutinen
+- bessere Anschlussfaehigkeit zwischen laufender Signalerkennung und operativem Handeln
 
 ### Indirekter Mehrwert
 
@@ -318,3 +325,5 @@ Die Seite behauptet bewusst **nicht**, dass Nova-shell ohne weitere Einfuehrung 
 - [NovaMesh.md](NovaMesh.md)
 - [WatchMonitor.md](WatchMonitor.md)
 - [NSBlobGenerator.md](NSBlobGenerator.md)
+- [AtheriaContinuousEvolutionAndLiveStream.md](AtheriaContinuousEvolutionAndLiveStream.md)
+- [AtheriaVoice.md](AtheriaVoice.md)

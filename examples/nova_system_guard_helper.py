@@ -29,6 +29,8 @@ MAX_HISTORY = 120
 MAX_FILE_BYTES = 1024 * 1024
 MAX_DIFF_HUNKS = 18
 MAX_HUNK_LINES = 18
+LIVE_REPORT_NAME = "system_guard_report.html"
+RESULTS_REPORT_NAME = "system_guard_results.html"
 WATCHDOG_AVAILABLE = bool(importlib.util.find_spec("watchdog"))
 
 PROJECT_EXCLUDED_DIRS = {
@@ -738,6 +740,7 @@ def snapshot_entry(scope: dict[str, Any], path: pathlib.Path) -> dict[str, Any] 
         stat = path.stat()
         digest = file_sha256(path)
         rel_path = path.relative_to(scope_root).as_posix()
+        modified_ns = getattr(stat, "st_mtime_ns", int(stat.st_mtime * 1_000_000_000))
     except OSError:
         return None
     text = None
@@ -773,6 +776,7 @@ def snapshot_entry(scope: dict[str, Any], path: pathlib.Path) -> dict[str, Any] 
         "kind": kind,
         "size": stat.st_size,
         "modified_at": stat.st_mtime,
+        "modified_ns": modified_ns,
         "sha256": digest,
         "line_count": len(lines),
         "text_state": text_state,
@@ -793,6 +797,7 @@ def snapshot_inventory_entry(scope: dict[str, Any], record: dict[str, Any]) -> d
     risk_score, risk_reasons = compute_inventory_risk(scope, record, kind)
     command = str(record.get("command") or "")
     digest = hashlib.sha256((record.get("relative_path", "") + "|" + command).encode("utf-8")).hexdigest()
+    modified_ns = time.time_ns()
     return {
         "scope_name": scope["name"],
         "scope_title": scope["title"],
@@ -807,6 +812,7 @@ def snapshot_inventory_entry(scope: dict[str, Any], record: dict[str, Any]) -> d
         "kind": kind,
         "size": len(command.encode("utf-8")),
         "modified_at": time.time(),
+        "modified_ns": modified_ns,
         "sha256": digest,
         "line_count": int(record.get("line_count") or 0),
         "text_state": "text",
@@ -827,13 +833,34 @@ def snapshot_inventory_entry(scope: dict[str, Any], record: dict[str, Any]) -> d
     }
 
 
-def scan_scope(scope: dict[str, Any]) -> tuple[dict[str, dict[str, Any]], dict[str, int], dict[str, int]]:
+def scan_scope(
+    scope: dict[str, Any],
+    *,
+    progress_callback: Any = None,
+    progress_state: dict[str, Any] | None = None,
+) -> tuple[dict[str, dict[str, Any]], dict[str, int], dict[str, int]]:
     if scope.get("scan_mode") == "inventory":
         files: dict[str, dict[str, Any]] = {}
         extension_counts: Counter[str] = Counter()
         kind_counts: Counter[str] = Counter()
         records = collect_scheduled_tasks() if scope.get("name") == "scheduled_tasks" else collect_run_keys()
         for record in records:
+            if progress_callback is not None and progress_state is not None:
+                progress_state["processed_files"] = int(progress_state.get("processed_files", 0)) + 1
+                progress_state["processed_scope_files"] = int(progress_state.get("processed_scope_files", 0)) + 1
+                progress_callback(
+                    {
+                        "phase": "scanning",
+                        "current_scope_name": scope.get("name", ""),
+                        "current_scope_title": scope.get("title", ""),
+                        "current_scope_path": str(scope.get("path", "")),
+                        "last_path": str(record.get("path") or record.get("relative_path") or record.get("name") or ""),
+                        "processed_files": progress_state["processed_files"],
+                        "processed_scope_files": progress_state["processed_scope_files"],
+                        "scanned_scopes": progress_state.get("scanned_scopes", 0),
+                        "total_scopes": progress_state.get("total_scopes", 0),
+                    }
+                )
             entry = snapshot_inventory_entry(scope, record)
             key = f"{scope['name']}::{entry['relative_path']}"
             files[key] = entry
@@ -859,6 +886,22 @@ def scan_scope(scope: dict[str, Any]) -> tuple[dict[str, dict[str, Any]], dict[s
             continue
         if not scope_matches_file(scope, path):
             continue
+        if progress_callback is not None and progress_state is not None:
+            progress_state["processed_files"] = int(progress_state.get("processed_files", 0)) + 1
+            progress_state["processed_scope_files"] = int(progress_state.get("processed_scope_files", 0)) + 1
+            progress_callback(
+                {
+                    "phase": "scanning",
+                    "current_scope_name": scope.get("name", ""),
+                    "current_scope_title": scope.get("title", ""),
+                    "current_scope_path": str(scope.get("path", "")),
+                    "last_path": str(path),
+                    "processed_files": progress_state["processed_files"],
+                    "processed_scope_files": progress_state["processed_scope_files"],
+                    "scanned_scopes": progress_state.get("scanned_scopes", 0),
+                    "total_scopes": progress_state.get("total_scopes", 0),
+                }
+            )
         entry = snapshot_entry(scope, path)
         if not entry:
             continue
@@ -869,13 +912,34 @@ def scan_scope(scope: dict[str, Any]) -> tuple[dict[str, dict[str, Any]], dict[s
     return files, dict(extension_counts), dict(kind_counts)
 
 
-def scan_targets(scopes: list[dict[str, Any]]) -> dict[str, Any]:
+def scan_targets(scopes: list[dict[str, Any]], *, progress_callback: Any = None) -> dict[str, Any]:
     files: dict[str, dict[str, Any]] = {}
     extension_counts: Counter[str] = Counter()
     kind_counts: Counter[str] = Counter()
     scope_counts: dict[str, dict[str, Any]] = {}
-    for scope in scopes:
-        scope_files, scope_exts, scope_kinds = scan_scope(scope)
+    progress_state = {
+        "processed_files": 0,
+        "processed_scope_files": 0,
+        "scanned_scopes": 0,
+        "total_scopes": len(scopes),
+    }
+    for index, scope in enumerate(scopes, start=1):
+        progress_state["processed_scope_files"] = 0
+        if progress_callback is not None:
+            progress_callback(
+                {
+                    "phase": "scanning",
+                    "current_scope_name": scope.get("name", ""),
+                    "current_scope_title": scope.get("title", ""),
+                    "current_scope_path": str(scope.get("path", "")),
+                    "last_path": "",
+                    "processed_files": progress_state["processed_files"],
+                    "processed_scope_files": 0,
+                    "scanned_scopes": index - 1,
+                    "total_scopes": progress_state["total_scopes"],
+                }
+            )
+        scope_files, scope_exts, scope_kinds = scan_scope(scope, progress_callback=progress_callback, progress_state=progress_state)
         files.update(scope_files)
         for key, value in scope_exts.items():
             extension_counts[key] += int(value)
@@ -889,6 +953,7 @@ def scan_targets(scopes: list[dict[str, Any]]) -> dict[str, Any]:
             "exists": pathlib.Path(scope["path"]).exists(),
             "file_count": len(scope_files),
         }
+        progress_state["scanned_scopes"] = index
     return {
         "generated_at": time.time(),
         "file_count": len(files),
@@ -897,6 +962,118 @@ def scan_targets(scopes: list[dict[str, Any]]) -> dict[str, Any]:
         "kind_counts": dict(sorted(kind_counts.items())),
         "scope_counts": scope_counts,
     }
+
+
+def inventory_probe_signature(scope: dict[str, Any]) -> dict[str, Any]:
+    records = collect_scheduled_tasks() if scope.get("name") == "scheduled_tasks" else collect_run_keys()
+    normalized = [
+        {
+            "relative_path": str(record.get("relative_path") or ""),
+            "command": str(record.get("command") or ""),
+            "state": str(record.get("state") or ""),
+            "author": str(record.get("author") or ""),
+            "principal": str(record.get("principal") or ""),
+            "key_path": str(record.get("key_path") or ""),
+        }
+        for record in records
+    ]
+    normalized.sort(key=lambda item: (item["relative_path"], item["command"], item["key_path"], item["state"]))
+    payload = json.dumps(normalized, ensure_ascii=False, separators=(",", ":"))
+    return {
+        "mode": "inventory",
+        "count": len(normalized),
+        "digest": hashlib.sha256(payload.encode("utf-8")).hexdigest(),
+    }
+
+
+def file_probe_signature(scope: dict[str, Any]) -> dict[str, Any]:
+    root = pathlib.Path(scope["path"])
+    items: list[tuple[str, int, int]] = []
+    if not root.exists():
+        return {"mode": "files", "count": 0, "items": items}
+    iterator = root.rglob("*") if scope.get("recurse", True) else root.iterdir()
+    for path in iterator:
+        if not path.is_file():
+            continue
+        try:
+            rel = path.relative_to(root)
+        except Exception:
+            continue
+        if should_skip_path(scope, rel):
+            continue
+        if not scope_matches_file(scope, path):
+            continue
+        try:
+            stat = path.stat()
+        except OSError:
+            continue
+        modified_ns = getattr(stat, "st_mtime_ns", int(stat.st_mtime * 1_000_000_000))
+        items.append((rel.as_posix(), int(stat.st_size), int(modified_ns)))
+    items.sort(key=lambda item: item[0])
+    return {"mode": "files", "count": len(items), "items": items}
+
+
+def build_poll_signature(scopes: list[dict[str, Any]]) -> dict[str, Any]:
+    signatures: dict[str, Any] = {}
+    for scope in scopes:
+        if scope.get("scan_mode") == "inventory":
+            signatures[str(scope.get("name") or "")] = inventory_probe_signature(scope)
+        else:
+            signatures[str(scope.get("name") or "")] = file_probe_signature(scope)
+    return signatures
+
+
+def snapshot_poll_signature(snapshot: dict[str, Any], scopes: list[dict[str, Any]]) -> dict[str, Any]:
+    scope_map: dict[str, Any] = {}
+    files = snapshot.get("files", {}) or {}
+    by_scope: dict[str, list[dict[str, Any]]] = {}
+    for entry in files.values():
+        scope_name = str(entry.get("scope_name") or "")
+        by_scope.setdefault(scope_name, []).append(entry)
+    for scope in scopes:
+        scope_name = str(scope.get("name") or "")
+        entries = by_scope.get(scope_name, [])
+        if scope.get("scan_mode") == "inventory":
+            normalized = [
+                {
+                    "relative_path": str(entry.get("relative_path") or ""),
+                    "command": str(entry.get("command") or ""),
+                    "state": str(entry.get("task_state") or ""),
+                    "author": str(entry.get("task_author") or ""),
+                    "principal": str(entry.get("task_principal") or ""),
+                    "key_path": str(entry.get("registry_key_path") or ""),
+                }
+                for entry in entries
+            ]
+            normalized.sort(key=lambda item: (item["relative_path"], item["command"], item["key_path"], item["state"]))
+            payload = json.dumps(normalized, ensure_ascii=False, separators=(",", ":"))
+            scope_map[scope_name] = {
+                "mode": "inventory",
+                "count": len(normalized),
+                "digest": hashlib.sha256(payload.encode("utf-8")).hexdigest(),
+            }
+            continue
+        items = []
+        for entry in entries:
+            modified_ns = entry.get("modified_ns")
+            if modified_ns in (None, ""):
+                modified_ns = int(float(entry.get("modified_at") or 0.0) * 1_000_000_000)
+            items.append(
+                (
+                    str(entry.get("relative_path") or ""),
+                    int(entry.get("size") or 0),
+                    int(modified_ns),
+                )
+            )
+        items.sort(key=lambda item: item[0])
+        scope_map[scope_name] = {"mode": "files", "count": len(items), "items": items}
+    return scope_map
+
+
+def poll_requires_rescan(scopes: list[dict[str, Any]], previous_snapshot: dict[str, Any] | None) -> bool:
+    if not previous_snapshot or not previous_snapshot.get("files"):
+        return True
+    return build_poll_signature(scopes) != snapshot_poll_signature(previous_snapshot, scopes)
 
 
 def summarize_hunks(before_lines: list[str], after_lines: list[str]) -> tuple[list[dict[str, Any]], int, int]:
@@ -1255,6 +1432,20 @@ def render_diff_hunk(hunk: dict[str, Any]) -> str:
     )
 
 
+def render_report_navigation(*, live_href: str = LIVE_REPORT_NAME, results_href: str = RESULTS_REPORT_NAME, current: str = "live") -> str:
+    links: list[str] = []
+    if current == "live":
+        links.append("<span class='active'>Live-Report</span>")
+        links.append(f"<a href='{html.escape(results_href)}'>Letzte abgeschlossene Ergebnisseite</a>")
+    elif current == "results":
+        links.append(f"<a href='{html.escape(live_href)}'>Live-Report</a>")
+        links.append("<span class='active'>Letzte abgeschlossene Ergebnisseite</span>")
+    else:
+        links.append(f"<a href='{html.escape(live_href)}'>Live-Report</a>")
+        links.append(f"<a href='{html.escape(results_href)}'>Letzte abgeschlossene Ergebnisseite</a>")
+    return "<div class='report-nav'>" + "".join(links) + "</div>"
+
+
 def render_detail_page(event: dict[str, Any], item: dict[str, Any], *, previous_entry: dict[str, Any] | None, current_entry: dict[str, Any] | None) -> str:
     hunks_html = "".join(render_diff_hunk(hunk) for hunk in item.get("hunks", [])) or "<p>Keine Zeilen-Hunks verfuegbar.</p>"
     before_lines = previous_entry.get("lines", []) if previous_entry else []
@@ -1276,8 +1467,17 @@ body { font-family: Segoe UI, Arial, sans-serif; background: #0f172a; color: #e5
 .preview span, .ln { display: inline-block; min-width: 42px; color: #94a3b8; font-family: Consolas, monospace; }
 code { white-space: pre-wrap; font-family: Consolas, monospace; }
 .hunk-columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.report-nav { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 14px; }
+.report-nav a, .report-nav span { display: inline-flex; align-items: center; border-radius: 999px; padding: 8px 12px; text-decoration: none; font-weight: 600; }
+.report-nav a { background: rgba(59, 130, 246, 0.16); border: 1px solid rgba(96, 165, 250, 0.35); color: #bfdbfe; }
+.report-nav span.active { background: rgba(16, 185, 129, 0.16); border: 1px solid rgba(52, 211, 153, 0.3); color: #d1fae5; }
 @media (max-width: 960px) { .grid, .hunk-columns { grid-template-columns: 1fr; } }
 """
+    nav_html = render_report_navigation(
+        live_href="../" + LIVE_REPORT_NAME,
+        results_href="../" + RESULTS_REPORT_NAME,
+        current="detail",
+    )
     return (
         "<!DOCTYPE html><html lang='de'><head><meta charset='utf-8'>"
         f"<title>{html.escape(str(item.get('path', 'Datei')))}</title>"
@@ -1288,7 +1488,7 @@ code { white-space: pre-wrap; font-family: Consolas, monospace; }
         f"<p><strong>Publisher:</strong> {html.escape(str(item.get('publisher', '')) or 'unbekannt')} | <strong>Signatur:</strong> {html.escape(str(item.get('signature_status', '')) or 'n/a')}</p>"
         f"<p><strong>Command:</strong> {html.escape(str(item.get('command', '')) or 'n/a')}</p>"
         f"<h2>Bewertung</h2><ul>{reasons}</ul>"
-        "<p><a href='../system_guard_report.html'>Zurueck zum Hauptreport</a></p></div>"
+        f"{nav_html}</div>"
         "<div class='panel'><h2>Diff</h2>"
         f"{hunks_html}</div>"
         "<div class='grid'>"
@@ -1398,8 +1598,18 @@ def render_item_list(items: list[dict[str, Any]]) -> str:
     return "".join(rows)
 
 
-def render_html(snapshot: dict[str, Any], history_events: list[dict[str, Any]], analysis: dict[str, Any], current_event: dict[str, Any], runtime: dict[str, Any]) -> str:
+def render_html(
+    snapshot: dict[str, Any],
+    history_events: list[dict[str, Any]],
+    analysis: dict[str, Any],
+    current_event: dict[str, Any],
+    runtime: dict[str, Any],
+    *,
+    auto_refresh: bool = True,
+    view: str = "live",
+) -> str:
     current_review = current_event.get("review", {})
+    resume_state = current_event.get("resume_state", {}) if isinstance(current_event, dict) else {}
     summary_cards = [
         ("Watch-Modus", str(runtime.get("watch_mode", "poll"))),
         ("Scopes", str(len(snapshot.get("scope_counts", {})))),
@@ -1502,18 +1712,51 @@ ul { padding-left: 18px; }
 .ln { color: #f8fafc; opacity: .75; font-family: Consolas, monospace; }
 code { white-space: pre-wrap; font-family: Consolas, monospace; color: #f8fafc; }
 .footer { margin-top: 28px; color: #94a3b8; font-size: 13px; }
+.report-nav { display: flex; gap: 12px; flex-wrap: wrap; margin: 12px 0 0; }
+.report-nav a, .report-nav span { display: inline-flex; align-items: center; border-radius: 999px; padding: 8px 12px; text-decoration: none; font-weight: 600; }
+.report-nav a { background: rgba(59,130,246,.16); border: 1px solid rgba(96,165,250,.35); color: #bfdbfe; }
+.report-nav span.active { background: rgba(16,185,129,.16); border: 1px solid rgba(52,211,153,.3); color: #d1fae5; }
+.resume-banner { margin: 18px 0 24px; border-radius: 18px; padding: 18px; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(52, 211, 153, 0.28); }
+.resume-banner h2 { margin: 0 0 10px; }
+.resume-banner p { margin: 6px 0; color: #d1fae5; }
 @media (max-width: 1100px) { .grid, .event-grid, .hunk-columns { grid-template-columns: 1fr; } .hero { flex-direction: column; align-items: start; } }
 """
+    refresh_meta = "<meta http-equiv='refresh' content='3'>" if auto_refresh else ""
+    nav_html = render_report_navigation(current=view)
+    page_title = "Nova System Guard | Live-Report" if view == "live" else "Nova System Guard | Ergebnisse"
+    hero_copy = (
+        "Gezielte Host-Integrity-Ueberwachung fuer Windows-Persistenz, Temp-Ausfuehrung und Projektintegritaet."
+        if view == "live"
+        else "Letzte abgeschlossene, stabile Ergebnisansicht von Nova System Guard ohne Live-Refresh."
+    )
+    view_note = (
+        "<p><strong>Ansicht:</strong> Live-Report mit automatischer Aktualisierung waehrend neuer Scans.</p>"
+        if view == "live"
+        else "<p><strong>Ansicht:</strong> Stabile Ergebnisseite. Diese Seite bleibt waehrend neuer Live-Scans unveraendert.</p>"
+    )
+    resume_banner = ""
+    if view == "live" and isinstance(resume_state, dict) and resume_state.get("reused_baseline"):
+        last_completed_at = resume_state.get("last_completed_at")
+        status_text = str(resume_state.get("status_text") or "Keine neuen Aenderungen seitdem erkannt.")
+        resume_banner = (
+            "<section class='resume-banner'>"
+            "<h2>Bestehende Baseline wiederverwendet</h2>"
+            f"<p><strong>Letzter Vollscan:</strong> {html.escape(fmt_ts(last_completed_at))}</p>"
+            f"<p>{html.escape(status_text)}</p>"
+            "</section>"
+        )
     return (
         "<!DOCTYPE html><html lang='de'><head><meta charset='utf-8'>"
         "<meta name='viewport' content='width=device-width, initial-scale=1'>"
-        "<meta http-equiv='refresh' content='3'>"
-        "<title>Nova System Guard</title>"
+        f"{refresh_meta}"
+        f"<title>{page_title}</title>"
         f"<style>{css}</style></head><body><div class='container'>"
         "<div class='hero'><div><h1>Nova System Guard</h1>"
-        "<p>Gezielte Host-Integrity-Ueberwachung fuer Windows-Persistenz, Temp-Ausfuehrung und Projektintegritaet.</p></div>"
+        f"<p>{hero_copy}</p>{nav_html}</div>"
         f"<div><p><strong>Letzte Aktualisierung:</strong> {fmt_ts(snapshot.get('generated_at'))}</p>"
-        f"<p><strong>Review:</strong> {html.escape(str(current_review.get('severity', 'low')))} | Score {current_review.get('score', 0)}</p></div></div>"
+        f"<p><strong>Review:</strong> {html.escape(str(current_review.get('severity', 'low')))} | Score {current_review.get('score', 0)}</p>"
+        f"{view_note}</div></div>"
+        f"{resume_banner}"
         f"<section class='cards'>{cards_html}</section>"
         f"<section class='review-card severity-{html.escape(str(current_review.get('severity', 'low')))}'><h2>{html.escape(str(current_review.get('headline', 'Review')))}</h2>"
         f"<p>{html.escape(str(current_review.get('summary', '')))}</p><ul>{''.join(f'<li>{html.escape(text)}</li>' for text in current_review.get('findings', [])) or '<li>Keine Findings.</li>'}</ul>"
@@ -1535,7 +1778,14 @@ code { white-space: pre-wrap; font-family: Consolas, monospace; color: #f8fafc; 
     )
 
 
-def render_bootstrap_html(root: pathlib.Path, scopes: list[dict[str, Any]], runtime: dict[str, Any]) -> str:
+def render_bootstrap_html(
+    root: pathlib.Path,
+    scopes: list[dict[str, Any]],
+    runtime: dict[str, Any],
+    *,
+    progress: dict[str, Any] | None = None,
+    phase: str = "initializing",
+) -> str:
     css = """
 body { font-family: Segoe UI, Arial, sans-serif; background: linear-gradient(180deg, #0f172a 0%, #111827 100%); color: #e5e7eb; margin: 0; }
 .container { max-width: 1080px; margin: 0 auto; padding: 28px; }
@@ -1547,6 +1797,15 @@ body { font-family: Segoe UI, Arial, sans-serif; background: linear-gradient(180
 .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
 .scope-list { margin: 0; padding-left: 18px; }
 .scope-list li { margin-bottom: 8px; }
+.progress-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 14px; }
+.progress-card { background: rgba(30, 41, 59, 0.65); border: 1px solid rgba(148,163,184,.16); border-radius: 14px; padding: 14px; }
+.progress-label { font-size: 12px; text-transform: uppercase; letter-spacing: .12em; color: #67e8f9; margin-bottom: 8px; }
+.progress-value { font-size: 15px; font-weight: 600; }
+.progress-path { overflow-wrap: anywhere; color: #e2e8f0; }
+.report-nav { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 14px; }
+.report-nav a, .report-nav span { display: inline-flex; align-items: center; border-radius: 999px; padding: 8px 12px; text-decoration: none; font-weight: 600; }
+.report-nav a { background: rgba(59,130,246,.16); border: 1px solid rgba(96,165,250,.35); color: #bfdbfe; }
+.report-nav span.active { background: rgba(16,185,129,.16); border: 1px solid rgba(52,211,153,.3); color: #d1fae5; }
 code { font-family: Consolas, monospace; }
 @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
 """
@@ -1558,9 +1817,49 @@ code { font-family: Consolas, monospace; }
     ) or "<li>Keine Scopes konfiguriert.</li>"
     if len(scopes) > 18:
         scope_rows += f"<li><em>... {len(scopes) - 18} weitere Scopes</em></li>"
+    progress = dict(progress or {})
+    current_scope_title = str(progress.get("current_scope_title") or "Warte auf ersten Scope")
+    current_scope_path = str(progress.get("current_scope_path") or "")
+    last_path = str(progress.get("last_path") or "Noch kein Pfad verarbeitet.")
+    processed_files = int(progress.get("processed_files") or 0)
+    processed_scope_files = int(progress.get("processed_scope_files") or 0)
+    scanned_scopes = int(progress.get("scanned_scopes") or 0)
+    total_scopes = int(progress.get("total_scopes") or len(scopes))
+    phase_label = "Scan in Arbeit" if phase == "scanning" else "Initialisierung"
+    nav_html = render_report_navigation(current="live")
+    progress_cards = "".join(
+        [
+            "<div class='progress-card'>"
+            "<div class='progress-label'>Aktueller Scope</div>"
+            f"<div class='progress-value'>{html.escape(current_scope_title)}</div>"
+            f"<div class='meta progress-path'><code>{html.escape(current_scope_path or '-')}</code></div>"
+            "</div>",
+            "<div class='progress-card'>"
+            "<div class='progress-label'>Letzter gepruefter Pfad</div>"
+            f"<div class='progress-value progress-path'><code>{html.escape(last_path)}</code></div>"
+            "</div>",
+            "<div class='progress-card'>"
+            "<div class='progress-label'>Dateien gesamt</div>"
+            f"<div class='progress-value'>{processed_files}</div>"
+            "</div>",
+            "<div class='progress-card'>"
+            "<div class='progress-label'>Dateien im aktuellen Scope</div>"
+            f"<div class='progress-value'>{processed_scope_files}</div>"
+            "</div>",
+            "<div class='progress-card'>"
+            "<div class='progress-label'>Scopes abgeschlossen</div>"
+            f"<div class='progress-value'>{scanned_scopes} / {total_scopes}</div>"
+            "</div>",
+            "<div class='progress-card'>"
+            "<div class='progress-label'>Watch-Modus</div>"
+            f"<div class='progress-value'>{html.escape(str(runtime.get('watch_mode', 'poll')))}</div>"
+            "</div>",
+        ]
+    )
     return (
         "<!DOCTYPE html><html lang='de'><head><meta charset='utf-8'>"
         "<meta name='viewport' content='width=device-width, initial-scale=1'>"
+        "<meta http-equiv='refresh' content='2'>"
         "<title>Nova System Guard | Initialisierung</title>"
         f"<style>{css}</style></head><body><div class='container'>"
         "<section class='hero'>"
@@ -1570,16 +1869,18 @@ code { font-family: Consolas, monospace; }
         "<code>AppData\\Roaming</code>, <code>SysWOW64</code>, <code>Downloads</code> oder "
         "<code>Chrome Extensions</code> kann der erste Durchlauf deutlich dauern. "
         "Dieser Report wird automatisch aktualisiert, sobald die erste Baseline fertig ist.</p>"
-        f"<p><span class='status'>Scan in Arbeit</span></p>"
+        f"{nav_html}"
+        f"<p><span class='status'>{phase_label}</span></p>"
         f"<p class='meta'>Root: <code>{html.escape(str(root))}</code> | Watch-Modus: "
         f"{html.escape(str(runtime.get('watch_mode', 'poll')))} | {fmt_ts()}</p>"
+        f"<div class='progress-grid'>{progress_cards}</div>"
         "</section>"
         "<section class='grid'>"
         "<div class='panel'>"
         "<h2>Aktueller Zustand</h2>"
         "<ul>"
         "<li>Es wurde noch keine fertige Baseline geschrieben.</li>"
-        "<li><code>latest_status.json</code> wird nach dem ersten vollständigen Durchlauf aktualisiert.</li>"
+        "<li><code>latest_status.json</code> wird bereits waehrend des Baseline-Scans fortlaufend aktualisiert.</li>"
         "<li>Danach erscheinen hier Risiko-Bewertung, History und Detailseiten.</li>"
         "</ul>"
         "</div>"
@@ -1598,10 +1899,64 @@ code { font-family: Consolas, monospace; }
     )
 
 
-def write_bootstrap_artifacts(root: pathlib.Path, state_dir: pathlib.Path, scopes: list[dict[str, Any]], runtime: dict[str, Any]) -> None:
-    report_path = state_dir / "system_guard_report.html"
+def render_results_placeholder_html(root: pathlib.Path, scopes: list[dict[str, Any]], runtime: dict[str, Any]) -> str:
+    css = """
+body { font-family: Segoe UI, Arial, sans-serif; background: linear-gradient(180deg, #111827 0%, #0f172a 100%); color: #e5e7eb; margin: 0; }
+.container { max-width: 1080px; margin: 0 auto; padding: 28px; }
+.hero, .panel { background: rgba(15, 23, 42, 0.84); border: 1px solid rgba(148,163,184,.18); border-radius: 18px; padding: 20px; margin-bottom: 18px; }
+.hero { border-left: 6px solid #22c55e; }
+.kicker { text-transform: uppercase; letter-spacing: .18em; color: #86efac; font-size: 12px; margin-bottom: 10px; display: inline-block; }
+.meta { color: #94a3b8; margin-top: 8px; }
+.scope-list { margin: 0; padding-left: 18px; }
+.scope-list li { margin-bottom: 8px; }
+.report-nav { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 14px; }
+.report-nav a, .report-nav span { display: inline-flex; align-items: center; border-radius: 999px; padding: 8px 12px; text-decoration: none; font-weight: 600; }
+.report-nav a { background: rgba(59,130,246,.16); border: 1px solid rgba(96,165,250,.35); color: #bfdbfe; }
+.report-nav span.active { background: rgba(16,185,129,.16); border: 1px solid rgba(52,211,153,.3); color: #d1fae5; }
+code { font-family: Consolas, monospace; }
+"""
+    scope_rows = "".join(
+        f"<li><strong>{html.escape(str(scope.get('title', '')))}</strong> "
+        f"({html.escape(str(scope.get('priority', '')))} | {html.escape(str(scope.get('category', '')))}): "
+        f"<code>{html.escape(str(scope.get('path', '')))}</code></li>"
+        for scope in scopes[:18]
+    ) or "<li>Keine Scopes konfiguriert.</li>"
+    if len(scopes) > 18:
+        scope_rows += f"<li><em>... {len(scopes) - 18} weitere Scopes</em></li>"
+    nav_html = render_report_navigation(current="results")
+    return (
+        "<!DOCTYPE html><html lang='de'><head><meta charset='utf-8'>"
+        "<meta name='viewport' content='width=device-width, initial-scale=1'>"
+        "<title>Nova System Guard | Ergebnisse</title>"
+        f"<style>{css}</style></head><body><div class='container'>"
+        "<section class='hero'>"
+        "<span class='kicker'>Nova System Guard</span>"
+        "<h1>Noch keine abgeschlossene Ergebnisseite vorhanden</h1>"
+        "<p>Diese Seite ist fuer die stabile Uebersicht der letzten fertigen Sicherheitsanalyse reserviert. "
+        "Sobald der erste vollstaendige Baseline-Scan abgeschlossen ist, wird hier die komplette Ergebnisansicht mit History, Risiken und Detaillinks angezeigt.</p>"
+        f"{nav_html}"
+        f"<p class='meta'>Root: <code>{html.escape(str(root))}</code> | Watch-Modus: {html.escape(str(runtime.get('watch_mode', 'poll')))} | {fmt_ts()}</p>"
+        "</section>"
+        f"<section class='panel'><h2>Vorgesehene Scopes ({len(scopes)})</h2><ol class='scope-list'>{scope_rows}</ol></section>"
+        f"<div class='panel'><p class='meta'>Generiert von Nova System Guard v{VERSION} | Statusdatei: {STATE_DIR_NAME}/latest_status.json</p></div>"
+        "</div></body></html>"
+    )
+
+
+def write_bootstrap_artifacts(
+    root: pathlib.Path,
+    state_dir: pathlib.Path,
+    scopes: list[dict[str, Any]],
+    runtime: dict[str, Any],
+    *,
+    progress: dict[str, Any] | None = None,
+    phase: str = "initializing",
+) -> None:
+    report_path = state_dir / LIVE_REPORT_NAME
+    results_path = state_dir / RESULTS_REPORT_NAME
     status_path = state_dir / "latest_status.json"
     analysis_path = state_dir / "system_guard_analysis.json"
+    progress_payload = dict(progress or {})
     bootstrap_status = {
         "generated_at": time.time(),
         "changed": False,
@@ -1611,17 +1966,34 @@ def write_bootstrap_artifacts(root: pathlib.Path, state_dir: pathlib.Path, scope
         "tracked_files": 0,
         "scope_count": len(scopes),
         "report_path": str(report_path),
+        "results_path": str(results_path),
         "analysis_path": str(analysis_path),
         "actions": [],
-        "phase": "initializing",
+        "phase": phase,
+        "progress": progress_payload,
         "status_line": "Initialer Sicherheits-Scan läuft.",
     }
-    report_path.write_text(render_bootstrap_html(root, scopes, runtime), encoding="utf-8")
+    if phase == "scanning" and progress_payload:
+        scope_title = progress_payload.get("current_scope_title") or "Scope"
+        last_path = progress_payload.get("last_path")
+        if last_path:
+            bootstrap_status["status_line"] = f"Scannt {scope_title}: {last_path}"
+        else:
+            bootstrap_status["status_line"] = f"Scannt {scope_title}"
+    report_path.write_text(
+        render_bootstrap_html(root, scopes, runtime, progress=progress_payload, phase=phase),
+        encoding="utf-8",
+    )
+    if not results_path.exists():
+        results_path.write_text(render_results_placeholder_html(root, scopes, runtime), encoding="utf-8")
     save_json(status_path, bootstrap_status)
     save_json(
         analysis_path,
         {
             "generated_at": bootstrap_status["generated_at"],
+            "phase": phase,
+            "results_path": str(results_path),
+            "progress": progress_payload,
             "warnings": ["Initialer Sicherheits-Scan läuft noch."],
             "critical_paths": [],
             "unsigned_paths": [],
@@ -1734,13 +2106,39 @@ def monitor_once(root: pathlib.Path, state_dir: pathlib.Path, scopes: list[dict[
     snapshot_path = state_dir / "snapshot.json"
     history_path = state_dir / "history.json"
     analysis_path = state_dir / "system_guard_analysis.json"
-    report_path = state_dir / "system_guard_report.html"
+    report_path = state_dir / LIVE_REPORT_NAME
+    results_path = state_dir / RESULTS_REPORT_NAME
     status_path = state_dir / "latest_status.json"
     browser_flag = state_dir / ".browser_opened"
 
     previous = load_json(snapshot_path, {})
     history_payload = load_json(history_path, {"events": []})
-    current = scan_targets(scopes)
+    last_progress_flush = {"at": 0.0, "scope": "", "path": ""}
+
+    def progress_callback(progress: dict[str, Any]) -> None:
+        now = time.monotonic()
+        scope_key = str(progress.get("current_scope_name") or "")
+        path_key = str(progress.get("last_path") or "")
+        should_flush = (
+            now - last_progress_flush["at"] >= 0.4
+            or scope_key != last_progress_flush["scope"]
+            or path_key != last_progress_flush["path"]
+        )
+        if not should_flush:
+            return
+        last_progress_flush["at"] = now
+        last_progress_flush["scope"] = scope_key
+        last_progress_flush["path"] = path_key
+        write_bootstrap_artifacts(
+            root,
+            state_dir,
+            scopes,
+            runtime,
+            progress=progress,
+            phase=str(progress.get("phase") or "scanning"),
+        )
+
+    current = scan_targets(scopes, progress_callback=progress_callback)
     event, changed = diff_snapshots(previous, current)
     event = attach_detail_pages(state_dir, event, previous.get("files", {}), current.get("files", {}))
     if changed:
@@ -1752,7 +2150,11 @@ def monitor_once(root: pathlib.Path, state_dir: pathlib.Path, scopes: list[dict[
     analysis = build_analysis(events, current)
     if changed and events:
         events[-1]["review"] = event.get("review", {})
-    report_path.write_text(render_html(current, events, analysis, event, runtime), encoding="utf-8")
+    report_path.write_text(render_html(current, events, analysis, event, runtime, auto_refresh=True, view="live"), encoding="utf-8")
+    results_path.write_text(
+        render_html(current, events, analysis, event, runtime, auto_refresh=False, view="results"),
+        encoding="utf-8",
+    )
     save_json(snapshot_path, current)
     save_json(history_path, {"generated_at": current.get("generated_at"), "events": events})
     save_json(analysis_path, analysis)
@@ -1765,9 +2167,84 @@ def monitor_once(root: pathlib.Path, state_dir: pathlib.Path, scopes: list[dict[
         "tracked_files": current.get("file_count", 0),
         "scope_count": len(scopes),
         "report_path": str(report_path),
+        "results_path": str(results_path),
         "analysis_path": str(analysis_path),
         "actions": event.get("actions", []),
         "status_line": event.get("summary", "Keine sicherheitsrelevante Aenderung erkannt."),
+    }
+    save_json(status_path, payload)
+    open_report_once(report_path, browser_flag)
+    return payload
+
+
+def publish_idle_state(root: pathlib.Path, state_dir: pathlib.Path, scopes: list[dict[str, Any]], *, runtime: dict[str, Any]) -> dict[str, Any]:
+    snapshot_path = state_dir / "snapshot.json"
+    history_path = state_dir / "history.json"
+    analysis_path = state_dir / "system_guard_analysis.json"
+    report_path = state_dir / LIVE_REPORT_NAME
+    results_path = state_dir / RESULTS_REPORT_NAME
+    status_path = state_dir / "latest_status.json"
+    browser_flag = state_dir / ".browser_opened"
+
+    snapshot = load_json(snapshot_path, {})
+    history_payload = load_json(history_path, {"events": []})
+    analysis = load_json(analysis_path, {})
+    previous_status = load_json(status_path, {})
+    events = list(history_payload.get("events", []))
+    last_event = previous_status.get("event") if isinstance(previous_status, dict) else {}
+    if not isinstance(last_event, dict) or not last_event:
+        last_event = events[-1] if events else {}
+    review = {}
+    if isinstance(previous_status, dict):
+        review = dict(previous_status.get("review") or {})
+    if not review and isinstance(last_event, dict):
+        review = dict(last_event.get("review") or {})
+    if not review:
+        review = {
+            "severity": "low",
+            "score": 0,
+            "headline": "System Guard wartet auf Aenderungen",
+            "summary": "Keine neue Aenderung erkannt. Die letzte abgeschlossene Analyse bleibt aktiv.",
+            "findings": ["Kein neuer Vollscan notwendig."],
+            "recommendations": ["Die stabile Ergebnisseite kann direkt weiter genutzt werden."],
+            "source": "idle-resume",
+        }
+    current_event = dict(last_event) if isinstance(last_event, dict) else {}
+    current_event["review"] = review
+    current_event["actions"] = []
+    current_event["summary"] = (
+        f"Keine neuen Aenderungen erkannt. Letzte abgeschlossene Analyse vom {fmt_ts(snapshot.get('generated_at'))} "
+        "wird weiterverwendet."
+    )
+    current_event["resume_state"] = {
+        "reused_baseline": True,
+        "last_completed_at": snapshot.get("generated_at"),
+        "status_text": "Keine neuen Aenderungen seitdem erkannt.",
+    }
+
+    report_path.write_text(
+        render_html(snapshot, events, analysis, current_event, runtime, auto_refresh=True, view="live"),
+        encoding="utf-8",
+    )
+    if not results_path.exists():
+        results_path.write_text(
+            render_html(snapshot, events, analysis, current_event, runtime, auto_refresh=False, view="results"),
+            encoding="utf-8",
+        )
+    payload = {
+        "generated_at": snapshot.get("generated_at") or time.time(),
+        "changed": False,
+        "event": current_event,
+        "review": review,
+        "runtime": runtime,
+        "tracked_files": snapshot.get("file_count", 0),
+        "scope_count": len(scopes),
+        "report_path": str(report_path),
+        "results_path": str(results_path),
+        "analysis_path": str(analysis_path),
+        "actions": [],
+        "phase": "idle",
+        "status_line": current_event["summary"],
     }
     save_json(status_path, payload)
     open_report_once(report_path, browser_flag)
@@ -1792,17 +2269,25 @@ def main() -> dict[str, Any]:
         "scope_titles": [scope["title"] for scope in scopes],
     }
     latest: dict[str, Any] | None = None
+    existing_snapshot = load_json(state_dir / "snapshot.json", {})
+    resume_existing = bool(existing_snapshot.get("files")) and not poll_requires_rescan(scopes, existing_snapshot)
 
-    write_bootstrap_artifacts(root, state_dir, scopes, runtime)
+    if resume_existing:
+        latest = publish_idle_state(root, state_dir, scopes, runtime=runtime)
+    else:
+        write_bootstrap_artifacts(root, state_dir, scopes, runtime)
 
     if oneshot:
+        if resume_existing and latest is not None:
+            return latest
         return monitor_once(root, state_dir, scopes, runtime=runtime)
 
     if watch_config["mode"] == "watchdog":
         observer, event_queue = create_watch_queue(scopes)
         if observer is not None:
             try:
-                latest = monitor_once(root, state_dir, scopes, runtime=runtime)
+                if latest is None:
+                    latest = monitor_once(root, state_dir, scopes, runtime=runtime)
                 while True:
                     batch = wait_for_watch_batch(event_queue, debounce_seconds=debounce_seconds)
                     runtime["last_trigger_paths"] = batch[:30]
@@ -1813,12 +2298,17 @@ def main() -> dict[str, Any]:
                 observer.stop()
                 observer.join(timeout=5)
 
-    while True:
+    if latest is None:
         latest = monitor_once(root, state_dir, scopes, runtime=runtime)
+    while True:
         try:
             time.sleep(interval)
         except KeyboardInterrupt:
             return latest or {"changed": False, "status_line": "System Guard beendet.", "runtime": runtime}
+        previous_snapshot = load_json(state_dir / "snapshot.json", {})
+        if not poll_requires_rescan(scopes, previous_snapshot):
+            continue
+        latest = monitor_once(root, state_dir, scopes, runtime=runtime)
 
 
 if __name__ == "__main__":

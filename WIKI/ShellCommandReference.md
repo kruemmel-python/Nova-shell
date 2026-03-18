@@ -96,6 +96,7 @@ Fuer Shell-Arbeit ist `output` relevant, fuer Integrationen und Tests oft `data`
 | Kommando | Handler | Testbarer Einstieg |
 | --- | --- | --- |
 | `mesh` | `_run_mesh` | `mesh list` |
+| `lens` | `_run_lens` | `lens last` |
 | `synth` | `_run_synth` | `synth forecast` |
 | `remote` | `_run_remote` | `remote http://127.0.0.1:8766 py 1 + 1` |
 | `vision` | `_run_vision` | `vision status` |
@@ -190,6 +191,31 @@ Interne Handler und Objekte:
 - `NovaSynth.suggest`
 - `PredictiveEngineShifter.forecast`
 - `PredictiveEngineShifter.recommend_engine`
+
+### Pfad 4b: von Shell-Stage zu Lens-Snapshot
+
+```powershell
+py 2 + 2
+lens last
+lens show <snapshot_id>
+lens replay <snapshot_id>
+```
+
+Interne Handler und Objekte:
+
+- `_run_python`
+- `_execute_stage`
+- `_run_lens`
+- `NovaLensStore.record`
+- `NovaLensStore.get`
+- `NovaLensStore.replay`
+
+Der wichtige Punkt fuer Entwickler ist:
+Nach der Stage landet nicht nur Text auf dem Bildschirm, sondern auch ein
+persistenter Snapshot in `.nova_lens/lineage.db` plus referenzierte Inhalte in
+`.nova_lens/cas`.
+
+Die Speicherschicht dahinter ist in [NovaLens](./NovaLens.md) erklaert.
 
 ### Pfad 5: von Invariante zu Federated Mesh Broadcast
 
