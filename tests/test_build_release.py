@@ -1,7 +1,9 @@
 import importlib.util
 import os
+import shutil
 import sys
 import tempfile
+import time
 import unittest
 import zipfile
 from pathlib import Path
@@ -15,6 +17,19 @@ build_release = importlib.util.module_from_spec(SPEC)
 assert SPEC.loader is not None
 sys.modules[SPEC.name] = build_release
 SPEC.loader.exec_module(build_release)
+
+
+def _cleanup_tempdir(path: Path, *, attempts: int = 8, delay_seconds: float = 0.1) -> None:
+    for attempt in range(attempts):
+        try:
+            shutil.rmtree(path)
+            return
+        except FileNotFoundError:
+            return
+        except OSError:
+            if attempt == attempts - 1:
+                raise
+            time.sleep(delay_seconds)
 
 
 class BuildReleaseTests(unittest.TestCase):
@@ -354,49 +369,49 @@ class BuildReleaseTests(unittest.TestCase):
             self.assertTrue((bundle_dir / "WIKI" / "Home.md").exists())
 
     def test_stage_bundled_emsdk_writes_wrapper_and_runtime_config(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
-            cache_root = root / "emsdk-cache"
-            (cache_root / "upstream" / "emscripten").mkdir(parents=True)
-            (cache_root / "upstream" / "bin").mkdir(parents=True)
-            (cache_root / "python" / "3.12.0").mkdir(parents=True)
-            (cache_root / "node" / "18.0.0_64bit" / "bin").mkdir(parents=True)
-            (cache_root / "upstream" / "emscripten" / "emcc.py").write_text("print('emcc')\n", encoding="utf-8")
-            (cache_root / "upstream" / "bin" / "clang.exe").write_text("clang", encoding="utf-8")
-            (cache_root / "python" / "3.12.0" / "python.exe").write_text("python", encoding="utf-8")
-            (cache_root / "node" / "18.0.0_64bit" / "bin" / "node.exe").write_text("node", encoding="utf-8")
+        root = Path(tempfile.mkdtemp())
+        self.addCleanup(_cleanup_tempdir, root)
+        cache_root = root / "emsdk-cache"
+        (cache_root / "upstream" / "emscripten").mkdir(parents=True)
+        (cache_root / "upstream" / "bin").mkdir(parents=True)
+        (cache_root / "python" / "3.12.0").mkdir(parents=True)
+        (cache_root / "node" / "18.0.0_64bit" / "bin").mkdir(parents=True)
+        (cache_root / "upstream" / "emscripten" / "emcc.py").write_text("print('emcc')\n", encoding="utf-8")
+        (cache_root / "upstream" / "bin" / "clang.exe").write_text("clang", encoding="utf-8")
+        (cache_root / "python" / "3.12.0" / "python.exe").write_text("python", encoding="utf-8")
+        (cache_root / "node" / "18.0.0_64bit" / "bin" / "node.exe").write_text("node", encoding="utf-8")
 
-            bundle_dir = root / "bundle"
-            bundle_dir.mkdir()
+        bundle_dir = root / "bundle"
+        bundle_dir.mkdir()
 
-            with (
-                patch.object(build_release.os, "name", "nt"),
-                patch.object(build_release.sys, "platform", "win32"),
-                patch.object(build_release, "ensure_emsdk_cache", return_value=cache_root),
-                patch.object(build_release, "stage_minimal_python_runtime", side_effect=lambda target: (target.mkdir(parents=True, exist_ok=True), (target / "python.exe").write_text("python", encoding="utf-8"))),
-            ):
-                build_release.stage_bundled_emsdk(
-                    bundle_dir,
-                    "core",
-                    build_context=build_release.BuildContext(
-                        source_date_epoch=None,
-                        timestamp_utc="2026-03-15T00:00:00+00:00",
-                        env={},
-                    ),
-                )
-                build_release.write_runtime_config(bundle_dir, "core")
+        with (
+            patch.object(build_release.os, "name", "nt"),
+            patch.object(build_release.sys, "platform", "win32"),
+            patch.object(build_release, "ensure_emsdk_cache", return_value=cache_root),
+            patch.object(build_release, "stage_minimal_python_runtime", side_effect=lambda target: (target.mkdir(parents=True, exist_ok=True), (target / "python.exe").write_text("python", encoding="utf-8"))),
+        ):
+            build_release.stage_bundled_emsdk(
+                bundle_dir,
+                "core",
+                build_context=build_release.BuildContext(
+                    source_date_epoch=None,
+                    timestamp_utc="2026-03-15T00:00:00+00:00",
+                    env={},
+                ),
+            )
+            build_release.write_runtime_config(bundle_dir, "core")
 
-            wrapper = bundle_dir / build_release.BUNDLED_TOOLCHAIN_DIR / build_release.EMSDK_WRAPPER_NAME
-            config = bundle_dir / build_release.BUNDLED_TOOLCHAIN_DIR / "emsdk" / ".emscripten"
-            runtime_config = bundle_dir / build_release.RUNTIME_CONFIG_FILE
+        wrapper = bundle_dir / build_release.BUNDLED_TOOLCHAIN_DIR / build_release.EMSDK_WRAPPER_NAME
+        config = bundle_dir / build_release.BUNDLED_TOOLCHAIN_DIR / "emsdk" / ".emscripten"
+        runtime_config = bundle_dir / build_release.RUNTIME_CONFIG_FILE
 
-            self.assertTrue(wrapper.exists())
-            self.assertTrue(config.exists())
-            payload = runtime_config.read_text(encoding="utf-8")
-            self.assertIn("toolchains", payload)
-            self.assertIn(build_release.EMSDK_WRAPPER_NAME, payload)
-            self.assertIn("EMSCRIPTEN_ROOT", config.read_text(encoding="utf-8"))
-            self.assertIn("if not defined EM_CACHE", wrapper.read_text(encoding="utf-8"))
+        self.assertTrue(wrapper.exists())
+        self.assertTrue(config.exists())
+        payload = runtime_config.read_text(encoding="utf-8")
+        self.assertIn("toolchains", payload)
+        self.assertIn(build_release.EMSDK_WRAPPER_NAME, payload)
+        self.assertIn("EMSCRIPTEN_ROOT", config.read_text(encoding="utf-8"))
+        self.assertIn("if not defined EM_CACHE", wrapper.read_text(encoding="utf-8"))
 
     def test_stage_emsdk_runtime_subset_avoids_robocopy_for_windows_copy(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

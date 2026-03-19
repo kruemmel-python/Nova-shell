@@ -139,13 +139,13 @@ class RuntimeObservability:
     def validate_trace_store(self) -> dict[str, Any]:
         if not self.trace_path.exists():
             return {"valid": True, "records": 0}
-        lines = self.trace_path.read_text(encoding="utf-8").splitlines()
         parsed = 0
-        for line in lines:
-            if not line.strip():
-                continue
-            json.loads(line)
-            parsed += 1
+        with self.trace_path.open("r", encoding="utf-8") as handle:
+            for line in handle:
+                if not line.strip():
+                    continue
+                json.loads(line)
+                parsed += 1
         return {"valid": True, "records": parsed}
 
     def snapshot(self, limit: int = 25) -> dict[str, Any]:

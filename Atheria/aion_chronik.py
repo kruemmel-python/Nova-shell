@@ -830,6 +830,24 @@ def _render_html(
         return null;
       }
 
+      function toFetchUrl(path) {
+        var value = String(path || "").trim();
+        if (!value) {
+          return value;
+        }
+        value = value.replace(/\\/g, "/");
+        if (/^[a-z]+:\/\/?/i.test(value) || value.indexOf("file:///") === 0) {
+          return value;
+        }
+        if (/^[A-Za-z]:\//.test(value)) {
+          return "file:///" + encodeURI(value).replace(/#/g, "%23");
+        }
+        if (value.charAt(0) === "/") {
+          return "file://" + encodeURI(value).replace(/#/g, "%23");
+        }
+        return value;
+      }
+
       function setBadge(tone, text) {
         if (!resonanceBadge) {
           return;
@@ -904,7 +922,7 @@ def _render_html(
 
       function loadResonance(activeReportDir) {
         var auditFile = activeReportDir + "/atheria_daemon_audit.jsonl";
-        fetch(auditFile, { cache: "no-store" })
+        fetch(toFetchUrl(auditFile), { cache: "no-store" })
           .then(function (response) {
             if (!response.ok) {
               throw new Error("HTTP " + response.status);
@@ -922,7 +940,7 @@ def _render_html(
               return;
             }
             var resonanceFile = activeReportDir + "/core_audit/" + coreId + "_inter_core_resonance.jsonl";
-            return fetch(resonanceFile, { cache: "no-store" })
+            return fetch(toFetchUrl(resonanceFile), { cache: "no-store" })
               .then(function (resonanceResponse) {
                 if (!resonanceResponse.ok) {
                   throw new Error("HTTP " + resonanceResponse.status);

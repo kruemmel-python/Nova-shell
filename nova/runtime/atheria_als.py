@@ -134,7 +134,7 @@ def _normalize_rows(payload: Any, *, source_hint: str = "") -> list[dict[str, st
 
 
 def _http_text(url: str) -> str:
-    request = urllib.request.Request(url, headers={"User-Agent": "nova-shell-als/0.8.20"})
+    request = urllib.request.Request(url, headers={"User-Agent": "nova-shell-als/0.8.21"})
     with urllib.request.urlopen(request, timeout=20) as response:
         charset = response.headers.get_content_charset() or "utf-8"
         return response.read().decode(charset, errors="replace")
@@ -387,6 +387,7 @@ class AtheriaALSRuntime:
             "interval_seconds": float(self.runtime_config.get("atheria_als_interval") or 90.0),
             "trigger_threshold": float(self.runtime_config.get("atheria_als_trigger_threshold") or 0.80),
             "anomaly_threshold": float(self.runtime_config.get("atheria_als_anomaly_threshold") or 0.72),
+            "trigger_cooldown_seconds": float(self.runtime_config.get("atheria_als_trigger_cooldown") or 900.0),
             "max_items_per_cycle": int(self.runtime_config.get("atheria_als_max_items") or 48),
             "dedupe_window": int(self.runtime_config.get("atheria_als_dedupe_window") or 8192),
             "voice": {
@@ -428,6 +429,7 @@ class AtheriaALSRuntime:
             config["interval_seconds"] = max(3.0, _safe_float(payload.get("interval_seconds"), config["interval_seconds"]))
             config["trigger_threshold"] = _clamp(payload.get("trigger_threshold", config["trigger_threshold"]), 0.0, 1.0)
             config["anomaly_threshold"] = _clamp(payload.get("anomaly_threshold", config["anomaly_threshold"]), 0.0, 1.0)
+            config["trigger_cooldown_seconds"] = max(0.0, _safe_float(payload.get("trigger_cooldown_seconds"), config["trigger_cooldown_seconds"]))
             config["max_items_per_cycle"] = max(8, _safe_int(payload.get("max_items_per_cycle"), config["max_items_per_cycle"]))
             config["dedupe_window"] = max(256, _safe_int(payload.get("dedupe_window"), config["dedupe_window"]))
             if isinstance(payload.get("voice"), dict):
@@ -452,6 +454,8 @@ class AtheriaALSRuntime:
             config["trigger_threshold"] = _clamp(os.environ.get("NOVA_ALS_TRIGGER_THRESHOLD"), 0.0, 1.0)
         if os.environ.get("NOVA_ALS_ANOMALY_THRESHOLD"):
             config["anomaly_threshold"] = _clamp(os.environ.get("NOVA_ALS_ANOMALY_THRESHOLD"), 0.0, 1.0)
+        if os.environ.get("NOVA_ALS_TRIGGER_COOLDOWN"):
+            config["trigger_cooldown_seconds"] = max(0.0, _safe_float(os.environ.get("NOVA_ALS_TRIGGER_COOLDOWN"), config["trigger_cooldown_seconds"]))
         if os.environ.get("NOVA_ALS_VOICE_AUDIO"):
             config["voice"]["audio_enabled"] = str(os.environ.get("NOVA_ALS_VOICE_AUDIO")).strip().lower() in {"1", "true", "on", "yes"}
         if os.environ.get("NOVA_ALS_VOICE_NAME"):
@@ -487,6 +491,8 @@ class AtheriaALSRuntime:
             "last_cycle_at": 0.0,
             "last_event_id": "",
             "last_trigger_id": "",
+            "last_trigger_signature": "",
+            "last_trigger_at": 0.0,
             "last_snapshot_id": "",
             "event_count": 0,
             "dialog_count": 0,
@@ -517,6 +523,24 @@ class AtheriaALSRuntime:
         path.parent.mkdir(parents=True, exist_ok=True)
         with path.open("a", encoding="utf-8") as handle:
             handle.write(json.dumps(payload, ensure_ascii=False) + "\n")
+
+    def _trigger_signature(
+        self,
+        *,
+        trigger_reason: str,
+        titles: list[str],
+        dominant_topics: list[str],
+        resonance: dict[str, Any],
+    ) -> str:
+        payload = {
+            "trigger_reason": str(trigger_reason or ""),
+            "titles": [str(item or "") for item in titles[:3]],
+            "dominant_topics": [str(item or "") for item in dominant_topics[:3]],
+            "anomaly_score": round(_safe_float(resonance.get("anomaly_score"), 0.0), 6),
+            "trend_acceleration": round(_safe_float(resonance.get("trend_acceleration"), 0.0), 6),
+            "system_temperature": round(_safe_float(resonance.get("system_temperature"), 0.0), 6),
+        }
+        return hashlib.sha256(_stable_json(payload).encode("utf-8")).hexdigest()
 
     def _item_hash(self, item: dict[str, str]) -> str:
         basis = "|".join(
@@ -838,18 +862,38 @@ class AtheriaALSRuntime:
         event_id = f"als_{uuid.uuid4().hex[:12]}"
         trigger_threshold = _safe_float(config.get("trigger_threshold"), 0.80)
         anomaly_threshold = _safe_float(config.get("anomaly_threshold"), 0.72)
+        trigger_cooldown_seconds = max(0.0, _safe_float(config.get("trigger_cooldown_seconds"), 900.0))
         has_baseline = bool(state.get("history"))
-        triggered = has_baseline and (
-            float(resonance.get("trend_acceleration", 0.0)) >= trigger_threshold
-            or float(resonance.get("anomaly_score", 0.0)) >= anomaly_threshold
-        )
-        event_mode = "alert" if triggered else "update"
+        fresh_signal = bool(new_items)
+        trigger_reason = ""
+        if float(resonance.get("trend_acceleration", 0.0)) >= trigger_threshold:
+            trigger_reason = "trend_acceleration"
+        elif float(resonance.get("anomaly_score", 0.0)) >= anomaly_threshold:
+            trigger_reason = "anomaly_score"
+        trigger_candidate = has_baseline and fresh_signal and bool(trigger_reason)
         titles = [row.get("title", "") for row in focus_items[:5] if row.get("title")]
+        trigger_signature = self._trigger_signature(
+            trigger_reason=trigger_reason,
+            titles=titles,
+            dominant_topics=dominant_topics,
+            resonance=resonance,
+        )
+        repeated_trigger = (
+            trigger_candidate
+            and trigger_signature == str(state.get("last_trigger_signature") or "")
+            and (time.time() - _safe_float(state.get("last_trigger_at"), 0.0)) < trigger_cooldown_seconds
+        )
+        triggered = trigger_candidate and not repeated_trigger
+        event_mode = "alert" if triggered else "update"
         summary_prefix = (
             "Atheria erkennt eine beschleunigte Resonanzverschiebung im Informationsfeld."
             if triggered
             else "Atheria aktualisiert ihren kontinuierlichen Resonanzzustand."
         )
+        if not fresh_signal and has_baseline:
+            summary_prefix = "Atheria haelt ihren letzten Resonanzzustand ohne neue Eingangssignale stabil."
+        elif repeated_trigger:
+            summary_prefix = "Atheria bestaetigt eine fortbestehende Anomalielage, unterdrueckt aber den Wiederholungsalarm innerhalb des Cooldown-Fensters."
         summary = summary_prefix
         if titles:
             summary += " Fokus: " + "; ".join(titles[:3]) + "."
@@ -868,8 +912,11 @@ class AtheriaALSRuntime:
             "metrics": resonance,
             "dominant_topics": dominant_topics,
             "vocabulary_additions": additions,
+            "fresh_signal": bool(fresh_signal),
             "triggered": bool(triggered),
-            "trigger_reason": "trend_acceleration" if float(resonance.get("trend_acceleration", 0.0)) >= trigger_threshold else ("anomaly_score" if float(resonance.get("anomaly_score", 0.0)) >= anomaly_threshold else ""),
+            "trigger_reason": trigger_reason if triggered else "",
+            "trigger_candidate": bool(trigger_candidate),
+            "trigger_suppressed": bool(repeated_trigger),
         }
         if self.atheria_runtime is not None and focus_items:
             training_rows = [
@@ -919,6 +966,8 @@ class AtheriaALSRuntime:
         state["last_event_id"] = event_id
         if triggered:
             state["last_trigger_id"] = event_id
+            state["last_trigger_signature"] = trigger_signature
+            state["last_trigger_at"] = event["timestamp"]
         state["event_count"] = int(state.get("event_count", 0)) + 1
         state["current_resonance"] = resonance
         state["last_cycle"] = {
@@ -959,9 +1008,14 @@ class AtheriaALSRuntime:
             },
         }
         reason = "market_alert" if triggered else "scheduled_integrity_audit"
-        if triggered and float(resonance.get("anomaly_score", 0.0)) >= anomaly_threshold:
-            reason = "market_anomaly::trend_acceleration"
-        self._append_audit_entry(reason, market=market_payload, extra={"event_id": event_id, "summary": event["summary"]})
+        if triggered:
+            if trigger_reason == "trend_acceleration":
+                reason = "market_anomaly::trend_acceleration"
+            elif trigger_reason == "anomaly_score":
+                reason = "market_anomaly::anomaly_score"
+        should_append_audit = bool(triggered or fresh_signal or not has_baseline)
+        if should_append_audit:
+            self._append_audit_entry(reason, market=market_payload, extra={"event_id": event_id, "summary": event["summary"]})
         if triggered:
             self._append_resonance_invariant(event)
         if triggered and self.federated is not None:

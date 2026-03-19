@@ -2191,6 +2191,55 @@ if len(files_lines) == 2:
         self.assertTrue(self.shell.als.chronik_html_path.exists())
         self.assertTrue(self.shell.als.resonance_path.exists())
 
+    def test_atheria_als_cycle_does_not_repeat_anomaly_trigger_without_new_signal(self) -> None:
+        quiet_rows = [
+            {
+                "title": "Runtime note",
+                "summary": "agent workflow release",
+                "source": "feed-a",
+                "url": "https://quiet/a",
+            }
+        ]
+        hot_rows = [
+            {
+                "title": "AI data center boom",
+                "summary": "gpu cluster power cooling capacity expansion for agent runtime inference",
+                "source": "feed-a",
+                "url": "https://hot/1",
+            },
+            {
+                "title": "Inference bottleneck risk",
+                "summary": "latency deployment outage risk and runtime orchestration pressure increase",
+                "source": "feed-b",
+                "url": "https://hot/2",
+            },
+            {
+                "title": "Research benchmark surge",
+                "summary": "training inference reasoning paper and model benchmark acceleration",
+                "source": "feed-c",
+                "url": "https://hot/3",
+            },
+            {
+                "title": "Infrastructure investment spike",
+                "summary": "market capex funding data center rack cooling and chip capacity investment",
+                "source": "feed-d",
+                "url": "https://hot/4",
+            },
+        ]
+
+        self.shell.als.run_cycle(rows=quiet_rows)
+        first_hot = self.shell.als.run_cycle(rows=hot_rows)
+        repeated_hot = self.shell.als.run_cycle(rows=hot_rows)
+
+        audit_lines = [line for line in self.shell.als.audit_log_path.read_text(encoding="utf-8").splitlines() if line.strip()]
+        self.assertTrue(first_hot["triggered"])
+        self.assertEqual(first_hot["trigger_reason"], "anomaly_score")
+        self.assertFalse(repeated_hot["triggered"])
+        self.assertFalse(repeated_hot["fresh_signal"])
+        self.assertIn("ohne neue Eingangssignale", repeated_hot["summary"])
+        self.assertEqual(len(audit_lines), 2)
+        self.assertIn('"reason": "market_anomaly::anomaly_score"', audit_lines[-1])
+
     def test_atheria_als_ask_routes_through_atheria_and_creates_speech_act(self) -> None:
         class DummyLens:
             def list(self, limit: int = 10) -> list[dict[str, object]]:
@@ -2418,6 +2467,16 @@ if len(files_lines) == 2:
             exit_code = main(["--no-plugins", "--serve-atheria-als", "--als-once"])
         self.assertEqual(exit_code, 0)
         serve_mock.assert_called_once_with(once=True)
+
+    def test_aion_chronik_html_converts_windows_report_root_to_fetchable_file_urls(self) -> None:
+        module = runpy.run_path(str(Path("Atheria") / "aion_chronik.py"))
+        html = module["_render_html"]([], report_root=Path(r"C:\Users\ralfk\.nova_shell_memory\atheria_als\daemon_runtime"))
+
+        self.assertIn("function toFetchUrl(path)", html)
+        self.assertIn('if (/^[A-Za-z]:\\//.test(value)) {', html)
+        self.assertIn('return "file:///" + encodeURI(value).replace(/#/g, "%23");', html)
+        self.assertIn("fetch(toFetchUrl(auditFile)", html)
+        self.assertIn("fetch(toFetchUrl(resonanceFile)", html)
 
     def test_tool_register_and_call_with_schema(self) -> None:
         register = self.shell.route(

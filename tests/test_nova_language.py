@@ -11,6 +11,7 @@ import time
 import unittest
 import urllib.request
 from pathlib import Path
+from unittest.mock import patch
 
 from nova import AgentNode, ExecutorTask, NovaBlobGenerator, NovaGraphCompiler, NovaParser, NovaRuntime, ToolNode
 from nova.agents.runtime import AgentTask
@@ -467,6 +468,22 @@ class NovaLanguageTests(unittest.TestCase):
                 self.assertGreaterEqual(snapshot["mesh"]["task_count"], 1)
                 self.assertGreaterEqual(snapshot["observability"]["node_count"], 1)
                 self.assertTrue(any(event.name == "new_metric" for event in runtime.context.event_bus.history))
+
+    def test_runtime_observability_validation_streams_trace_store(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            with NovaRuntime() as runtime:
+                runtime.load(DECLARATIVE_PROGRAM, base_path=tmp)
+                assert runtime.context is not None
+
+                runtime.context.observability.record(kind="flow", name="stream-a", status="ok", duration_ms=1.0)
+                runtime.context.observability.record(kind="node", name="stream-b", status="ok", duration_ms=2.0)
+                runtime.context.observability.record(kind="event", name="stream-c", status="ok", duration_ms=3.0)
+
+                with patch.object(Path, "read_text", side_effect=AssertionError("validate_trace_store should stream the file")):
+                    validation = runtime.context.observability.validate_trace_store()
+
+                self.assertTrue(validation["valid"])
+                self.assertEqual(validation["records"], 3)
 
     def test_runtime_supports_directory_dataset_bootstrap(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
