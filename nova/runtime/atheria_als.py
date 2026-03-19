@@ -136,7 +136,7 @@ def _normalize_rows(payload: Any, *, source_hint: str = "") -> list[dict[str, st
 
 
 def _http_text(url: str) -> str:
-    request = urllib.request.Request(url, headers={"User-Agent": "nova-shell-als/0.8.22"})
+    request = urllib.request.Request(url, headers={"User-Agent": "nova-shell-als/0.8.23"})
     with urllib.request.urlopen(request, timeout=20) as response:
         charset = response.headers.get_content_charset() or "utf-8"
         return response.read().decode(charset, errors="replace")

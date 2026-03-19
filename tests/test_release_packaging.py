@@ -92,6 +92,28 @@ class ReleasePackagingTests(unittest.TestCase):
 
         self.assertIn(str(target.absolute()), wix)
 
+    def test_render_wix_source_excludes_transient_runtime_artifacts(self) -> None:
+        metadata = load_release_metadata()
+        with tempfile.TemporaryDirectory() as tmp:
+            bundle = Path(tmp) / "bundle"
+            bundle.mkdir(parents=True)
+            (bundle / "nova_shell.exe").write_text("exe", encoding="utf-8")
+            smoke_temp = bundle / ".smoke-temp"
+            smoke_temp.mkdir()
+            (smoke_temp / "transient.log").write_text("tmp", encoding="utf-8")
+            pycache = bundle / "pkg" / "__pycache__"
+            pycache.mkdir(parents=True)
+            (pycache / "module.cpython-312.pyc").write_bytes(b"pyc")
+            legit = bundle / "pkg" / "module.py"
+            legit.write_text("print('ok')\n", encoding="utf-8")
+
+            wix = render_wix_source(metadata, __version__, bundle, "nova_shell.exe")
+
+        self.assertIn("module.py", wix)
+        self.assertNotIn(".smoke-temp", wix)
+        self.assertNotIn("__pycache__", wix)
+        self.assertNotIn(".pyc", wix)
+
     def test_format_deb_description(self) -> None:
         text = format_deb_description("Summary", "Line one\n\nLine two")
         self.assertIn("Summary", text)

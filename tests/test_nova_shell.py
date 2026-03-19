@@ -2584,6 +2584,38 @@ if len(files_lines) == 2:
         self.assertIn("fetch(toFetchUrl(auditFile)", html)
         self.assertIn("fetch(toFetchUrl(resonanceFile)", html)
 
+    def test_aion_chronik_html_preserves_embedded_resonance_when_local_fetch_fails(self) -> None:
+        module = runpy.run_path(str(Path("Atheria") / "aion_chronik.py"))
+        report_root = Path(self._temp_home.name) / "daemon_runtime"
+        core_audit = report_root / "core_audit"
+        core_audit.mkdir(parents=True, exist_ok=True)
+        (core_audit / "nova-shell-als_inter_core_resonance.jsonl").write_text(
+            json.dumps(
+                {
+                    "timestamp": 1773958203.2038045,
+                    "observer_label": "Atheria Live Stream",
+                    "trigger_asset": "SIGNAL",
+                    "target_asset": "TEMPERATURE",
+                    "lag_minutes": 0.0,
+                    "invariant": {
+                        "statement": "Atheria erkennt eine stabile Invariante im lokalen Resonanzfeld.",
+                        "confidence": 0.81,
+                        "mean_effect_size": 0.194,
+                        "samples": 48,
+                    },
+                }
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+
+        html = module["_render_html"]([], report_root=report_root)
+
+        self.assertIn('id="chronik-resonance-card" data-embedded-resonance="1"', html)
+        self.assertIn("function canUseEmbeddedResonance(activeReportDir)", html)
+        self.assertIn("if (canUseEmbeddedResonance(activeReportDir)) {", html)
+        self.assertIn("Atheria erkennt eine stabile Invariante im lokalen Resonanzfeld.", html)
+
     def test_tool_register_and_call_with_schema(self) -> None:
         register = self.shell.route(
             "tool register greet --description 'Greet user' "

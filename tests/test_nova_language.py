@@ -16,6 +16,7 @@ from unittest.mock import patch
 from nova import AgentNode, ExecutorTask, NovaBlobGenerator, NovaGraphCompiler, NovaParser, NovaRuntime, ToolNode
 from nova.agents.runtime import AgentTask
 from nova.mesh.registry import WorkerNode
+from nova.runtime.observability import RuntimeObservability
 from nova_shell import NovaShell
 
 
@@ -484,6 +485,32 @@ class NovaLanguageTests(unittest.TestCase):
 
                 self.assertTrue(validation["valid"])
                 self.assertEqual(validation["records"], 3)
+
+    def test_runtime_observability_validation_bounds_large_trace_store(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            with NovaRuntime() as runtime:
+                runtime.load(DECLARATIVE_PROGRAM, base_path=tmp)
+                assert runtime.context is not None
+
+                for index in range(6):
+                    runtime.context.observability.record(
+                        kind="event",
+                        name=f"record-{index}",
+                        status="ok",
+                        duration_ms=float(index + 1),
+                        metadata={"index": index},
+                    )
+
+                with (
+                    patch.object(RuntimeObservability, "MAX_VALIDATION_BYTES", 4096),
+                    patch.object(RuntimeObservability, "MAX_VALIDATION_RECORDS", 2),
+                ):
+                    validation = runtime.context.observability.validate_trace_store()
+
+                self.assertTrue(validation["valid"])
+                self.assertTrue(validation["truncated"])
+                self.assertEqual(validation["records"], 2)
+                self.assertLessEqual(validation["bytes_scanned"], 4096)
 
     def test_runtime_supports_directory_dataset_bootstrap(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

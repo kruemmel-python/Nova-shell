@@ -945,7 +945,7 @@ def _render_html(
             resonance_html = (
                 "<div class=\"section-title\">Inter-Core-Resonanz</div>"
                 "<div class=\"grid\">"
-                "<section class=\"card\" id=\"chronik-resonance-card\">"
+                "<section class=\"card\" id=\"chronik-resonance-card\" data-embedded-resonance=\"1\">"
                 f"<div class=\"badge {resonance_badge}\" id=\"chronik-resonance-badge\">Invariante</div>"
                 f"<p id=\"chronik-resonance-statement\">{esc(resonance['statement'])}</p>"
                 f"<p class=\"discovery\" id=\"chronik-resonance-meta\">{esc(' | '.join(resonance_bits))}</p>"
@@ -963,6 +963,7 @@ def _render_html(
       var navChronik = document.getElementById("nav-chronik");
       var navFinance = document.getElementById("nav-finance");
       var topbarNote = document.getElementById("topbar-note");
+      var resonanceCard = document.getElementById("chronik-resonance-card");
       var resonanceBadge = document.getElementById("chronik-resonance-badge");
       var resonanceStatement = document.getElementById("chronik-resonance-statement");
       var resonanceMeta = document.getElementById("chronik-resonance-meta");
@@ -1014,6 +1015,16 @@ def _render_html(
           return "file://" + encodeURI(value).replace(/#/g, "%23");
         }
         return value;
+      }
+
+      function canUseEmbeddedResonance(activeReportDir) {
+        if (!resonanceCard) {
+          return false;
+        }
+        if (String(activeReportDir || "") !== String(defaultReportDir || "")) {
+          return false;
+        }
+        return String(resonanceCard.getAttribute("data-embedded-resonance") || "") === "1";
       }
 
       function setBadge(tone, text) {
@@ -1101,6 +1112,9 @@ def _render_html(
             var entry = parseLatestJsonLine(text);
             var coreId = String(entry && entry.core_id || "").trim().toLowerCase();
             if (!coreId) {
+              if (canUseEmbeddedResonance(activeReportDir)) {
+                return;
+              }
               setResonanceFallback(
                 "Kein `core_id` im Daemon-Report gefunden. Resonanz-Journal kann nicht aufgeloest werden.",
                 activeReportDir
@@ -1120,6 +1134,9 @@ def _render_html(
               });
           })
           .catch(function () {
+            if (canUseEmbeddedResonance(activeReportDir)) {
+              return;
+            }
             setResonanceFallback(
               "Resonanz-Overlay konnte fuer den gewaehlten Report-Root nicht geladen werden.",
               activeReportDir

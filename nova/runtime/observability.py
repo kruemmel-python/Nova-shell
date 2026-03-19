@@ -43,6 +43,10 @@ class RuntimeTraceRecord:
 class RuntimeObservability:
     """In-memory + JSONL trace store for Nova runtime execution."""
 
+    MAX_VALIDATION_BYTES = 8 * 1024 * 1024
+    MAX_VALIDATION_RECORDS = 10_000
+    MAX_VALIDATION_LINE_BYTES = 256 * 1024
+
     def __init__(self, base_path: Path) -> None:
         state_dir = (base_path / ".nova").resolve(strict=False)
         state_dir.mkdir(parents=True, exist_ok=True)
@@ -53,6 +57,8 @@ class RuntimeObservability:
             {"name": "error-rate", "metric": "error_rate", "threshold": 0.2},
             {"name": "flow-p95-latency", "metric": "flow_p95_ms", "threshold": 5000.0},
         ]
+        self._validation_cache_signature: tuple[int, int] | None = None
+        self._validation_cache_result: dict[str, Any] | None = None
 
     def record(
         self,
@@ -139,14 +145,71 @@ class RuntimeObservability:
     def validate_trace_store(self) -> dict[str, Any]:
         if not self.trace_path.exists():
             return {"valid": True, "records": 0}
+        try:
+            stat = self.trace_path.stat()
+        except OSError as exc:
+            return {"valid": False, "records": 0, "error": str(exc)}
+
+        signature = (int(stat.st_size), int(getattr(stat, "st_mtime_ns", int(stat.st_mtime * 1_000_000_000))))
+        if self._validation_cache_signature == signature and self._validation_cache_result is not None:
+            return dict(self._validation_cache_result)
+
         parsed = 0
-        with self.trace_path.open("r", encoding="utf-8") as handle:
-            for line in handle:
-                if not line.strip():
-                    continue
-                json.loads(line)
-                parsed += 1
-        return {"valid": True, "records": parsed}
+        bytes_scanned = 0
+        truncated = False
+        try:
+            with self.trace_path.open("rb") as handle:
+                while parsed < self.MAX_VALIDATION_RECORDS and bytes_scanned < self.MAX_VALIDATION_BYTES:
+                    raw = handle.readline(self.MAX_VALIDATION_LINE_BYTES + 1)
+                    if not raw:
+                        break
+                    bytes_scanned += len(raw)
+                    if len(raw) > self.MAX_VALIDATION_LINE_BYTES and not raw.endswith(b"\n"):
+                        result = {
+                            "valid": False,
+                            "records": parsed,
+                            "error": "trace_record_too_large",
+                            "bytes_scanned": bytes_scanned,
+                            "file_size": stat.st_size,
+                            "line_limit_bytes": self.MAX_VALIDATION_LINE_BYTES,
+                        }
+                        self._validation_cache_signature = signature
+                        self._validation_cache_result = result
+                        return dict(result)
+                    if not raw.strip():
+                        continue
+                    json.loads(raw.decode("utf-8"))
+                    parsed += 1
+                truncated = parsed >= self.MAX_VALIDATION_RECORDS or bytes_scanned < stat.st_size
+        except (json.JSONDecodeError, OSError, UnicodeDecodeError, MemoryError) as exc:
+            result = {
+                "valid": False,
+                "records": parsed,
+                "error": str(exc),
+                "bytes_scanned": bytes_scanned,
+                "file_size": stat.st_size,
+            }
+            self._validation_cache_signature = signature
+            self._validation_cache_result = result
+            return dict(result)
+
+        result = {
+            "valid": True,
+            "records": parsed,
+        }
+        if truncated:
+            result.update(
+                {
+                    "truncated": True,
+                    "bytes_scanned": bytes_scanned,
+                    "file_size": stat.st_size,
+                    "byte_limit": self.MAX_VALIDATION_BYTES,
+                    "record_limit": self.MAX_VALIDATION_RECORDS,
+                }
+            )
+        self._validation_cache_signature = signature
+        self._validation_cache_result = result
+        return dict(result)
 
     def snapshot(self, limit: int = 25) -> dict[str, Any]:
         with self._lock:

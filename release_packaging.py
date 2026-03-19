@@ -156,11 +156,29 @@ def stable_guid(value: str) -> str:
     return str(uuid.uuid5(WIX_NAMESPACE, value)).upper()
 
 
+def _should_exclude_bundle_entry(relative_path: Path, *, is_dir: bool) -> bool:
+    parts = set(relative_path.parts)
+    if ".smoke-temp" in parts or "__pycache__" in parts:
+        return True
+    if not is_dir and relative_path.suffix.lower() in {".pyc", ".pyo"}:
+        return True
+    return False
+
+
 def render_wix_source(metadata: ReleaseMetadata, version: str, bundle_dir: Path, executable_name: str) -> str:
     files: list[Path] = []
-    for root, _, names in os.walk(bundle_dir):
+    for root, dirnames, names in os.walk(bundle_dir):
         root_path = Path(root)
+        rel_root = root_path.relative_to(bundle_dir)
+        dirnames[:] = [
+            name
+            for name in dirnames
+            if not _should_exclude_bundle_entry((rel_root / name) if rel_root != Path(".") else Path(name), is_dir=True)
+        ]
         for name in names:
+            rel_path = (rel_root / name) if rel_root != Path(".") else Path(name)
+            if _should_exclude_bundle_entry(rel_path, is_dir=False):
+                continue
             files.append(root_path / name)
     files.sort(key=lambda path: path.relative_to(bundle_dir).as_posix())
     rel_dir_set = {Path(".")}
