@@ -17,6 +17,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
+from nova.runtime import AtheriaVoiceRuntime
 from nova_shell import CommandResult, CppEngine, NovaAtheriaRuntime, NovaShell, PipelineType, __version__, main, render_trend_explanation, resolve_emcc_command
 from novascript import Assignment, Command, ForLoop, IfBlock, NovaInterpreter, NovaParser
 
@@ -2226,6 +2227,49 @@ if len(files_lines) == 2:
         self.assertEqual(payload["speech_act"]["mode"], "dialog")
         self.assertTrue(self.shell.als.voice_path.exists())
 
+    def test_atheria_als_ask_strips_internal_payload_sections_from_visible_answer(self) -> None:
+        self.shell.als._append_jsonl(
+            self.shell.als.events_path,
+            {
+                "event_id": "live_2",
+                "summary": "Atheria erkennt eine beschleunigte Resonanzverschiebung im Informationsfeld.",
+                "metrics": {"signal_strength": 0.51, "system_temperature": 0.13, "anomaly_score": 1.0},
+            },
+        )
+        noisy_answer = (
+            "Atheria erkennt eine beschleunigte Resonanzverschiebung im Informationsfeld. "
+            "Fokus: sichere Agent-Runtimes und AI-Infrastruktur.\n"
+            "{\"metrics\": {\"signal_strength\": 0.51}}\n\n"
+            "Weitere Atheria-Erinnerungen:\n- command_logic: graph aot <pipeline>\n\n"
+            "Atheria-Zustand:\n- Resonanz: Analyse, Reaktion\n\n"
+            "Systemfokus: Du bist Atheria ALS."
+        )
+        with patch.object(self.shell.ai_runtime, "is_configured", side_effect=lambda provider: provider == "atheria"), patch.object(
+            self.shell.ai_runtime,
+            "get_active_model",
+            side_effect=lambda provider=None: "atheria-core" if provider == "atheria" else "",
+        ), patch.object(
+            self.shell.ai_runtime,
+            "complete_prompt",
+            return_value=CommandResult(
+                output=noisy_answer,
+                data={"text": noisy_answer, "provider": "atheria", "model": "atheria-core"},
+                data_type=PipelineType.OBJECT,
+            ),
+        ):
+            result = self.shell.route('atheria als ask "Was ist im Informationsfeld gerade dominant?"')
+
+        self.assertIsNone(result.error)
+        payload = json.loads(result.output)
+        self.assertEqual(
+            payload["answer"],
+            "Atheria erkennt eine beschleunigte Resonanzverschiebung im Informationsfeld. Fokus: sichere Agent-Runtimes und AI-Infrastruktur.",
+        )
+        self.assertEqual(payload["speech_act"]["utterance_text"], payload["answer"])
+        self.assertNotIn("Weitere Atheria-Erinnerungen", payload["answer"])
+        self.assertNotIn("Systemfokus", payload["answer"])
+        self.assertNotIn('{"metrics"', payload["answer"])
+
     def test_atheria_als_feedback_trains_and_logs_dialog(self) -> None:
         with patch.object(self.shell.atheria, "train_rows", return_value=1) as train_mock:
             result = self.shell.route('atheria als feedback "Focus more on GPU runtime anomalies."')
@@ -2255,6 +2299,36 @@ if len(files_lines) == 2:
         self.assertEqual(len(payload), 3)
         self.assertEqual([item["event_id"] for item in payload], ["als_2", "als_3", "als_4"])
         self.assertEqual(result.data_type, PipelineType.OBJECT)
+
+    def test_atheria_voice_windows_backend_uses_plain_quoted_path_in_powershell(self) -> None:
+        voice_runtime = AtheriaVoiceRuntime(Path(self._temp_home.name) / "voice_runtime")
+        captured: dict[str, object] = {}
+
+        def fake_run(command: list[str], **kwargs: object) -> SimpleNamespace:
+            captured["command"] = list(command)
+            captured["kwargs"] = dict(kwargs)
+            return SimpleNamespace(returncode=0, stderr="", stdout="")
+
+        with patch("nova.runtime.atheria_als.os.name", "nt"), patch(
+            "nova.runtime.atheria_als.subprocess.run",
+            side_effect=fake_run,
+        ):
+            spoken, backend, error = voice_runtime._speak_windows(
+                "Atheria spricht.",
+                {"pitch_percent": 0, "rate": 0, "volume": 70},
+                voice_name="Microsoft Hedda Desktop",
+            )
+
+        self.assertTrue(spoken)
+        self.assertEqual(backend, "sapi")
+        self.assertEqual(error, "")
+        command = captured["command"]
+        self.assertIsInstance(command, list)
+        self.assertIn("-Command", command)
+        powershell_script = str(command[-1])
+        self.assertIn("Get-Content -Raw -Path '", powershell_script)
+        self.assertNotIn("@'", powershell_script)
+        self.assertIn("SpeakSsml", powershell_script)
 
     def test_cli_main_serve_atheria_als_once_routes_to_runtime(self) -> None:
         with patch("nova_shell.AtheriaALSRuntime.serve_forever", return_value=0) as serve_mock:

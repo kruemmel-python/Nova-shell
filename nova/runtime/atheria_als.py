@@ -134,7 +134,7 @@ def _normalize_rows(payload: Any, *, source_hint: str = "") -> list[dict[str, st
 
 
 def _http_text(url: str) -> str:
-    request = urllib.request.Request(url, headers={"User-Agent": "nova-shell-als/0.8.18"})
+    request = urllib.request.Request(url, headers={"User-Agent": "nova-shell-als/0.8.19"})
     with urllib.request.urlopen(request, timeout=20) as response:
         charset = response.headers.get_content_charset() or "utf-8"
         return response.read().decode(charset, errors="replace")
@@ -268,16 +268,17 @@ class AtheriaVoiceRuntime:
         with tempfile.NamedTemporaryFile("w", delete=False, suffix=".ssml", encoding="utf-8") as handle:
             handle.write(ssml)
             temp_path = Path(handle.name)
+        temp_path_text = str(temp_path).replace("'", "''")
         command = [
             "powershell",
             "-NoProfile",
             "-Command",
             (
-                "$ssml = Get-Content -Raw -Path @'{0}'@; "
+                "$ssml = Get-Content -Raw -Path '{0}'; "
                 "Add-Type -AssemblyName System.Speech; "
                 "$s = New-Object System.Speech.Synthesis.SpeechSynthesizer; "
                 "$s.SpeakSsml($ssml)"
-            ).format(str(temp_path))
+            ).format(temp_path_text)
         ]
         try:
             completed = subprocess.run(command, capture_output=True, text=True, timeout=45, check=False)
@@ -1002,6 +1003,30 @@ class AtheriaALSRuntime:
             return f"{summary} Evidenz: {', '.join(details)}." if details else summary
         return summary
 
+    def _normalize_dialog_answer(self, text: str) -> str:
+        cleaned = _ensure_text(text).replace("\r\n", "\n").strip()
+        if not cleaned:
+            return ""
+        cut_markers = (
+            "\n{",
+            "\n\n{",
+            "\nWeitere Atheria-Erinnerungen:",
+            "\n\nWeitere Atheria-Erinnerungen:",
+            "\nAtheria-Zustand:",
+            "\n\nAtheria-Zustand:",
+            "\nSystemfokus:",
+            "\n\nSystemfokus:",
+        )
+        end_index = len(cleaned)
+        for marker in cut_markers:
+            position = cleaned.find(marker)
+            if position != -1:
+                end_index = min(end_index, position)
+        cleaned = cleaned[:end_index].strip()
+        cleaned = re.sub(r"\s+\n", "\n", cleaned)
+        cleaned = re.sub(r"\n{3,}", "\n\n", cleaned)
+        return cleaned.strip()
+
     def ask(self, question: str) -> dict[str, Any]:
         prompt = _ensure_text(question)
         if not prompt:
@@ -1041,7 +1066,7 @@ class AtheriaALSRuntime:
             )
             if result.error is None:
                 raw_payload = dict(result.data or {})
-                answer_text = _ensure_text(raw_payload.get("text") or result.output)
+                answer_text = self._normalize_dialog_answer(raw_payload.get("text") or result.output)
         if not answer_text:
             raw_payload = {"provider": provider or "heuristic", "model": model or "als-heuristic"}
             answer_text = self._heuristic_answer(prompt, recent_events)
