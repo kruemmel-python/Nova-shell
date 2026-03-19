@@ -1,6 +1,7 @@
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from nova_shell import __version__
 from release_packaging import (
@@ -78,6 +79,18 @@ class ReleasePackagingTests(unittest.TestCase):
         self.assertIn('Name="numpy"', wix)
         self.assertIn('Name="_core"', wix)
         self.assertIn("multiarray.pyd", wix)
+
+    def test_render_wix_source_avoids_path_resolve_for_file_sources(self) -> None:
+        metadata = load_release_metadata()
+        with tempfile.TemporaryDirectory() as tmp:
+            bundle = Path(tmp) / "bundle"
+            bundle.mkdir(parents=True)
+            target = bundle / "nova_shell.exe"
+            target.write_text("exe", encoding="utf-8")
+            with patch.object(Path, "resolve", side_effect=AssertionError("resolve should not be called")):
+                wix = render_wix_source(metadata, __version__, bundle, "nova_shell.exe")
+
+        self.assertIn(str(target.absolute()), wix)
 
     def test_format_deb_description(self) -> None:
         text = format_deb_description("Summary", "Line one\n\nLine two")

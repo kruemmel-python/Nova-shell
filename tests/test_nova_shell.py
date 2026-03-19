@@ -2240,6 +2240,53 @@ if len(files_lines) == 2:
         self.assertEqual(len(audit_lines), 2)
         self.assertIn('"reason": "market_anomaly::anomaly_score"', audit_lines[-1])
 
+    def test_atheria_als_chronik_explains_trigger_without_generation_jargon(self) -> None:
+        self.shell.als.configure({"topic": "AI infrastructure agent runtime"})
+        quiet_rows = [
+            {
+                "title": "Runtime note",
+                "summary": "agent workflow release",
+                "source": "feed-a",
+                "url": "https://quiet/a",
+                "sensor": "rss",
+            }
+        ]
+        hot_rows = [
+            {
+                "title": "AI data center boom",
+                "summary": "gpu cluster power cooling capacity expansion for agent runtime inference",
+                "source": "feed-a",
+                "url": "https://hot/1",
+                "sensor": "rss",
+            },
+            {
+                "title": "Inference bottleneck risk",
+                "summary": "latency deployment outage risk and runtime orchestration pressure increase",
+                "source": "web_search:duckduckgo_html",
+                "url": "https://hot/2",
+                "sensor": "web_search",
+            },
+            {
+                "title": "Research benchmark surge",
+                "summary": "training inference reasoning paper and model benchmark acceleration",
+                "source": "feed-c",
+                "url": "https://hot/3",
+                "sensor": "rss",
+            },
+        ]
+
+        self.shell.als.run_cycle(rows=quiet_rows)
+        self.shell.als.run_cycle(rows=hot_rows)
+
+        html = self.shell.als.chronik_html_path.read_text(encoding="utf-8")
+        self.assertIn("ALS loeste einen Trigger im Informationsfeld aus", html)
+        self.assertIn("Anomalie-Score", html)
+        self.assertIn("Thema: AI infrastructure agent runtime.", html)
+        self.assertIn("Ausloesende Hinweise:", html)
+        self.assertIn("Inference bottleneck risk", html)
+        self.assertNotIn("unbenanntes Offspring", html)
+        self.assertNotIn("Eine schwere Marktanomalie loeste eine neue Generation aus", html)
+
     def test_atheria_als_ask_routes_through_atheria_and_creates_speech_act(self) -> None:
         class DummyLens:
             def list(self, limit: int = 10) -> list[dict[str, object]]:
@@ -2405,6 +2452,65 @@ if len(files_lines) == 2:
         self.assertEqual(len(payload), 3)
         self.assertEqual([item["event_id"] for item in payload], ["als_2", "als_3", "als_4"])
         self.assertEqual(result.data_type, PipelineType.OBJECT)
+
+    def test_atheria_als_search_returns_structured_web_results(self) -> None:
+        search_html = """
+        <html><body>
+          <a class="result__a" href="https://example.com/agent-runtime">Agent runtime security for local AI infrastructure</a>
+          <a class="result__snippet">A practical overview of runtime security and sovereign agent execution.</a>
+          <a class="result__a" href="https://example.com/mesh-agents">Mesh workers improve agent orchestration</a>
+          <a class="result__snippet">Distributed workers reduce latency and improve resilience for agent systems.</a>
+        </body></html>
+        """
+        with patch("nova.runtime.atheria_als._http_text", return_value=search_html):
+            result = self.shell.route('atheria als search "AI infrastructure agent runtime" --provider duckduckgo_html --limit 2')
+
+        self.assertIsNone(result.error)
+        payload = json.loads(result.output)
+        self.assertEqual(payload["query"], "AI infrastructure agent runtime")
+        self.assertEqual(payload["provider"], "duckduckgo_html")
+        self.assertEqual(payload["result_count"], 2)
+        self.assertEqual(payload["results"][0]["sensor"], "web_search")
+        self.assertEqual(payload["results"][0]["search_provider"], "duckduckgo_html")
+        self.assertIn("duckduckgo.com", payload["search_url"])
+
+    def test_atheria_als_cycle_ingests_web_search_results_when_enabled(self) -> None:
+        search_html = """
+        <html><body>
+          <a class="result__a" href="https://example.com/runtime-1">Secure agent runtime expands across enterprise AI clusters</a>
+          <a class="result__snippet">Signals point to stronger runtime-security demand across AI infrastructure.</a>
+          <a class="result__a" href="https://example.com/runtime-2">Mesh orchestration improves resilient agent deployment</a>
+          <a class="result__snippet">Distributed execution patterns lower pressure on local runtimes.</a>
+        </body></html>
+        """
+        rss_xml = """
+        <rss><channel>
+          <item>
+            <title>GPU capacity pressures continue in AI infrastructure</title>
+            <description>Operations teams report increased demand for agent runtimes.</description>
+            <link>https://example.com/rss-gpu-capacity</link>
+            <pubDate>Wed, 19 Mar 2026 07:00:00 GMT</pubDate>
+          </item>
+        </channel></rss>
+        """
+
+        def fake_http_text(url: str) -> str:
+            if "duckduckgo" in url:
+                return search_html
+            return rss_xml
+
+        configure = self.shell.route(
+            'atheria als configure --topic "AI infrastructure agent runtime" --web-search on --search-query "AI infrastructure agent runtime" --search-provider duckduckgo_html --search-limit 2'
+        )
+        self.assertIsNone(configure.error)
+        with patch("nova.runtime.atheria_als._http_text", side_effect=fake_http_text):
+            result = self.shell.route("atheria als cycle")
+
+        self.assertIsNone(result.error)
+        payload = json.loads(result.output)
+        self.assertEqual(payload["sensor_counts"]["web_search"], 2)
+        self.assertGreaterEqual(payload["sensor_counts"]["rss"], 1)
+        self.assertTrue(any(str(item.get("source", "")).startswith("web_search:duckduckgo_html") for item in payload["items"]))
 
     def test_atheria_voice_windows_backend_uses_plain_quoted_path_in_powershell(self) -> None:
         voice_runtime = AtheriaVoiceRuntime(Path(self._temp_home.name) / "voice_runtime")

@@ -14,6 +14,7 @@ Sie verschiebt Atheria von einem punktuellen `run`- oder Report-Modell zu einem 
 Wichtig ist die Einordnung:
 Das aktuelle ALS arbeitet als residenter, wiederkehrender Stream-Loop ueber RSS- und API-Quellen.
 Es ist damit kein einmaliger Morning-Briefing-Lauf mehr, aber auch noch kein globaler Push-Bus mit Websocket-Zwang.
+Neu dazu kommt ein optionaler `web_search`-Pfad, der Suchergebnisse parallel zu den Feed-Quellen einsammelt und in denselben Resonanzzyklus einspeist.
 
 ## Kernobjekte
 
@@ -147,6 +148,7 @@ atheria als configure
 atheria als cycle
 atheria als start
 atheria als stop
+atheria als search <query>
 atheria als ask <question>
 atheria als feedback <text>
 atheria als voice status
@@ -182,6 +184,18 @@ Erwartung:
 - `config.json` wird aktualisiert
 - Thema, Interval und Triggerwerte sind persistent gesetzt
 
+### Websuche zusaetzlich zum Feed-Stream aktivieren
+
+```powershell
+atheria als configure --web-search on --search-query "AI infrastructure agent runtime" --search-provider duckduckgo_html --search-limit 6
+```
+
+Erwartung:
+
+- `config.json` enthaelt einen `web_search`-Block
+- kuenftige `cycle`- und `start`-Laeufe mischen RSS- und Suchergebnisse
+- `status` zeigt die aktive Suchkonfiguration im Stream-Block
+
 ### Einzelausfuehrung fuer schnellen Test
 
 ```powershell
@@ -194,6 +208,26 @@ Erwartung:
 - aktualisierter `state.json`
 - ggf. ein `speech_act`
 - Audit-Eintrag und Chronik-Refresh
+
+### Direkte Websuche ohne dauerhaften Daemon-Lauf
+
+```powershell
+atheria als search "AI infrastructure agent runtime" --provider duckduckgo_html --limit 5
+```
+
+Erwartung:
+
+- JSON mit `query`, `provider`, `result_count` und `results`
+- jedes Ergebnis enthaelt `sensor: web_search`
+- der Befehl aendert noch keinen ALS-Zustand
+
+Falls die Suchtreffer sofort in ALS eingehen sollen:
+
+```powershell
+atheria als search "AI infrastructure agent runtime" --provider duckduckgo_html --limit 5 --ingest
+```
+
+Dann fuehrt ALS direkt einen Zyklus mit diesen Treffern aus.
 
 ### Residenten Loop starten
 

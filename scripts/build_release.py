@@ -250,7 +250,7 @@ def collect_nuitka_nofollow(profile: str) -> list[str]:
 
 def collect_nuitka_compile_flags(profile: str) -> list[str]:
     flags: list[str] = []
-    if _is_windows_runtime() and profile == "enterprise":
+    if _is_windows_runtime() and profile in {"core", "enterprise"}:
         flags.extend(
             [
                 "--low-memory",
@@ -710,6 +710,16 @@ def ignored_names(names: list[str], patterns: tuple[str, ...]) -> set[str]:
     return ignored
 
 
+def safe_copy2_file(src: Path, dst: Path) -> None:
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    with src.open("rb") as source_handle, dst.open("wb") as target_handle:
+        shutil.copyfileobj(source_handle, target_handle, length=4 * 1024 * 1024)
+    with contextlib.suppress(OSError):
+        stat_result = src.stat()
+        os.chmod(dst, stat.S_IMODE(stat_result.st_mode))
+        os.utime(dst, (stat_result.st_atime, stat_result.st_mtime))
+
+
 def safe_copytree(
     src: Path,
     dst: Path,
@@ -789,7 +799,7 @@ def safe_copytree(
                     continue
                 except OSError:
                     pass
-            shutil.copy2(source_file, target_file)
+            safe_copy2_file(source_file, target_file)
 
 
 def copytree_filtered(src: Path, dst: Path) -> None:
@@ -798,7 +808,7 @@ def copytree_filtered(src: Path, dst: Path) -> None:
 
 def copy_file_filtered(src: Path, dst: Path) -> None:
     dst.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(src, dst)
+    safe_copy2_file(src, dst)
 
 
 def resolve_distribution_names(package_name: str) -> list[str]:
@@ -1172,7 +1182,7 @@ def stage_minimal_python_runtime(target_root: Path) -> None:
     for name in runtime_files:
         source = python_root / name
         if source.exists():
-            shutil.copy2(source, target_root / source.name)
+            safe_copy2_file(source, target_root / source.name)
 
     dll_source = python_root / "DLLs"
     dll_target = target_root / "DLLs"
@@ -1199,10 +1209,10 @@ def stage_minimal_node_runtime(cache_dir: Path, target_root: Path) -> None:
     target_version_root = target_root / version_root.relative_to(cache_dir / "node")
     target_bin = target_version_root / ("bin" if node_exe.parent.name == "bin" else "")
     target_bin.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(node_exe, target_bin / node_exe.name)
+    safe_copy2_file(node_exe, target_bin / node_exe.name)
     version_marker = version_root / ".emsdk_version"
     if version_marker.exists():
-        shutil.copy2(version_marker, target_version_root / version_marker.name)
+        safe_copy2_file(version_marker, target_version_root / version_marker.name)
 
 
 def stage_emsdk_runtime_subset(cache_dir: Path, target_root: Path) -> None:
@@ -1349,7 +1359,7 @@ def stage_windows_installer_support_files(installer_root: Path, *, build_context
         if not source.exists() or not source.is_file():
             continue
         target = installer_root / source.name
-        shutil.copy2(source, target)
+        safe_copy2_file(source, target)
         with contextlib.suppress(FileNotFoundError):
             os.utime(
                 target,
@@ -1382,8 +1392,8 @@ def prepare_linux_appdir(bundle_dir: Path, executable: Path, work_root: Path, *,
     appstream = render_appstream_metadata(metadata)
     icon_source = ASSETS_DIR / f"{metadata.app_id}.svg"
     icon_root = appdir / f"{metadata.app_id}.svg"
-    shutil.copy2(icon_source, icon_root)
-    shutil.copy2(icon_source, appdir / ".DirIcon")
+    safe_copy2_file(icon_source, icon_root)
+    safe_copy2_file(icon_source, appdir / ".DirIcon")
 
     write_text(appdir / "AppRun", "#!/bin/sh\nexec \"$APPDIR/usr/bin/nova-shell\" \"$@\"\n", executable=True)
     write_text(appdir / f"{metadata.app_id}.desktop", desktop_entry)
@@ -1391,7 +1401,7 @@ def prepare_linux_appdir(bundle_dir: Path, executable: Path, work_root: Path, *,
     write_text(appdir / "usr" / "share" / "metainfo" / f"{metadata.app_id}.appdata.xml", appstream)
     icon_target = appdir / "usr" / "share" / "icons" / "hicolor" / "scalable" / "apps" / f"{metadata.app_id}.svg"
     icon_target.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(icon_source, icon_target)
+    safe_copy2_file(icon_source, icon_target)
     normalize_tree_timestamps(appdir, build_context.source_date_epoch)
     return appdir
 
@@ -1429,7 +1439,7 @@ def build_deb(build_root: Path, bundle_dir: Path, executable: Path, profile: str
     write_text(package_root / "usr" / "share" / "metainfo" / f"{metadata.app_id}.appdata.xml", appstream)
     deb_icon_target = package_root / "usr" / "share" / "icons" / "hicolor" / "scalable" / "apps" / f"{metadata.app_id}.svg"
     deb_icon_target.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(ASSETS_DIR / f"{metadata.app_id}.svg", deb_icon_target)
+    safe_copy2_file(ASSETS_DIR / f"{metadata.app_id}.svg", deb_icon_target)
 
     control_dir = package_root / "DEBIAN"
     control_dir.mkdir(parents=True, exist_ok=True)
@@ -1451,7 +1461,7 @@ def build_deb(build_root: Path, bundle_dir: Path, executable: Path, profile: str
     for script_name in ("postinst", "prerm"):
         src = LINUX_DIR / script_name
         dst = control_dir / script_name
-        shutil.copy2(src, dst)
+        safe_copy2_file(src, dst)
         make_executable(dst)
 
     normalize_tree_timestamps(package_root, build_context.source_date_epoch)

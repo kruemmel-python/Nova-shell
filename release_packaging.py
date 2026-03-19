@@ -208,7 +208,7 @@ def render_wix_source(metadata: ReleaseMetadata, version: str, bundle_dir: Path,
             comp_id = stable_wix_id("CMP", rel_file.as_posix())
             file_id = stable_wix_id("FIL", rel_file.as_posix())
             component_refs.append(f'      <ComponentRef Id="{comp_id}" />')
-            source = escape(str((bundle_dir / rel_file).resolve()))
+            source = escape(os.path.abspath(os.fspath(bundle_dir / rel_file)))
             lines.extend(
                 [
                     f'      <Component Id="{comp_id}" Guid="{stable_guid(rel_file.as_posix())}">',

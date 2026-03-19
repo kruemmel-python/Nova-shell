@@ -11,10 +11,12 @@ import socket
 import subprocess
 import tempfile
 import time
+import urllib.parse
 import urllib.request
 import uuid
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
+from html.parser import HTMLParser
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, Callable, Iterable
@@ -134,7 +136,7 @@ def _normalize_rows(payload: Any, *, source_hint: str = "") -> list[dict[str, st
 
 
 def _http_text(url: str) -> str:
-    request = urllib.request.Request(url, headers={"User-Agent": "nova-shell-als/0.8.21"})
+    request = urllib.request.Request(url, headers={"User-Agent": "nova-shell-als/0.8.22"})
     with urllib.request.urlopen(request, timeout=20) as response:
         charset = response.headers.get_content_charset() or "utf-8"
         return response.read().decode(charset, errors="replace")
@@ -162,6 +164,75 @@ def _parse_feed_xml(text: str, source: str) -> list[dict[str, str]]:
             }
         )
     return [row for row in rows if any(row.values())]
+
+
+def _normalize_search_result_url(url: str) -> str:
+    cleaned = html.unescape(_ensure_text(url))
+    if cleaned.startswith("//"):
+        cleaned = "https:" + cleaned
+    parsed = urllib.parse.urlparse(cleaned)
+    if "duckduckgo.com" in parsed.netloc and parsed.path.startswith("/l/"):
+        target = urllib.parse.parse_qs(parsed.query).get("uddg", [])
+        if target:
+            cleaned = urllib.parse.unquote(target[0])
+    return cleaned
+
+
+class _DuckDuckGoSearchParser(HTMLParser):
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.results: list[dict[str, str]] = []
+        self._current: dict[str, str] | None = None
+        self._capture_title = False
+        self._capture_snippet_depth = 0
+
+    def _commit_current(self) -> None:
+        if not isinstance(self._current, dict):
+            return
+        title = re.sub(r"\s+", " ", self._current.get("title", "")).strip()
+        summary = re.sub(r"\s+", " ", self._current.get("summary", "")).strip()
+        url = _normalize_search_result_url(self._current.get("url", ""))
+        if title and url:
+            self.results.append(
+                {
+                    "title": title,
+                    "summary": summary,
+                    "url": url,
+                }
+            )
+        self._current = None
+        self._capture_title = False
+        self._capture_snippet_depth = 0
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        attr_map = {key: (value or "") for key, value in attrs}
+        classes = set(attr_map.get("class", "").split())
+        href = attr_map.get("href", "")
+        if tag == "a" and href and ("result__a" in classes or "result-link" in classes):
+            self._commit_current()
+            self._current = {"title": "", "summary": "", "url": href}
+            self._capture_title = True
+            return
+        if self._current and tag in {"a", "div", "span"} and ("result__snippet" in classes or "result-snippet" in classes):
+            self._capture_snippet_depth += 1
+
+    def handle_endtag(self, tag: str) -> None:
+        if self._capture_title and tag == "a":
+            self._capture_title = False
+        if self._capture_snippet_depth and tag in {"a", "div", "span"}:
+            self._capture_snippet_depth = max(0, self._capture_snippet_depth - 1)
+
+    def handle_data(self, data: str) -> None:
+        if not isinstance(self._current, dict):
+            return
+        if self._capture_title:
+            self._current["title"] += data
+        elif self._capture_snippet_depth:
+            self._current["summary"] += data
+
+    def close(self) -> None:
+        super().close()
+        self._commit_current()
 
 
 def _score_groups(text: str) -> dict[str, float]:
@@ -395,6 +466,12 @@ class AtheriaALSRuntime:
                 "audio_enabled": False,
                 "voice_name": str(self.runtime_config.get("atheria_als_voice_name") or ""),
             },
+            "web_search": {
+                "enabled": str(self.runtime_config.get("atheria_als_web_search_enabled") or "").strip().lower() in {"1", "true", "on", "yes"},
+                "query": str(self.runtime_config.get("atheria_als_search_query") or topic).strip() or topic,
+                "provider": str(self.runtime_config.get("atheria_als_search_provider") or "duckduckgo_html").strip() or "duckduckgo_html",
+                "max_results": int(self.runtime_config.get("atheria_als_search_max_results") or 8),
+            },
             "federated": {
                 "broadcast": False,
                 "namespace": "atheria",
@@ -437,6 +514,12 @@ class AtheriaALSRuntime:
                 config["voice"]["enabled"] = bool(voice.get("enabled", config["voice"]["enabled"]))
                 config["voice"]["audio_enabled"] = bool(voice.get("audio_enabled", config["voice"]["audio_enabled"]))
                 config["voice"]["voice_name"] = _ensure_text(voice.get("voice_name") or config["voice"]["voice_name"])
+            if isinstance(payload.get("web_search"), dict):
+                search = dict(payload["web_search"])
+                config["web_search"]["enabled"] = bool(search.get("enabled", config["web_search"]["enabled"]))
+                config["web_search"]["query"] = _ensure_text(search.get("query") or config["web_search"]["query"]) or config["topic"]
+                config["web_search"]["provider"] = _ensure_text(search.get("provider") or config["web_search"]["provider"]) or "duckduckgo_html"
+                config["web_search"]["max_results"] = max(1, _safe_int(search.get("max_results"), config["web_search"]["max_results"]))
             if isinstance(payload.get("federated"), dict):
                 fed = dict(payload["federated"])
                 config["federated"]["broadcast"] = bool(fed.get("broadcast", config["federated"]["broadcast"]))
@@ -460,11 +543,22 @@ class AtheriaALSRuntime:
             config["voice"]["audio_enabled"] = str(os.environ.get("NOVA_ALS_VOICE_AUDIO")).strip().lower() in {"1", "true", "on", "yes"}
         if os.environ.get("NOVA_ALS_VOICE_NAME"):
             config["voice"]["voice_name"] = _ensure_text(os.environ.get("NOVA_ALS_VOICE_NAME"))
+        if os.environ.get("NOVA_ALS_WEB_SEARCH"):
+            config["web_search"]["enabled"] = str(os.environ.get("NOVA_ALS_WEB_SEARCH")).strip().lower() in {"1", "true", "on", "yes"}
+        if os.environ.get("NOVA_ALS_SEARCH_QUERY"):
+            config["web_search"]["query"] = _ensure_text(os.environ.get("NOVA_ALS_SEARCH_QUERY")) or config["topic"]
+        if os.environ.get("NOVA_ALS_SEARCH_PROVIDER"):
+            config["web_search"]["provider"] = _ensure_text(os.environ.get("NOVA_ALS_SEARCH_PROVIDER")) or "duckduckgo_html"
+        if os.environ.get("NOVA_ALS_SEARCH_LIMIT"):
+            config["web_search"]["max_results"] = max(1, _safe_int(os.environ.get("NOVA_ALS_SEARCH_LIMIT"), config["web_search"]["max_results"]))
         if os.environ.get("NOVA_ALS_FEDERATED_BROADCAST"):
             config["federated"]["broadcast"] = str(os.environ.get("NOVA_ALS_FEDERATED_BROADCAST")).strip().lower() in {"1", "true", "on", "yes"}
         if not config["feeds"] and callable(self.default_feed_factory):
             default_feeds = _ensure_text(self.default_feed_factory(config["topic"]))
             config["feeds"] = [item.strip() for item in default_feeds.split(",") if item.strip()]
+        config["web_search"]["query"] = _ensure_text(config.get("web_search", {}).get("query") or config["topic"]) or config["topic"]
+        config["web_search"]["provider"] = _ensure_text(config.get("web_search", {}).get("provider") or "duckduckgo_html") or "duckduckgo_html"
+        config["web_search"]["max_results"] = max(1, _safe_int(config.get("web_search", {}).get("max_results"), 8))
         return config
 
     def load_config(self) -> dict[str, Any]:
@@ -475,7 +569,7 @@ class AtheriaALSRuntime:
         merged = dict(current) if isinstance(current, dict) else {}
         if isinstance(updates, dict):
             for key, value in updates.items():
-                if key in {"voice", "federated"} and isinstance(value, dict):
+                if key in {"voice", "web_search", "federated"} and isinstance(value, dict):
                     merged[key] = {**dict(merged.get(key) or {}), **value}
                 else:
                     merged[key] = value
@@ -548,9 +642,16 @@ class AtheriaALSRuntime:
                 _ensure_text(item.get("url")),
                 _ensure_text(item.get("title")),
                 _ensure_text(item.get("summary")),
-                _ensure_text(item.get("source")),
             ]
         )
+        if not basis.replace("|", "").strip():
+            basis = "|".join(
+                [
+                    _ensure_text(item.get("title")),
+                    _ensure_text(item.get("summary")),
+                    _ensure_text(item.get("source")),
+                ]
+            )
         return hashlib.sha256(basis.encode("utf-8", errors="replace")).hexdigest()
 
     def _collect_stream_items(self, feeds: list[str], *, max_items: int) -> list[dict[str, str]]:
@@ -566,10 +667,108 @@ class AtheriaALSRuntime:
             stripped = body.lstrip()
             if stripped.startswith("{") or stripped.startswith("["):
                 with contextlib.suppress(Exception):
-                    rows.extend(_normalize_rows(json.loads(body), source_hint=source))
+                    for row in _normalize_rows(json.loads(body), source_hint=source):
+                        row["sensor"] = "rss"
+                        rows.append(row)
                     continue
             with contextlib.suppress(Exception):
-                rows.extend(_parse_feed_xml(body, source))
+                for row in _parse_feed_xml(body, source):
+                    row["sensor"] = "rss"
+                    rows.append(row)
+        seen: set[str] = set()
+        deduped: list[dict[str, str]] = []
+        for row in rows:
+            digest = self._item_hash(row)
+            if digest in seen:
+                continue
+            seen.add(digest)
+            deduped.append(row)
+            if len(deduped) >= max_items:
+                break
+        return deduped
+
+    def _web_search_url(self, query: str, provider: str) -> str:
+        normalized_provider = _ensure_text(provider).lower() or "duckduckgo_html"
+        encoded_query = urllib.parse.quote_plus(_ensure_text(query))
+        if normalized_provider in {"duckduckgo", "duckduckgo_html"}:
+            return f"https://html.duckduckgo.com/html/?q={encoded_query}"
+        if normalized_provider in {"duckduckgo_lite", "duckduckgo-lite"}:
+            return f"https://lite.duckduckgo.com/lite/?q={encoded_query}"
+        if normalized_provider in {"google_news", "google_news_rss", "google-news-rss"}:
+            return f"https://news.google.com/rss/search?q={encoded_query}"
+        raise ValueError(f"unsupported ALS search provider: {provider}")
+
+    def _normalize_search_rows(self, rows: list[dict[str, str]], *, query: str, provider: str) -> list[dict[str, str]]:
+        normalized: list[dict[str, str]] = []
+        source_label = f"web_search:{provider}"
+        for row in rows:
+            title = _ensure_text(row.get("title"))
+            summary = _ensure_text(row.get("summary"))
+            url = _normalize_search_result_url(row.get("url", ""))
+            if not title or not url:
+                continue
+            normalized.append(
+                {
+                    "title": title,
+                    "summary": summary,
+                    "source": source_label,
+                    "url": url,
+                    "published_at": _ensure_text(row.get("published_at")),
+                    "sensor": "web_search",
+                    "search_query": _ensure_text(query),
+                    "search_provider": _ensure_text(provider),
+                }
+            )
+        return normalized
+
+    def _search_web_rows(self, query: str, *, provider: str, limit: int) -> list[dict[str, str]]:
+        normalized_provider = _ensure_text(provider).lower() or "duckduckgo_html"
+        source_url = self._web_search_url(query, normalized_provider)
+        body = _http_text(source_url)
+        stripped = body.lstrip()
+        if normalized_provider in {"google_news", "google_news_rss", "google-news-rss"}:
+            rows = _parse_feed_xml(body, source_url)
+            return self._normalize_search_rows(rows[: max(1, int(limit))], query=query, provider=normalized_provider)
+        parser = _DuckDuckGoSearchParser()
+        parser.feed(body)
+        parser.close()
+        return self._normalize_search_rows(parser.results[: max(1, int(limit))], query=query, provider=normalized_provider)
+
+    def search_web(self, query: str, *, provider: str | None = None, limit: int | None = None) -> dict[str, Any]:
+        config = self.load_config()
+        search_config = dict(config.get("web_search") or {})
+        resolved_query = _ensure_text(query) or _ensure_text(search_config.get("query")) or _ensure_text(config.get("topic"))
+        if not resolved_query:
+            raise ValueError("ALS search query must not be empty")
+        resolved_provider = _ensure_text(provider or search_config.get("provider")) or "duckduckgo_html"
+        resolved_limit = max(1, _safe_int(limit if limit is not None else search_config.get("max_results"), 8))
+        results = self._search_web_rows(resolved_query, provider=resolved_provider, limit=resolved_limit)
+        return {
+            "query": resolved_query,
+            "provider": resolved_provider,
+            "limit": resolved_limit,
+            "result_count": len(results),
+            "results": results,
+            "search_url": self._web_search_url(resolved_query, resolved_provider),
+        }
+
+    def _collect_cycle_inputs(self, config: dict[str, Any]) -> list[dict[str, str]]:
+        max_items = max(8, int(config.get("max_items_per_cycle", 48)))
+        search_config = dict(config.get("web_search") or {})
+        web_enabled = bool(search_config.get("enabled"))
+        search_limit = min(max_items, max(1, _safe_int(search_config.get("max_results"), 8))) if web_enabled else 0
+        feed_budget = max_items if not web_enabled else max(8, max_items - search_limit)
+        rows: list[dict[str, str]] = []
+        rows.extend(self._collect_stream_items(list(config.get("feeds", [])), max_items=feed_budget))
+        if web_enabled:
+            with contextlib.suppress(Exception):
+                rows.extend(
+                    self._search_web_rows(
+                        _ensure_text(search_config.get("query")) or _ensure_text(config.get("topic")),
+                        provider=_ensure_text(search_config.get("provider")) or "duckduckgo_html",
+                        limit=search_limit,
+                    )
+                )
         seen: set[str] = set()
         deduped: list[dict[str, str]] = []
         for row in rows:
@@ -811,6 +1010,7 @@ class AtheriaALSRuntime:
         state = self._load_state()
         status = self._load_json(self.status_path, {})
         pid = _safe_int(_ensure_text(self.pid_path.read_text(encoding="utf-8")) if self.pid_path.exists() else 0, 0)
+        search_config = dict(config.get("web_search") or {})
         return {
             "running": self._pid_running(pid),
             "pid": pid,
@@ -825,6 +1025,12 @@ class AtheriaALSRuntime:
                 "speech_count": int(state.get("speech_count", 0)),
                 "history_length": len(state.get("history", [])),
                 "dedupe_size": len(state.get("seen_hashes", [])),
+                "web_search": {
+                    "enabled": bool(search_config.get("enabled", False)),
+                    "query": _ensure_text(search_config.get("query") or config.get("topic")),
+                    "provider": _ensure_text(search_config.get("provider") or "duckduckgo_html"),
+                    "max_results": max(1, _safe_int(search_config.get("max_results"), 8)),
+                },
             },
             "current_resonance": dict(state.get("current_resonance") or {}),
             "last_cycle": dict(state.get("last_cycle") or {}),
@@ -845,7 +1051,7 @@ class AtheriaALSRuntime:
     def run_cycle(self, *, rows: list[dict[str, str]] | None = None) -> dict[str, Any]:
         config = self.load_config()
         state = self._load_state()
-        collected = rows if rows is not None else self._collect_stream_items(list(config.get("feeds", [])), max_items=int(config.get("max_items_per_cycle", 48)))
+        collected = rows if rows is not None else self._collect_cycle_inputs(config)
         seen = set(str(item) for item in state.get("seen_hashes", []))
         new_items: list[dict[str, str]] = []
         for row in collected:
@@ -872,6 +1078,10 @@ class AtheriaALSRuntime:
             trigger_reason = "anomaly_score"
         trigger_candidate = has_baseline and fresh_signal and bool(trigger_reason)
         titles = [row.get("title", "") for row in focus_items[:5] if row.get("title")]
+        sensor_counts: dict[str, int] = {}
+        for row in collected:
+            sensor = _ensure_text(row.get("sensor") or "stream")
+            sensor_counts[sensor] = sensor_counts.get(sensor, 0) + 1
         trigger_signature = self._trigger_signature(
             trigger_reason=trigger_reason,
             titles=titles,
@@ -909,6 +1119,7 @@ class AtheriaALSRuntime:
             "item_count": len(collected),
             "new_item_count": len(new_items),
             "items": focus_items[:12],
+            "sensor_counts": sensor_counts,
             "metrics": resonance,
             "dominant_topics": dominant_topics,
             "vocabulary_additions": additions,
@@ -1003,6 +1214,10 @@ class AtheriaALSRuntime:
                         "topic": str(config.get("topic") or ""),
                         "dominant_topics": dominant_topics,
                         "new_item_count": len(new_items),
+                        "item_count": len(collected),
+                        "sensor_counts": sensor_counts,
+                        "source_titles": titles[:5],
+                        "trigger_reason": trigger_reason,
                     }
                 },
             },
@@ -1015,7 +1230,34 @@ class AtheriaALSRuntime:
                 reason = "market_anomaly::anomaly_score"
         should_append_audit = bool(triggered or fresh_signal or not has_baseline)
         if should_append_audit:
-            self._append_audit_entry(reason, market=market_payload, extra={"event_id": event_id, "summary": event["summary"]})
+            self._append_audit_entry(
+                reason,
+                market=market_payload,
+                extra={
+                    "event_id": event_id,
+                    "summary": event["summary"],
+                    "topic": str(config.get("topic") or ""),
+                    "trigger_reason": trigger_reason,
+                    "dominant_topics": dominant_topics,
+                    "source_titles": titles[:5],
+                    "sensor_counts": sensor_counts,
+                    "item_count": len(collected),
+                    "new_item_count": len(new_items),
+                    "fresh_signal": bool(fresh_signal),
+                    "metrics": {
+                        "signal_strength": _safe_float(resonance.get("signal_strength"), 0.0),
+                        "system_temperature": _safe_float(resonance.get("system_temperature"), 0.0),
+                        "structural_tension": _safe_float(resonance.get("structural_tension"), 0.0),
+                        "anomaly_score": _safe_float(resonance.get("anomaly_score"), 0.0),
+                        "trend_acceleration": _safe_float(resonance.get("trend_acceleration"), 0.0),
+                        "confidence": _safe_float(resonance.get("confidence"), 0.0),
+                    },
+                    "thresholds": {
+                        "trigger_threshold": trigger_threshold,
+                        "anomaly_threshold": anomaly_threshold,
+                    },
+                },
+            )
         if triggered:
             self._append_resonance_invariant(event)
         if triggered and self.federated is not None:
@@ -1346,7 +1588,7 @@ class AtheriaALSRuntime:
         return speech_act
 
     def serve_forever(self, *, once: bool = False) -> int:
-        self.configure({})
+        config = self.configure({})
         self.stop_request_path.unlink(missing_ok=True)
         self.pid_path.write_text(str(os.getpid()), encoding="utf-8")
         self._append_audit_entry(
@@ -1363,11 +1605,20 @@ class AtheriaALSRuntime:
                         "als": {
                             "status": "startup",
                             "host": socket.gethostname(),
+                            "topic": str(config.get("topic") or ""),
+                            "web_search": dict(config.get("web_search") or {}),
                         }
                     },
                 },
             },
-            extra={"market_start": {"transport": "rss_stream", "host": socket.gethostname()}},
+            extra={
+                "market_start": {
+                    "transport": "rss_stream",
+                    "host": socket.gethostname(),
+                    "topic": str(config.get("topic") or ""),
+                    "web_search": dict(config.get("web_search") or {}),
+                }
+            },
         )
         try:
             while True:

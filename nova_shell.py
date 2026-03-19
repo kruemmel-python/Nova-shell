@@ -64,7 +64,7 @@ except ImportError:  # pragma: no cover - platform dependent
     readline = None
 
 
-__version__ = "0.8.21"
+__version__ = "0.8.22"
 SIDELOAD_PACKAGE_DIR = "vendor-py"
 RUNTIME_CONFIG_FILE = "nova-shell-runtime.json"
 BRIEFING_REPORT_FILES: tuple[tuple[str, str, str], ...] = (
@@ -7937,6 +7937,22 @@ class NovaShell:
                 updates["feeds"] = parts[i + 1]
                 i += 2
                 continue
+            if token == "--web-search" and i + 1 < len(parts):
+                updates.setdefault("web_search", {})["enabled"] = parts[i + 1].strip().lower() in {"1", "true", "on", "yes"}
+                i += 2
+                continue
+            if token == "--search-query" and i + 1 < len(parts):
+                updates.setdefault("web_search", {})["query"] = parts[i + 1]
+                i += 2
+                continue
+            if token == "--search-provider" and i + 1 < len(parts):
+                updates.setdefault("web_search", {})["provider"] = parts[i + 1]
+                i += 2
+                continue
+            if token in {"--search-limit", "--search-max-results"} and i + 1 < len(parts):
+                updates.setdefault("web_search", {})["max_results"] = _safe_int(parts[i + 1], 8)
+                i += 2
+                continue
             if token == "--interval" and i + 1 < len(parts):
                 updates["interval_seconds"] = _safe_float(parts[i + 1], 90.0)
                 i += 2
@@ -8008,7 +8024,7 @@ class NovaShell:
 
     def _run_atheria_als(self, parts: list[str], pipeline_input: str, pipeline_data: Any) -> CommandResult:
         if len(parts) < 2:
-            return CommandResult(output="", error="usage: atheria als status|configure|cycle|start|stop|ask|feedback|voice|stream ...")
+            return CommandResult(output="", error="usage: atheria als status|configure|cycle|start|stop|search|ask|feedback|voice|stream ...")
         action = parts[1]
         if action == "status":
             payload = self.als.status_payload()
@@ -8085,6 +8101,37 @@ class NovaShell:
                         os.kill(pid, 15)
             payload["status"] = self.als.status_payload()
             return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+        if action == "search":
+            query_parts: list[str] = []
+            provider = ""
+            limit = 8
+            ingest = False
+            i = 2
+            while i < len(parts):
+                token = parts[i]
+                if token == "--provider" and i + 1 < len(parts):
+                    provider = parts[i + 1]
+                    i += 2
+                    continue
+                if token == "--limit" and i + 1 < len(parts):
+                    limit = max(1, _safe_int(parts[i + 1], 8))
+                    i += 2
+                    continue
+                if token == "--ingest":
+                    ingest = True
+                    i += 1
+                    continue
+                if token.startswith("--"):
+                    return CommandResult(output="", error=f"unknown atheria als search option: {token}")
+                query_parts.append(token)
+                i += 1
+            try:
+                payload = self.als.search_web(" ".join(query_parts).strip(), provider=provider or None, limit=limit)
+                if ingest:
+                    payload["ingest_result"] = self.als.run_cycle(rows=list(payload.get("results") or []))
+            except Exception as exc:
+                return CommandResult(output="", error=str(exc))
+            return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
         if action == "ask":
             prompt = " ".join(parts[2:]).strip()
             if not prompt:
@@ -8133,7 +8180,7 @@ class NovaShell:
                 return CommandResult(output="", error=f"unknown atheria als stream option: {parts[i]}")
             payload = self.als.tail_events(limit=limit)
             return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
-        return CommandResult(output="", error="usage: atheria als status|configure|cycle|start|stop|ask|feedback|voice|stream ...")
+        return CommandResult(output="", error="usage: atheria als status|configure|cycle|start|stop|search|ask|feedback|voice|stream ...")
 
     def _deep_merge_payload(self, base: Any, patch: Any) -> Any:
         if isinstance(base, dict) and isinstance(patch, dict):

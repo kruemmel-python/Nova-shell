@@ -110,6 +110,17 @@ class BuildReleaseTests(unittest.TestCase):
             self.assertTrue(created_archive.is_file())
             run_mock.assert_called_once()
 
+    def test_safe_copy2_file_copies_contents(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source = root / "source.bin"
+            target = root / "nested" / "target.bin"
+            source.write_bytes(b"nova-shell-build")
+
+            build_release.safe_copy2_file(source, target)
+
+            self.assertEqual(target.read_bytes(), b"nova-shell-build")
+
     def test_collect_nuitka_packages_for_enterprise_profile(self) -> None:
         with (
             patch.object(build_release.os, "name", "nt"),
@@ -153,6 +164,16 @@ class BuildReleaseTests(unittest.TestCase):
         ):
             self.assertEqual(
                 build_release.collect_nuitka_compile_flags("enterprise"),
+                ["--low-memory", "--jobs=1", "--lto=no"],
+            )
+
+    def test_collect_nuitka_compile_flags_for_windows_core_profile(self) -> None:
+        with (
+            patch.object(build_release.os, "name", "nt"),
+            patch.object(build_release.sys, "platform", "win32"),
+        ):
+            self.assertEqual(
+                build_release.collect_nuitka_compile_flags("core"),
                 ["--low-memory", "--jobs=1", "--lto=no"],
             )
 

@@ -34,6 +34,12 @@ Optional mit Audio:
 atheria als configure --audio on --voice "Microsoft Hedda Desktop"
 ```
 
+Optional mit zusaetzlicher Websuche:
+
+```powershell
+atheria als configure --web-search on --search-query "AI infrastructure agent runtime" --search-provider duckduckgo_html --search-limit 6
+```
+
 ## Schritt 3: Einen einzelnen Zyklus fahren
 
 ```powershell
@@ -46,6 +52,18 @@ Erwartung:
 - `events.jsonl` erhaelt neue Eintraege
 - `state.json` aktualisiert sich
 - `aion_chronik.html` wird erzeugt oder aktualisiert
+
+Wenn du vor dem residenten Start nur die Websuche pruefen willst:
+
+```powershell
+atheria als search "AI infrastructure agent runtime" --provider duckduckgo_html --limit 5
+```
+
+Wenn die Suchtreffer direkt in ALS uebernommen werden sollen:
+
+```powershell
+atheria als search "AI infrastructure agent runtime" --provider duckduckgo_html --limit 5 --ingest
+```
 
 ## Schritt 4: Residenten Loop starten
 

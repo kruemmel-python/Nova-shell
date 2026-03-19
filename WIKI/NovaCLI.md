@@ -487,7 +487,9 @@ Wann benutzen:
 ```powershell
 atheria als status
 atheria als configure --topic "AI infrastructure agent runtime" --interval 90 --trigger 0.80
+atheria als configure --web-search on --search-query "AI infrastructure agent runtime" --search-provider duckduckgo_html --search-limit 6
 atheria als cycle
+atheria als search "AI infrastructure agent runtime" --provider duckduckgo_html --limit 5
 atheria als start
 atheria als ask "Was heizt die Resonanz gerade auf?"
 atheria als feedback "Gewichte GPU-Runtime-Anomalien hoeher."
@@ -499,7 +501,9 @@ atheria als stop
 Erwartung:
 
 - `status` zeigt Laufzustand, Resonanz und Voice-Metadaten
+- `configure --web-search ...` aktiviert zusaetzliche Suchsignale neben den Feed-Quellen
 - `cycle` erzeugt einen einzelnen kontinuierlichen ALS-Zyklus
+- `search` fuehrt eine direkte Websuche aus, optional auch ohne residenten Daemon
 - `start` startet den residenten Hintergrundpfad
 - `ask` und `feedback` erzeugen Dialog- und Speech-Act-Eintraege
 - `stream tail` zeigt letzte ALS-Events

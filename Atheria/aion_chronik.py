@@ -243,6 +243,136 @@ def _market_sensor_context(market: Dict[str, Any]) -> Dict[str, Any]:
     return dict(snapshot.get("sensor_context") or {})
 
 
+def _als_context(entry: Dict[str, Any]) -> Dict[str, Any]:
+    market = dict(entry.get("market") or {})
+    extra = dict(entry.get("extra") or {})
+    payload = dict(_market_sensor_context(market).get("als") or {})
+    for key in (
+        "summary",
+        "topic",
+        "trigger_reason",
+        "dominant_topics",
+        "source_titles",
+        "sensor_counts",
+        "item_count",
+        "new_item_count",
+        "fresh_signal",
+        "metrics",
+        "thresholds",
+    ):
+        if key in extra and extra.get(key) not in (None, "", [], {}):
+            payload[key] = extra.get(key)
+    return payload
+
+
+def _als_topic(entry: Dict[str, Any]) -> str:
+    payload = _als_context(entry)
+    topic = str(payload.get("topic") or "").strip()
+    return topic
+
+
+def _als_dominant_topics(entry: Dict[str, Any]) -> list[str]:
+    payload = _als_context(entry)
+    topics = payload.get("dominant_topics")
+    if isinstance(topics, list):
+        return [str(item).strip() for item in topics if str(item).strip()]
+    return []
+
+
+def _als_source_titles(entry: Dict[str, Any], *, limit: int = 3) -> list[str]:
+    payload = _als_context(entry)
+    titles = payload.get("source_titles")
+    if isinstance(titles, list):
+        cleaned = [str(item).strip() for item in titles if str(item).strip()]
+        return cleaned[: max(1, int(limit))]
+    return []
+
+
+def _als_sensor_counts(entry: Dict[str, Any]) -> Dict[str, int]:
+    payload = _als_context(entry)
+    counts = payload.get("sensor_counts")
+    if not isinstance(counts, dict):
+        return {}
+    normalized: Dict[str, int] = {}
+    for key, value in counts.items():
+        label = str(key).strip()
+        if not label:
+            continue
+        normalized[label] = max(0, int(_safe_float(value, 0.0)))
+    return normalized
+
+
+def _als_metric(entry: Dict[str, Any], name: str, default: float = 0.0) -> float:
+    payload = _als_context(entry)
+    metrics = payload.get("metrics")
+    if isinstance(metrics, dict):
+        return _safe_float(metrics.get(name), default)
+    return default
+
+
+def _als_threshold(entry: Dict[str, Any], name: str, default: float = 0.0) -> float:
+    payload = _als_context(entry)
+    thresholds = payload.get("thresholds")
+    if isinstance(thresholds, dict):
+        return _safe_float(thresholds.get(name), default)
+    return default
+
+
+def _als_signal_counts_text(entry: Dict[str, Any]) -> str:
+    payload = _als_context(entry)
+    new_items = max(0, int(_safe_float(payload.get("new_item_count"), 0.0)))
+    item_count = max(0, int(_safe_float(payload.get("item_count"), 0.0)))
+    counts = _als_sensor_counts(entry)
+    sensor_parts: list[str] = []
+    for key, value in sorted(counts.items(), key=lambda item: item[0].lower()):
+        label = str(key).replace("_", " ")
+        sensor_parts.append(f"{label}: {value}")
+    base = f"Neue Signale {new_items} von {item_count}."
+    if sensor_parts:
+        base += " Quellen: " + ", ".join(sensor_parts) + "."
+    return base
+
+
+def _als_trigger_label(profile: str) -> str:
+    labels = {
+        "anomaly_score": "Anomalie-Score",
+        "trend_acceleration": "Trendbeschleunigung",
+    }
+    return labels.get(profile, profile.replace("_", "-"))
+
+
+def _als_trigger_summary(entry: Dict[str, Any], *, profile: str, trauma: float) -> str:
+    topic = _als_topic(entry)
+    dominant_topics = _als_dominant_topics(entry)
+    source_titles = _als_source_titles(entry)
+    anomaly = _als_metric(entry, "anomaly_score", trauma)
+    acceleration = _als_metric(entry, "trend_acceleration", 0.0)
+    temperature = _als_metric(entry, "system_temperature", 0.0)
+    confidence = _als_metric(entry, "confidence", 0.0)
+    threshold_key = "anomaly_threshold" if profile == "anomaly_score" else "trigger_threshold"
+    threshold_value = _als_threshold(entry, threshold_key, 0.0)
+    metric_value = anomaly if profile == "anomaly_score" else acceleration
+    trigger_label = _als_trigger_label(profile)
+
+    lines: list[str] = []
+    lines.append(
+        f"ALS loeste einen Trigger im Informationsfeld aus: {trigger_label} {metric_value:.2f} "
+        + (f"ueberschritt die Schwelle {threshold_value:.2f}." if threshold_value > 0.0 else "wurde als kritisch bewertet.")
+    )
+    if topic:
+        lines.append(f"Thema: {topic}.")
+    if dominant_topics:
+        lines.append("Dominante Felder: " + ", ".join(dominant_topics[:3]) + ".")
+    lines.append(_als_signal_counts_text(entry))
+    lines.append(
+        f"Temperatur {temperature:.2f}, strukturelle Spannung {_als_metric(entry, 'structural_tension', 0.0):.2f}, "
+        f"Anomalie {anomaly:.2f}, Trendbeschleunigung {acceleration:.2f}, Vertrauen {confidence:.2f}."
+    )
+    if source_titles:
+        lines.append("Ausloesende Hinweise: " + "; ".join(source_titles[:3]) + ".")
+    return " ".join(line.strip() for line in lines if line.strip())
+
+
 def _macro_release_hint(market: Dict[str, Any]) -> Optional[str]:
     sensors = _market_sensor_context(market)
     macro = dict(sensors.get("macro") or {})
@@ -386,12 +516,38 @@ def _reason_summary(entry: Dict[str, Any]) -> str:
     if reason == "daemon_startup":
         market_start = dict(extra.get("market_start") or {})
         transport = str(market_start.get("transport") or market.get("transport") or "unbekannt")
-        return (
-            f"ATHERIA erwachte und band sich an den Markt (Profil: {market_profile}, Transport: {transport}). "
+        topic = str(market_start.get("topic") or _als_topic(entry) or "").strip()
+        payload = dict(market_start.get("web_search") or {})
+        search_enabled = bool(payload.get("enabled"))
+        search_suffix = ""
+        if search_enabled:
+            search_suffix = f" Websuche aktiv ueber {str(payload.get('provider') or 'duckduckgo_html')}."
+        base = (
+            f"ATHERIA erwachte und band sich an das Informationsfeld (Profil: {market_profile}, Transport: {transport}). "
             f"Temperatur {temperature:.2f}, Ressourcen {resources:.2f}."
         )
+        if topic:
+            base += f" Thema: {topic}."
+        return base + search_suffix
 
     if reason == "scheduled_integrity_audit":
+        if market_profile == "web_resonance_stream":
+            topic = _als_topic(entry)
+            dominant_topics = _als_dominant_topics(entry)
+            anomaly = _als_metric(entry, "anomaly_score", trauma)
+            temperature_metric = _als_metric(entry, "system_temperature", temperature)
+            base = (
+                "ALS pruefte das Informationsfeld ohne eskalierenden Trigger."
+                if anomaly < _als_threshold(entry, "anomaly_threshold", 0.72)
+                else "ALS aktualisierte den Informationszustand im Nachgang eines auffaelligen Zyklus."
+            )
+            if topic:
+                base += f" Thema: {topic}."
+            if dominant_topics:
+                base += " Dominante Felder: " + ", ".join(dominant_topics[:3]) + "."
+            base += " " + _als_signal_counts_text(entry)
+            base += f" Temperatur {temperature_metric:.2f}, Anomalie {anomaly:.2f}."
+            return base.strip()
         base = (
             f"Regelmaessiger Integritaetsblick: Temperatur {temperature:.2f}, "
             f"Ressourcen {resources:.2f}, Trauma-Druck {trauma:.2f}, "
@@ -432,14 +588,26 @@ def _reason_summary(entry: Dict[str, Any]) -> str:
 
     if reason.startswith("market_anomaly::"):
         profile = reason.split("::", 1)[1] if "::" in reason else "unbekannt"
+        if market_profile == "web_resonance_stream":
+            generation = dict(extra.get("generation_trigger") or {})
+            child = str(generation.get("child_name") or "").strip()
+            summary = _als_trigger_summary(entry, profile=profile, trauma=trauma)
+            if child:
+                summary += f" Als Folge wurde die Instanz {child} fuer Profil {profile} vorgemerkt."
+            return summary
         generation = dict(extra.get("generation_trigger") or {})
-        child = str(generation.get("child_name") or "unbenanntes Offspring")
+        child = str(generation.get("child_name") or "").strip()
         anomaly = dict(generation.get("anomaly") or {})
         observed_asset = str(anomaly.get("anchor_asset") or anchor_asset or "MARKT")
+        if child:
+            return (
+                f"Eine schwere Marktanomalie loeste eine neue Generation aus. "
+                f"Kind {child} startet mit Profil {profile}. "
+                f"Leitachse {observed_asset}, Trauma-Druck {trauma:.2f}."
+            )
         return (
-            f"Eine schwere Marktanomalie loeste eine neue Generation aus. "
-            f"Kind {child} startet mit Profil {profile}. "
-            f"Leitachse {observed_asset}, Trauma-Druck {trauma:.2f}."
+            f"Eine schwere Marktanomalie wurde registriert. "
+            f"Profil {profile}, Leitachse {observed_asset}, Trauma-Druck {trauma:.2f}."
         )
 
     if reason == "daemon_shutdown":
