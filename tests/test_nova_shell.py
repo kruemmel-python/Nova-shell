@@ -2223,7 +2223,8 @@ if len(files_lines) == 2:
         self.assertIsNone(result.error)
         payload = json.loads(result.output)
         self.assertEqual(payload["provider"], "atheria")
-        self.assertEqual(payload["answer"], "Atheria answer")
+        self.assertTrue(payload["answer"].startswith("Atheria answer"))
+        self.assertIn("Risikoeinordnung:", payload["answer"])
         self.assertEqual(payload["speech_act"]["mode"], "dialog")
         self.assertTrue(self.shell.als.voice_path.exists())
 
@@ -2261,14 +2262,70 @@ if len(files_lines) == 2:
 
         self.assertIsNone(result.error)
         payload = json.loads(result.output)
-        self.assertEqual(
-            payload["answer"],
-            "Atheria erkennt eine beschleunigte Resonanzverschiebung im Informationsfeld. Fokus: sichere Agent-Runtimes und AI-Infrastruktur.",
-        )
+        self.assertTrue(payload["answer"].startswith("Atheria erkennt eine beschleunigte Resonanzverschiebung im Informationsfeld."))
+        self.assertIn("Risikoeinordnung: niedrig", payload["answer"])
         self.assertEqual(payload["speech_act"]["utterance_text"], payload["answer"])
         self.assertNotIn("Weitere Atheria-Erinnerungen", payload["answer"])
         self.assertNotIn("Systemfokus", payload["answer"])
         self.assertNotIn('{"metrics"', payload["answer"])
+
+    def test_atheria_als_ask_exposes_risk_and_source_titles_for_live_evidence(self) -> None:
+        state = self.shell.als._load_state()
+        state["current_resonance"] = {
+            "signal_strength": 0.61,
+            "system_temperature": 0.67,
+            "anomaly_score": 0.92,
+            "confidence": 0.44,
+            "structural_tension": 0.28,
+            "keyword_groups": {"agents": 0.91, "operations": 0.41, "risk": 0.14},
+        }
+        self.shell.als._save_state(state)
+        self.shell.als._append_jsonl(
+            self.shell.als.events_path,
+            {
+                "event_id": "live_event_1",
+                "summary": "Atheria erkennt Agenten- und Sicherheitsdruck.",
+                "metrics": dict(state["current_resonance"]),
+                "items": [
+                    {"title": "Anthropic flagged as national security risk"},
+                    {"title": "Secure AI runtime launched for enterprise agents"},
+                    {"title": "Quantum cryptography receives Turing Award"},
+                ],
+            },
+        )
+        with patch.object(self.shell.ai_runtime, "is_configured", side_effect=lambda provider: provider == "atheria"), patch.object(
+            self.shell.ai_runtime,
+            "get_active_model",
+            side_effect=lambda provider=None: "atheria-core" if provider == "atheria" else "",
+        ), patch.object(
+            self.shell.ai_runtime,
+            "complete_prompt",
+            return_value=CommandResult(
+                output="Atheria erkennt eine dominante Sicherheits- und Runtime-Lage.",
+                data={
+                    "text": "Atheria erkennt eine dominante Sicherheits- und Runtime-Lage.",
+                    "provider": "atheria",
+                    "model": "atheria-core",
+                },
+                data_type=PipelineType.OBJECT,
+            ),
+        ):
+            result = self.shell.route('atheria als ask "Was ist im Informationsfeld gerade dominant?"')
+
+        self.assertIsNone(result.error)
+        payload = json.loads(result.output)
+        self.assertIn("Dominante Felder: Agenten und Laufzeit, Betrieb und Skalierung, Risiko und Sicherheit.", payload["answer"])
+        self.assertIn("Risikoeinordnung: hoch", payload["answer"])
+        self.assertEqual(
+            payload["source_titles"],
+            [
+                "Anthropic flagged as national security risk",
+                "Secure AI runtime launched for enterprise agents",
+                "Quantum cryptography receives Turing Award",
+            ],
+        )
+        self.assertEqual(payload["risk_assessment"]["level"], "hoch")
+        self.assertEqual(payload["dominant_topics"], ["Agenten und Laufzeit", "Betrieb und Skalierung", "Risiko und Sicherheit"])
 
     def test_atheria_als_feedback_trains_and_logs_dialog(self) -> None:
         with patch.object(self.shell.atheria, "train_rows", return_value=1) as train_mock:
@@ -2329,6 +2386,32 @@ if len(files_lines) == 2:
         self.assertIn("Get-Content -Raw -Path '", powershell_script)
         self.assertNotIn("@'", powershell_script)
         self.assertIn("SpeakSsml", powershell_script)
+
+    def test_atheria_voice_ssml_omits_empty_voice_wrapper_without_voice_name(self) -> None:
+        voice_runtime = AtheriaVoiceRuntime(Path(self._temp_home.name) / "voice_runtime")
+
+        ssml = voice_runtime._ssml(
+            "Atheria & Analyse",
+            {"pitch_percent": 1, "rate": 2, "volume": 80},
+            voice_name="",
+        )
+
+        self.assertIn("<speak version='1.0' xml:lang='de-DE'>", ssml)
+        self.assertIn("<prosody pitch='+1%' rate='+2%' volume='80'>Atheria &amp; Analyse</prosody>", ssml)
+        self.assertNotIn("<voice>", ssml)
+        self.assertNotIn("</voice>", ssml)
+
+    def test_atheria_voice_ssml_uses_named_voice_wrapper_when_voice_is_configured(self) -> None:
+        voice_runtime = AtheriaVoiceRuntime(Path(self._temp_home.name) / "voice_runtime")
+
+        ssml = voice_runtime._ssml(
+            "Atheria spricht.",
+            {"pitch_percent": 0, "rate": 0, "volume": 70},
+            voice_name="Microsoft Hedda Desktop",
+        )
+
+        self.assertIn('<voice name="Microsoft Hedda Desktop">', ssml)
+        self.assertIn("</voice>", ssml)
 
     def test_cli_main_serve_atheria_als_once_routes_to_runtime(self) -> None:
         with patch("nova_shell.AtheriaALSRuntime.serve_forever", return_value=0) as serve_mock:

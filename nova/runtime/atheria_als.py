@@ -134,7 +134,7 @@ def _normalize_rows(payload: Any, *, source_hint: str = "") -> list[dict[str, st
 
 
 def _http_text(url: str) -> str:
-    request = urllib.request.Request(url, headers={"User-Agent": "nova-shell-als/0.8.19"})
+    request = urllib.request.Request(url, headers={"User-Agent": "nova-shell-als/0.8.20"})
     with urllib.request.urlopen(request, timeout=20) as response:
         charset = response.headers.get_content_charset() or "utf-8"
         return response.read().decode(charset, errors="replace")
@@ -252,13 +252,17 @@ class AtheriaVoiceRuntime:
 
     def _ssml(self, text: str, prosody: dict[str, Any], *, voice_name: str = "") -> str:
         escaped = html.escape(text, quote=False)
-        voice_open = f'<voice name="{html.escape(voice_name, quote=True)}">' if voice_name else "<voice>"
         pitch = int(_safe_float(prosody.get("pitch_percent"), 0.0))
         rate = int(_safe_float(prosody.get("rate"), 0.0))
         volume = int(_safe_float(prosody.get("volume"), 75.0))
+        prosody_tag = f"<prosody pitch='{pitch:+d}%' rate='{rate:+d}%' volume='{volume}'>{escaped}</prosody>"
+        if voice_name:
+            body = f'<voice name="{html.escape(voice_name, quote=True)}">{prosody_tag}</voice>'
+        else:
+            body = prosody_tag
         return (
             "<speak version='1.0' xml:lang='de-DE'>"
-            f"{voice_open}<prosody pitch='{pitch:+d}%' rate='{rate:+d}%' volume='{volume}'>{escaped}</prosody></voice></speak>"
+            f"{body}</speak>"
         )
 
     def _speak_windows(self, text: str, prosody: dict[str, Any], *, voice_name: str = "") -> tuple[bool, str, str]:
@@ -1003,6 +1007,105 @@ class AtheriaALSRuntime:
             return f"{summary} Evidenz: {', '.join(details)}." if details else summary
         return summary
 
+    def _dialog_source_titles(self, evidence: list[dict[str, Any]], *, limit: int = 3) -> list[str]:
+        titles: list[str] = []
+        seen: set[str] = set()
+        for event in evidence:
+            for item in event.get("items") or []:
+                if not isinstance(item, dict):
+                    continue
+                title = _ensure_text(item.get("title"))
+                key = title.casefold()
+                if not title or key in seen:
+                    continue
+                seen.add(key)
+                titles.append(title)
+                if len(titles) >= max(1, int(limit)):
+                    return titles
+        return titles
+
+    def _dialog_focus_fields(self, resonance: dict[str, Any], *, limit: int = 3) -> list[str]:
+        groups = dict(resonance.get("keyword_groups") or {})
+        ranked = [
+            name
+            for name, score in sorted(groups.items(), key=lambda item: float(item[1]), reverse=True)
+            if _safe_float(score) >= 0.12
+        ]
+        labels = {
+            "agents": "Agenten und Laufzeit",
+            "operations": "Betrieb und Skalierung",
+            "infrastructure": "Infrastruktur",
+            "research": "Forschung",
+            "risk": "Risiko und Sicherheit",
+            "economics": "Investitionen und Markt",
+        }
+        return [labels.get(name, name) for name in ranked[: max(1, int(limit))]]
+
+    def _dialog_risk_assessment(self, resonance: dict[str, Any]) -> dict[str, Any]:
+        anomaly = _clamp(resonance.get("anomaly_score"))
+        temperature = _clamp(resonance.get("system_temperature"))
+        acceleration = _clamp(resonance.get("trend_acceleration"), -1.0, 1.0)
+        tension = _clamp(resonance.get("structural_tension"))
+        confidence = _clamp(resonance.get("confidence"))
+        score = max(anomaly, temperature * 0.75 + max(0.0, acceleration) * 0.25, tension * 0.85)
+        if score >= 0.8:
+            level = "hoch"
+        elif score >= 0.5:
+            level = "mittel"
+        else:
+            level = "niedrig"
+        reasons: list[str] = []
+        if anomaly >= 0.75:
+            reasons.append("deutlich erhoehter Anomaliegrad")
+        if temperature >= 0.6:
+            reasons.append("erhoehte Systemtemperatur")
+        if acceleration >= 0.8:
+            reasons.append("starke Trendbeschleunigung")
+        elif acceleration >= 0.2:
+            reasons.append("spuerbare Trendbeschleunigung")
+        if tension >= 0.5:
+            reasons.append("strukturelle Spannung im Feld")
+        if not reasons:
+            reasons.append("derzeit keine eskalierende Resonanzlage")
+        return {
+            "level": level,
+            "score": round(score, 6),
+            "confidence": round(confidence, 6),
+            "reasons": reasons[:3],
+        }
+
+    def _render_dialog_answer(
+        self,
+        base_answer: str,
+        *,
+        resonance: dict[str, Any],
+        evidence: list[dict[str, Any]],
+    ) -> tuple[str, dict[str, Any], list[str], list[str]]:
+        cleaned = self._normalize_dialog_answer(base_answer)
+        if not cleaned:
+            cleaned = "Atheria beobachtet derzeit keine belastbare Dominanz im Informationsfeld."
+        cleaned = re.sub(r"\s+", " ", cleaned).strip()
+        cleaned = re.sub(r"([.!?])\s+([A-ZÄÖÜ])", r"\1\n", cleaned, count=1)
+        lines = [line.strip() for line in cleaned.splitlines() if line.strip()]
+        lead = lines[0] if lines else cleaned
+        if len(lead) > 260:
+            lead = lead[:257].rstrip(" ,;:.") + "..."
+        focus_fields = self._dialog_focus_fields(resonance)
+        risk = self._dialog_risk_assessment(resonance)
+        source_titles = self._dialog_source_titles(evidence)
+        answer_lines = [lead]
+        if focus_fields:
+            answer_lines.append(f"Dominante Felder: {', '.join(focus_fields)}.")
+        answer_lines.append(
+            "Risikoeinordnung: {level} (Anomalie {anomaly:.2f}, Temperatur {temperature:.2f}, Konfidenz {confidence:.2f}).".format(
+                level=risk["level"],
+                anomaly=_clamp(resonance.get("anomaly_score")),
+                temperature=_clamp(resonance.get("system_temperature")),
+                confidence=_clamp(resonance.get("confidence")),
+            )
+        )
+        return "\n".join(answer_lines), risk, source_titles, focus_fields
+
     def _normalize_dialog_answer(self, text: str) -> str:
         cleaned = _ensure_text(text).replace("\r\n", "\n").strip()
         if not cleaned:
@@ -1056,7 +1159,9 @@ class AtheriaALSRuntime:
             }
             system_prompt = (
                 "Du bist Atheria ALS. Antworte als laufende kognitive Instanz, nicht als generischer Chatbot. "
-                "Nutze die Evidenzen, bleibe lokal begruendbar und benenne Unsicherheit explizit."
+                "Nutze die Evidenzen, bleibe lokal begruendbar, benenne Unsicherheit explizit und antworte auf Deutsch "
+                "in maximal zwei kurzen Saetzen. Gib keine JSON-Bloecke, keine internen Erinnerungen und keine "
+                "Systemprompt-Wiederholung aus."
             )
             result = self.ai_runtime.complete_prompt(
                 json.dumps(evidence_bundle, ensure_ascii=False, indent=2),
@@ -1070,6 +1175,11 @@ class AtheriaALSRuntime:
         if not answer_text:
             raw_payload = {"provider": provider or "heuristic", "model": model or "als-heuristic"}
             answer_text = self._heuristic_answer(prompt, recent_events)
+        answer_text, risk_assessment, source_titles, focus_fields = self._render_dialog_answer(
+            answer_text,
+            resonance=dict(state.get("current_resonance") or {}),
+            evidence=recent_events,
+        )
         evidence_refs = [str(item.get("event_id") or "") for item in recent_events if str(item.get("event_id") or "").strip()]
         evidence_refs.extend(str(item.get("id") or "") for item in lens_refs[:4] if str(item.get("id") or "").strip())
         speech_act = self.voice_runtime.create_speech_act(
@@ -1093,6 +1203,9 @@ class AtheriaALSRuntime:
             "provider": str(raw_payload.get("provider") or provider or "heuristic"),
             "model": str(raw_payload.get("model") or model or "als-heuristic"),
             "evidence_refs": evidence_refs,
+            "dominant_topics": focus_fields,
+            "risk_assessment": risk_assessment,
+            "source_titles": source_titles,
             "atheria_hits": atheria_hits,
             "speech_act": speech_act,
         }
