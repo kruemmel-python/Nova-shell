@@ -294,6 +294,9 @@ class AtheriaVoiceRuntime:
     def __init__(self, storage_dir: Path) -> None:
         self.storage_dir = Path(storage_dir).resolve(strict=False)
         self.storage_dir.mkdir(parents=True, exist_ok=True)
+        self.latest_act_path = self.storage_dir / "latest_speech_act.json"
+        self.latest_text_path = self.storage_dir / "latest_utterance.txt"
+        self.latest_ssml_path = self.storage_dir / "latest_utterance.ssml"
 
     def prosody_profile(self, resonance: dict[str, Any], *, mode: str = "analysis") -> dict[str, Any]:
         temperature = _clamp(resonance.get("system_temperature"))
@@ -367,6 +370,15 @@ class AtheriaVoiceRuntime:
             with contextlib.suppress(Exception):
                 temp_path.unlink()
 
+    def _persist_latest_artifacts(self, speech_act: dict[str, Any], *, ssml: str = "") -> None:
+        self.latest_act_path.write_text(json.dumps(speech_act, ensure_ascii=False, indent=2), encoding="utf-8")
+        self.latest_text_path.write_text(_ensure_text(speech_act.get("utterance_text")), encoding="utf-8")
+        if ssml:
+            self.latest_ssml_path.write_text(ssml, encoding="utf-8")
+        elif self.latest_ssml_path.exists():
+            with contextlib.suppress(Exception):
+                self.latest_ssml_path.unlink()
+
     def create_speech_act(
         self,
         *,
@@ -381,6 +393,7 @@ class AtheriaVoiceRuntime:
     ) -> dict[str, Any]:
         cleaned = _ensure_text(text)
         prosody = self.prosody_profile(resonance, mode=mode)
+        ssml = self._ssml(cleaned, prosody, voice_name=voice_name) if cleaned else ""
         spoken = False
         backend = "text"
         error = ""
@@ -400,7 +413,9 @@ class AtheriaVoiceRuntime:
             backend=backend,
             error=error,
         )
-        return act.to_dict()
+        payload = act.to_dict()
+        self._persist_latest_artifacts(payload, ssml=ssml)
+        return payload
 
 
 class AtheriaALSRuntime:
@@ -434,6 +449,7 @@ class AtheriaALSRuntime:
         self.events_path = self.base_dir / "events.jsonl"
         self.dialog_path = self.base_dir / "dialog.jsonl"
         self.voice_path = self.base_dir / "voice.jsonl"
+        self.interpretation_path = self.base_dir / "interpretations.jsonl"
         self.pid_path = self.base_dir / "als.pid"
         self.stop_request_path = self.base_dir / "stop.request"
         self.audit_report_dir = self.base_dir / "daemon_runtime"
@@ -465,6 +481,11 @@ class AtheriaALSRuntime:
                 "enabled": True,
                 "audio_enabled": False,
                 "voice_name": str(self.runtime_config.get("atheria_als_voice_name") or ""),
+            },
+            "interpretation": {
+                "enabled": str(self.runtime_config.get("atheria_als_analysis_enabled") or "").strip().lower() in {"1", "true", "on", "yes"},
+                "provider": str(self.runtime_config.get("atheria_als_analysis_provider") or "lmstudio").strip() or "lmstudio",
+                "model": str(self.runtime_config.get("atheria_als_analysis_model") or "").strip(),
             },
             "web_search": {
                 "enabled": str(self.runtime_config.get("atheria_als_web_search_enabled") or "").strip().lower() in {"1", "true", "on", "yes"},
@@ -514,6 +535,11 @@ class AtheriaALSRuntime:
                 config["voice"]["enabled"] = bool(voice.get("enabled", config["voice"]["enabled"]))
                 config["voice"]["audio_enabled"] = bool(voice.get("audio_enabled", config["voice"]["audio_enabled"]))
                 config["voice"]["voice_name"] = _ensure_text(voice.get("voice_name") or config["voice"]["voice_name"])
+            if isinstance(payload.get("interpretation"), dict):
+                interpretation = dict(payload["interpretation"])
+                config["interpretation"]["enabled"] = bool(interpretation.get("enabled", config["interpretation"]["enabled"]))
+                config["interpretation"]["provider"] = _ensure_text(interpretation.get("provider") or config["interpretation"]["provider"]) or "lmstudio"
+                config["interpretation"]["model"] = _ensure_text(interpretation.get("model") or config["interpretation"]["model"])
             if isinstance(payload.get("web_search"), dict):
                 search = dict(payload["web_search"])
                 config["web_search"]["enabled"] = bool(search.get("enabled", config["web_search"]["enabled"]))
@@ -543,6 +569,12 @@ class AtheriaALSRuntime:
             config["voice"]["audio_enabled"] = str(os.environ.get("NOVA_ALS_VOICE_AUDIO")).strip().lower() in {"1", "true", "on", "yes"}
         if os.environ.get("NOVA_ALS_VOICE_NAME"):
             config["voice"]["voice_name"] = _ensure_text(os.environ.get("NOVA_ALS_VOICE_NAME"))
+        if os.environ.get("NOVA_ALS_ANALYSIS"):
+            config["interpretation"]["enabled"] = str(os.environ.get("NOVA_ALS_ANALYSIS")).strip().lower() in {"1", "true", "on", "yes"}
+        if os.environ.get("NOVA_ALS_ANALYSIS_PROVIDER"):
+            config["interpretation"]["provider"] = _ensure_text(os.environ.get("NOVA_ALS_ANALYSIS_PROVIDER")) or "lmstudio"
+        if os.environ.get("NOVA_ALS_ANALYSIS_MODEL"):
+            config["interpretation"]["model"] = _ensure_text(os.environ.get("NOVA_ALS_ANALYSIS_MODEL"))
         if os.environ.get("NOVA_ALS_WEB_SEARCH"):
             config["web_search"]["enabled"] = str(os.environ.get("NOVA_ALS_WEB_SEARCH")).strip().lower() in {"1", "true", "on", "yes"}
         if os.environ.get("NOVA_ALS_SEARCH_QUERY"):
@@ -559,6 +591,8 @@ class AtheriaALSRuntime:
         config["web_search"]["query"] = _ensure_text(config.get("web_search", {}).get("query") or config["topic"]) or config["topic"]
         config["web_search"]["provider"] = _ensure_text(config.get("web_search", {}).get("provider") or "duckduckgo_html") or "duckduckgo_html"
         config["web_search"]["max_results"] = max(1, _safe_int(config.get("web_search", {}).get("max_results"), 8))
+        config["interpretation"]["provider"] = _ensure_text(config.get("interpretation", {}).get("provider") or "lmstudio") or "lmstudio"
+        config["interpretation"]["model"] = _ensure_text(config.get("interpretation", {}).get("model"))
         return config
 
     def load_config(self) -> dict[str, Any]:
@@ -569,7 +603,7 @@ class AtheriaALSRuntime:
         merged = dict(current) if isinstance(current, dict) else {}
         if isinstance(updates, dict):
             for key, value in updates.items():
-                if key in {"voice", "web_search", "federated"} and isinstance(value, dict):
+                if key in {"voice", "interpretation", "web_search", "federated"} and isinstance(value, dict):
                     merged[key] = {**dict(merged.get(key) or {}), **value}
                 else:
                     merged[key] = value
@@ -591,6 +625,7 @@ class AtheriaALSRuntime:
             "event_count": 0,
             "dialog_count": 0,
             "speech_count": 0,
+            "interpretation_count": 0,
             "current_resonance": {},
             "last_cycle": {},
         }
@@ -951,6 +986,50 @@ class AtheriaALSRuntime:
         state["speech_count"] = int(state.get("speech_count", 0)) + 1
         return speech_act
 
+    def _append_interpretation(self, interpretation: dict[str, Any], state: dict[str, Any]) -> dict[str, Any]:
+        self._append_jsonl(self.interpretation_path, interpretation)
+        state["interpretation_count"] = int(state.get("interpretation_count", 0)) + 1
+        return interpretation
+
+    def _audit_speech_payload(self, speech_act: dict[str, Any] | None) -> dict[str, Any]:
+        if not isinstance(speech_act, dict):
+            return {}
+        utterance = _ensure_text(speech_act.get("utterance_text"))
+        if not utterance:
+            return {}
+        return {
+            "act_id": _ensure_text(speech_act.get("act_id")),
+            "created_at": round(_safe_float(speech_act.get("created_at"), 0.0), 6),
+            "created_at_iso": _ensure_text(speech_act.get("created_at_iso")),
+            "mode": _ensure_text(speech_act.get("mode")),
+            "utterance_text": utterance,
+            "spoken": bool(speech_act.get("spoken", False)),
+            "backend": _ensure_text(speech_act.get("backend")),
+            "error": _ensure_text(speech_act.get("error")),
+            "prosody": dict(speech_act.get("prosody") or {}),
+        }
+
+    def _audit_interpretation_payload(self, interpretation: dict[str, Any] | None) -> dict[str, Any]:
+        if not isinstance(interpretation, dict):
+            return {}
+        text = _ensure_text(interpretation.get("text"))
+        if not text:
+            return {}
+        return {
+            "analysis_id": _ensure_text(interpretation.get("analysis_id")),
+            "created_at": round(_safe_float(interpretation.get("created_at"), 0.0), 6),
+            "created_at_iso": _ensure_text(interpretation.get("created_at_iso")),
+            "provider": _ensure_text(interpretation.get("provider")),
+            "model": _ensure_text(interpretation.get("model")),
+            "text": text,
+            "statement": _ensure_text(interpretation.get("statement")),
+            "meaning": _ensure_text(interpretation.get("meaning")),
+            "recommendation": _ensure_text(interpretation.get("recommendation")),
+            "risk_level": _ensure_text(interpretation.get("risk_level")),
+            "confidence": _safe_float(interpretation.get("confidence"), 0.0),
+            "error": _ensure_text(interpretation.get("error")),
+        }
+
     def _append_dialog(self, payload: dict[str, Any], state: dict[str, Any]) -> None:
         self._append_jsonl(self.dialog_path, payload)
         state["dialog_count"] = int(state.get("dialog_count", 0)) + 1
@@ -971,6 +1050,179 @@ class AtheriaALSRuntime:
     def last_voice(self) -> dict[str, Any]:
         rows = _chunked_tail(self.voice_path, limit=1)
         return rows[-1] if rows else {}
+
+    def last_interpretation(self) -> dict[str, Any]:
+        rows = _chunked_tail(self.interpretation_path, limit=1)
+        return rows[-1] if rows else {}
+
+    def tail_interpretations(self, *, limit: int = 10) -> list[dict[str, Any]]:
+        return _chunked_tail(self.interpretation_path, limit=limit)
+
+    def interpretation_status(self) -> dict[str, Any]:
+        config = self.load_config()
+        interpretation = dict(config.get("interpretation") or {})
+        return {
+            "enabled": bool(interpretation.get("enabled", False)),
+            "provider": str(interpretation.get("provider") or "lmstudio"),
+            "model": str(interpretation.get("model") or ""),
+            "history_file": str(self.interpretation_path),
+            "last_analysis": self.last_interpretation(),
+        }
+
+    def _heuristic_interpretation(self, event: dict[str, Any], *, speech_act: dict[str, Any] | None = None) -> dict[str, Any]:
+        trigger_reason = _ensure_text(event.get("trigger_reason"))
+        topic = _ensure_text(event.get("topic"))
+        dominant_topics = [str(item).strip() for item in list(event.get("dominant_topics") or []) if str(item).strip()]
+        source_titles = [str(item).strip() for item in list(event.get("source_titles") or []) if str(item).strip()]
+        resonance = dict(event.get("metrics") or {})
+        anomaly = _safe_float(resonance.get("anomaly_score"), 0.0)
+        temperature = _safe_float(resonance.get("system_temperature"), 0.0)
+        risk_level = "hoch" if trigger_reason or anomaly >= 0.72 else "mittel" if max(anomaly, temperature) >= 0.45 else "niedrig"
+        statement = "Atheria meldet eine auffaellige Lage im Informationsfeld." if risk_level == "hoch" else "Atheria beschreibt eine beobachtbare Lageveraenderung im Informationsfeld."
+        meaning = ""
+        if topic and dominant_topics:
+            meaning = f"Im Zentrum stehen {topic} sowie die Felder {', '.join(dominant_topics[:3])}."
+        elif topic:
+            meaning = f"Im Zentrum steht das Thema {topic}."
+        recommendation = ""
+        if source_titles:
+            recommendation = f"Die wichtigsten Hinweise sollten direkt gegen die Quellen geprueft werden: {source_titles[0]}."
+        elif risk_level == "hoch":
+            recommendation = "Die Lage sollte eng beobachtet und auf Anschlussereignisse geprueft werden."
+        text_parts = [statement]
+        if meaning:
+            text_parts.append(meaning)
+        if recommendation:
+            text_parts.append("Empfehlung: " + recommendation)
+        return {
+            "analysis_id": f"als_interp_{uuid.uuid4().hex[:12]}",
+            "created_at": round(time.time(), 6),
+            "created_at_iso": _utc_now(),
+            "provider": "heuristic",
+            "model": "als-heuristic-interpretation",
+            "statement": statement,
+            "meaning": meaning,
+            "recommendation": recommendation,
+            "risk_level": risk_level,
+            "confidence": round(max(0.2, _safe_float(resonance.get("confidence"), 0.0)), 6),
+            "text": " ".join(part.strip() for part in text_parts if part.strip()),
+            "source_event_id": _ensure_text(event.get("event_id")),
+            "source_act_id": _ensure_text((speech_act or {}).get("act_id")),
+            "error": "",
+        }
+
+    def _extract_json_object(self, text: str) -> dict[str, Any]:
+        cleaned = _ensure_text(text)
+        if not cleaned:
+            return {}
+        candidates = [cleaned]
+        fenced = re.sub(r"^```(?:json)?\s*|\s*```$", "", cleaned, flags=re.IGNORECASE | re.DOTALL).strip()
+        if fenced and fenced != cleaned:
+            candidates.append(fenced)
+        start = cleaned.find("{")
+        end = cleaned.rfind("}")
+        if start >= 0 and end > start:
+            candidates.append(cleaned[start : end + 1])
+        for candidate in candidates:
+            with contextlib.suppress(Exception):
+                payload = json.loads(candidate)
+                if isinstance(payload, dict):
+                    return payload
+        return {}
+
+    def _compose_interpretation_text(
+        self,
+        *,
+        statement: str,
+        meaning: str,
+        recommendation: str,
+        risk_level: str,
+    ) -> str:
+        parts: list[str] = []
+        if statement:
+            parts.append(statement)
+        if meaning:
+            parts.append(meaning if meaning.endswith(".") else meaning + ".")
+        if risk_level:
+            parts.append(f"Risikostufe: {risk_level}.")
+        if recommendation:
+            parts.append("Empfehlung: " + recommendation)
+        return " ".join(part.strip() for part in parts if part.strip()).strip()
+
+    def _analyze_interpretation(self, config: dict[str, Any], event: dict[str, Any], *, speech_act: dict[str, Any] | None = None) -> dict[str, Any]:
+        interpretation_config = dict(config.get("interpretation") or {})
+        if not bool(interpretation_config.get("enabled", False)):
+            return {}
+        provider = _ensure_text(interpretation_config.get("provider") or "lmstudio") or "lmstudio"
+        model = _ensure_text(interpretation_config.get("model"))
+        heuristic = self._heuristic_interpretation(event, speech_act=speech_act)
+        if self.ai_runtime is None:
+            return heuristic
+        with contextlib.suppress(Exception):
+            if not self.ai_runtime.is_configured(provider):
+                return heuristic
+        prompt_bundle = {
+            "topic": _ensure_text(event.get("topic")),
+            "summary": _ensure_text(event.get("summary")),
+            "spoken_text": _ensure_text((speech_act or {}).get("utterance_text") or event.get("summary")),
+            "triggered": bool(event.get("triggered", False)),
+            "trigger_reason": _ensure_text(event.get("trigger_reason")),
+            "dominant_topics": list(event.get("dominant_topics") or []),
+            "source_titles": list(event.get("source_titles") or [item.get("title") for item in list(event.get("items") or []) if item.get("title")])[:5],
+            "sensor_counts": dict(event.get("sensor_counts") or {}),
+            "metrics": dict(event.get("metrics") or {}),
+        }
+        system_prompt = (
+            "Du bist der Interpretationslayer fuer Atheria ALS. "
+            "Erklaere fuer einen Menschen knapp und nuetzlich, was Atherias Meldung bedeutet. "
+            "Antworte ausschliesslich als JSON-Objekt mit den Schluesseln "
+            "statement, meaning, recommendation, risk_level, confidence. "
+            "statement: die Kernaussage in einem Satz. "
+            "meaning: warum das fuer den Beobachter relevant ist. "
+            "recommendation: naechster sinnvoller Beobachtungs- oder Handlungsschritt. "
+            "risk_level: niedrig|mittel|hoch. confidence: Zahl zwischen 0 und 1."
+        )
+        result = self.ai_runtime.complete_prompt(
+            json.dumps(prompt_bundle, ensure_ascii=False, indent=2),
+            provider=provider,
+            model=model or None,
+            system_prompt=system_prompt,
+        )
+        if result.error is not None:
+            fallback = dict(heuristic)
+            fallback["error"] = str(result.error)
+            return fallback
+        raw_payload = dict(result.data or {})
+        parsed = self._extract_json_object(raw_payload.get("text") or result.output)
+        statement = _ensure_text(parsed.get("statement"))
+        meaning = _ensure_text(parsed.get("meaning"))
+        recommendation = _ensure_text(parsed.get("recommendation"))
+        risk_level = _ensure_text(parsed.get("risk_level")).lower()
+        if risk_level not in {"niedrig", "mittel", "hoch"}:
+            risk_level = _ensure_text(heuristic.get("risk_level"))
+        confidence = _clamp(parsed.get("confidence", heuristic.get("confidence", 0.0)), 0.0, 1.0)
+        text = self._compose_interpretation_text(
+            statement=statement or _ensure_text(heuristic.get("statement")),
+            meaning=meaning or _ensure_text(heuristic.get("meaning")),
+            recommendation=recommendation or _ensure_text(heuristic.get("recommendation")),
+            risk_level=risk_level,
+        )
+        return {
+            "analysis_id": f"als_interp_{uuid.uuid4().hex[:12]}",
+            "created_at": round(time.time(), 6),
+            "created_at_iso": _utc_now(),
+            "provider": str(raw_payload.get("provider") or provider),
+            "model": str(raw_payload.get("model") or model or ""),
+            "statement": statement or _ensure_text(heuristic.get("statement")),
+            "meaning": meaning or _ensure_text(heuristic.get("meaning")),
+            "recommendation": recommendation or _ensure_text(heuristic.get("recommendation")),
+            "risk_level": risk_level,
+            "confidence": round(confidence, 6),
+            "text": text or _ensure_text(heuristic.get("text")),
+            "source_event_id": _ensure_text(event.get("event_id")),
+            "source_act_id": _ensure_text((speech_act or {}).get("act_id")),
+            "error": "",
+        }
 
     def tail_events(self, *, limit: int = 10) -> list[dict[str, Any]]:
         return _chunked_tail(self.events_path, limit=limit)
@@ -1023,6 +1275,7 @@ class AtheriaALSRuntime:
                 "event_count": int(state.get("event_count", 0)),
                 "dialog_count": int(state.get("dialog_count", 0)),
                 "speech_count": int(state.get("speech_count", 0)),
+                "interpretation_count": int(state.get("interpretation_count", 0)),
                 "history_length": len(state.get("history", [])),
                 "dedupe_size": len(state.get("seen_hashes", [])),
                 "web_search": {
@@ -1040,6 +1293,13 @@ class AtheriaALSRuntime:
                 "audio_enabled": bool(config.get("voice", {}).get("audio_enabled", False)),
                 "voice_name": str(config.get("voice", {}).get("voice_name") or ""),
                 "last_speech_act": self.last_voice(),
+            },
+            "interpretation": {
+                "enabled": bool(config.get("interpretation", {}).get("enabled", False)),
+                "provider": str(config.get("interpretation", {}).get("provider") or "lmstudio"),
+                "model": str(config.get("interpretation", {}).get("model") or ""),
+                "history_file": str(self.interpretation_path),
+                "last_analysis": self.last_interpretation(),
             },
             "chronik": {
                 "report_file": str(self.audit_log_path),
@@ -1170,6 +1430,10 @@ class AtheriaALSRuntime:
             )
             self._append_voice(speech_act, state)
             event["speech_act"] = speech_act
+        interpretation = self._analyze_interpretation(config, event, speech_act=speech_act)
+        if interpretation:
+            self._append_interpretation(interpretation, state)
+            event["interpretation"] = interpretation
         state["seen_hashes"] = list(seen)
         history_entry = {"timestamp": event["timestamp"], **{key: resonance.get(key, 0.0) for key in FEATURE_KEYS}}
         state["history"] = [*list(state.get("history", [])), history_entry][-256:]
@@ -1256,6 +1520,8 @@ class AtheriaALSRuntime:
                         "trigger_threshold": trigger_threshold,
                         "anomaly_threshold": anomaly_threshold,
                     },
+                    "speech_act": self._audit_speech_payload(speech_act),
+                    "interpretation": self._audit_interpretation_payload(interpretation),
                 },
             )
         if triggered:
@@ -1282,6 +1548,7 @@ class AtheriaALSRuntime:
             "pid": os.getpid(),
             "last_cycle": state.get("last_cycle", {}),
             "last_trigger": event if triggered else self._load_json(self.status_path, {}).get("last_trigger", {}),
+            "last_interpretation": interpretation if interpretation else self._load_json(self.status_path, {}).get("last_interpretation", {}),
             "updated_at": _utc_now(),
         }
         self._save_json(self.status_path, status_payload)
@@ -1489,6 +1756,23 @@ class AtheriaALSRuntime:
             voice_name=str(self.load_config().get("voice", {}).get("voice_name") or ""),
         )
         self._append_voice(speech_act, state)
+        interpretation = self._analyze_interpretation(
+            self.load_config(),
+            {
+                "event_id": f"als_dialog_event_{uuid.uuid4().hex[:12]}",
+                "topic": prompt,
+                "summary": answer_text,
+                "metrics": dict(state.get("current_resonance") or {}),
+                "dominant_topics": focus_fields,
+                "source_titles": source_titles,
+                "sensor_counts": {},
+                "triggered": False,
+                "trigger_reason": "",
+            },
+            speech_act=speech_act,
+        )
+        if interpretation:
+            self._append_interpretation(interpretation, state)
         dialog_payload = {
             "dialog_id": f"als_dialog_{uuid.uuid4().hex[:12]}",
             "timestamp": time.time(),
@@ -1504,6 +1788,7 @@ class AtheriaALSRuntime:
             "source_titles": source_titles,
             "atheria_hits": atheria_hits,
             "speech_act": speech_act,
+            "interpretation": interpretation,
         }
         self._append_dialog(dialog_payload, state)
         snapshot_id = self._record_lens_snapshot(

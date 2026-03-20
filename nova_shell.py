@@ -64,7 +64,7 @@ except ImportError:  # pragma: no cover - platform dependent
     readline = None
 
 
-__version__ = "0.8.23"
+__version__ = "0.8.24"
 SIDELOAD_PACKAGE_DIR = "vendor-py"
 RUNTIME_CONFIG_FILE = "nova-shell-runtime.json"
 BRIEFING_REPORT_FILES: tuple[tuple[str, str, str], ...] = (
@@ -7973,6 +7973,18 @@ class NovaShell:
                 updates.setdefault("voice", {})["voice_name"] = parts[i + 1]
                 i += 2
                 continue
+            if token in {"--analysis", "--interpretation"} and i + 1 < len(parts):
+                updates.setdefault("interpretation", {})["enabled"] = parts[i + 1].strip().lower() in {"1", "true", "on", "yes"}
+                i += 2
+                continue
+            if token in {"--analysis-provider", "--interpretation-provider"} and i + 1 < len(parts):
+                updates.setdefault("interpretation", {})["provider"] = parts[i + 1]
+                i += 2
+                continue
+            if token in {"--analysis-model", "--interpretation-model"} and i + 1 < len(parts):
+                updates.setdefault("interpretation", {})["model"] = parts[i + 1]
+                i += 2
+                continue
             if token == "--broadcast" and i + 1 < len(parts):
                 updates.setdefault("federated", {})["broadcast"] = parts[i + 1].strip().lower() in {"1", "true", "on", "yes"}
                 i += 2
@@ -8024,7 +8036,7 @@ class NovaShell:
 
     def _run_atheria_als(self, parts: list[str], pipeline_input: str, pipeline_data: Any) -> CommandResult:
         if len(parts) < 2:
-            return CommandResult(output="", error="usage: atheria als status|configure|cycle|start|stop|search|ask|feedback|voice|stream ...")
+            return CommandResult(output="", error="usage: atheria als status|configure|cycle|start|stop|search|ask|feedback|voice|analysis|stream ...")
         action = parts[1]
         if action == "status":
             payload = self.als.status_payload()
@@ -8167,6 +8179,28 @@ class NovaShell:
                 payload = self.als.voice_speak(text)
                 return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
             return CommandResult(output="", error="usage: atheria als voice status|last|speak ...")
+        if action == "analysis":
+            if len(parts) < 3:
+                return CommandResult(output="", error="usage: atheria als analysis status|last|tail ...")
+            analysis_action = parts[2]
+            if analysis_action == "status":
+                payload = self.als.interpretation_status()
+                return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+            if analysis_action == "last":
+                payload = self.als.last_interpretation()
+                return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+            if analysis_action == "tail":
+                limit = 10
+                i = 3
+                while i < len(parts):
+                    if parts[i] == "--limit" and i + 1 < len(parts):
+                        limit = max(1, _safe_int(parts[i + 1], 10))
+                        i += 2
+                        continue
+                    return CommandResult(output="", error=f"unknown atheria als analysis option: {parts[i]}")
+                payload = self.als.tail_interpretations(limit=limit)
+                return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
+            return CommandResult(output="", error="usage: atheria als analysis status|last|tail ...")
         if action == "stream":
             if len(parts) < 3 or parts[2] != "tail":
                 return CommandResult(output="", error="usage: atheria als stream tail [--limit n]")
@@ -8180,7 +8214,7 @@ class NovaShell:
                 return CommandResult(output="", error=f"unknown atheria als stream option: {parts[i]}")
             payload = self.als.tail_events(limit=limit)
             return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
-        return CommandResult(output="", error="usage: atheria als status|configure|cycle|start|stop|search|ask|feedback|voice|stream ...")
+        return CommandResult(output="", error="usage: atheria als status|configure|cycle|start|stop|search|ask|feedback|voice|analysis|stream ...")
 
     def _deep_merge_payload(self, base: Any, patch: Any) -> Any:
         if isinstance(base, dict) and isinstance(patch, dict):

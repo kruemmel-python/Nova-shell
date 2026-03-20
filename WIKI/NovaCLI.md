@@ -466,7 +466,7 @@ Syntax:
 ```text
 atheria status
 atheria init
-atheria als status|configure|cycle|start|stop|ask|feedback|voice|stream ...
+atheria als status|configure|cycle|start|stop|search|ask|feedback|voice|analysis|stream ...
 atheria search <query>
 atheria chat <prompt>
 atheria sensor gallery|list|show ...
@@ -487,6 +487,7 @@ Wann benutzen:
 ```powershell
 atheria als status
 atheria als configure --topic "AI infrastructure agent runtime" --interval 90 --trigger 0.80
+atheria als configure --analysis on --analysis-provider lmstudio --analysis-model local-model
 atheria als configure --web-search on --search-query "AI infrastructure agent runtime" --search-provider duckduckgo_html --search-limit 6
 atheria als cycle
 atheria als search "AI infrastructure agent runtime" --provider duckduckgo_html --limit 5
@@ -494,6 +495,8 @@ atheria als start
 atheria als ask "Was heizt die Resonanz gerade auf?"
 atheria als feedback "Gewichte GPU-Runtime-Anomalien hoeher."
 atheria als voice status
+atheria als analysis status
+atheria als analysis tail --limit 5
 atheria als stream tail --limit 5
 atheria als stop
 ```
@@ -502,10 +505,12 @@ Erwartung:
 
 - `status` zeigt Laufzustand, Resonanz und Voice-Metadaten
 - `configure --web-search ...` aktiviert zusaetzliche Suchsignale neben den Feed-Quellen
+- `configure --analysis ...` aktiviert eine zweite KI-Einordnung, typischerweise ueber `lmstudio`
 - `cycle` erzeugt einen einzelnen kontinuierlichen ALS-Zyklus
 - `search` fuehrt eine direkte Websuche aus, optional auch ohne residenten Daemon
 - `start` startet den residenten Hintergrundpfad
 - `ask` und `feedback` erzeugen Dialog- und Speech-Act-Eintraege
+- `analysis status|last|tail` zeigt die gespeicherten KI-Einordnungen
 - `stream tail` zeigt letzte ALS-Events
 
 Vertiefung:

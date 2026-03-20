@@ -154,6 +154,9 @@ atheria als feedback <text>
 atheria als voice status
 atheria als voice last
 atheria als voice speak <text>
+atheria als analysis status
+atheria als analysis last
+atheria als analysis tail
 atheria als stream tail
 ```
 
@@ -184,6 +187,19 @@ Erwartung:
 - `config.json` wird aktualisiert
 - Thema, Interval und Triggerwerte sind persistent gesetzt
 
+### Sekundaere KI-Einordnung ueber LM Studio aktivieren
+
+```powershell
+atheria als configure --analysis on --analysis-provider lmstudio --analysis-model local-model
+```
+
+Erwartung:
+
+- `config.json` enthaelt einen `interpretation`-Block
+- jeder kuenftige `cycle` kann neben Atherias Primäraussage eine zweite lesbare Einordnung erzeugen
+- die Einordnung landet in `interpretations.jsonl`
+- die Chronik zeigt die Einordnung unterhalb der Atheria-Formulierung
+
 ### Websuche zusaetzlich zum Feed-Stream aktivieren
 
 ```powershell
@@ -207,6 +223,7 @@ Erwartung:
 - ein Ereignis in `events.jsonl`
 - aktualisierter `state.json`
 - ggf. ein `speech_act`
+- ggf. eine `interpretation`
 - Audit-Eintrag und Chronik-Refresh
 
 ### Direkte Websuche ohne dauerhaften Daemon-Lauf
@@ -253,6 +270,7 @@ Erwartung:
 - Antworttext mit Evidenzbezug
 - neuer Dialogeintrag in `dialog.jsonl`
 - neuer Speech Act in `voice.jsonl`
+- optional neue KI-Einordnung im Rueckgabepayload
 
 ### Feedback in die Evolution geben
 
@@ -264,6 +282,20 @@ Erwartung:
 
 - Feedback wird als Training/Feedback-Eintrag aufgenommen
 - Atheria bestaetigt die Rueckkopplung per Speech Act
+
+### Letzte KI-Einordnung lesen
+
+```powershell
+atheria als analysis status
+atheria als analysis last
+atheria als analysis tail --limit 5
+```
+
+Erwartung:
+
+- `analysis status` zeigt Aktivierung, Provider, Modell und den letzten Eintrag
+- `analysis last` zeigt die neueste gespeicherte Einordnung
+- `analysis tail` zeigt den Verlauf aus `interpretations.jsonl`
 
 ### Letzte Stream-Ereignisse ansehen
 
@@ -283,6 +315,23 @@ Das bedeutet:
 - Audio ist optional, Voice-Objekte aber nicht
 
 Die vertiefte Doku steht in [AtheriaVoice.md](./AtheriaVoice.md).
+
+## Menschliche Einordnungsschicht
+
+ALS kann Atherias Primäraussage durch ein zweites Modell, typischerweise `lmstudio`, interpretieren lassen.
+
+Diese Schicht dient nicht dazu, Atheria zu ersetzen, sondern ihre Aussage fuer Menschen zu verdichten:
+
+- `statement`: Was sagt Atheria inhaltlich?
+- `meaning`: Warum ist das relevant?
+- `recommendation`: Was sollte als naechstes geprueft werden?
+- `risk_level`: niedrig, mittel oder hoch
+
+Die Einordnung wird:
+
+- als JSON in `interpretations.jsonl` gespeichert
+- im `status` unter `interpretation.last_analysis` sichtbar
+- in der Chronik direkt unter der Voice-Zeile gerendert
 
 ## Typische Fragen
 

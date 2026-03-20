@@ -9,6 +9,7 @@ from typing import Any
 
 MAX_MEMORY_TEXT_CHARS = 8192
 MAX_MEMORY_SEARCH_TEXT_CHARS = 4096
+MAX_MEMORY_SEARCH_METADATA_CHARS = 4096
 MAX_MEMORY_METADATA_DEPTH = 4
 MAX_MEMORY_METADATA_ITEMS = 16
 MAX_MEMORY_METADATA_STRING_CHARS = 1024
@@ -94,40 +95,44 @@ class DistributedMemoryStore:
     def search(self, scope: str, query: str, *, top_k: int = 5) -> list[dict[str, Any]]:
         tokens = {token.lower() for token in query.split() if token.strip()}
         with self._lock:
-            rows = self._conn.execute(
+            cursor = self._conn.execute(
                 """
-                SELECT record_id, scope, shard, substr(text_value, 1, ?), metadata_json, created_at
+                SELECT record_id, scope, shard, substr(text_value, 1, ?), substr(metadata_json, 1, ?), created_at
                 FROM memory_records
                 WHERE scope LIKE ?
                 ORDER BY record_id DESC
                 LIMIT 200
                 """,
-                (MAX_MEMORY_SEARCH_TEXT_CHARS, f"{scope}%"),
-            ).fetchall()
-        scored: list[tuple[int, dict[str, Any]]] = []
-        for row in rows:
-            text = str(row[3])
-            record_tokens = {token.lower() for token in text.split() if token.strip()}
-            score = len(tokens.intersection(record_tokens))
-            metadata: dict[str, Any]
-            try:
-                decoded = json.loads(row[4])
-                metadata = decoded if isinstance(decoded, dict) else {"value": decoded}
-            except Exception:
-                metadata = {}
-            scored.append(
-                (
-                    score,
-                    {
-                        "record_id": int(row[0]),
-                        "scope": row[1],
-                        "shard": row[2],
-                        "text": text,
-                        "metadata": metadata,
-                        "created_at": row[5],
-                    },
-                )
+                (MAX_MEMORY_SEARCH_TEXT_CHARS, MAX_MEMORY_SEARCH_METADATA_CHARS, f"{scope}%"),
             )
+        scored: list[tuple[int, dict[str, Any]]] = []
+        while True:
+            rows = cursor.fetchmany(64)
+            if not rows:
+                break
+            for row in rows:
+                text = str(row[3])
+                record_tokens = {token.lower() for token in text.split() if token.strip()}
+                score = len(tokens.intersection(record_tokens))
+                metadata: dict[str, Any]
+                try:
+                    decoded = json.loads(row[4])
+                    metadata = decoded if isinstance(decoded, dict) else {"value": decoded}
+                except Exception:
+                    metadata = {}
+                scored.append(
+                    (
+                        score,
+                        {
+                            "record_id": int(row[0]),
+                            "scope": row[1],
+                            "shard": row[2],
+                            "text": text,
+                            "metadata": metadata,
+                            "created_at": row[5],
+                        },
+                    )
+                )
         scored.sort(key=lambda item: (item[0], item[1]["record_id"]), reverse=True)
         return [record for _, record in scored[:top_k]]
 

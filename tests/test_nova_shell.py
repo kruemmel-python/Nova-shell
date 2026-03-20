@@ -2190,6 +2190,13 @@ if len(files_lines) == 2:
         self.assertTrue(self.shell.als.audit_log_path.exists())
         self.assertTrue(self.shell.als.chronik_html_path.exists())
         self.assertTrue(self.shell.als.resonance_path.exists())
+        self.assertTrue((self.shell.als.voice_runtime.storage_dir / "latest_speech_act.json").exists())
+        self.assertTrue((self.shell.als.voice_runtime.storage_dir / "latest_utterance.txt").exists())
+        self.assertTrue((self.shell.als.voice_runtime.storage_dir / "latest_utterance.ssml").exists())
+        self.assertIn(
+            second["speech_act"]["utterance_text"],
+            (self.shell.als.voice_runtime.storage_dir / "latest_utterance.txt").read_text(encoding="utf-8"),
+        )
 
     def test_atheria_als_cycle_does_not_repeat_anomaly_trigger_without_new_signal(self) -> None:
         quiet_rows = [
@@ -2284,8 +2291,99 @@ if len(files_lines) == 2:
         self.assertIn("Thema: AI infrastructure agent runtime.", html)
         self.assertIn("Ausloesende Hinweise:", html)
         self.assertIn("Inference bottleneck risk", html)
+        self.assertIn("Atheria formulierte:", html)
+        self.assertIn("Atheria erkennt eine beschleunigte Resonanzverschiebung im Informationsfeld.", html)
         self.assertNotIn("unbenanntes Offspring", html)
         self.assertNotIn("Eine schwere Marktanomalie loeste eine neue Generation aus", html)
+
+    def test_atheria_als_cycle_can_interpret_output_with_lmstudio_and_persist_to_chronik(self) -> None:
+        configure = self.shell.route(
+            'atheria als configure --topic "AI infrastructure agent runtime" --analysis on --analysis-provider lmstudio --analysis-model local-model'
+        )
+        self.assertIsNone(configure.error)
+        rows = [
+            {
+                "title": "Runtime security expansion",
+                "summary": "secure agent runtime orchestration and infrastructure control are becoming central topics",
+                "source": "rss",
+                "url": "https://example.com/als/1",
+                "sensor": "rss",
+            }
+        ]
+        with patch.object(self.shell.ai_runtime, "is_configured", side_effect=lambda provider: provider == "lmstudio"), patch.object(
+            self.shell.ai_runtime,
+            "complete_prompt",
+            return_value=CommandResult(
+                output='{"statement":"Atheria meldet einen realen Schwerpunkt auf sichere Agent-Runtimes.","meaning":"Das Signal zeigt, dass Laufzeitkontrolle und Absicherung operativ wichtiger werden.","recommendation":"Die wichtigsten Quellen sollten auf technische Anschlussrisiken geprueft werden.","risk_level":"mittel","confidence":0.74}\n',
+                data={
+                    "text": '{"statement":"Atheria meldet einen realen Schwerpunkt auf sichere Agent-Runtimes.","meaning":"Das Signal zeigt, dass Laufzeitkontrolle und Absicherung operativ wichtiger werden.","recommendation":"Die wichtigsten Quellen sollten auf technische Anschlussrisiken geprueft werden.","risk_level":"mittel","confidence":0.74}',
+                    "provider": "lmstudio",
+                    "model": "local-model",
+                },
+                data_type=PipelineType.OBJECT,
+            ),
+        ):
+            result = self.shell.route("atheria als cycle")
+
+        self.assertIsNone(result.error)
+        payload = json.loads(result.output)
+        self.assertEqual(payload["interpretation"]["provider"], "lmstudio")
+        self.assertEqual(payload["interpretation"]["model"], "local-model")
+        self.assertIn("sichere Agent-Runtimes", payload["interpretation"]["text"])
+        self.assertTrue(self.shell.als.interpretation_path.exists())
+        status = self.shell.als.status_payload()
+        self.assertEqual(status["interpretation"]["last_analysis"]["provider"], "lmstudio")
+        html = self.shell.als.chronik_html_path.read_text(encoding="utf-8")
+        self.assertIn("LM-Studio-Einordnung:", html)
+        self.assertIn("Atheria meldet einen realen Schwerpunkt auf sichere Agent-Runtimes.", html)
+
+    def test_atheria_als_analysis_commands_expose_status_last_and_tail(self) -> None:
+        self.assertIsNone(
+            self.shell.route(
+                'atheria als configure --topic "AI infrastructure agent runtime" --analysis on --analysis-provider lmstudio --analysis-model local-model'
+            ).error
+        )
+        rows = [
+            {
+                "title": "Runtime security expansion",
+                "summary": "secure agent runtime orchestration and infrastructure control are becoming central topics",
+                "source": "rss",
+                "url": "https://example.com/als/1",
+                "sensor": "rss",
+            }
+        ]
+        with patch.object(self.shell.ai_runtime, "is_configured", side_effect=lambda provider: provider == "lmstudio"), patch.object(
+            self.shell.ai_runtime,
+            "complete_prompt",
+            return_value=CommandResult(
+                output='{"statement":"Atheria meldet einen Schwerpunkt auf Runtime-Sicherheit.","meaning":"Die Lage deutet auf wachsende operative Relevanz.","recommendation":"Quellen und Anschlussrisiken pruefen.","risk_level":"mittel","confidence":0.71}\n',
+                data={
+                    "text": '{"statement":"Atheria meldet einen Schwerpunkt auf Runtime-Sicherheit.","meaning":"Die Lage deutet auf wachsende operative Relevanz.","recommendation":"Quellen und Anschlussrisiken pruefen.","risk_level":"mittel","confidence":0.71}',
+                    "provider": "lmstudio",
+                    "model": "local-model",
+                },
+                data_type=PipelineType.OBJECT,
+            ),
+        ):
+            self.shell.als.run_cycle(rows=rows)
+
+        status = self.shell.route("atheria als analysis status")
+        self.assertIsNone(status.error)
+        status_payload = json.loads(status.output)
+        self.assertTrue(status_payload["enabled"])
+        self.assertEqual(status_payload["provider"], "lmstudio")
+
+        last = self.shell.route("atheria als analysis last")
+        self.assertIsNone(last.error)
+        last_payload = json.loads(last.output)
+        self.assertEqual(last_payload["provider"], "lmstudio")
+        self.assertIn("Runtime-Sicherheit", last_payload["text"])
+
+        tail = self.shell.route("atheria als analysis tail --limit 1")
+        self.assertIsNone(tail.error)
+        tail_payload = json.loads(tail.output)
+        self.assertEqual(len(tail_payload), 1)
+        self.assertEqual(tail_payload[0]["provider"], "lmstudio")
 
     def test_atheria_als_ask_routes_through_atheria_and_creates_speech_act(self) -> None:
         class DummyLens:

@@ -259,6 +259,8 @@ def _als_context(entry: Dict[str, Any]) -> Dict[str, Any]:
         "fresh_signal",
         "metrics",
         "thresholds",
+        "speech_act",
+        "interpretation",
     ):
         if key in extra and extra.get(key) not in (None, "", [], {}):
             payload[key] = extra.get(key)
@@ -331,6 +333,41 @@ def _als_signal_counts_text(entry: Dict[str, Any]) -> str:
     if sensor_parts:
         base += " Quellen: " + ", ".join(sensor_parts) + "."
     return base
+
+
+def _als_voice_payload(entry: Dict[str, Any]) -> Dict[str, Any]:
+    payload = _als_context(entry)
+    voice = payload.get("speech_act")
+    return dict(voice) if isinstance(voice, dict) else {}
+
+
+def _als_voice_text(entry: Dict[str, Any]) -> str:
+    return str(_als_voice_payload(entry).get("utterance_text") or "").strip()
+
+
+def _als_voice_label(entry: Dict[str, Any]) -> str:
+    payload = _als_voice_payload(entry)
+    return "Atheria sprach" if bool(payload.get("spoken", False)) else "Atheria formulierte"
+
+
+def _als_interpretation_payload(entry: Dict[str, Any]) -> Dict[str, Any]:
+    payload = _als_context(entry)
+    interpretation = payload.get("interpretation")
+    return dict(interpretation) if isinstance(interpretation, dict) else {}
+
+
+def _als_interpretation_text(entry: Dict[str, Any]) -> str:
+    return str(_als_interpretation_payload(entry).get("text") or "").strip()
+
+
+def _als_interpretation_label(entry: Dict[str, Any]) -> str:
+    payload = _als_interpretation_payload(entry)
+    provider = str(payload.get("provider") or "").strip().lower()
+    if provider == "lmstudio":
+        return "LM-Studio-Einordnung"
+    if provider:
+        return f"KI-Einordnung ({provider})"
+    return "KI-Einordnung"
 
 
 def _als_trigger_label(profile: str) -> str:
@@ -623,6 +660,12 @@ def format_diary_entry(entry: Dict[str, Any], *, verification: Dict[str, Any]) -
     lines = [
         f"[{_format_timestamp(entry.get('timestamp'))}] {_reason_summary(entry)} {_verification_label(verification)}.",
     ]
+    voice_text = _als_voice_text(entry)
+    if voice_text:
+        lines.append(f"{_als_voice_label(entry)}: {voice_text}")
+    interpretation_text = _als_interpretation_text(entry)
+    if interpretation_text:
+        lines.append(f"{_als_interpretation_label(entry)}: {interpretation_text}")
     discovery = _infer_discovery(entry)
     if discovery:
         lines.append(discovery)
@@ -631,6 +674,8 @@ def format_diary_entry(entry: Dict[str, Any], *, verification: Dict[str, Any]) -
 
 def _entry_record(entry: Dict[str, Any], *, verification: Dict[str, Any]) -> Dict[str, Any]:
     discovery = _infer_discovery(entry)
+    voice_text = _als_voice_text(entry)
+    interpretation_text = _als_interpretation_text(entry)
     return {
         "entry": entry,
         "verification": verification,
@@ -640,6 +685,10 @@ def _entry_record(entry: Dict[str, Any], *, verification: Dict[str, Any]) -> Dic
         "text": format_diary_entry(entry, verification=verification),
         "summary": _reason_summary(entry),
         "discovery": discovery,
+        "voice_text": voice_text,
+        "voice_label": _als_voice_label(entry) if voice_text else "",
+        "interpretation_text": interpretation_text,
+        "interpretation_label": _als_interpretation_label(entry) if interpretation_text else "",
     }
 
 
@@ -890,11 +939,29 @@ def _render_html(
         discovery_html = ""
         if record.get("discovery"):
             discovery_html = f"<p class=\"discovery\">{esc(record['discovery'])}</p>"
+        voice_html = ""
+        if record.get("voice_text"):
+            voice_html = (
+                "<blockquote class=\"voice\">"
+                f"<div class=\"voice-label\">{esc(record.get('voice_label') or 'Atheria formulierte')}:</div>"
+                f"<p>{esc(record['voice_text'])}</p>"
+                "</blockquote>"
+            )
+        interpretation_html = ""
+        if record.get("interpretation_text"):
+            interpretation_html = (
+                "<blockquote class=\"analysis\">"
+                f"<div class=\"analysis-label\">{esc(record.get('interpretation_label') or 'KI-Einordnung')}:</div>"
+                f"<p>{esc(record['interpretation_text'])}</p>"
+                "</blockquote>"
+            )
         entry_blocks.append(
             (
                 f"<article class=\"entry {tone}\">"
                 f"<h3>{esc(_format_timestamp(record['timestamp']))}</h3>"
                 f"<p>{esc(record['summary'])}</p>"
+                f"{voice_html}"
+                f"{interpretation_html}"
                 f"<p class=\"verify\">{esc(_verification_label(dict(record['verification'])))}</p>"
                 f"{discovery_html}"
                 "</article>"
@@ -907,6 +974,23 @@ def _render_html(
             "<section class=\"hero\">"
             "<div class=\"hero-kicker\">Letzter Zustand</div>"
             f"<h1>{esc(latest['summary'])}</h1>"
+            + (
+                "<blockquote class=\"voice voice-hero\">"
+                f"<div class=\"voice-label\">{esc(latest.get('voice_label') or 'Atheria formulierte')}:</div>"
+                f"<p>{esc(latest['voice_text'])}</p>"
+                "</blockquote>"
+                if latest.get("voice_text")
+                else ""
+            )
+            + (
+                "<blockquote class=\"analysis analysis-hero\">"
+                f"<div class=\"analysis-label\">{esc(latest.get('interpretation_label') or 'KI-Einordnung')}:</div>"
+                f"<p>{esc(latest['interpretation_text'])}</p>"
+                "</blockquote>"
+                if latest.get("interpretation_text")
+                else ""
+            )
+            +
             f"<p>{esc(_verification_label(dict(latest['verification'])))}</p>"
             + (f"<p class=\"discovery\">{esc(latest['discovery'])}</p>" if latest.get("discovery") else "")
             + "</section>"
@@ -1290,6 +1374,54 @@ def _render_html(
       background: rgba(215,182,111,0.16);
       border-radius: 12px;
       padding: 10px 12px;
+    }}
+    .voice {{
+      margin: 14px 0;
+      padding: 12px 14px;
+      border-left: 4px solid rgba(15,107,120,0.55);
+      background: rgba(15,107,120,0.08);
+      border-radius: 12px;
+    }}
+    .voice-hero {{
+      background: rgba(248,242,231,0.12);
+      border-left-color: rgba(248,242,231,0.45);
+    }}
+    .voice-label {{
+      font-size: 0.76rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }}
+    .voice p {{
+      margin: 0;
+      white-space: pre-wrap;
+      line-height: 1.45;
+    }}
+    .analysis {{
+      margin: 14px 0;
+      padding: 12px 14px;
+      border-left: 4px solid rgba(183,121,31,0.55);
+      background: rgba(183,121,31,0.08);
+      border-radius: 12px;
+    }}
+    .analysis-hero {{
+      background: rgba(248,242,231,0.12);
+      border-left-color: rgba(248,242,231,0.45);
+    }}
+    .analysis-label {{
+      font-size: 0.76rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }}
+    .analysis p {{
+      margin: 0;
+      white-space: pre-wrap;
+      line-height: 1.45;
     }}
     .section-title {{
       margin: 26px 0 14px;

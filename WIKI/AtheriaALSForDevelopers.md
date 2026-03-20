@@ -30,9 +30,14 @@ Diese Seite erklaert ALS aus Entwicklersicht:
   events.jsonl
   dialog.jsonl
   voice.jsonl
+  interpretations.jsonl
   als.pid
   stop.request
   aion_chronik.html
+  voice_runtime/
+    latest_speech_act.json
+    latest_utterance.txt
+    latest_utterance.ssml
   daemon_runtime/
     atheria_daemon_audit.jsonl
     core_audit/
@@ -52,6 +57,8 @@ run_cycle()
 train_rows()
   ->
 lens.record()
+  ->
+interpretation append
   ->
 audit append
   ->
@@ -77,7 +84,8 @@ Der Einstieg liegt in `nova_shell.py` unter:
 3. Atheria-Trainingstreffer suchen
 4. bevorzugt ueber Provider `atheria` antworten
 5. bei Ausfall kontrolliert heuristisch antworten
-6. Speech Act und Dialog persistent schreiben
+6. optional zweite Einordnung ueber `lmstudio` oder einen anderen Provider erzeugen
+7. Speech Act, Dialog und Analyse persistent schreiben
 
 ## Triggerlogik
 
@@ -100,6 +108,15 @@ ALS schreibt kompatible Audit-Eintraege mit:
 - `extra`
 
 Damit kann `aion_chronik.py` dieselbe Spur direkt rendern.
+
+Im `extra`-Block liegen fuer ALS inzwischen typischerweise:
+
+- `speech_act`
+- `interpretation`
+- `source_titles`
+- `dominant_topics`
+- `sensor_counts`
+- `metrics`
 
 ## Lens-Integration
 
@@ -125,6 +142,7 @@ Sinnvolle naechste Ausbaustufen:
 Die aktuelle ALS-Abdeckung prueft:
 
 - Zyklus mit Trigger, Lens, Voice und Chronik
+- Zyklus mit LM-Studio-Einordnung und Chronik-Render
 - Dialog ueber `atheria als ask`
 - Feedback ueber `atheria als feedback`
 - CLI-Startpfad `--serve-atheria-als --als-once`

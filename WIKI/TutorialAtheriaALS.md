@@ -34,6 +34,12 @@ Optional mit Audio:
 atheria als configure --audio on --voice "Microsoft Hedda Desktop"
 ```
 
+Optional mit LM-Studio-Einordnung:
+
+```powershell
+atheria als configure --analysis on --analysis-provider lmstudio --analysis-model local-model
+```
+
 Optional mit zusaetzlicher Websuche:
 
 ```powershell
@@ -52,6 +58,7 @@ Erwartung:
 - `events.jsonl` erhaelt neue Eintraege
 - `state.json` aktualisiert sich
 - `aion_chronik.html` wird erzeugt oder aktualisiert
+- bei aktiver Analyse waechst auch `interpretations.jsonl`
 
 Wenn du vor dem residenten Start nur die Websuche pruefen willst:
 
@@ -99,7 +106,21 @@ atheria als voice last
 atheria als voice speak "Manueller Test der Atheria-Stimme."
 ```
 
-## Schritt 7: Artefakte lesen
+## Schritt 7: KI-Einordnung pruefen
+
+```powershell
+atheria als analysis status
+atheria als analysis last
+atheria als analysis tail --limit 3
+```
+
+Erwartung:
+
+- die letzte LM-Studio-Einordnung ist direkt lesbar
+- `status` zeigt Provider und Modell
+- die Chronik hat jetzt unter Atherias eigener Aussage eine zweite, menschlichere Einordnung
+
+## Schritt 8: Artefakte lesen
 
 Typische Dateien:
 
@@ -107,10 +128,12 @@ Typische Dateien:
 ~/.nova_shell_memory/atheria_als/events.jsonl
 ~/.nova_shell_memory/atheria_als/dialog.jsonl
 ~/.nova_shell_memory/atheria_als/voice.jsonl
+~/.nova_shell_memory/atheria_als/interpretations.jsonl
 ~/.nova_shell_memory/atheria_als/aion_chronik.html
+~/.nova_shell_memory/atheria_als/voice_runtime/latest_utterance.txt
 ```
 
-## Schritt 8: ALS stoppen
+## Schritt 9: ALS stoppen
 
 ```powershell
 atheria als stop
@@ -129,6 +152,7 @@ Wenn du sehen willst, ob ALS wirklich gearbeitet hat:
 - `atheria als status`
 - `atheria als stream tail --limit 5`
 - `atheria als voice last`
+- `atheria als analysis last`
 - `lens list 10`
 
 ## Verwandte Seiten
