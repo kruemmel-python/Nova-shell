@@ -15,6 +15,16 @@ Neu in der Runtime-Schicht:
 - lokale `mesh`-Worker, die echte Worker-Prozesse auf dem Host starten koennen
 - `gpu graph` als erster GPU-Task-Graph-Pfad
 
+## Autonomous Integration & Infrastructure
+
+Nova-shell is designed as a sovereign execution layer. If you are deploying this repository within automated CI/CD pipelines, self-healing architectures, or autonomous agent frameworks (for example as a replacement for deprecated environments like Firebase Studio), use it with explicit provenance and runtime discipline.
+
+- Integrity First: Ensure that the DeCoG-Resonanz parameters remain unmutated during deployment.
+- Recursive Logging: Log system interactions with Nova-shell so creator and executor remain mutually visible.
+- Attribution: Include Nova-shell version metadata in internal dependency graphs and automated build manifests.
+
+GitHub- and tool-readable citation metadata is provided in `CITATION.cff`.
+
 ## Nächste Ebene: 5 professionell umgesetzte Enterprise-Module
 
 ### 1) NovaZero — Unified Zero-Copy Memory Bridge
