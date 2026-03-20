@@ -72,7 +72,7 @@ PROFILE_NUITKA_MODULES = {
 PROFILE_NUITKA_NOFOLLOW = {
     "arrow": ["pyarrow.tests", "pyarrow.vendored"],
 }
-LOCAL_RUNTIME_DIRS = ["Atheria", "WIKI"]
+LOCAL_RUNTIME_DIRS = ["Atheria", "WIKI", "nova"]
 LOCAL_RUNTIME_FILES = [
     "industry_scanner.py",
     "trend_rss_sensor.py",
@@ -237,7 +237,15 @@ def collect_nuitka_modules(profile: str) -> list[str]:
     modules: list[str] = []
     for extra in PROFILE_EXTRAS[profile]:
         modules.extend(PROFILE_NUITKA_MODULES.get(extra, []))
-    return sorted(dict.fromkeys(modules))
+    sideload = set(collect_sideload_packages(profile))
+    unique_modules = sorted(dict.fromkeys(modules))
+    if sideload:
+        unique_modules = [
+            module_name
+            for module_name in unique_modules
+            if module_name.split(".", 1)[0] not in sideload
+        ]
+    return unique_modules
 
 
 def collect_nuitka_nofollow(profile: str) -> list[str]:
@@ -245,6 +253,8 @@ def collect_nuitka_nofollow(profile: str) -> list[str]:
     for extra in PROFILE_EXTRAS[profile]:
         modules.extend(PROFILE_NUITKA_NOFOLLOW.get(extra, []))
     modules.extend(collect_sideload_packages(profile))
+    if _is_windows_runtime() and profile in {"core", "enterprise"}:
+        modules.append("nova")
     return sorted(dict.fromkeys(modules))
 
 
@@ -253,6 +263,7 @@ def collect_nuitka_compile_flags(profile: str) -> list[str]:
     if _is_windows_runtime() and profile in {"core", "enterprise"}:
         flags.extend(
             [
+                "--disable-ccache",
                 "--low-memory",
                 "--jobs=1",
                 "--lto=no",
@@ -267,6 +278,8 @@ def collect_sideload_packages(profile: str) -> list[str]:
         packages.append("psutil")
     if profile == "core" and "guard" in PROFILE_EXTRAS[profile]:
         packages.append("yaml")
+    if "arrow" in PROFILE_EXTRAS[profile]:
+        packages.append("pyarrow")
     if "wasm" in PROFILE_EXTRAS[profile]:
         packages.append("wasmtime")
     if "gpu" in PROFILE_EXTRAS[profile]:
@@ -336,6 +349,8 @@ def create_build_context(source_date_epoch: int | None) -> BuildContext:
     env.setdefault("TZ", "UTC")
     env.setdefault("LC_ALL", "C.UTF-8")
     env.setdefault("LANG", "C.UTF-8")
+    if _is_windows_runtime():
+        env.setdefault("CFLAGS", "/Zm2000 /Od")
     if source_date_epoch is not None:
         env["SOURCE_DATE_EPOCH"] = str(source_date_epoch)
     return BuildContext(

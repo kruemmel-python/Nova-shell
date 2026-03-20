@@ -250,6 +250,7 @@ def _als_context(entry: Dict[str, Any]) -> Dict[str, Any]:
     for key in (
         "summary",
         "topic",
+        "dialog_question",
         "trigger_reason",
         "dominant_topics",
         "source_titles",
@@ -271,6 +272,11 @@ def _als_topic(entry: Dict[str, Any]) -> str:
     payload = _als_context(entry)
     topic = str(payload.get("topic") or "").strip()
     return topic
+
+
+def _als_dialog_question(entry: Dict[str, Any]) -> str:
+    payload = _als_context(entry)
+    return str(payload.get("dialog_question") or "").strip()
 
 
 def _als_dominant_topics(entry: Dict[str, Any]) -> list[str]:
@@ -600,6 +606,32 @@ def _reason_summary(entry: Dict[str, Any]) -> str:
         if hints:
             return base + " " + " ".join(hints)
         return base
+
+    if reason == "dialog_query":
+        question = _als_dialog_question(entry)
+        topic = _als_topic(entry)
+        dominant_topics = _als_dominant_topics(entry)
+        source_titles = _als_source_titles(entry)
+        anomaly = _als_metric(entry, "anomaly_score", trauma)
+        temperature_metric = _als_metric(entry, "system_temperature", temperature)
+        confidence = _als_metric(entry, "confidence", 0.0)
+        fresh_signal = bool(_als_context(entry).get("fresh_signal"))
+        base = "Atheria beantwortete eine direkte Frage auf Basis frischer RSS- und Websignale."
+        if not fresh_signal:
+            base = "Atheria beantwortete eine direkte Frage mit dem zuletzt verfuegbaren Resonanzzustand."
+        if question:
+            base += f" Frage: {question}."
+        elif topic:
+            base += f" Thema: {topic}."
+        signal_text = _als_signal_counts_text(entry)
+        if signal_text:
+            base += " " + signal_text
+        if dominant_topics:
+            base += " Dominante Felder: " + ", ".join(dominant_topics[:3]) + "."
+        if source_titles:
+            base += " Ausgewertete Hinweise: " + "; ".join(source_titles[:3]) + "."
+        base += f" Temperatur {temperature_metric:.2f}, Anomalie {anomaly:.2f}, Vertrauen {confidence:.2f}."
+        return base.strip()
 
     if reason == "market_alert":
         anomaly = dict(extra.get("anomaly") or {})

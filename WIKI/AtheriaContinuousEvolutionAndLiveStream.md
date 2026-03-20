@@ -101,6 +101,8 @@ Wichtige Dateien:
 | `events.jsonl` | Stream-Ereignisse und Resonanzzyklen |
 | `dialog.jsonl` | Fragen, Antworten und Feedback |
 | `voice.jsonl` | Speech Acts und Voice-Metadaten |
+| `interpretations.jsonl` | sekundaere menschlichere KI-Einordnungen, typischerweise ueber `lmstudio` |
+| `voice_runtime/` | letzte Speech-Act-Dateien, SSML und lesbarer Voice-Text |
 | `daemon_runtime/atheria_daemon_audit.jsonl` | signierte Audit-Kette |
 | `daemon_runtime/core_audit/` | lokale Audit-Schluessel und Invariant-Dateien |
 | `aion_chronik.html` | lesbare HTML-Chronik aus der ALS-Spur |
@@ -134,6 +136,9 @@ Damit ist ALS nicht nur ein Streamprozess, sondern auch ein forensisch lesbarer 
 - Start des residenten Loops
 - kontinuierliche Integritaetszyklen
 - relevante Trend- und Anomalie-Trigger
+- direkte Dialogfragen mit frischer Frage-Erdung
+- Atheria-Formulierung als Speech Act
+- optionale LM-Studio-Einordnung direkt unterhalb der Atheria-Stimme
 - Shutdown des Loops
 
 ## CLI
@@ -267,10 +272,13 @@ atheria als ask "Was treibt gerade die Resonanz?"
 
 Erwartung:
 
+- ALS erzeugt zuerst ein frisches Frage-Probe-Ereignis statt nur alte Resonanz zu wiederholen
+- dafuer werden aktuelle RSS- und optionale `web_search`-Treffer zur Frage eingesammelt
 - Antworttext mit Evidenzbezug
 - neuer Dialogeintrag in `dialog.jsonl`
 - neuer Speech Act in `voice.jsonl`
 - optional neue KI-Einordnung im Rueckgabepayload
+- die Chronik zeigt Frage, Atheria-Formulierung und LM-Studio-Einordnung direkt lesbar
 
 ### Feedback in die Evolution geben
 
@@ -332,6 +340,28 @@ Die Einordnung wird:
 - als JSON in `interpretations.jsonl` gespeichert
 - im `status` unter `interpretation.last_analysis` sichtbar
 - in der Chronik direkt unter der Voice-Zeile gerendert
+
+## Frage-Erdung statt alter Restzustand
+
+Wenn `atheria als ask` eine neue Frage bekommt, soll ALS nicht nur den letzten gespeicherten Resonanzzustand paraphrasieren.
+Der aktuelle Pfad arbeitet deshalb in zwei Schritten:
+
+1. aus der Frage wird ein frisches Dialog-Probe-Ereignis gebaut
+2. dazu werden aktuelle Web- und Feed-Signale bevorzugt mit der Frage verknuepft
+
+Das ist besonders wichtig bei Fragen wie:
+
+- `wie viel einfluss haben Agenten systeme auf das verhalten und die wahrnehmung bei Menschen?`
+- `welche Themen dominieren gerade AI agent safety?`
+
+Damit die Antwort nachvollziehbar bleibt, schreibt ALS in die Chronik:
+
+- die originale Frage
+- Anzahl und Herkunft frischer Signale
+- dominante Themenfelder
+- Quelltitel
+- Atherias gesprochene Aussage
+- die optionale zweite LM-Studio-Einordnung
 
 ## Typische Fragen
 

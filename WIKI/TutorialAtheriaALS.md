@@ -97,6 +97,16 @@ Erwartung:
 - `dialog.jsonl` waechst
 - `voice.jsonl` waechst
 - die Antworten enthalten Speech-Act-Daten
+- ALS baut fuer die Frage frische Signale auf, statt nur den letzten Resonanzrest zu wiederholen
+- in `aion_chronik.html` erscheinen jetzt Frage, Atheria-Text und optional die LM-Studio-Einordnung
+
+Fuer einen explizit fragerelevanten Test:
+
+```powershell
+atheria als ask "wie viel einfluss haben Agenten systeme auf das verhalten und die wahrnehmung bei Menschen?"
+```
+
+Mit aktivierter `web_search`-Konfiguration sollte ALS dabei gezielt neue Such- und Feed-Signale zur Frage priorisieren.
 
 ## Schritt 6: Voice pruefen
 
@@ -131,6 +141,8 @@ Typische Dateien:
 ~/.nova_shell_memory/atheria_als/interpretations.jsonl
 ~/.nova_shell_memory/atheria_als/aion_chronik.html
 ~/.nova_shell_memory/atheria_als/voice_runtime/latest_utterance.txt
+~/.nova_shell_memory/atheria_als/voice_runtime/latest_speech_act.json
+~/.nova_shell_memory/atheria_als/voice_runtime/latest_utterance.ssml
 ```
 
 ## Schritt 9: ALS stoppen

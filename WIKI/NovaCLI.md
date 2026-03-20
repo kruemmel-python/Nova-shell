@@ -509,9 +509,11 @@ Erwartung:
 - `cycle` erzeugt einen einzelnen kontinuierlichen ALS-Zyklus
 - `search` fuehrt eine direkte Websuche aus, optional auch ohne residenten Daemon
 - `start` startet den residenten Hintergrundpfad
+- `ask` erzeugt zuerst eine frische fragerelevante Signalprobe aus RSS und optional `web_search`
 - `ask` und `feedback` erzeugen Dialog- und Speech-Act-Eintraege
 - `analysis status|last|tail` zeigt die gespeicherten KI-Einordnungen
 - `stream tail` zeigt letzte ALS-Events
+- `aion_chronik.html` zeigt Frage, Atheria-Formulierung und LM-Studio-Einordnung in lesbarer Form
 
 Vertiefung:
 

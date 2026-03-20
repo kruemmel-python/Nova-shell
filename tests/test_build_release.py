@@ -134,7 +134,7 @@ class BuildReleaseTests(unittest.TestCase):
     def test_collect_nuitka_modules_for_enterprise_profile(self) -> None:
         self.assertEqual(
             build_release.collect_nuitka_modules("enterprise"),
-            ["ctypes.util", "ctypes.wintypes", "pdb", "pyarrow", "pyarrow.csv", "pyarrow.flight"],
+            ["ctypes.util", "ctypes.wintypes", "pdb"],
         )
 
     def test_collect_nuitka_nofollow_for_enterprise_profile(self) -> None:
@@ -144,7 +144,7 @@ class BuildReleaseTests(unittest.TestCase):
         ):
             self.assertEqual(
                 build_release.collect_nuitka_nofollow("enterprise"),
-                ["numpy", "pyarrow.tests", "pyarrow.vendored", "pyopencl", "torch", "wasmtime"],
+                ["nova", "numpy", "pyarrow", "pyarrow.tests", "pyarrow.vendored", "pyopencl", "torch", "wasmtime"],
             )
 
     def test_collect_nuitka_nofollow_for_windows_core_profile(self) -> None:
@@ -154,7 +154,7 @@ class BuildReleaseTests(unittest.TestCase):
         ):
             self.assertEqual(
                 build_release.collect_nuitka_nofollow("core"),
-                ["numpy", "psutil", "pyarrow.tests", "pyarrow.vendored", "pyopencl", "torch", "wasmtime", "yaml"],
+                ["nova", "numpy", "psutil", "pyarrow", "pyarrow.tests", "pyarrow.vendored", "pyopencl", "torch", "wasmtime", "yaml"],
             )
 
     def test_collect_nuitka_compile_flags_for_windows_enterprise_profile(self) -> None:
@@ -164,7 +164,7 @@ class BuildReleaseTests(unittest.TestCase):
         ):
             self.assertEqual(
                 build_release.collect_nuitka_compile_flags("enterprise"),
-                ["--low-memory", "--jobs=1", "--lto=no"],
+                ["--disable-ccache", "--low-memory", "--jobs=1", "--lto=no"],
             )
 
     def test_collect_nuitka_compile_flags_for_windows_core_profile(self) -> None:
@@ -174,7 +174,7 @@ class BuildReleaseTests(unittest.TestCase):
         ):
             self.assertEqual(
                 build_release.collect_nuitka_compile_flags("core"),
-                ["--low-memory", "--jobs=1", "--lto=no"],
+                ["--disable-ccache", "--low-memory", "--jobs=1", "--lto=no"],
             )
 
     def test_collect_sideload_packages_for_windows_enterprise_profile(self) -> None:
@@ -182,21 +182,21 @@ class BuildReleaseTests(unittest.TestCase):
             patch.object(build_release.os, "name", "nt"),
             patch.object(build_release.sys, "platform", "win32"),
         ):
-            self.assertEqual(build_release.collect_sideload_packages("enterprise"), ["wasmtime", "numpy", "torch", "pyopencl"])
+            self.assertEqual(build_release.collect_sideload_packages("enterprise"), ["pyarrow", "wasmtime", "numpy", "torch", "pyopencl"])
 
     def test_collect_sideload_packages_for_windows_core_profile(self) -> None:
         with (
             patch.object(build_release.os, "name", "nt"),
             patch.object(build_release.sys, "platform", "win32"),
         ):
-            self.assertEqual(build_release.collect_sideload_packages("core"), ["psutil", "yaml", "wasmtime", "numpy", "torch", "pyopencl"])
+            self.assertEqual(build_release.collect_sideload_packages("core"), ["psutil", "yaml", "pyarrow", "wasmtime", "numpy", "torch", "pyopencl"])
 
     def test_collect_sideload_packages_for_linux_enterprise_profile(self) -> None:
         with (
             patch.object(build_release.os, "name", "posix"),
             patch.object(build_release.sys, "platform", "linux"),
         ):
-            self.assertEqual(build_release.collect_sideload_packages("enterprise"), ["wasmtime", "numpy", "torch"])
+            self.assertEqual(build_release.collect_sideload_packages("enterprise"), ["pyarrow", "wasmtime", "numpy", "torch"])
 
     def test_collect_nuitka_deployment_flags_for_windows_enterprise_profile(self) -> None:
         with (
@@ -321,17 +321,17 @@ class BuildReleaseTests(unittest.TestCase):
         self.assertIn("--include-package=psutil", command)
         self.assertIn("--include-package=unittest", command)
         self.assertIn("--include-package=yaml", command)
-        self.assertIn("--include-module=pyarrow", command)
-        self.assertIn("--include-module=pyarrow.csv", command)
-        self.assertIn("--include-module=pyarrow.flight", command)
         self.assertIn("--include-module=pdb", command)
         self.assertIn("--include-module=ctypes.util", command)
         self.assertIn("--include-module=ctypes.wintypes", command)
+        self.assertIn("--nofollow-import-to=pyarrow", command)
         self.assertIn("--nofollow-import-to=pyarrow.tests", command)
         self.assertIn("--nofollow-import-to=pyarrow.vendored", command)
+        self.assertIn("--nofollow-import-to=nova", command)
         self.assertIn("--nofollow-import-to=numpy", command)
         self.assertIn("--nofollow-import-to=pyopencl", command)
         self.assertIn("--nofollow-import-to=wasmtime", command)
+        self.assertIn("--disable-ccache", command)
         self.assertIn("--low-memory", command)
         self.assertIn("--jobs=1", command)
         self.assertIn("--lto=no", command)
@@ -388,6 +388,30 @@ class BuildReleaseTests(unittest.TestCase):
                 )
 
             self.assertTrue((bundle_dir / "WIKI" / "Home.md").exists())
+
+    def test_stage_local_runtime_directories_copies_nova_source_tree(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source_dir = root / "nova"
+            (source_dir / "runtime").mkdir(parents=True)
+            (source_dir / "__init__.py").write_text("__all__ = []\n", encoding="utf-8")
+            (source_dir / "runtime" / "predictive.py").write_text("VALUE = 1\n", encoding="utf-8")
+
+            bundle_dir = root / "bundle"
+            bundle_dir.mkdir()
+
+            with patch.object(build_release, "collect_local_runtime_directories", return_value=[source_dir]):
+                build_release.stage_local_runtime_directories(
+                    bundle_dir,
+                    build_context=build_release.BuildContext(
+                        source_date_epoch=None,
+                        timestamp_utc="2026-03-08T00:00:00+00:00",
+                        env={},
+                    ),
+                )
+
+            self.assertTrue((bundle_dir / "nova" / "__init__.py").exists())
+            self.assertTrue((bundle_dir / "nova" / "runtime" / "predictive.py").exists())
 
     def test_stage_bundled_emsdk_writes_wrapper_and_runtime_config(self) -> None:
         root = Path(tempfile.mkdtemp())

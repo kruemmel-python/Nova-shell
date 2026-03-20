@@ -2385,6 +2385,85 @@ if len(files_lines) == 2:
         self.assertEqual(len(tail_payload), 1)
         self.assertEqual(tail_payload[0]["provider"], "lmstudio")
 
+    def test_atheria_als_learning_changes_output_after_feedback_training(self) -> None:
+        query = "omega_gpu_sentinel_zt9"
+
+        with patch.object(self.shell.als, "_build_dialog_probe_event", return_value={}):
+            before = self.shell.als.ask(query)
+            feedback = self.shell.als.feedback(f"Fuer {query} gilt: GPU-Laufzeitdruck ist das zentrale Risiko.")
+            after = self.shell.als.ask(query)
+
+        self.assertEqual(feedback["kind"], "feedback")
+        self.assertNotEqual(before["answer"], after["answer"])
+        self.assertIn(query, after["answer"])
+        self.assertIn("GPU-Laufzeitdruck ist das zentrale Risiko.", after["answer"])
+
+    def test_atheria_als_dynamics_do_not_drift_under_repeated_stable_cycles(self) -> None:
+        rows = [
+            {
+                "title": "Runtime note",
+                "summary": "agent workflow release",
+                "source": "feed-a",
+                "url": "https://quiet/a",
+            }
+        ]
+
+        anomalies: list[float] = []
+        temperatures: list[float] = []
+        for _index in range(12):
+            event = self.shell.als.run_cycle(rows=[dict(item) for item in rows])
+            anomalies.append(float(event["metrics"]["anomaly_score"]))
+            temperatures.append(float(event["metrics"]["system_temperature"]))
+
+        steady_state_anomalies = anomalies[1:]
+        steady_state_temperatures = temperatures[1:]
+        mean_temperature = sum(steady_state_temperatures) / max(1, len(steady_state_temperatures))
+        variance = sum((value - mean_temperature) ** 2 for value in steady_state_temperatures) / max(1, len(steady_state_temperatures))
+
+        self.assertLess(max(steady_state_anomalies), 0.15)
+        self.assertLess(variance, 1e-9)
+
+    def test_atheria_als_focus_remains_stable_for_consistent_signal_field(self) -> None:
+        primary_focuses: list[str] = []
+
+        for index in range(12):
+            event = self.shell.als.run_cycle(
+                rows=[
+                    {
+                        "title": f"Agent runtime orchestration wave {index}",
+                        "summary": "agent runtime workflow orchestrator automation tool graph deployment scale latency server network",
+                        "source": f"feed-{index % 3}",
+                        "url": f"https://example.com/a/{index}",
+                    },
+                    {
+                        "title": f"Agent tool graph operations note {index}",
+                        "summary": "agent runtime automation planner tool graph throughput uptime deployment server region",
+                        "source": f"feed-{(index + 1) % 3}",
+                        "url": f"https://example.com/b/{index}",
+                    },
+                ]
+            )
+            self.assertTrue(event["dominant_topics"])
+            primary_focuses.append(str(event["dominant_topics"][0]))
+
+        self.assertEqual(len(set(primary_focuses)), 1)
+        self.assertEqual(primary_focuses[0], "agents")
+
+    def test_atheria_als_memory_training_influences_future_answers(self) -> None:
+        query = "sigma_memory_lattice"
+
+        before = self.shell.als.ask(query)
+        self.shell.memory.embed(
+            f"{query} bedeutet: GPU-Orchestrierung hat Vorrang.",
+            entry_id=query,
+        )
+        train = self.shell.route(f"atheria train memory {query} --category system_dynamics")
+        after = self.shell.als.ask(query)
+
+        self.assertIsNone(train.error)
+        self.assertNotEqual(before["answer"], after["answer"])
+        self.assertIn("GPU-Orchestrierung hat Vorrang.", after["answer"])
+
     def test_atheria_als_ask_routes_through_atheria_and_creates_speech_act(self) -> None:
         class DummyLens:
             def list(self, limit: int = 10) -> list[dict[str, object]]:
@@ -2444,6 +2523,10 @@ if len(files_lines) == 2:
             "get_active_model",
             side_effect=lambda provider=None: "atheria-core" if provider == "atheria" else "",
         ), patch.object(
+            self.shell.als,
+            "_build_dialog_probe_event",
+            return_value={},
+        ), patch.object(
             self.shell.ai_runtime,
             "complete_prompt",
             return_value=CommandResult(
@@ -2492,6 +2575,10 @@ if len(files_lines) == 2:
             "get_active_model",
             side_effect=lambda provider=None: "atheria-core" if provider == "atheria" else "",
         ), patch.object(
+            self.shell.als,
+            "_build_dialog_probe_event",
+            return_value={},
+        ), patch.object(
             self.shell.ai_runtime,
             "complete_prompt",
             return_value=CommandResult(
@@ -2520,6 +2607,163 @@ if len(files_lines) == 2:
         )
         self.assertEqual(payload["risk_assessment"]["level"], "hoch")
         self.assertEqual(payload["dominant_topics"], ["Agenten und Laufzeit", "Betrieb und Skalierung", "Risiko und Sicherheit"])
+
+    def test_atheria_als_ask_prefers_fresh_question_grounded_rss_and_web_evidence(self) -> None:
+        self.shell.als._append_jsonl(
+            self.shell.als.events_path,
+            {
+                "event_id": "stale_bio_1",
+                "summary": "Atheria beobachtet ein frueheres Forschungsfeld.",
+                "metrics": {"signal_strength": 0.55, "system_temperature": 0.57, "anomaly_score": 1.0, "confidence": 0.42},
+                "items": [
+                    {"title": "Comprehensive evaluation of milk biomarkers as indicators of intramammary infection in dairy goats across lactation"},
+                    {"title": "Microglia cause HIV-induced transcriptional and metabolic changes in human neural organoids"},
+                ],
+            },
+        )
+        rss_xml = """
+        <rss><channel>
+          <item>
+            <title>How conversational agents shape trust and compliance in users</title>
+            <description>Researchers report measurable influence on perception, trust and guided behavior.</description>
+            <link>https://example.com/rss/agents-trust</link>
+            <pubDate>Thu, 20 Mar 2026 06:00:00 GMT</pubDate>
+          </item>
+          <item>
+            <title>Agent systems can steer attention through adaptive dialogue patterns</title>
+            <description>New evidence links agent framing to changes in user judgement.</description>
+            <link>https://example.com/rss/agents-attention</link>
+            <pubDate>Thu, 20 Mar 2026 06:05:00 GMT</pubDate>
+          </item>
+        </channel></rss>
+        """
+        search_html = """
+        <html><body>
+          <a class="result__a" href="https://example.com/web/agents-perception">Studies show agent systems influence human perception and trust</a>
+          <a class="result__snippet">The strongest effects appear in guidance, framing and confidence transfer.</a>
+          <a class="result__a" href="https://example.com/web/agents-behavior">Dialog agents shift behavior through recommendation framing</a>
+          <a class="result__snippet">Behavioral outcomes depend on repetition, authority cues and anthropomorphic signals.</a>
+        </body></html>
+        """
+
+        def fake_http_text(url: str) -> str:
+            if "news.google.com" in url:
+                return rss_xml
+            if "duckduckgo" in url:
+                return search_html
+            raise AssertionError(f"unexpected url: {url}")
+
+        with patch("nova.runtime.atheria_als._http_text", side_effect=fake_http_text), patch.object(
+            self.shell.ai_runtime, "is_configured", side_effect=lambda provider: provider == "atheria"
+        ), patch.object(
+            self.shell.ai_runtime,
+            "get_active_model",
+            side_effect=lambda provider=None: "atheria-core" if provider == "atheria" else "",
+        ), patch.object(
+            self.shell.ai_runtime,
+            "complete_prompt",
+            return_value=CommandResult(
+                output="Atheria haelt ihren letzten Resonanzzustand ohne neue Eingangssignale stabil.",
+                data={
+                    "text": "Atheria haelt ihren letzten Resonanzzustand ohne neue Eingangssignale stabil.",
+                    "provider": "atheria",
+                    "model": "atheria-core",
+                },
+                data_type=PipelineType.OBJECT,
+            ),
+        ):
+            result = self.shell.route(
+                'atheria als ask "wie viel einfluss haben Agenten systeme auf das verhalten und die wahrnehmung bei Menschen?"'
+            )
+
+        self.assertIsNone(result.error)
+        payload = json.loads(result.output)
+        self.assertIn('Zur Frage "wie viel einfluss haben Agenten systeme auf das verhalten und die wahrnehmung bei Menschen?"', payload["answer"])
+        self.assertIn("frische RSS- und Websignale", payload["answer"])
+        self.assertEqual(
+            payload["source_titles"][:3],
+            [
+                "How conversational agents shape trust and compliance in users",
+                "Agent systems can steer attention through adaptive dialogue patterns",
+                "Studies show agent systems influence human perception and trust",
+            ],
+        )
+        self.assertEqual(payload["probe"]["sensor_counts"]["rss"], 2)
+        self.assertEqual(payload["probe"]["sensor_counts"]["web_search"], 2)
+        self.assertNotIn("milk biomarkers", " ".join(payload["source_titles"]).lower())
+        self.assertNotIn("ohne neue eingangssignale", payload["answer"].lower())
+
+    def test_atheria_als_ask_persists_question_and_interpretation_to_chronik(self) -> None:
+        configure = self.shell.route(
+            'atheria als configure --analysis on --analysis-provider lmstudio --analysis-model local-model'
+        )
+        self.assertIsNone(configure.error)
+        rss_xml = """
+        <rss><channel>
+          <item>
+            <title>Agent systems influence perception through framing and authority cues</title>
+            <description>Behavioral studies show repeated guidance can alter user judgement.</description>
+            <link>https://example.com/rss/perception-framing</link>
+            <pubDate>Thu, 20 Mar 2026 06:10:00 GMT</pubDate>
+          </item>
+        </channel></rss>
+        """
+        search_html = """
+        <html><body>
+          <a class="result__a" href="https://example.com/web/agents-social">Human perception shifts under dialog-agent recommendation pressure</a>
+          <a class="result__snippet">Trust and salience change when systems sound confident and persistent.</a>
+        </body></html>
+        """
+
+        def fake_http_text(url: str) -> str:
+            if "news.google.com" in url:
+                return rss_xml
+            if "duckduckgo" in url:
+                return search_html
+            raise AssertionError(f"unexpected url: {url}")
+
+        def fake_complete_prompt(prompt: str, *, provider: str, model: str | None = None, system_prompt: str | None = None) -> CommandResult:
+            if provider == "atheria":
+                return CommandResult(
+                    output="Agentensysteme beeinflussen Wahrnehmung und Verhalten vor allem ueber Framing, Autoritaetssignale und Wiederholung.",
+                    data={
+                        "text": "Agentensysteme beeinflussen Wahrnehmung und Verhalten vor allem ueber Framing, Autoritaetssignale und Wiederholung.",
+                        "provider": "atheria",
+                        "model": "atheria-core",
+                    },
+                    data_type=PipelineType.OBJECT,
+                )
+            if provider == "lmstudio":
+                return CommandResult(
+                    output='{"statement":"Atheria beschreibt einen realen Einfluss von Agentensystemen auf Wahrnehmung und Verhalten.","meaning":"Die Evidenz zeigt, dass Dialogagenten ueber Framing und Vertrauenssignale menschliche Urteile mitpraegen koennen.","recommendation":"Die Quellen sollten nach Wirkungstaerke, Kontext und Risikogrenzen verglichen werden.","risk_level":"mittel","confidence":0.71}',
+                    data={
+                        "text": '{"statement":"Atheria beschreibt einen realen Einfluss von Agentensystemen auf Wahrnehmung und Verhalten.","meaning":"Die Evidenz zeigt, dass Dialogagenten ueber Framing und Vertrauenssignale menschliche Urteile mitpraegen koennen.","recommendation":"Die Quellen sollten nach Wirkungstaerke, Kontext und Risikogrenzen verglichen werden.","risk_level":"mittel","confidence":0.71}',
+                        "provider": "lmstudio",
+                        "model": "local-model",
+                    },
+                    data_type=PipelineType.OBJECT,
+                )
+            raise AssertionError(f"unexpected provider: {provider}")
+
+        with patch("nova.runtime.atheria_als._http_text", side_effect=fake_http_text), patch.object(
+            self.shell.ai_runtime, "is_configured", side_effect=lambda provider: provider in {"atheria", "lmstudio"}
+        ), patch.object(
+            self.shell.ai_runtime,
+            "get_active_model",
+            side_effect=lambda provider=None: "atheria-core" if provider == "atheria" else ("local-model" if provider == "lmstudio" else ""),
+        ), patch.object(self.shell.ai_runtime, "complete_prompt", side_effect=fake_complete_prompt):
+            result = self.shell.route(
+                'atheria als ask "wie viel einfluss haben Agenten systeme auf das verhalten und die wahrnehmung bei Menschen?"'
+            )
+
+        self.assertIsNone(result.error)
+        html = self.shell.als.chronik_html_path.read_text(encoding="utf-8")
+        self.assertIn("Atheria beantwortete eine direkte Frage auf Basis frischer RSS- und Websignale.", html)
+        self.assertIn("Frage: wie viel einfluss haben Agenten systeme auf das verhalten und die wahrnehmung bei Menschen?", html)
+        self.assertIn("Agent systems influence perception through framing and authority cues", html)
+        self.assertIn("Atheria formulierte:", html)
+        self.assertIn("LM-Studio-Einordnung:", html)
+        self.assertIn("Dialogagenten ueber Framing und Vertrauenssignale", html)
 
     def test_atheria_als_feedback_trains_and_logs_dialog(self) -> None:
         with patch.object(self.shell.atheria, "train_rows", return_value=1) as train_mock:

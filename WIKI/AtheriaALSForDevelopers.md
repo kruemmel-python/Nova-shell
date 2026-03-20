@@ -79,13 +79,17 @@ Der Einstieg liegt in `nova_shell.py` unter:
 
 `ask(...)` arbeitet aktuell so:
 
-1. aktuelle Resonanz und letzte ALS-Ereignisse sammeln
-2. relevante Lens-Referenzen aufnehmen
-3. Atheria-Trainingstreffer suchen
+1. aus der Benutzerfrage ein frisches Dialog-Probe-Ereignis erzeugen
+2. dazu aktuelle RSS- und optionale `web_search`-Treffer sammeln
+3. frische Signale gegen letzte ALS-Ereignisse, Lens-Referenzen und Atheria-Memory gewichten
 4. bevorzugt ueber Provider `atheria` antworten
 5. bei Ausfall kontrolliert heuristisch antworten
 6. optional zweite Einordnung ueber `lmstudio` oder einen anderen Provider erzeugen
-7. Speech Act, Dialog und Analyse persistent schreiben
+7. Speech Act, Dialog, Analyse und Chronikdaten persistent schreiben
+
+Wichtig:
+`ask(...)` soll fuer aktuelle Fragen nicht nur alte Restresonanz wiederholen.
+Deshalb bevorzugt der aktuelle Pfad frische, fragerelevante Signale gegenueber historischen ALS-Ereignissen.
 
 ## Triggerlogik
 
@@ -111,8 +115,11 @@ Damit kann `aion_chronik.py` dieselbe Spur direkt rendern.
 
 Im `extra`-Block liegen fuer ALS inzwischen typischerweise:
 
+- `dialog_question`
+- `probe`
 - `speech_act`
 - `interpretation`
+- `interpretation_label`
 - `source_titles`
 - `dominant_topics`
 - `sensor_counts`
@@ -146,6 +153,13 @@ Die aktuelle ALS-Abdeckung prueft:
 - Dialog ueber `atheria als ask`
 - Feedback ueber `atheria als feedback`
 - CLI-Startpfad `--serve-atheria-als --als-once`
+- Frage-Erdung mit frischen RSS- und Web-Signalen
+- Chronik-Render mit Frage, Atheria-Text und LM-Studio-Einordnung
+- Systemdynamik:
+  - Lernen veraendert spaetere Antworten
+  - Drift bleibt unter Kontrolle
+  - Fokus bleibt bei stabilem Signal hinreichend konsistent
+  - Memory beeinflusst spaetere Antworten
 
 ## Verwandte Seiten
 

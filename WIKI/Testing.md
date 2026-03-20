@@ -10,6 +10,7 @@ Diese Seite beschreibt die Testebenen von Nova-shell und zeigt die wichtigsten T
 - Graph Compiler
 - Runtime
 - Shell und CLI
+- Systemdynamik und Langzeitverhalten
 - Toolchain
 - Service- und Traffic-Plane
 - Control Plane und Consensus
@@ -34,6 +35,15 @@ python -m unittest tests.test_nova_language
 python -m unittest tests.test_nova_shell
 ```
 
+### Fokus auf ALS-Systemdynamik
+
+```powershell
+python -m unittest tests.test_nova_shell.NovaShellTests.test_atheria_als_learning_changes_output_after_feedback_training
+python -m unittest tests.test_nova_shell.NovaShellTests.test_atheria_als_no_extreme_drift_under_stable_signal
+python -m unittest tests.test_nova_shell.NovaShellTests.test_atheria_als_focus_stability_under_consistent_signal
+python -m unittest tests.test_nova_shell.NovaShellTests.test_atheria_als_memory_influences_future_answers
+```
+
 ### Syntax- und Importpruefung
 
 ```powershell
@@ -44,8 +54,20 @@ python -m compileall nova nova_shell.py
 
 - Parser- oder AST-Aenderungen: `tests.test_nova_language`
 - CLI- oder Kommandoaenderungen: `tests.test_nova_shell`
+- ALS-, Memory- oder Resonanzaenderungen: zusaetzlich Systemdynamik-Tests aus `tests.test_nova_shell`
 - Build- oder Packaging-Aenderungen: zusaetzlich Release- und Smoke-Pfade pruefen
 - Wiki-Aenderungen: `wiki build` als Integrationscheck
+
+## Systemdynamik-Tests
+
+Nova-shell testet Atheria ALS nicht mehr nur als reine Softwareoberflaeche, sondern auch als dynamisches System.
+
+Die aktuelle Suite deckt unter anderem ab:
+
+- Lern-Test: Feedback oder Training veraendert spaetere Antworten
+- Drift-Test: Resonanzwerte laufen ueber viele Zyklen nicht unkontrolliert davon
+- Stabilitaets-Test: der Fokus bleibt bei stabilem Signal konsistent
+- Memory-Test: gespeichertes Wissen beeinflusst spaetere Antworten nachvollziehbar
 
 ## Typische Fehlerbilder
 

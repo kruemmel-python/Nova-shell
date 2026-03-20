@@ -816,6 +816,40 @@ class AtheriaALSRuntime:
                 break
         return deduped
 
+    def _collect_dialog_inputs(self, question: str, config: dict[str, Any]) -> list[dict[str, str]]:
+        resolved_query = _ensure_text(question) or _ensure_text(config.get("topic"))
+        if not resolved_query:
+            return []
+        max_items = max(6, min(24, _safe_int(config.get("max_items_per_cycle"), 48) // 2 or 12))
+        search_config = dict(config.get("web_search") or {})
+        rss_limit = max(4, min(12, max_items // 2))
+        web_limit = max(2, min(8, _safe_int(search_config.get("max_results"), 6)))
+        search_provider = _ensure_text(search_config.get("provider")) or "duckduckgo_html"
+        rows: list[dict[str, str]] = []
+
+        google_news_url = self._web_search_url(resolved_query, "google_news_rss")
+        with contextlib.suppress(Exception):
+            google_rows = self._collect_stream_items([google_news_url], max_items=rss_limit)
+            for row in google_rows:
+                row["search_query"] = resolved_query
+                row["search_provider"] = "google_news_rss"
+            rows.extend(google_rows)
+
+        with contextlib.suppress(Exception):
+            rows.extend(self._search_web_rows(resolved_query, provider=search_provider, limit=web_limit))
+
+        seen: set[str] = set()
+        deduped: list[dict[str, str]] = []
+        for row in rows:
+            digest = self._item_hash(row)
+            if digest in seen:
+                continue
+            seen.add(digest)
+            deduped.append(row)
+            if len(deduped) >= max_items:
+                break
+        return deduped
+
     def _derive_resonance(self, rows: list[dict[str, str]], history: list[dict[str, Any]]) -> dict[str, Any]:
         text = "\n".join(
             f"- {row.get('title', '')} :: {row.get('summary', '')}".strip()
@@ -826,17 +860,21 @@ class AtheriaALSRuntime:
         article_count_norm = _clamp(len(rows) / 24.0)
         source_diversity = _clamp(len({row.get('source') for row in rows if row.get('source')}) / max(1, min(len(rows), 8)))
         novelty = _novelty_ratio(rows)
-        current = {
+        core_metrics = {
             "signal_strength": _clamp(article_count_norm * 0.55 + group_scores["agents"] * 0.45),
             "system_temperature": _clamp(article_count_norm * 0.4 + source_diversity * 0.25 + group_scores["research"] * 0.35),
             "resource_pressure": _clamp(group_scores["infrastructure"] * 0.7 + group_scores["operations"] * 0.3),
             "structural_tension": _clamp(group_scores["agents"] * 0.5 + group_scores["infrastructure"] * 0.3 + group_scores["risk"] * 0.2),
             "entropic_index": _clamp(novelty * 0.55 + group_scores["risk"] * 0.25 + source_diversity * 0.2),
-            "anomaly_score": 0.0,
         }
         baseline_window = history[-24:]
-        baseline = {key: _mean(float(item.get(key, 0.0)) for item in baseline_window) for key in current} if baseline_window else {key: 0.0 for key in current}
-        deltas = {key: round(float(current[key]) - float(baseline[key]), 6) for key in current}
+        baseline = (
+            {key: _mean(float(item.get(key, 0.0)) for item in baseline_window) for key in core_metrics}
+            if baseline_window
+            else {key: 0.0 for key in core_metrics}
+        )
+        deltas = {key: round(float(core_metrics[key]) - float(baseline[key]), 6) for key in core_metrics}
+        current = dict(core_metrics)
         current["anomaly_score"] = _clamp(max(abs(value) for value in deltas.values()) * 1.6 if deltas else 0.0)
         if baseline_window:
             prev_trend = float(baseline_window[-1].get("trend_pressure", 0.0))
@@ -1559,6 +1597,15 @@ class AtheriaALSRuntime:
         latest = evidence[0] if evidence else {}
         metrics = dict(latest.get("metrics") or latest.get("current_resonance") or {})
         summary = _ensure_text(latest.get("summary") or latest.get("utterance_text"))
+        source_titles = self._dialog_source_titles(evidence)
+        focus_fields = self._dialog_focus_fields(metrics)
+        if str(latest.get("mode") or "") == "dialog_probe":
+            lines = [f'Zur Frage "{question}" habe ich frische RSS- und Websignale ausgewertet.']
+            if source_titles:
+                lines.append("Aktuell dominieren dabei: " + "; ".join(source_titles[:3]) + ".")
+            elif focus_fields:
+                lines.append("Inhaltlich konzentriert sich das Feld derzeit auf " + ", ".join(focus_fields[:3]) + ".")
+            return " ".join(line.strip() for line in lines if line.strip())
         if not summary:
             summary = "Ich beobachte derzeit keinen frischen Resonanzimpuls im Live-Stream."
         details = []
@@ -1693,12 +1740,62 @@ class AtheriaALSRuntime:
         cleaned = re.sub(r"\n{3,}", "\n\n", cleaned)
         return cleaned.strip()
 
+    def _is_generic_dialog_answer(self, text: str) -> bool:
+        lowered = _ensure_text(text).lower()
+        if not lowered:
+            return True
+        generic_markers = (
+            "haelt ihren letzten resonanzzustand",
+            "aktualisiert ihren kontinuierlichen resonanzzustand",
+            "ich beobachte derzeit keinen frischen resonanzimpuls",
+            "ich habe dazu noch kein direkt trainiertes wissen",
+        )
+        return any(marker in lowered for marker in generic_markers)
+
+    def _build_dialog_probe_event(self, question: str, *, config: dict[str, Any], state: dict[str, Any]) -> dict[str, Any]:
+        probe_rows = self._collect_dialog_inputs(question, config)
+        if not probe_rows:
+            return {}
+        resonance = self._derive_resonance(probe_rows, list(state.get("history", [])))
+        dominant_topics = self._dominant_topics(resonance)
+        sensor_counts: dict[str, int] = {}
+        for row in probe_rows:
+            sensor = _ensure_text(row.get("sensor") or "stream")
+            sensor_counts[sensor] = sensor_counts.get(sensor, 0) + 1
+        titles = [row.get("title", "") for row in probe_rows[:5] if row.get("title")]
+        summary = f'Atheria sammelt frische Evidenz zur Frage "{question}".'
+        if titles:
+            summary += " Hinweise: " + "; ".join(titles[:3]) + "."
+        return {
+            "event_id": f"als_dialog_probe_{uuid.uuid4().hex[:12]}",
+            "timestamp": time.time(),
+            "timestamp_iso": _utc_now(),
+            "mode": "dialog_probe",
+            "topic": question,
+            "summary": summary,
+            "item_count": len(probe_rows),
+            "new_item_count": len(probe_rows),
+            "items": probe_rows[:12],
+            "sensor_counts": sensor_counts,
+            "metrics": resonance,
+            "dominant_topics": dominant_topics,
+            "source_titles": titles[:5],
+            "fresh_signal": True,
+            "triggered": False,
+            "trigger_reason": "",
+            "search_query": question,
+        }
+
     def ask(self, question: str) -> dict[str, Any]:
         prompt = _ensure_text(question)
         if not prompt:
             raise ValueError("question must not be empty")
         state = self._load_state()
+        config = self.load_config()
         recent_events = self.tail_events(limit=4)
+        probe_event = self._build_dialog_probe_event(prompt, config=config, state=state)
+        evidence_events = [probe_event, *recent_events] if probe_event else recent_events
+        active_resonance = dict(probe_event.get("metrics") or state.get("current_resonance") or {})
         lens_refs: list[dict[str, Any]] = []
         if self.lens_store is not None:
             with contextlib.suppress(Exception):
@@ -1715,8 +1812,9 @@ class AtheriaALSRuntime:
         if provider and self.ai_runtime is not None:
             evidence_bundle = {
                 "question": prompt,
-                "current_resonance": state.get("current_resonance", {}),
-                "recent_events": recent_events,
+                "current_resonance": active_resonance,
+                "question_probe": probe_event,
+                "recent_events": evidence_events,
                 "atheria_hits": atheria_hits,
                 "lens_refs": lens_refs[:4],
             }
@@ -1735,40 +1833,45 @@ class AtheriaALSRuntime:
             if result.error is None:
                 raw_payload = dict(result.data or {})
                 answer_text = self._normalize_dialog_answer(raw_payload.get("text") or result.output)
-        if not answer_text:
+        if not answer_text or (probe_event and self._is_generic_dialog_answer(answer_text)):
             raw_payload = {"provider": provider or "heuristic", "model": model or "als-heuristic"}
-            answer_text = self._heuristic_answer(prompt, recent_events)
+            answer_text = self._heuristic_answer(prompt, evidence_events)
         answer_text, risk_assessment, source_titles, focus_fields = self._render_dialog_answer(
             answer_text,
-            resonance=dict(state.get("current_resonance") or {}),
-            evidence=recent_events,
+            resonance=active_resonance,
+            evidence=evidence_events,
         )
-        evidence_refs = [str(item.get("event_id") or "") for item in recent_events if str(item.get("event_id") or "").strip()]
+        evidence_refs = [str(item.get("event_id") or "") for item in evidence_events if str(item.get("event_id") or "").strip()]
         evidence_refs.extend(str(item.get("id") or "") for item in lens_refs[:4] if str(item.get("id") or "").strip())
         speech_act = self.voice_runtime.create_speech_act(
             mode="dialog",
             text=answer_text,
             evidence_refs=evidence_refs,
-            resonance=dict(state.get("current_resonance") or {}),
+            resonance=active_resonance,
             provider=str(raw_payload.get("provider") or provider or "heuristic"),
             model=str(raw_payload.get("model") or model or "als-heuristic"),
-            audio_enabled=bool(self.load_config().get("voice", {}).get("audio_enabled", False)),
-            voice_name=str(self.load_config().get("voice", {}).get("voice_name") or ""),
+            audio_enabled=bool(config.get("voice", {}).get("audio_enabled", False)),
+            voice_name=str(config.get("voice", {}).get("voice_name") or ""),
         )
         self._append_voice(speech_act, state)
+        interpretation_event = {
+            "event_id": f"als_dialog_event_{uuid.uuid4().hex[:12]}",
+            "topic": prompt,
+            "summary": answer_text,
+            "metrics": active_resonance,
+            "dominant_topics": focus_fields,
+            "source_titles": source_titles,
+            "sensor_counts": dict(probe_event.get("sensor_counts") or {}),
+            "triggered": False,
+            "trigger_reason": "",
+            "item_count": int(probe_event.get("item_count") or 0),
+            "new_item_count": int(probe_event.get("new_item_count") or 0),
+            "fresh_signal": bool(probe_event),
+            "items": list(probe_event.get("items") or []),
+        }
         interpretation = self._analyze_interpretation(
-            self.load_config(),
-            {
-                "event_id": f"als_dialog_event_{uuid.uuid4().hex[:12]}",
-                "topic": prompt,
-                "summary": answer_text,
-                "metrics": dict(state.get("current_resonance") or {}),
-                "dominant_topics": focus_fields,
-                "source_titles": source_titles,
-                "sensor_counts": {},
-                "triggered": False,
-                "trigger_reason": "",
-            },
+            config,
+            interpretation_event,
             speech_act=speech_act,
         )
         if interpretation:
@@ -1787,10 +1890,61 @@ class AtheriaALSRuntime:
             "risk_assessment": risk_assessment,
             "source_titles": source_titles,
             "atheria_hits": atheria_hits,
+            "probe": probe_event,
             "speech_act": speech_act,
             "interpretation": interpretation,
         }
         self._append_dialog(dialog_payload, state)
+        self._append_audit_entry(
+            "dialog_query",
+            market={
+                "market_profile": "web_resonance_stream",
+                "transport": "dialog_probe",
+                "trauma_pressure": _safe_float(active_resonance.get("anomaly_score"), 0.0),
+                "recent_returns": {
+                    "SIGNAL": [float(item.get("signal_strength", 0.0)) for item in state.get("history", [])[-8:]],
+                    "TEMPERATURE": [float(item.get("system_temperature", 0.0)) for item in state.get("history", [])[-8:]],
+                },
+                "recent_volume_flux": {
+                    "ACCELERATION": [float(item.get("trend_acceleration", 0.0)) for item in state.get("history", [])[-8:]],
+                    "TENSION": [float(item.get("structural_tension", 0.0)) for item in state.get("history", [])[-8:]],
+                },
+                "last_market_snapshot": {
+                    "symbols": {
+                        "SIGNAL": active_resonance.get("signal_strength"),
+                        "TEMPERATURE": active_resonance.get("system_temperature"),
+                        "ANOMALY": active_resonance.get("anomaly_score"),
+                    },
+                    "sensor_context": {
+                        "als": {
+                            "topic": prompt,
+                            "dialog_question": prompt,
+                            "dominant_topics": focus_fields,
+                            "new_item_count": int(probe_event.get("new_item_count") or 0),
+                            "item_count": int(probe_event.get("item_count") or 0),
+                            "sensor_counts": dict(probe_event.get("sensor_counts") or {}),
+                            "source_titles": source_titles[:5],
+                            "trigger_reason": "",
+                        }
+                    },
+                },
+            },
+            extra={
+                "dialog_question": prompt,
+                "summary": answer_text,
+                "topic": prompt,
+                "dominant_topics": focus_fields,
+                "source_titles": source_titles[:5],
+                "sensor_counts": dict(probe_event.get("sensor_counts") or {}),
+                "item_count": int(probe_event.get("item_count") or 0),
+                "new_item_count": int(probe_event.get("new_item_count") or 0),
+                "fresh_signal": bool(probe_event),
+                "metrics": active_resonance,
+                "thresholds": {},
+                "speech_act": self._audit_speech_payload(speech_act),
+                "interpretation": self._audit_interpretation_payload(interpretation),
+            },
+        )
         snapshot_id = self._record_lens_snapshot(
             "atheria.als.dialog.ask",
             output_text=answer_text,
