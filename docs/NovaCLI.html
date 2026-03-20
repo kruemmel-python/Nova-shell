@@ -623,7 +623,7 @@ ai prompt &lt;prompt&gt;</code></pre>
 <p>Syntax:</p>
 <pre><code class="language-text">atheria status
 atheria init
-atheria als status|configure|cycle|start|stop|ask|feedback|voice|stream ...
+atheria als status|configure|cycle|start|stop|search|ask|feedback|voice|analysis|stream ...
 atheria search &lt;query&gt;
 atheria chat &lt;prompt&gt;
 atheria sensor gallery|list|show ...
@@ -640,19 +640,28 @@ atheria evolve status|plan|simulate|apply ...</code></pre>
 <h4 id="als-residenter-atheria-live-pfad">ALS: residenter Atheria-Live-Pfad</h4>
 <pre><code class="language-powershell">atheria als status
 atheria als configure --topic &quot;AI infrastructure agent runtime&quot; --interval 90 --trigger 0.80
+atheria als configure --analysis on --analysis-provider lmstudio --analysis-model local-model
+atheria als configure --web-search on --search-query &quot;AI infrastructure agent runtime&quot; --search-provider duckduckgo_html --search-limit 6
 atheria als cycle
+atheria als search &quot;AI infrastructure agent runtime&quot; --provider duckduckgo_html --limit 5
 atheria als start
 atheria als ask &quot;Was heizt die Resonanz gerade auf?&quot;
 atheria als feedback &quot;Gewichte GPU-Runtime-Anomalien hoeher.&quot;
 atheria als voice status
+atheria als analysis status
+atheria als analysis tail --limit 5
 atheria als stream tail --limit 5
 atheria als stop</code></pre>
 <p>Erwartung:</p>
 <ul>
 <li><code>status</code> zeigt Laufzustand, Resonanz und Voice-Metadaten</li>
+<li><code>configure --web-search ...</code> aktiviert zusaetzliche Suchsignale neben den Feed-Quellen</li>
+<li><code>configure --analysis ...</code> aktiviert eine zweite KI-Einordnung, typischerweise ueber <code>lmstudio</code></li>
 <li><code>cycle</code> erzeugt einen einzelnen kontinuierlichen ALS-Zyklus</li>
+<li><code>search</code> fuehrt eine direkte Websuche aus, optional auch ohne residenten Daemon</li>
 <li><code>start</code> startet den residenten Hintergrundpfad</li>
 <li><code>ask</code> und <code>feedback</code> erzeugen Dialog- und Speech-Act-Eintraege</li>
+<li><code>analysis status|last|tail</code> zeigt die gespeicherten KI-Einordnungen</li>
 <li><code>stream tail</code> zeigt letzte ALS-Events</li>
 </ul>
 <p>Vertiefung:</p>

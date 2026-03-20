@@ -202,9 +202,14 @@
   events.jsonl
   dialog.jsonl
   voice.jsonl
+  interpretations.jsonl
   als.pid
   stop.request
   aion_chronik.html
+  voice_runtime/
+    latest_speech_act.json
+    latest_utterance.txt
+    latest_utterance.ssml
   daemon_runtime/
     atheria_daemon_audit.jsonl
     core_audit/
@@ -220,6 +225,8 @@ run_cycle()
 train_rows()
   -&gt;
 lens.record()
+  -&gt;
+interpretation append
   -&gt;
 audit append
   -&gt;
@@ -241,7 +248,8 @@ speech act append</code></pre>
 <li>Atheria-Trainingstreffer suchen</li>
 <li>bevorzugt ueber Provider <code>atheria</code> antworten</li>
 <li>bei Ausfall kontrolliert heuristisch antworten</li>
-<li>Speech Act und Dialog persistent schreiben</li>
+<li>optional zweite Einordnung ueber <code>lmstudio</code> oder einen anderen Provider erzeugen</li>
+<li>Speech Act, Dialog und Analyse persistent schreiben</li>
 </ol>
 <h2 id="triggerlogik">Triggerlogik</h2>
 <p>ALS loest aktuell einen Trigger aus, wenn bereits eine Baseline existiert und mindestens einer dieser Werte anspringt:</p>
@@ -261,6 +269,15 @@ speech act append</code></pre>
 <li><code>extra</code></li>
 </ul>
 <p>Damit kann <code>aion_chronik.py</code> dieselbe Spur direkt rendern.</p>
+<p>Im <code>extra</code>-Block liegen fuer ALS inzwischen typischerweise:</p>
+<ul>
+<li><code>speech_act</code></li>
+<li><code>interpretation</code></li>
+<li><code>source_titles</code></li>
+<li><code>dominant_topics</code></li>
+<li><code>sensor_counts</code></li>
+<li><code>metrics</code></li>
+</ul>
 <h2 id="lens-integration">Lens-Integration</h2>
 <p>ALS nutzt Lens bewusst nur an entscheidenden Knoten:</p>
 <ul>
@@ -281,6 +298,7 @@ speech act append</code></pre>
 <p>Die aktuelle ALS-Abdeckung prueft:</p>
 <ul>
 <li>Zyklus mit Trigger, Lens, Voice und Chronik</li>
+<li>Zyklus mit LM-Studio-Einordnung und Chronik-Render</li>
 <li>Dialog ueber <code>atheria als ask</code></li>
 <li>Feedback ueber <code>atheria als feedback</code></li>
 <li>CLI-Startpfad <code>--serve-atheria-als --als-once</code></li>

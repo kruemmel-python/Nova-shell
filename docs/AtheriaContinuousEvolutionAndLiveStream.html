@@ -162,7 +162,7 @@
 <li>lokaler, replaybarer Kausalspur</li>
 <li>direkter Dialog- und Voice-Schnittstelle</li>
 </ul>
-<p>Wichtig ist die Einordnung: Das aktuelle ALS arbeitet als residenter, wiederkehrender Stream-Loop ueber RSS- und API-Quellen. Es ist damit kein einmaliger Morning-Briefing-Lauf mehr, aber auch noch kein globaler Push-Bus mit Websocket-Zwang.</p>
+<p>Wichtig ist die Einordnung: Das aktuelle ALS arbeitet als residenter, wiederkehrender Stream-Loop ueber RSS- und API-Quellen. Es ist damit kein einmaliger Morning-Briefing-Lauf mehr, aber auch noch kein globaler Push-Bus mit Websocket-Zwang. Neu dazu kommt ein optionaler <code>web_search</code>-Pfad, der Suchergebnisse parallel zu den Feed-Quellen einsammelt und in denselben Resonanzzyklus einspeist.</p>
 <h2 id="kernobjekte">Kernobjekte</h2>
 <table><thead><tr>
 <th>Objekt</th>
@@ -318,11 +318,15 @@ atheria als configure
 atheria als cycle
 atheria als start
 atheria als stop
+atheria als search &lt;query&gt;
 atheria als ask &lt;question&gt;
 atheria als feedback &lt;text&gt;
 atheria als voice status
 atheria als voice last
 atheria als voice speak &lt;text&gt;
+atheria als analysis status
+atheria als analysis last
+atheria als analysis tail
 atheria als stream tail</code></pre>
 <h2 id="testbare-beispiele">Testbare Beispiele</h2>
 <h3 id="status-pruefen">Status pruefen</h3>
@@ -342,6 +346,23 @@ atheria als stream tail</code></pre>
 <li><code>config.json</code> wird aktualisiert</li>
 <li>Thema, Interval und Triggerwerte sind persistent gesetzt</li>
 </ul>
+<h3 id="sekundaere-ki-einordnung-ueber-lm-studio-aktivieren">Sekundaere KI-Einordnung ueber LM Studio aktivieren</h3>
+<pre><code class="language-powershell">atheria als configure --analysis on --analysis-provider lmstudio --analysis-model local-model</code></pre>
+<p>Erwartung:</p>
+<ul>
+<li><code>config.json</code> enthaelt einen <code>interpretation</code>-Block</li>
+<li>jeder kuenftige <code>cycle</code> kann neben Atherias Primäraussage eine zweite lesbare Einordnung erzeugen</li>
+<li>die Einordnung landet in <code>interpretations.jsonl</code></li>
+<li>die Chronik zeigt die Einordnung unterhalb der Atheria-Formulierung</li>
+</ul>
+<h3 id="websuche-zusaetzlich-zum-feed-stream-aktivieren">Websuche zusaetzlich zum Feed-Stream aktivieren</h3>
+<pre><code class="language-powershell">atheria als configure --web-search on --search-query &quot;AI infrastructure agent runtime&quot; --search-provider duckduckgo_html --search-limit 6</code></pre>
+<p>Erwartung:</p>
+<ul>
+<li><code>config.json</code> enthaelt einen <code>web_search</code>-Block</li>
+<li>kuenftige <code>cycle</code>- und <code>start</code>-Laeufe mischen RSS- und Suchergebnisse</li>
+<li><code>status</code> zeigt die aktive Suchkonfiguration im Stream-Block</li>
+</ul>
 <h3 id="einzelausfuehrung-fuer-schnellen-test">Einzelausfuehrung fuer schnellen Test</h3>
 <pre><code class="language-powershell">atheria als cycle</code></pre>
 <p>Erwartung:</p>
@@ -349,8 +370,20 @@ atheria als stream tail</code></pre>
 <li>ein Ereignis in <code>events.jsonl</code></li>
 <li>aktualisierter <code>state.json</code></li>
 <li>ggf. ein <code>speech_act</code></li>
+<li>ggf. eine <code>interpretation</code></li>
 <li>Audit-Eintrag und Chronik-Refresh</li>
 </ul>
+<h3 id="direkte-websuche-ohne-dauerhaften-daemon-lauf">Direkte Websuche ohne dauerhaften Daemon-Lauf</h3>
+<pre><code class="language-powershell">atheria als search &quot;AI infrastructure agent runtime&quot; --provider duckduckgo_html --limit 5</code></pre>
+<p>Erwartung:</p>
+<ul>
+<li>JSON mit <code>query</code>, <code>provider</code>, <code>result_count</code> und <code>results</code></li>
+<li>jedes Ergebnis enthaelt <code>sensor: web_search</code></li>
+<li>der Befehl aendert noch keinen ALS-Zustand</li>
+</ul>
+<p>Falls die Suchtreffer sofort in ALS eingehen sollen:</p>
+<pre><code class="language-powershell">atheria als search &quot;AI infrastructure agent runtime&quot; --provider duckduckgo_html --limit 5 --ingest</code></pre>
+<p>Dann fuehrt ALS direkt einen Zyklus mit diesen Treffern aus.</p>
 <h3 id="residenten-loop-starten">Residenten Loop starten</h3>
 <pre><code class="language-powershell">atheria als start
 atheria als status</code></pre>
@@ -367,6 +400,7 @@ atheria als status</code></pre>
 <li>Antworttext mit Evidenzbezug</li>
 <li>neuer Dialogeintrag in <code>dialog.jsonl</code></li>
 <li>neuer Speech Act in <code>voice.jsonl</code></li>
+<li>optional neue KI-Einordnung im Rueckgabepayload</li>
 </ul>
 <h3 id="feedback-in-die-evolution-geben">Feedback in die Evolution geben</h3>
 <pre><code class="language-powershell">atheria als feedback &quot;Gewichte GPU-Runtime-Anomalien hoeher als Funding-News.&quot;</code></pre>
@@ -374,6 +408,16 @@ atheria als status</code></pre>
 <ul>
 <li>Feedback wird als Training/Feedback-Eintrag aufgenommen</li>
 <li>Atheria bestaetigt die Rueckkopplung per Speech Act</li>
+</ul>
+<h3 id="letzte-ki-einordnung-lesen">Letzte KI-Einordnung lesen</h3>
+<pre><code class="language-powershell">atheria als analysis status
+atheria als analysis last
+atheria als analysis tail --limit 5</code></pre>
+<p>Erwartung:</p>
+<ul>
+<li><code>analysis status</code> zeigt Aktivierung, Provider, Modell und den letzten Eintrag</li>
+<li><code>analysis last</code> zeigt die neueste gespeicherte Einordnung</li>
+<li><code>analysis tail</code> zeigt den Verlauf aus <code>interpretations.jsonl</code></li>
 </ul>
 <h3 id="letzte-stream-ereignisse-ansehen">Letzte Stream-Ereignisse ansehen</h3>
 <pre><code class="language-powershell">atheria als stream tail --limit 5</code></pre>
@@ -386,6 +430,21 @@ atheria als status</code></pre>
 <li>Audio ist optional, Voice-Objekte aber nicht</li>
 </ul>
 <p>Die vertiefte Doku steht in <a href="AtheriaVoice.html">AtheriaVoice.md</a>.</p>
+<h2 id="menschliche-einordnungsschicht">Menschliche Einordnungsschicht</h2>
+<p>ALS kann Atherias Primäraussage durch ein zweites Modell, typischerweise <code>lmstudio</code>, interpretieren lassen.</p>
+<p>Diese Schicht dient nicht dazu, Atheria zu ersetzen, sondern ihre Aussage fuer Menschen zu verdichten:</p>
+<ul>
+<li><code>statement</code>: Was sagt Atheria inhaltlich?</li>
+<li><code>meaning</code>: Warum ist das relevant?</li>
+<li><code>recommendation</code>: Was sollte als naechstes geprueft werden?</li>
+<li><code>risk_level</code>: niedrig, mittel oder hoch</li>
+</ul>
+<p>Die Einordnung wird:</p>
+<ul>
+<li>als JSON in <code>interpretations.jsonl</code> gespeichert</li>
+<li>im <code>status</code> unter <code>interpretation.last_analysis</code> sichtbar</li>
+<li>in der Chronik direkt unter der Voice-Zeile gerendert</li>
+</ul>
 <h2 id="typische-fragen">Typische Fragen</h2>
 <h3 id="muss-als-manuell-gestartet-werden">Muss ALS manuell gestartet werden?</h3>
 <p>Fuer den residenten Prozess ja. Danach existiert ALS als laufender Hintergrundpfad und reagiert zyklisch ohne weiteren <code>run</code>-Befehl.</p>
@@ -424,12 +483,17 @@ atheria als status</code></pre>
 <li class="wiki-toc-link"><a href="#testbare-beispiele">Testbare Beispiele</a></li>
 <li class="wiki-toc-link level-3"><a href="#status-pruefen">Status pruefen</a></li>
 <li class="wiki-toc-link level-3"><a href="#residenten-loop-konfigurieren">Residenten Loop konfigurieren</a></li>
+<li class="wiki-toc-link level-3"><a href="#sekundaere-ki-einordnung-ueber-lm-studio-aktivieren">Sekundaere KI-Einordnung ueber LM Studio aktivieren</a></li>
+<li class="wiki-toc-link level-3"><a href="#websuche-zusaetzlich-zum-feed-stream-aktivieren">Websuche zusaetzlich zum Feed-Stream aktivieren</a></li>
 <li class="wiki-toc-link level-3"><a href="#einzelausfuehrung-fuer-schnellen-test">Einzelausfuehrung fuer schnellen Test</a></li>
+<li class="wiki-toc-link level-3"><a href="#direkte-websuche-ohne-dauerhaften-daemon-lauf">Direkte Websuche ohne dauerhaften Daemon-Lauf</a></li>
 <li class="wiki-toc-link level-3"><a href="#residenten-loop-starten">Residenten Loop starten</a></li>
 <li class="wiki-toc-link level-3"><a href="#laufende-atheria-befragen">Laufende Atheria befragen</a></li>
 <li class="wiki-toc-link level-3"><a href="#feedback-in-die-evolution-geben">Feedback in die Evolution geben</a></li>
+<li class="wiki-toc-link level-3"><a href="#letzte-ki-einordnung-lesen">Letzte KI-Einordnung lesen</a></li>
 <li class="wiki-toc-link level-3"><a href="#letzte-stream-ereignisse-ansehen">Letzte Stream-Ereignisse ansehen</a></li>
 <li class="wiki-toc-link"><a href="#voice-als-grundschicht">Voice als Grundschicht</a></li>
+<li class="wiki-toc-link"><a href="#menschliche-einordnungsschicht">Menschliche Einordnungsschicht</a></li>
 <li class="wiki-toc-link"><a href="#typische-fragen">Typische Fragen</a></li>
 <li class="wiki-toc-link level-3"><a href="#muss-als-manuell-gestartet-werden">Muss ALS manuell gestartet werden?</a></li>
 <li class="wiki-toc-link level-3"><a href="#ist-als-schon-ein-echter-push-stream">Ist ALS schon ein echter Push-Stream?</a></li>

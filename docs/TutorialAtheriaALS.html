@@ -173,6 +173,10 @@ atheria als status</code></pre>
 <pre><code class="language-powershell">atheria als configure --topic &quot;AI infrastructure agent runtime&quot; --interval 90 --trigger 0.80 --anomaly-threshold 0.72</code></pre>
 <p>Optional mit Audio:</p>
 <pre><code class="language-powershell">atheria als configure --audio on --voice &quot;Microsoft Hedda Desktop&quot;</code></pre>
+<p>Optional mit LM-Studio-Einordnung:</p>
+<pre><code class="language-powershell">atheria als configure --analysis on --analysis-provider lmstudio --analysis-model local-model</code></pre>
+<p>Optional mit zusaetzlicher Websuche:</p>
+<pre><code class="language-powershell">atheria als configure --web-search on --search-query &quot;AI infrastructure agent runtime&quot; --search-provider duckduckgo_html --search-limit 6</code></pre>
 <h2 id="schritt-3-einen-einzelnen-zyklus-fahren">Schritt 3: Einen einzelnen Zyklus fahren</h2>
 <pre><code class="language-powershell">atheria als cycle
 atheria als stream tail --limit 3</code></pre>
@@ -181,7 +185,12 @@ atheria als stream tail --limit 3</code></pre>
 <li><code>events.jsonl</code> erhaelt neue Eintraege</li>
 <li><code>state.json</code> aktualisiert sich</li>
 <li><code>aion_chronik.html</code> wird erzeugt oder aktualisiert</li>
+<li>bei aktiver Analyse waechst auch <code>interpretations.jsonl</code></li>
 </ul>
+<p>Wenn du vor dem residenten Start nur die Websuche pruefen willst:</p>
+<pre><code class="language-powershell">atheria als search &quot;AI infrastructure agent runtime&quot; --provider duckduckgo_html --limit 5</code></pre>
+<p>Wenn die Suchtreffer direkt in ALS uebernommen werden sollen:</p>
+<pre><code class="language-powershell">atheria als search &quot;AI infrastructure agent runtime&quot; --provider duckduckgo_html --limit 5 --ingest</code></pre>
 <h2 id="schritt-4-residenten-loop-starten">Schritt 4: Residenten Loop starten</h2>
 <pre><code class="language-powershell">atheria als start
 atheria als status</code></pre>
@@ -204,13 +213,25 @@ atheria als feedback &quot;Achte staerker auf strukturelle Spannung als auf Fund
 <pre><code class="language-powershell">atheria als voice status
 atheria als voice last
 atheria als voice speak &quot;Manueller Test der Atheria-Stimme.&quot;</code></pre>
-<h2 id="schritt-7-artefakte-lesen">Schritt 7: Artefakte lesen</h2>
+<h2 id="schritt-7-ki-einordnung-pruefen">Schritt 7: KI-Einordnung pruefen</h2>
+<pre><code class="language-powershell">atheria als analysis status
+atheria als analysis last
+atheria als analysis tail --limit 3</code></pre>
+<p>Erwartung:</p>
+<ul>
+<li>die letzte LM-Studio-Einordnung ist direkt lesbar</li>
+<li><code>status</code> zeigt Provider und Modell</li>
+<li>die Chronik hat jetzt unter Atherias eigener Aussage eine zweite, menschlichere Einordnung</li>
+</ul>
+<h2 id="schritt-8-artefakte-lesen">Schritt 8: Artefakte lesen</h2>
 <p>Typische Dateien:</p>
 <pre><code class="language-text">~/.nova_shell_memory/atheria_als/events.jsonl
 ~/.nova_shell_memory/atheria_als/dialog.jsonl
 ~/.nova_shell_memory/atheria_als/voice.jsonl
-~/.nova_shell_memory/atheria_als/aion_chronik.html</code></pre>
-<h2 id="schritt-8-als-stoppen">Schritt 8: ALS stoppen</h2>
+~/.nova_shell_memory/atheria_als/interpretations.jsonl
+~/.nova_shell_memory/atheria_als/aion_chronik.html
+~/.nova_shell_memory/atheria_als/voice_runtime/latest_utterance.txt</code></pre>
+<h2 id="schritt-9-als-stoppen">Schritt 9: ALS stoppen</h2>
 <pre><code class="language-powershell">atheria als stop
 atheria als status</code></pre>
 <p>Erwartung:</p>
@@ -224,6 +245,7 @@ atheria als status</code></pre>
 <li><code>atheria als status</code></li>
 <li><code>atheria als stream tail --limit 5</code></li>
 <li><code>atheria als voice last</code></li>
+<li><code>atheria als analysis last</code></li>
 <li><code>lens list 10</code></li>
 </ul>
 <h2 id="verwandte-seiten">Verwandte Seiten</h2>
@@ -244,8 +266,9 @@ atheria als status</code></pre>
 <li class="wiki-toc-link"><a href="#schritt-4-residenten-loop-starten">Schritt 4: Residenten Loop starten</a></li>
 <li class="wiki-toc-link"><a href="#schritt-5-dialog-fuehren">Schritt 5: Dialog fuehren</a></li>
 <li class="wiki-toc-link"><a href="#schritt-6-voice-pruefen">Schritt 6: Voice pruefen</a></li>
-<li class="wiki-toc-link"><a href="#schritt-7-artefakte-lesen">Schritt 7: Artefakte lesen</a></li>
-<li class="wiki-toc-link"><a href="#schritt-8-als-stoppen">Schritt 8: ALS stoppen</a></li>
+<li class="wiki-toc-link"><a href="#schritt-7-ki-einordnung-pruefen">Schritt 7: KI-Einordnung pruefen</a></li>
+<li class="wiki-toc-link"><a href="#schritt-8-artefakte-lesen">Schritt 8: Artefakte lesen</a></li>
+<li class="wiki-toc-link"><a href="#schritt-9-als-stoppen">Schritt 9: ALS stoppen</a></li>
 <li class="wiki-toc-link"><a href="#typische-kontrolle">Typische Kontrolle</a></li>
 <li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
 </ul></div>
