@@ -1706,7 +1706,10 @@ if len(files_lines) == 2:
                 self.assertIn("scheduled_task", created_kinds)
                 self.assertIn("run_key", created_kinds)
             file_created = next(item for item in change_event["created"] if item["kind"] == "executable")
-            self.assertEqual(file_created["signature_status"], "NotSigned")
+            if os.name == "nt":
+                self.assertEqual(file_created["signature_status"], "NotSigned")
+            else:
+                self.assertEqual(file_created["signature_status"], "unavailable")
             self.assertIn("quarantine", file_created)
             self.assertTrue(file_created["quarantine"]["success"])
             self.assertFalse((temp_dir / "dropper.exe").exists())
