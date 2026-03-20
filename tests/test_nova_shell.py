@@ -1853,7 +1853,8 @@ if len(files_lines) == 2:
             reload_result = self.shell.route("ai env reload")
             self.assertIsNone(reload_result.error)
             payload = json.loads(reload_result.output)
-            self.assertIn(str(env_file), payload["loaded_env_files"])
+            loaded = {str(Path(item).resolve(strict=False)).casefold() for item in payload["loaded_env_files"]}
+            self.assertIn(str(env_file.resolve(strict=False)).casefold(), loaded)
 
             providers = self.shell.route("ai providers")
             self.assertIsNone(providers.error)

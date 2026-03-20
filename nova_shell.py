@@ -5563,7 +5563,9 @@ class NovaShell:
     def _save_history(self) -> None:
         if readline is None:
             return
-        readline.write_history_file(self._history_file)
+        with contextlib.suppress(FileNotFoundError, OSError):
+            self._history_file.parent.mkdir(parents=True, exist_ok=True)
+            readline.write_history_file(self._history_file)
 
     def _close_loop(self) -> None:
         if self._closed:

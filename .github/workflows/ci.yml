@@ -5,7 +5,17 @@ on:
     branches:
       - main
       - master
+    paths-ignore:
+      - "docs/**"
+      - "WIKI/**"
+      - "README.md"
+      - "CITATION.cff"
   pull_request:
+    paths-ignore:
+      - "docs/**"
+      - "WIKI/**"
+      - "README.md"
+      - "CITATION.cff"
 
 jobs:
   test-and-package:
@@ -31,7 +41,7 @@ jobs:
         shell: bash
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -e . build
+          python -m pip install -e ".[observability,guard,arrow,wasm,atheria]" build
 
       - name: Run unit tests
         shell: bash

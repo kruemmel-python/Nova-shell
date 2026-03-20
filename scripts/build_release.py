@@ -1221,7 +1221,7 @@ def stage_minimal_node_runtime(cache_dir: Path, target_root: Path) -> None:
     if node_exe is None:
         return
     version_root = node_exe.parent.parent if node_exe.parent.name == "bin" else node_exe.parent
-    target_version_root = target_root / version_root.relative_to(cache_dir / "node")
+    target_version_root = target_root / version_root.name
     target_bin = target_version_root / ("bin" if node_exe.parent.name == "bin" else "")
     target_bin.mkdir(parents=True, exist_ok=True)
     safe_copy2_file(node_exe, target_bin / node_exe.name)

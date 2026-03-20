@@ -1593,12 +1593,15 @@ class AtheriaALSRuntime:
         event["state"] = state.get("last_cycle", {})
         return event
 
-    def _heuristic_answer(self, question: str, evidence: list[dict[str, Any]]) -> str:
+    def _heuristic_answer(self, question: str, evidence: list[dict[str, Any]], *, atheria_hits: list[dict[str, Any]] | None = None) -> str:
         latest = evidence[0] if evidence else {}
         metrics = dict(latest.get("metrics") or latest.get("current_resonance") or {})
         summary = _ensure_text(latest.get("summary") or latest.get("utterance_text"))
         source_titles = self._dialog_source_titles(evidence)
         focus_fields = self._dialog_focus_fields(metrics)
+        ranked_hits = [item for item in list(atheria_hits or []) if isinstance(item, dict)]
+        top_hit = next((item for item in ranked_hits if _ensure_text(item.get("answer"))), {})
+        learned_answer = _ensure_text(top_hit.get("answer"))
         if str(latest.get("mode") or "") == "dialog_probe":
             lines = [f'Zur Frage "{question}" habe ich frische RSS- und Websignale ausgewertet.']
             if source_titles:
@@ -1606,6 +1609,8 @@ class AtheriaALSRuntime:
             elif focus_fields:
                 lines.append("Inhaltlich konzentriert sich das Feld derzeit auf " + ", ".join(focus_fields[:3]) + ".")
             return " ".join(line.strip() for line in lines if line.strip())
+        if question.strip() and learned_answer:
+            return f'Zu "{question}" greift mein trainiertes Wissen: {learned_answer}'
         if not summary:
             summary = "Ich beobachte derzeit keinen frischen Resonanzimpuls im Live-Stream."
         details = []
@@ -1835,7 +1840,7 @@ class AtheriaALSRuntime:
                 answer_text = self._normalize_dialog_answer(raw_payload.get("text") or result.output)
         if not answer_text or (probe_event and self._is_generic_dialog_answer(answer_text)):
             raw_payload = {"provider": provider or "heuristic", "model": model or "als-heuristic"}
-            answer_text = self._heuristic_answer(prompt, evidence_events)
+            answer_text = self._heuristic_answer(prompt, evidence_events, atheria_hits=atheria_hits)
         answer_text, risk_assessment, source_titles, focus_fields = self._render_dialog_answer(
             answer_text,
             resonance=active_resonance,
