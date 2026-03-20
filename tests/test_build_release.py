@@ -430,8 +430,7 @@ class BuildReleaseTests(unittest.TestCase):
         bundle_dir.mkdir()
 
         with (
-            patch.object(build_release.os, "name", "nt"),
-            patch.object(build_release.sys, "platform", "win32"),
+            patch.object(build_release, "_is_windows_runtime", return_value=True),
             patch.object(build_release, "ensure_emsdk_cache", return_value=cache_root),
             patch.object(build_release, "stage_minimal_python_runtime", side_effect=lambda target: (target.mkdir(parents=True, exist_ok=True), (target / "python.exe").write_text("python", encoding="utf-8"))),
         ):
@@ -567,13 +566,13 @@ class BuildReleaseTests(unittest.TestCase):
 
     def test_safe_platform_helpers_avoid_windows_wmi_path(self) -> None:
         with (
-            patch.object(build_release.os, "name", "nt"),
+            patch.object(build_release, "_is_windows_runtime", return_value=True),
             patch.object(build_release.sys, "platform", "win32"),
             patch.dict(build_release.os.environ, {"PROCESSOR_ARCHITECTURE": "AMD64"}, clear=False),
             patch.object(build_release.platform, "system", side_effect=AssertionError("platform.system should not be used")),
             patch.object(build_release.platform, "machine", side_effect=AssertionError("platform.machine should not be used")),
             patch.object(build_release.platform, "platform", side_effect=AssertionError("platform.platform should not be used")),
-            patch.object(build_release.sys, "getwindowsversion", return_value=SimpleNamespace(major=10, minor=0, build=29531)),
+            patch.object(build_release.sys, "getwindowsversion", return_value=SimpleNamespace(major=10, minor=0, build=29531), create=True),
         ):
             self.assertEqual(build_release.safe_system_name(), "Windows")
             self.assertEqual(build_release.safe_machine_name(), "amd64")

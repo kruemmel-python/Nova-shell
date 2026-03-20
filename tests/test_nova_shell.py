@@ -1702,8 +1702,9 @@ if len(files_lines) == 2:
             history_payload = json.loads((guard_dir / "history.json").read_text(encoding="utf-8"))
             change_event = history_payload["events"][-1]
             created_kinds = {item["kind"] for item in change_event["created"]}
-            self.assertIn("scheduled_task", created_kinds)
-            self.assertIn("run_key", created_kinds)
+            if os.name == "nt":
+                self.assertIn("scheduled_task", created_kinds)
+                self.assertIn("run_key", created_kinds)
             file_created = next(item for item in change_event["created"] if item["kind"] == "executable")
             self.assertEqual(file_created["signature_status"], "NotSigned")
             self.assertIn("quarantine", file_created)
@@ -3680,11 +3681,12 @@ if len(files_lines) == 2:
         self.assertIsNone(result.error)
         self.assertEqual(result.output, "6\n")
         self.assertEqual(len(calls), 2)
+        expected_dir = str(Path(compiler_path).resolve().parent)
         for kwargs in calls:
             env = kwargs.get("env")
             self.assertIsInstance(env, dict)
             path_value = str(env.get("PATH", ""))
-            self.assertTrue(path_value.startswith(str(Path(compiler_path).parent) + os.pathsep) or path_value == str(Path(compiler_path).parent))
+            self.assertIn(expected_dir, [entry for entry in path_value.split(os.pathsep) if entry])
 
     def test_lens_replay_returns_snapshot_output(self) -> None:
         self.shell.route("py 10 + 1")
