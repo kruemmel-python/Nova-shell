@@ -1,0 +1,149 @@
+# Standalone Skill Agents
+
+## Zweck
+
+Diese Seite beschreibt, wie man aus einem lokalen `agent-skills-main`-Ordner eigenstaendige `.ns`-Agenten erzeugt.
+
+Wichtig ist die Trennung:
+
+- `agent-skills-main` ist nur die Eingabequelle
+- die erzeugten `examples/*_agents.ns` sind das eigentliche Laufzeitartefakt
+- zur spaeteren Nutzung wird der Rohordner nicht mehr benoetigt
+
+## Was erzeugt wird
+
+Nova-shell kann Skill-Buendel in standalone `.ns`-Dateien umformen.
+
+Beispiele:
+
+- `examples\react_best_practices_agents.ns`
+- `examples\react_native_skills_agents.ns`
+- `examples\composition_patterns_agents.ns`
+- `examples\web_design_guidelines_agents.ns`
+
+Dabei gilt:
+
+- jedes Regelset wird in deklarative `agent { ... }`-Bloecke umgesetzt
+- bei grossen Regelbuendeln entsteht zusaetzlich ein Router-Agent
+- die `.ns`-Datei enthaelt keine Laufzeitabhaengigkeit auf `agent-skills-main`
+
+## CLI
+
+### Generator direkt aus der Shell
+
+```powershell
+ns.skills build agent-skills-main
+```
+
+Optional mit explizitem Zielordner:
+
+```powershell
+ns.skills build agent-skills-main .\examples
+```
+
+Du kannst auch direkt auf einen bereits geoeffneten `skills`-Ordner zeigen:
+
+```powershell
+ns.skills build .\agent-skills-main\skills .\examples
+```
+
+Rueckgabe:
+
+- JSON-Manifest der erzeugten Dateien
+- Anzahl generierter Skill-Dateien
+- Liste der Agentennamen pro Skill
+
+### Generator als Python-Skript
+
+```powershell
+python scripts\generate_agent_skills_examples.py
+```
+
+## Laufzeit
+
+Nach der Erzeugung arbeitest du nur noch mit der `.ns`-Datei:
+
+```powershell
+ns.run examples\react_best_practices_agents.ns
+agent list
+```
+
+Danach sind die Agenten direkt ueber die Shell nutzbar.
+
+Beispiele:
+
+```powershell
+agent run react_best_practices_async_parallel "const user = await fetchUser(); const posts = await fetchPosts();"
+agent run react_best_practices_router "Ich habe serielle Fetches, grosse Bundles und viele Re-Renders."
+```
+
+## Namensschema
+
+Nova-shell exportiert deklarative Agenten aus der geladenen `.ns`-Datei in zwei Formen:
+
+- Kurzname
+- qualifizierter Name mit Dateistamm
+
+Beispiel:
+
+- `react_best_practices_async_parallel`
+- `react_best_practices_agents.react_best_practices_async_parallel`
+
+Der Kurzname ist fuer die direkte Nutzung gedacht.
+Der qualifizierte Name ist hilfreich, wenn mehrere geladene `.ns`-Dateien gleich benannte Agenten enthalten.
+
+## Vollstaendiger Ablauf
+
+```powershell
+ns.skills build agent-skills-main .\examples
+ns.run .\examples\react_best_practices_agents.ns
+agent list
+agent run react_best_practices_router "Ich habe serielle Fetches, zu grosse Client-Bundles und unnoetige Re-Renders."
+agent run react_best_practices_async_parallel "const user = await fetchUser(); const posts = await fetchPosts();"
+```
+
+Erwartung:
+
+- `ns.skills build` schreibt eine standalone `.ns`-Datei pro Skill-Buendel
+- `ns.run` laedt diese Agenten in die deklarative Runtime
+- `agent list` zeigt die exportierten Agenten direkt in der Shell
+- `agent run` funktioniert danach ohne jeden Bezug auf `agent-skills-main`
+
+## Router und Spezialagenten
+
+Bei umfangreichen Skill-Sammlungen erzeugt Nova-shell zwei Ebenen:
+
+1. einen Router-Agenten
+2. viele Spezialagenten pro Regel
+
+Beispiel fuer `react-best-practices`:
+
+- Router: `react_best_practices_router`
+- Spezialagent: `react_best_practices_async_parallel`
+
+Der Router ordnet freie Anfragen den passenden Spezialagenten zu.
+Die Spezialagenten enthalten den jeweils verdichteten Regelkontext direkt im `system_prompt`.
+
+## Empfohlener Projektpfad
+
+Wenn du die Agenten dauerhaft nutzen willst:
+
+1. `agent-skills-main` lokal als Quelle bereithalten
+2. `ns.skills build agent-skills-main`
+3. die erzeugten `examples/*_agents.ns` pruefen
+4. nur die `.ns`-Dateien committen, nicht den Rohordner
+
+So bleibt das Repo leichtgewichtig und die Laufzeitartefakte sind klar von den Quelldaten getrennt.
+
+## Grenzen
+
+- die Generatorqualitaet haengt von `SKILL.md` und optionalen `rules/*.md`-Dateien ab
+- Codebeispiele oder Shell-Skripte aus dem Skill werden nicht als fremde Laufzeitskripte uebernommen
+- die erzeugten Agenten sind Wissens- und Prompt-Agenten, keine 1:1-Kopie aller Skill-Automation
+
+## Verwandte Seiten
+
+- [NovaCLI](./NovaCLI.md)
+- [NovaAgents](./NovaAgents.md)
+- [ExamplesAndRecipes](./ExamplesAndRecipes.md)
+- [nsCreate](./nsCreate.md)

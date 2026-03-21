@@ -24,6 +24,7 @@
 - [LensRecipes](./LensRecipes.md)
 - [APIReference](./APIReference.md)
 - [ExamplesAndRecipes](./ExamplesAndRecipes.md)
+- [StandaloneSkillAgents](./StandaloneSkillAgents.md)
 - [NSBlobGenerator](./NSBlobGenerator.md)
 - [NovaSynthPredictiveEngineShifting](./NovaSynthPredictiveEngineShifting.md)
 - [ZeroCopyFederatedLearningMesh](./ZeroCopyFederatedLearningMesh.md)
@@ -71,6 +72,7 @@
 ## Plattformfunktionen
 
 - [NovaAgents](./NovaAgents.md)
+- [StandaloneSkillAgents](./StandaloneSkillAgents.md)
 - [NovaMesh](./NovaMesh.md)
 - [NSBlobGenerator](./NSBlobGenerator.md)
 - [NovaSynthPredictiveEngineShifting](./NovaSynthPredictiveEngineShifting.md)

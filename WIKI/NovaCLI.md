@@ -97,6 +97,7 @@ nova-shell --no-plugins -c "ai providers" | ConvertFrom-Json
 | --- | --- | --- | --- |
 | `ns.exec` | Inline-Ausfuehrung | `ns.exec values = sys printf '1\n2\n'; for v in values:;     py $v` | Pipeline-Ausgabe aus Inline-Skript |
 | `ns.run` | `.ns`-Datei ausfuehren | `ns.run .\control.ns` | Runtime laeuft und initialisiert Flows/Events |
+| `ns.skills` | standalone Skill-Agenten aus Skill-Daten erzeugen | `ns.skills build agent-skills-main .\examples` | `.ns`-Agentendateien werden geschrieben |
 | `ns.graph` | kompilierten Graph zeigen | `ns.graph .\control.ns` | JSON oder Graphbeschreibung |
 | `ns.status` | Runtime- und Plattformstatus | `ns.status` | JSON mit geladenen Systemen und Laufzeitstatus |
 | `ns.control` | Queue, API, Replay, Metrics | `ns.control status` | JSON mit Queue-, Event- und Schedule-Status |
@@ -840,6 +841,24 @@ Erster Check:
 ```powershell
 ns.graph .\control.ns
 ```
+
+#### Standalone Skill-Agenten aus lokalen Skill-Daten erzeugen
+
+Nova-shell kann aus einem lokalen `agent-skills-main`-Ordner eigenstaendige `.ns`-Agenten bauen.
+Der Quellordner ist dabei nur Eingabe. Fuer die spaetere Nutzung reicht die erzeugte Datei in `examples/`.
+
+```powershell
+ns.skills build agent-skills-main .\examples
+ns.run .\examples\react_best_practices_agents.ns
+agent list
+agent run react_best_practices_async_parallel "const user = await fetchUser(); const posts = await fetchPosts();"
+```
+
+Erwartung:
+
+- `ns.skills build` erzeugt standalone `.ns`-Dateien
+- `ns.run` exportiert die deklarativen Agenten direkt in `agent list` und `agent run`
+- danach ist kein Laufzeitverweis auf `agent-skills-main` mehr noetig
 
 ## Verwandte Seiten
 

@@ -1,0 +1,13 @@
+state vercel_cli_with_tokens_memory {
+  backend: atheria
+  namespace: vercel_cli_with_tokens
+}
+
+agent vercel_cli_with_tokens_generalist {
+  provider: atheria
+  model: atheria-core
+  memory: vercel_cli_with_tokens_memory
+  system_prompt: "Du bist der Generalist fuer das Skill vercel-cli-with-tokens. Nutze dieses Wissen als Grundlage: Vercel CLI with Tokens Deploy and manage projects on Vercel using the CLI with token-based authentication, without relying on vercel login. Step 1: Locate the Vercel Token Before running any Vercel CLI commands, identify where the token is coming from. Work through these scenarios in order: A) VERCEL_TOKEN is already set in the environment If this returns a value, you're ready. Skip to Step 2. B) Token is in a .env file under VERCEL_TOKEN If found, export it: C) Token is in a .env file under a different name Look for any variable that looks like a Vercel token (Vercel tokens typically start with vca_): Inspect the output to identify which variable holds the token, then export it as VERCEL_TOKEN: D) No token found — ask the user If none of the above yield a token, ask the user to provide one. They can create a Vercel access token at vercel.com/account/tokens. -- Important: Once VERCEL_TOK Antworte umsetzungsnah, knapp und mit konkreten Schritten."
+  prompts: {v1: "Bearbeite die Anfrage mit dem eingebetteten Skill-Wissen.\n\n{{input}}"}
+  prompt_version: v1
+}

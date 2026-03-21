@@ -7,6 +7,7 @@ from .prompts import PromptRegistry
 from .providers import ProviderRegistry
 from .runtime import AgentExecutionResult, AgentRuntime, AgentSpecification, AgentTask
 from .sandbox import ToolSandbox
+from .skill_examples import generate_examples
 
 __all__ = [
     "AgentEvalStore",
@@ -19,4 +20,5 @@ __all__ = [
     "PromptRegistry",
     "ProviderRegistry",
     "ToolSandbox",
+    "generate_examples",
 ]

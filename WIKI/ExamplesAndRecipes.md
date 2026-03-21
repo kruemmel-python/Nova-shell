@@ -217,7 +217,23 @@ ns.lint examples\market_radar.ns
 ns.test examples\market_radar.ns
 ```
 
-### 11. Backup und Restore
+### 11. Standalone Agenten aus `agent-skills-main` erzeugen
+
+```powershell
+ns.skills build agent-skills-main .\examples
+ns.run .\examples\react_best_practices_agents.ns
+agent list
+agent run react_best_practices_router "Ich habe serielle Fetches, zu grosse Bundles und viele Re-Renders."
+agent run react_best_practices_async_parallel "const user = await fetchUser(); const posts = await fetchPosts();"
+```
+
+Erwartung:
+
+- pro Skill-Buendel entsteht eine eigenstaendige `.ns`-Datei in `examples/`
+- `agent list` zeigt danach die generierten Agenten direkt in der Shell
+- `agent run` arbeitet gegen die geladene `.ns`-Datei, nicht mehr gegen den Rohordner
+
+### 12. Backup und Restore
 
 ```python
 from nova.runtime.runtime import NovaRuntime

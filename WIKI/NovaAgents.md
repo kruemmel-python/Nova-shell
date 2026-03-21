@@ -107,6 +107,12 @@ Typische Agent-Kommandos:
 - `agent graph create`
 - `ai providers`
 
+Wichtig fuer deklarative Agenten:
+
+- `ns.run` laedt nicht nur Flows und Events, sondern exportiert deklarative `agent { ... }`-Bloecke jetzt direkt in die Shell-Agentenwelt
+- dadurch koennen Agenten aus einer geladenen `.ns`-Datei sofort ueber `agent list` und `agent run` genutzt werden
+- fuer generierte standalone Agenten aus Skill-Daten siehe [StandaloneSkillAgents](./StandaloneSkillAgents.md)
+
 ## API
 
 Agent-relevante Control-Plane-Endpunkte:
@@ -134,6 +140,14 @@ agent reviewer {
 agent create analyst "Summarize {{input}}"
 agent run analyst quarterly report
 agent graph create review_chain --nodes analyst,reviewer
+```
+
+### Deklarative Agenten aus `.ns`
+
+```powershell
+ns.run .\examples\react_best_practices_agents.ns
+agent list
+agent run react_best_practices_async_parallel "const user = await fetchUser(); const posts = await fetchPosts();"
 ```
 
 ### Python-Beispiel

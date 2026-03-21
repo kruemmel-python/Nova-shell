@@ -44,6 +44,7 @@ Sie beschreibt das Projekt aus sich selbst heraus und ist nicht als Verweissamml
 - [NovaMemory](./NovaMemory.md)
 - [NovaTools](./NovaTools.md)
 - [ExamplesAndRecipes](./ExamplesAndRecipes.md)
+- [StandaloneSkillAgents](./StandaloneSkillAgents.md)
 - [WatchMonitor](./WatchMonitor.md)
 - [SystemGuardMonitor](./SystemGuardMonitor.md)
 - [WatchMonitorQuickStart](./WatchMonitorQuickStart.md)
@@ -87,8 +88,9 @@ Wenn du neu bist:
 6. [nsPatterns](./nsPatterns.md)
 7. [NovaCLI](./NovaCLI.md)
 8. [ExamplesAndRecipes](./ExamplesAndRecipes.md)
-9. [WatchMonitorQuickStart](./WatchMonitorQuickStart.md)
-10. [SystemGuardMonitor](./SystemGuardMonitor.md)
+9. [StandaloneSkillAgents](./StandaloneSkillAgents.md)
+10. [WatchMonitorQuickStart](./WatchMonitorQuickStart.md)
+11. [SystemGuardMonitor](./SystemGuardMonitor.md)
 
 ### Technik und Architektur
 

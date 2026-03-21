@@ -33,6 +33,7 @@ Wenn du neu im Projekt bist:
 - [nsPatterns](./nsPatterns.md)
 - [NovaCLI](./NovaCLI.md)
 - [ExamplesAndRecipes](./ExamplesAndRecipes.md)
+- [StandaloneSkillAgents](./StandaloneSkillAgents.md)
 
 Wenn du die Architektur verstehen willst:
 
@@ -99,6 +100,7 @@ Wenn du Klassen, Methoden, Endpunkte und Einstiegspunkte suchst:
 - [TutorialAtheriaALS](./TutorialAtheriaALS.md): residentes ALS aufsetzen, befragen, mit Voice betreiben und wieder stoppen
 - [Tutorials](./Tutorials.md): gefuehrte Workflows
 - [ExamplesAndRecipes](./ExamplesAndRecipes.md): kurze, konkrete Anwendungsrezepte
+- [StandaloneSkillAgents](./StandaloneSkillAgents.md): eigenstaendige `.ns`-Agenten aus lokalen Skill-Daten erzeugen und ohne Quellordner weiterverwenden
 
 ### Architektur
 

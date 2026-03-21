@@ -47,6 +47,7 @@ from typing import Any, Callable, Iterable
 
 from nova import NovaRuntime as DeclarativeNovaRuntime, WorkerNode
 from nova.agents.coevolution import MyceliaAtheriaCoEvolutionLab
+from nova.agents.skill_examples import generate_examples as generate_agent_skill_examples
 from nova.events.bus import Event as DeclarativeEvent
 from nova.mesh.federated import FederatedLearningMesh
 from nova.mesh.protocol import ExecutorResult, ExecutorTask
@@ -5454,6 +5455,7 @@ class NovaShell:
         self.current_trace_id = ""
         self._ns_runtime: NovaInterpreter | None = None
         self._declarative_nova: DeclarativeNovaRuntime | None = None
+        self._declarative_exported_agents: set[str] = set()
         self._dflow_subscribers: dict[str, list[str]] = {}
         self.wasm_sandbox_default = bool(self.runtime_config.get("sandbox_default", False))
         self.current_memory_namespace = str(self.runtime_config.get("memory_namespace") or "default")
@@ -5542,6 +5544,7 @@ class NovaShell:
             "ns.recover": self._ns_recover,
             "ns.control": self._ns_control,
             "ns.check": self._ns_check,
+            "ns.skills": self._ns_skills,
         }
 
         self._history_file = Path.home() / ".nova_shell_history"
@@ -6351,6 +6354,8 @@ class NovaShell:
             if not graph_only and self._declarative_nova is not None:
                 with contextlib.suppress(Exception):
                     self._declarative_nova.close()
+            if not graph_only:
+                self._clear_declarative_agents()
             runtime = DeclarativeNovaRuntime(
                 command_executor=NovaShellCommandExecutor(self),
                 event_bridge=self._bridge_declarative_event,
@@ -6368,6 +6373,7 @@ class NovaShell:
             else:
                 runtime.load(program)
                 self._register_declarative_mesh_workers(runtime)
+                self._register_declarative_agents(runtime)
                 self._declarative_nova = runtime
                 target_flows = runtime._entry_flows(program.ast)
                 flows = [runtime.execute_flow(flow_name) for flow_name in target_flows]
@@ -6403,6 +6409,57 @@ class NovaShell:
                     },
                 )
             )
+
+    def _clear_declarative_agents(self) -> None:
+        for name in self._declarative_exported_agents:
+            self.agents.pop(name, None)
+        self._declarative_exported_agents.clear()
+
+    def _declarative_agent_prompt_template(self, properties: dict[str, Any]) -> str:
+        prompts = properties.get("prompts")
+        prompt_version = str(properties.get("prompt_version") or "").strip()
+        if isinstance(prompts, dict) and prompts:
+            if prompt_version and prompt_version in prompts:
+                return str(prompts[prompt_version])
+            first_value = next(iter(prompts.values()))
+            return str(first_value)
+        return "{{input}}"
+
+    def _register_declarative_agents(self, runtime: DeclarativeNovaRuntime) -> None:
+        program = getattr(runtime, "program", None)
+        if program is None:
+            return
+        source_stem = re.sub(r"[^A-Za-z0-9_.-]+", "_", Path(program.source_name).stem).strip("._") or "ns"
+        for name, declaration in program.ast.agents().items():
+            properties = dict(declaration.properties)
+            provider = str(properties.get("provider") or "").strip()
+            if not provider:
+                providers = properties.get("providers")
+                if isinstance(providers, list) and providers:
+                    provider = str(providers[0]).strip()
+            provider = provider or "atheria"
+            model = str(properties.get("model") or "").strip() or "atheria-core"
+            prompt_template = self._declarative_agent_prompt_template(properties)
+            system_prompt = str(properties.get("system_prompt") or "").strip()
+            definition = AIAgentDefinition(
+                name=name,
+                prompt_template=prompt_template,
+                provider=provider,
+                model=model,
+                system_prompt=system_prompt,
+            )
+            qualified_name = f"{source_stem}.{name}"
+            if name not in self.agents or name in self._declarative_exported_agents:
+                self.agents[name] = definition
+                self._declarative_exported_agents.add(name)
+            self.agents[qualified_name] = AIAgentDefinition(
+                name=qualified_name,
+                prompt_template=prompt_template,
+                provider=provider,
+                model=model,
+                system_prompt=system_prompt,
+            )
+            self._declarative_exported_agents.add(qualified_name)
 
     def _active_declarative_runtime(self) -> DeclarativeNovaRuntime:
         if self._declarative_nova is None or self._declarative_nova.context is None:
@@ -6506,6 +6563,32 @@ class NovaShell:
             return self._run_declarative_nova_source(source, source_name=str(path), base_path=path.parent, graph_only=True)
         except Exception as exc:
             return CommandResult(output="", error=str(exc))
+
+    def _ns_skills(self, payload: str, _: str, __: Any) -> CommandResult:
+        parts = split_command(payload)
+        if not parts or parts[0] != "build":
+            return CommandResult(output="", error="usage: ns.skills build [agent-skills-main|skills_dir] [output_dir]")
+        skills_root: Path
+        output_dir: Path
+        if len(parts) > 1:
+            skills_root = self._resolve_path(parts[1])
+        else:
+            skills_root = self._resolve_path("agent-skills-main")
+        if skills_root.is_dir() and (skills_root / "skills").is_dir():
+            skills_root = skills_root / "skills"
+        output_dir = self._resolve_path(parts[2]) if len(parts) > 2 else self._resolve_path("examples")
+        if not skills_root.exists():
+            return CommandResult(output="", error=f"skills root not found: {skills_root}")
+        if not any(path.is_dir() for path in skills_root.iterdir()):
+            return CommandResult(output="", error=f"skills root has no skill directories: {skills_root}")
+        manifest = generate_agent_skill_examples(skills_root.resolve(), output_dir.resolve())
+        payload_data = {
+            "skills_root": str(skills_root.resolve()),
+            "output_dir": str(output_dir.resolve()),
+            "generated": manifest,
+            "count": len(manifest),
+        }
+        return self._json_command_result(payload_data)
 
     def _ns_status(self, _: str, __: str, ___: Any) -> CommandResult:
         if self._declarative_nova is None or self._declarative_nova.context is None or self._declarative_nova.program is None:
@@ -12753,7 +12836,7 @@ class NovaShell:
     def repl(self) -> None:
         print(f"NovaShell {__version__} Compute Runtime")
         print(
-            "Commands: py | cpp | gpu | wasm | jit_wasm | data | data.load | remote | mesh | ai | atheria | mycelia | agent | memory | tool | event | vision | fabric | guard | secure | flow | sync | lens | studio | on | pack | observe | watch | wiki | parallel | events | ns.exec | ns.run | ns.graph | ns.status | ns.cluster | ns.auth | ns.deploy | ns.recover | ns.control | ns.snapshot | ns.resume | sys | cd | pwd | clear | cls | doctor | help | exit"
+            "Commands: py | cpp | gpu | wasm | jit_wasm | data | data.load | remote | mesh | ai | atheria | mycelia | agent | memory | tool | event | vision | fabric | guard | secure | flow | sync | lens | studio | on | pack | observe | watch | wiki | parallel | events | ns.exec | ns.run | ns.graph | ns.status | ns.cluster | ns.auth | ns.deploy | ns.recover | ns.control | ns.skills | ns.snapshot | ns.resume | sys | cd | pwd | clear | cls | doctor | help | exit"
         )
         print("Pipelines: cmd | watch file | parallel py ...\n")
 

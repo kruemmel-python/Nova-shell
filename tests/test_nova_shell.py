@@ -3169,6 +3169,108 @@ if len(files_lines) == 2:
         self.assertEqual(calls[0]["system_prompt"], "You are precise.")
         self.assertIn("quarterly report", calls[0]["prompt"])
 
+    def test_ns_run_registers_declarative_agents_for_agent_run(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            script_path = Path(tmp) / "standalone_agents.ns"
+            script_path.write_text(
+                """
+agent helper {
+  provider: atheria
+  model: atheria-core
+  system_prompt: "You are concise."
+  prompts: {v1: "Summarize {{input}}"}
+  prompt_version: v1
+}
+""".strip(),
+                encoding="utf-8",
+            )
+            with patch.object(
+                self.shell.ai_runtime,
+                "complete_prompt",
+                return_value=CommandResult(output="ok\n", data={"text": "ok"}, data_type=PipelineType.OBJECT),
+            ):
+                result = self.shell.route(f"ns.run {script_path}")
+                self.assertIsNone(result.error)
+                listing = json.loads(self.shell.route("agent list").output)
+                names = {item["name"] for item in listing}
+                self.assertIn("helper", names)
+                self.assertIn("standalone_agents.helper", names)
+
+                run_result = self.shell.route("agent run helper quarterly report")
+                self.assertIsNone(run_result.error)
+                self.assertEqual(run_result.output.strip(), "ok")
+            with suppress(Exception):
+                if self.shell._declarative_nova is not None:
+                    self.shell._declarative_nova.close()
+                    self.shell._declarative_nova = None
+
+    def test_generate_agent_skills_examples_creates_standalone_skill_agents(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        generator = runpy.run_path(str(root / "scripts" / "generate_agent_skills_examples.py"))
+        with tempfile.TemporaryDirectory() as tmp:
+            output_dir = Path(tmp)
+            manifest = generator["generate_examples"](root / "agent-skills-main" / "skills", output_dir)
+            react_payload = manifest["react-best-practices"]
+            self.assertGreaterEqual(int(react_payload["agent_count"]), 40)
+            target = output_dir / str(react_payload["file_name"])
+            self.assertTrue(target.exists())
+            source = target.read_text(encoding="utf-8")
+            self.assertNotIn("agent-skills-main", source)
+
+            result = self.shell.route(f"ns.run {target}")
+            self.assertIsNone(result.error)
+            listing = json.loads(self.shell.route("agent list").output)
+            names = {item["name"] for item in listing}
+            self.assertIn("react_best_practices_router", names)
+            self.assertIn("react_best_practices_async_parallel", names)
+            with suppress(Exception):
+                if self.shell._declarative_nova is not None:
+                    self.shell._declarative_nova.close()
+                    self.shell._declarative_nova = None
+
+    def test_ns_skills_build_generates_examples_from_skill_root(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            skills_root = root / "agent-skills-main" / "skills"
+            skill_dir = skills_root / "demo-skill"
+            rules_dir = skill_dir / "rules"
+            rules_dir.mkdir(parents=True, exist_ok=True)
+            (skill_dir / "SKILL.md").write_text(
+                """---
+name: demo-skill
+description: Demo skill.
+---
+
+# Demo Skill
+
+Use this skill for demos.
+""",
+                encoding="utf-8",
+            )
+            (rules_dir / "focus.md").write_text(
+                """---
+title: Focus Rule
+impact: HIGH
+tags: demo, focus
+---
+
+# Focus Rule
+
+Prefer focused changes with concrete reasoning.
+""",
+                encoding="utf-8",
+            )
+            output_dir = root / "generated"
+            result = self.shell.route(f"ns.skills build {root / 'agent-skills-main'} {output_dir}")
+            self.assertIsNone(result.error)
+            payload = json.loads(result.output)
+            self.assertEqual(payload["count"], 1)
+            target = output_dir / "demo_skill_agents.ns"
+            self.assertTrue(target.exists())
+            source = target.read_text(encoding="utf-8")
+            self.assertIn("agent demo_skill_focus", source)
+            self.assertNotIn("agent-skills-main", source)
+
     def test_agent_spawn_and_message_preserves_history(self) -> None:
         calls: list[str] = []
         replies = iter(["draft-1", "draft-2"])
