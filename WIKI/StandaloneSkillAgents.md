@@ -2,13 +2,20 @@
 
 ## Zweck
 
-Diese Seite beschreibt, wie man aus einem lokalen `agent-skills-main`-Ordner eigenstaendige `.ns`-Agenten erzeugt.
+Diese Seite beschreibt, wie man aus dem mitgefuehrten `agent-skills-main`-Ordner eigenstaendige `.ns`-Agenten erzeugt.
 
 Wichtig ist die Trennung:
 
-- `agent-skills-main` ist nur die Eingabequelle
+- `agent-skills-main` ist die versionierte Eingabequelle im Repo
 - die erzeugten `examples/*_agents.ns` sind das eigentliche Laufzeitartefakt
 - zur spaeteren Nutzung wird der Rohordner nicht mehr benoetigt
+
+Das Repo enthaelt `agent-skills-main` bewusst nur im Minimalformat fuer die Generierung:
+
+- `skills/<skill>/SKILL.md`
+- optional `skills/<skill>/rules/*.md`
+
+Build-, ZIP-, CI- und Metadatadateien aus der Ursprungssammlung gehoeren nicht mehr dazu.
 
 ## Was erzeugt wird
 
@@ -128,12 +135,12 @@ Die Spezialagenten enthalten den jeweils verdichteten Regelkontext direkt im `sy
 
 Wenn du die Agenten dauerhaft nutzen willst:
 
-1. `agent-skills-main` lokal als Quelle bereithalten
+1. `agent-skills-main` im Repo als Quelle pflegen
 2. `ns.skills build agent-skills-main`
 3. die erzeugten `examples/*_agents.ns` pruefen
-4. nur die `.ns`-Dateien committen, nicht den Rohordner
+4. bei Bedarf sowohl den Minimal-Quellordner als auch die erzeugten `.ns`-Dateien committen
 
-So bleibt das Repo leichtgewichtig und die Laufzeitartefakte sind klar von den Quelldaten getrennt.
+So bleibt das Repo leichtgewichtig und die Laufzeitartefakte bleiben trotzdem klar von den Quelldaten getrennt.
 
 ## Grenzen
 

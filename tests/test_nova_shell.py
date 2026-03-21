@@ -5,6 +5,7 @@ import re
 import runpy
 import socket
 import subprocess
+import sys
 import tempfile
 import threading
 import time
@@ -3270,6 +3271,28 @@ Prefer focused changes with concrete reasoning.
             source = target.read_text(encoding="utf-8")
             self.assertIn("agent demo_skill_focus", source)
             self.assertNotIn("agent-skills-main", source)
+
+    def test_generate_agent_skills_examples_script_runs_from_repo_root(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        with tempfile.TemporaryDirectory() as tmp:
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    str(root / "scripts" / "generate_agent_skills_examples.py"),
+                    "--skills-root",
+                    str(root / "agent-skills-main" / "skills"),
+                    "--output-dir",
+                    tmp,
+                ],
+                cwd=root,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(completed.returncode, 0, completed.stderr)
+            payload = json.loads(completed.stdout)
+            self.assertIn("react-best-practices", payload)
+            self.assertTrue((Path(tmp) / "react_best_practices_agents.ns").exists())
 
     def test_agent_spawn_and_message_preserves_history(self) -> None:
         calls: list[str] = []
