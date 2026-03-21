@@ -3,6 +3,7 @@ param(
     [string]$Profile = "core",
     [switch]$SkipTests,
     [switch]$Clean,
+    [string]$OutputDir = "",
     [switch]$Sign,
     [switch]$RefreshBuildEnv,
     [Nullable[Int64]]$SourceDateEpoch = $null,
@@ -278,6 +279,9 @@ if ($SkipTests) {
 }
 if ($Clean) {
     $args += "--clean"
+}
+if ($OutputDir) {
+    $args += @("--output-dir", $OutputDir)
 }
 if ($null -ne $SourceDateEpoch) {
     $args += @("--source-date-epoch", $SourceDateEpoch.ToString())

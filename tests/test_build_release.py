@@ -121,6 +121,16 @@ class BuildReleaseTests(unittest.TestCase):
 
             self.assertEqual(target.read_bytes(), b"nova-shell-build")
 
+    def test_native_fs_path_prefixes_windows_absolute_paths(self) -> None:
+        with (
+            patch.object(build_release.os, "name", "nt"),
+            patch.object(build_release.os.path, "abspath", return_value=r"C:\NovaShell\deep\file.bin"),
+        ):
+            self.assertEqual(
+                build_release.native_fs_path(Path(r"C:\NovaShell\deep\file.bin")),
+                r"\\?\C:\NovaShell\deep\file.bin",
+            )
+
     def test_collect_nuitka_packages_for_enterprise_profile(self) -> None:
         with (
             patch.object(build_release.os, "name", "nt"),

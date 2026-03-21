@@ -725,14 +725,26 @@ def ignored_names(names: list[str], patterns: tuple[str, ...]) -> set[str]:
     return ignored
 
 
+def native_fs_path(path: Path) -> str:
+    resolved = os.fspath(path)
+    if os.name != "nt":
+        return resolved
+    absolute = os.path.abspath(resolved)
+    if absolute.startswith("\\\\?\\"):
+        return absolute
+    if absolute.startswith("\\\\"):
+        return "\\\\?\\UNC\\" + absolute.lstrip("\\")
+    return "\\\\?\\" + absolute
+
+
 def safe_copy2_file(src: Path, dst: Path) -> None:
     dst.parent.mkdir(parents=True, exist_ok=True)
-    with src.open("rb") as source_handle, dst.open("wb") as target_handle:
+    with open(native_fs_path(src), "rb") as source_handle, open(native_fs_path(dst), "wb") as target_handle:
         shutil.copyfileobj(source_handle, target_handle, length=4 * 1024 * 1024)
     with contextlib.suppress(OSError):
-        stat_result = src.stat()
-        os.chmod(dst, stat.S_IMODE(stat_result.st_mode))
-        os.utime(dst, (stat_result.st_atime, stat_result.st_mtime))
+        stat_result = os.stat(native_fs_path(src))
+        os.chmod(native_fs_path(dst), stat.S_IMODE(stat_result.st_mode))
+        os.utime(native_fs_path(dst), (stat_result.st_atime, stat_result.st_mtime))
 
 
 def safe_copytree(

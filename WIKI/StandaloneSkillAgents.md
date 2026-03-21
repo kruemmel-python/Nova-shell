@@ -10,12 +10,12 @@ Wichtig ist die Trennung:
 - die erzeugten `examples/*_agents.ns` sind das eigentliche Laufzeitartefakt
 - zur spaeteren Nutzung wird der Rohordner nicht mehr benoetigt
 
-Das Repo enthaelt `agent-skills-main` bewusst nur im Minimalformat fuer die Generierung:
+Das Repo enthaelt `agent-skills-main` fuer die Generierung:
 
 - `skills/<skill>/SKILL.md`
 - optional `skills/<skill>/rules/*.md`
 
-Build-, ZIP-, CI- und Metadatadateien aus der Ursprungssammlung gehoeren nicht mehr dazu.
+
 
 ## Was erzeugt wird
 
