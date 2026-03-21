@@ -13,6 +13,7 @@ import importlib.util
 import io
 import html
 import http.server
+import runpy
 import threading
 import time
 import json
@@ -47,7 +48,6 @@ from typing import Any, Callable, Iterable
 
 from nova import NovaRuntime as DeclarativeNovaRuntime, WorkerNode
 from nova.agents.coevolution import MyceliaAtheriaCoEvolutionLab
-from nova.agents.skill_examples import generate_examples as generate_agent_skill_examples
 from nova.events.bus import Event as DeclarativeEvent
 from nova.mesh.federated import FederatedLearningMesh
 from nova.mesh.protocol import ExecutorResult, ExecutorTask
@@ -65,7 +65,7 @@ except ImportError:  # pragma: no cover - platform dependent
     readline = None
 
 
-__version__ = "0.8.27"
+__version__ = "0.8.26"
 SIDELOAD_PACKAGE_DIR = "vendor-py"
 RUNTIME_CONFIG_FILE = "nova-shell-runtime.json"
 BRIEFING_REPORT_FILES: tuple[tuple[str, str, str], ...] = (
@@ -6568,6 +6568,8 @@ class NovaShell:
         parts = split_command(payload)
         if not parts or parts[0] != "build":
             return CommandResult(output="", error="usage: ns.skills build [agent-skills-main|skills_dir] [output_dir]")
+        script_path = (Path(__file__).resolve().parent / "scripts" / "generate_agent_skills_examples.py").resolve()
+        generator = runpy.run_path(str(script_path))
         skills_root: Path
         output_dir: Path
         if len(parts) > 1:
@@ -6581,11 +6583,13 @@ class NovaShell:
             return CommandResult(output="", error=f"skills root not found: {skills_root}")
         if not any(path.is_dir() for path in skills_root.iterdir()):
             return CommandResult(output="", error=f"skills root has no skill directories: {skills_root}")
-        manifest = generate_agent_skill_examples(skills_root.resolve(), output_dir.resolve())
+        inventory = generator["inspect_skills"](skills_root.resolve()) if "inspect_skills" in generator else {"portable": {}, "skipped": {}}
+        manifest = generator["generate_examples"](skills_root.resolve(), output_dir.resolve())
         payload_data = {
             "skills_root": str(skills_root.resolve()),
             "output_dir": str(output_dir.resolve()),
             "generated": manifest,
+            "skipped": inventory.get("skipped", {}),
             "count": len(manifest),
         }
         return self._json_command_result(payload_data)

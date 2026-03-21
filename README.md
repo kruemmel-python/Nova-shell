@@ -24,6 +24,7 @@ Nova-shell is designed as a sovereign execution layer. If you are deploying this
 - Attribution: Include Nova-shell version metadata in internal dependency graphs and automated build manifests.
 
 GitHub- and tool-readable citation metadata is provided in `CITATION.cff`.
+Third-party source notices for vendored components are tracked in `THIRD_PARTY_NOTICES.md`.
 
 ## Nächste Ebene: 5 professionell umgesetzte Enterprise-Module
 

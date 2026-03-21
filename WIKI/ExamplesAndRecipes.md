@@ -229,9 +229,10 @@ agent run react_best_practices_async_parallel "const user = await fetchUser(); c
 
 Erwartung:
 
-- pro Skill-Buendel entsteht eine eigenstaendige `.ns`-Datei in `examples/`
+- pro portablem Skill-Buendel entsteht eine eigenstaendige `.ns`-Datei in `examples/`
 - `agent list` zeigt danach die generierten Agenten direkt in der Shell
 - `agent run` arbeitet gegen die geladene `.ns`-Datei, nicht mehr gegen den Rohordner
+- vendor- oder servicegebundene Skills werden nicht als scheinbar lokale Nova-shell-Agenten erzeugt
 
 ### 12. Backup und Restore
 

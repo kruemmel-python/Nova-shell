@@ -3213,6 +3213,9 @@ agent helper {
             manifest = generator["generate_examples"](root / "agent-skills-main" / "skills", output_dir)
             react_payload = manifest["react-best-practices"]
             self.assertGreaterEqual(int(react_payload["agent_count"]), 40)
+            self.assertNotIn("deploy-to-vercel", manifest)
+            self.assertNotIn("vercel-cli-with-tokens", manifest)
+            self.assertNotIn("web-design-guidelines", manifest)
             target = output_dir / str(react_payload["file_name"])
             self.assertTrue(target.exists())
             source = target.read_text(encoding="utf-8")
@@ -3266,6 +3269,7 @@ Prefer focused changes with concrete reasoning.
             self.assertIsNone(result.error)
             payload = json.loads(result.output)
             self.assertEqual(payload["count"], 1)
+            self.assertEqual(payload["skipped"], {})
             target = output_dir / "demo_skill_agents.ns"
             self.assertTrue(target.exists())
             source = target.read_text(encoding="utf-8")
@@ -3291,8 +3295,21 @@ Prefer focused changes with concrete reasoning.
             )
             self.assertEqual(completed.returncode, 0, completed.stderr)
             payload = json.loads(completed.stdout)
-            self.assertIn("react-best-practices", payload)
+            self.assertIn("react-best-practices", payload["generated"])
+            self.assertIn("deploy-to-vercel", payload["skipped"])
+            self.assertIn("web-design-guidelines", payload["skipped"])
             self.assertTrue((Path(tmp) / "react_best_practices_agents.ns").exists())
+            self.assertFalse((Path(tmp) / "deploy_to_vercel_agents.ns").exists())
+            self.assertFalse((Path(tmp) / "web_design_guidelines_agents.ns").exists())
+
+    def test_generate_agent_skills_examples_reports_nonportable_skills(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        generator = runpy.run_path(str(root / "scripts" / "generate_agent_skills_examples.py"))
+        inventory = generator["inspect_skills"](root / "agent-skills-main" / "skills")
+        self.assertIn("deploy-to-vercel", inventory["skipped"])
+        self.assertIn("vercel-cli-with-tokens", inventory["skipped"])
+        self.assertIn("web-design-guidelines", inventory["skipped"])
+        self.assertIn("external", " ".join(inventory["skipped"]["deploy-to-vercel"]["reasons"]).lower())
 
     def test_agent_spawn_and_message_preserves_history(self) -> None:
         calls: list[str] = []

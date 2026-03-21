@@ -844,7 +844,7 @@ ns.graph .\control.ns
 
 #### Standalone Skill-Agenten aus lokalen Skill-Daten erzeugen
 
-Nova-shell kann aus einem lokalen `agent-skills-main`-Ordner eigenstaendige `.ns`-Agenten bauen.
+Nova-shell kann aus einem lokalen `agent-skills-main`-Ordner portable, eigenstaendige `.ns`-Agenten bauen.
 Der Quellordner ist dabei nur Eingabe. Fuer die spaetere Nutzung reicht die erzeugte Datei in `examples/`.
 
 ```powershell
@@ -856,9 +856,10 @@ agent run react_best_practices_async_parallel "const user = await fetchUser(); c
 
 Erwartung:
 
-- `ns.skills build` erzeugt standalone `.ns`-Dateien
+- `ns.skills build` erzeugt standalone `.ns`-Dateien fuer portable Skill-Buendel
 - `ns.run` exportiert die deklarativen Agenten direkt in `agent list` und `agent run`
 - danach ist kein Laufzeitverweis auf `agent-skills-main` mehr noetig
+- vendor- oder servicegebundene Skills werden mit Begruendung uebersprungen
 
 ## Verwandte Seiten
 

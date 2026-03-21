@@ -2,7 +2,7 @@
 
 ## Zweck
 
-Diese Seite beschreibt, wie man aus dem mitgefuehrten `agent-skills-main`-Ordner eigenstaendige `.ns`-Agenten erzeugt.
+Diese Seite beschreibt, wie man aus dem mitgefuehrten `agent-skills-main`-Ordner portable, eigenstaendige `.ns`-Agenten erzeugt.
 
 Wichtig ist die Trennung:
 
@@ -15,7 +15,11 @@ Das Repo enthaelt `agent-skills-main` fuer die Generierung:
 - `skills/<skill>/SKILL.md`
 - optional `skills/<skill>/rules/*.md`
 
+Lizenz und Herkunft sind im Repo explizit dokumentiert:
 
+- `agent-skills-main/LICENSE`
+- `agent-skills-main/README.md`
+- `THIRD_PARTY_NOTICES.md`
 
 ## Was erzeugt wird
 
@@ -26,13 +30,13 @@ Beispiele:
 - `examples\react_best_practices_agents.ns`
 - `examples\react_native_skills_agents.ns`
 - `examples\composition_patterns_agents.ns`
-- `examples\web_design_guidelines_agents.ns`
 
 Dabei gilt:
 
 - jedes Regelset wird in deklarative `agent { ... }`-Bloecke umgesetzt
 - bei grossen Regelbuendeln entsteht zusaetzlich ein Router-Agent
 - die `.ns`-Datei enthaelt keine Laufzeitabhaengigkeit auf `agent-skills-main`
+- nicht portable Upstream-Skills werden standardmaessig uebersprungen
 
 ## CLI
 
@@ -59,6 +63,7 @@ Rueckgabe:
 - JSON-Manifest der erzeugten Dateien
 - Anzahl generierter Skill-Dateien
 - Liste der Agentennamen pro Skill
+- Liste uebersprungener Skill-Buendel mit Begruendung
 
 ### Generator als Python-Skript
 
@@ -116,6 +121,28 @@ Erwartung:
 - `agent list` zeigt die exportierten Agenten direkt in der Shell
 - `agent run` funktioniert danach ohne jeden Bezug auf `agent-skills-main`
 
+## Portable vs. nicht portable Skills
+
+Nova-shell generiert standardmaessig nur Skills, die ohne fremde Deploy-Skripte,
+fremde CLI-Logik, Service-Tokens oder vendor-spezifische Projektzustandsordner
+als lokale Prompt-/Wissensagenten funktionieren.
+
+Aktuell werden deshalb bewusst uebersprungen:
+
+- `deploy-to-vercel`
+- `vercel-cli-with-tokens`
+- `web-design-guidelines`
+
+Der Grund ist nicht die Lizenz, sondern die Laufzeitwahrheit:
+
+- diese Skills beschreiben operative Vercel-Workflows
+- sie verweisen auf `.vercel/`, `VERCEL_TOKEN`, externe Deploy-Skripte oder die Vercel-CLI
+- daraus entstuenden sonst `.ns`-Agenten, die nach Nova-shell-Eigenfunktion aussehen, aber in Wahrheit fremde Infrastruktur voraussetzen
+
+Die generierten Nova-shell-Agenten sollen dagegen ohne das Upstream-Projekt und
+ohne dessen Vendor-Mechanik als eigenstaendige, ehrliche Laufzeitartefakte
+funktionieren.
+
 ## Router und Spezialagenten
 
 Bei umfangreichen Skill-Sammlungen erzeugt Nova-shell zwei Ebenen:
@@ -147,6 +174,7 @@ So bleibt das Repo leichtgewichtig und die Laufzeitartefakte bleiben trotzdem kl
 - die Generatorqualitaet haengt von `SKILL.md` und optionalen `rules/*.md`-Dateien ab
 - Codebeispiele oder Shell-Skripte aus dem Skill werden nicht als fremde Laufzeitskripte uebernommen
 - die erzeugten Agenten sind Wissens- und Prompt-Agenten, keine 1:1-Kopie aller Skill-Automation
+- servicegebundene Upstream-Skills koennen bewusst aus der Generierung ausgeschlossen werden
 
 ## Verwandte Seiten
 
