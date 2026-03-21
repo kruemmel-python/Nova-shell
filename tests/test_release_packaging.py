@@ -65,6 +65,8 @@ class ReleasePackagingTests(unittest.TestCase):
         self.assertIn("Package Name=", wix)
         self.assertIn("nova_shell.exe", wix)
         self.assertIn("helper.dll", wix)
+        self.assertIn('MaximumUncompressedMediaSize="200"', wix)
+        self.assertIn('MaximumCabinetSizeForLargeFileSplitting="200"', wix)
 
     def test_render_wix_source_includes_intermediate_directories(self) -> None:
         metadata = load_release_metadata()

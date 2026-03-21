@@ -323,6 +323,15 @@ if (Test-Path $faultLog) {
 
 $env:NOVA_BUILD_TRACE_FILE = $traceLog
 $env:NOVA_BUILD_FAULT_FILE = $faultLog
+$previousTemp = $env:TEMP
+$previousTmp = $env:TMP
+if ($OutputDir) {
+    $resolvedOutputDir = [System.IO.Path]::GetFullPath($OutputDir)
+    $buildTempDir = Join-Path $resolvedOutputDir "tmp"
+    New-Item -ItemType Directory -Path $buildTempDir -Force | Out-Null
+    $env:TEMP = $buildTempDir
+    $env:TMP = $buildTempDir
+}
 
 $process = Start-Process -FilePath $python `
     -ArgumentList $args `
@@ -358,6 +367,10 @@ try {
 } finally {
     $stdoutReader.Close()
     $stderrReader.Close()
+    if ($OutputDir) {
+        $env:TEMP = $previousTemp
+        $env:TMP = $previousTmp
+    }
 }
 
 $process.WaitForExit()
