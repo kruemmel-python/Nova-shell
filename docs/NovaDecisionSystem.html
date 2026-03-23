@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="Nova-shell wiki builder">
-  <title>Roadmap | Nova-shell Wiki</title>
+  <title>Nova Decision System | Nova-shell Wiki</title>
   <link rel="stylesheet" href="assets/wiki.css">
 </head>
 <body>
@@ -86,7 +86,7 @@
 <li><a class="wiki-nav-link" data-nav-href="nsCreate.html" href="nsCreate.html">nsCreate</a></li>
 <li><a class="wiki-nav-link" data-nav-href="nsReference.html" href="nsReference.html">nsReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="nsPatterns.html" href="nsPatterns.html">nsPatterns</a></li>
-<li><a class="wiki-nav-link" data-nav-href="NovaDecisionSystem.html" href="NovaDecisionSystem.html">NovaDecisionSystem</a></li>
+<li><a class="wiki-nav-link active" data-nav-href="NovaDecisionSystem.html" href="NovaDecisionSystem.html">NovaDecisionSystem</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaSemantics.html" href="NovaSemantics.html">NovaSemantics</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaRuntime.html" href="NovaRuntime.html">NovaRuntime</a></li>
 <li><a class="wiki-nav-link" data-nav-href="DecisionPatterns.html" href="DecisionPatterns.html">DecisionPatterns</a></li>
@@ -136,7 +136,7 @@
 <li><a class="wiki-nav-link" data-nav-href="PerformanceAndScaling.html" href="PerformanceAndScaling.html">PerformanceAndScaling</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Troubleshooting.html" href="Troubleshooting.html">Troubleshooting</a></li>
 <li><a class="wiki-nav-link" data-nav-href="LensTroubleshooting.html" href="LensTroubleshooting.html">LensTroubleshooting</a></li>
-<li><a class="wiki-nav-link active" data-nav-href="Roadmap.html" href="Roadmap.html">Roadmap</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Roadmap.html" href="Roadmap.html">Roadmap</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Contributing.html" href="Contributing.html">Contributing</a></li>
 <li><a class="wiki-nav-link" data-nav-href="License.html" href="License.html">License</a></li>
 </ul></section>
@@ -159,57 +159,292 @@
         <button type="button" class="wiki-nav-toggle" data-nav-toggle>Menu</button>
         <div class="wiki-header-copy">
           <span class="wiki-kicker">Nova-shell Documentation</span>
-          <h1>Roadmap</h1>
-          <p>Source: Roadmap.md</p>
+          <h1>Nova Decision System</h1>
+          <p>Source: NovaDecisionSystem.md</p>
         </div>
       </header>
       <div class="wiki-layout">
         <article class="wiki-article">
-          <h1 id="roadmap">Roadmap</h1>
+          <h1 id="nova-decision-system">Nova Decision System</h1>
 <h2 id="zweck">Zweck</h2>
-<p>Diese Seite beschreibt die erwartete Entwicklungsrichtung von Nova-shell. Sie soll die grossen Ausbaustufen ordnen, nicht jede kleine Aufgabe einzeln erfassen.</p>
-<h2 id="kurzfristig">Kurzfristig</h2>
+<p>Diese Seite definiert formal, was ein <code>Decision System</code> in Nova-shell ist.</p>
+<p>Ein Decision System ist keine einzelne Agentenrolle, sondern ein ausfuehrbares, zustandsfaehiges Architekturpattern innerhalb der deklarativen <code>.ns</code>-Runtime.</p>
+<p>Es verarbeitet Eingaben, transformiert sie ueber mehrere Perspektiven, verdichtet diese Perspektiven zu einer Entscheidung und fuehrt daraus eine operative Folgehandlung ab.</p>
+<p>Die Seite abstrahiert konkrete Beispiele wie:</p>
 <ul>
-<li>weitere Stabilisierung des deklarativen Runtimepfads</li>
-<li>tiefere Toolchain-Reife</li>
-<li>Ausbau nativer Backend-Isolation</li>
+<li><code>examples/CEO_ns/CEO_Lifecycle.ns</code></li>
+<li><code>examples/decision_lifecycle_template.ns</code></li>
 </ul>
-<h2 id="mittelfristig">Mittelfristig</h2>
+<h2 id="kerndefinition">Kerndefinition</h2>
+<p>Ein Decision System in Nova-shell ist:</p>
+<blockquote><p>ein deklarativ beschriebenes <code>.ns</code>-Programm oder Teilprogramm, das in einen gerichteten Ausfuehrungsgraphen kompiliert wird und einen fachlichen Zyklus aus Input, Transformation, Verdichtung, Entscheidung und Aktion realisiert</p></blockquote>
+<p>Konzeptionell:</p>
+<pre><code class="language-text">DecisionSystem = Graph(Nodes, Edges, State, Events)</code></pre>
+<p>mit:</p>
 <ul>
-<li>staerkere Plattformautomatisierung</li>
-<li>tiefere AI-Evaluations- und Governance-Funktionen</li>
-<li>breitere Service- und Traffic-Steuerung</li>
+<li><code>Nodes</code>: Agenten, Datasets, Tools, Flow- und Event-Knoten</li>
+<li><code>Edges</code>: Daten-, Definitions-, Trigger- und Reihenfolgebeziehungen</li>
+<li><code>State</code>: Laufzeit- und Persistenzzustand, sofern der Ablauf ihn nutzt</li>
+<li><code>Events</code>: Trigger und Kopplungspunkte zwischen Flows</li>
 </ul>
-<h2 id="langfristig">Langfristig</h2>
+<p>Wichtig:</p>
 <ul>
-<li>weiter verdichtete AI-OS-Plattform fuer verteilte Agenten- und Compute-Systeme</li>
+<li><code>Decision System</code> ist heute kein eigenes Sprach-Keyword</li>
+<li>es ist ein explizites Nova-shell-Architekturpattern</li>
+<li>die technische Grundlage ist der deklarative Graph-Laufzeitpfad</li>
 </ul>
-<h2 id="wie-die-roadmap-gelesen-werden-sollte">Wie die Roadmap gelesen werden sollte</h2>
-<p>Die Roadmap ist kein exakter Sprintplan. Sie gibt an, welche Produktachsen fuer Nova-shell wichtig bleiben:</p>
-<ol>
-<li>Sprache</li>
-<li>Runtime</li>
-<li>Plattform</li>
-<li>AI- und Knowledge-Systeme</li>
-<li>Developer Experience</li>
-</ol>
-<h2 id="verknuepfung-mit-releases">Verknuepfung mit Releases</h2>
-<p>Wenn ein Release groessere neue Faehigkeiten bringt, sollte diese Seite aktualisiert und auf <a href="BuildAndRelease.html">BuildAndRelease</a> verwiesen werden.</p>
+<h2 id="das-allgemeine-entscheidungsmodell">Das allgemeine Entscheidungsmodell</h2>
+<p>Das Kernmuster lautet:</p>
+<pre><code class="language-text">input -&gt; transform -&gt; merge -&gt; decide -&gt; act</code></pre>
+<p>Wenn das System in einen laengerlebigen Runtime-Zyklus eingebunden ist, kommen haeufig noch zwei weitere Stufen dazu:</p>
+<pre><code class="language-text">input -&gt; transform -&gt; merge -&gt; decide -&gt; act -&gt; state -&gt; event</code></pre>
+<h2 id="mapping-auf-nova-konstrukte">Mapping auf Nova-Konstrukte</h2>
+<table><thead><tr>
+<th>Phase</th>
+<th>Bedeutung</th>
+<th>Typische Nova-Konstrukte</th>
+</tr></thead><tbody>
+<tr>
+<td><code>input</code></td>
+<td>Eingangssignale oder Eingangsdaten</td>
+<td><code>dataset</code>, <code>event</code></td>
+</tr>
+<tr>
+<td><code>transform</code></td>
+<td>getrennte Perspektiven auf denselben Input</td>
+<td><code>agent</code>, <code>tool</code>, <code>py.exec</code></td>
+</tr>
+<tr>
+<td><code>merge</code></td>
+<td>Verdichtung mehrerer Artefakte</td>
+<td><code>agent</code>, <code>tool</code>, <code>py.exec</code></td>
+</tr>
+<tr>
+<td><code>decide</code></td>
+<td>finale Urteilsbildung</td>
+<td><code>agent</code>, <code>tool</code></td>
+</tr>
+<tr>
+<td><code>act</code></td>
+<td>operative Folgeaktion</td>
+<td><code>agent</code>, <code>tool</code>, <code>event.emit</code></td>
+</tr>
+<tr>
+<td><code>state</code></td>
+<td>persistierte Auswirkung</td>
+<td><code>state { ... }</code>, <code>state.set</code>, <code>state.get</code></td>
+</tr>
+<tr>
+<td><code>event</code></td>
+<td>Trigger oder Weitergabe</td>
+<td><code>event { ... }</code>, <code>event.emit</code></td>
+</tr>
+</tbody></table>
+<p>Wichtig:</p>
+<ul>
+<li><code>system { ... }</code> gehoert nicht zur Entscheidungsphase selbst</li>
+<li><code>system</code> definiert Laufzeitkontext wie <code>mode</code>, <code>tenant</code>, <code>cluster</code>, <code>capability</code></li>
+<li>die eigentliche Fachlogik sitzt in <code>flow</code>, <code>agent</code>, <code>tool</code>, <code>dataset</code>, <code>state</code>, <code>event</code></li>
+</ul>
+<h2 id="minimalstruktur">Minimalstruktur</h2>
+<p>Ein lauffaehiges Decision System braucht nicht immer alle moeglichen Bausteine, aber ein belastbares Pattern enthaelt typischerweise:</p>
+<pre><code class="language-text">dataset oder event
+flow
+mehrere Verarbeitungsstufen</code></pre>
+<p>Fuer ein voll gekoppeltes, wiederverwendbares Decision System sind zusaetzlich sehr sinnvoll:</p>
+<pre><code class="language-text">state
+event</code></pre>
+<p>Pragmatisch bedeutet das:</p>
+<ul>
+<li>mindestens eine Inputquelle</li>
+<li>mindestens ein <code>flow</code></li>
+<li>mindestens zwei fachlich verschiedene Verarbeitungsstufen</li>
+<li><code>state</code> und <code>event</code>, sobald das System ueber einen einmaligen Lauf hinaus</li>
+<p>sichtbar, triggerbar oder integrierbar sein soll</p>
+</ul>
+<h2 id="beispiel-ceo-lifecycle-als-instanz">Beispiel: CEO-Lifecycle als Instanz</h2>
+<p><code>examples/CEO_ns/CEO_Lifecycle.ns</code> implementiert dieses Modell explizit.</p>
+<p>Fachliche Abbildung:</p>
+<pre><code class="language-text">input:
+  executive_signals
+
+transform:
+  StrategyAgent
+  RiskAgent
+  CapitalAgent
+
+merge:
+  ConsensusLayer
+
+decide:
+  final_decision
+
+act:
+  ExecutionDispatcher
+
+state:
+  ceo_last_execution
+
+event:
+  ceo_cycle_ready</code></pre>
+<p>Wichtig:</p>
+<blockquote><p>Der &quot;CEO&quot; ist hier nicht ein einzelner Agent, sondern das Gesamtsystem dieses Graphen.</p></blockquote>
+<p>Siehe:</p>
+<ul>
+<li><a href="CEOAgentExamples.html">CEOAgentExamples</a></li>
+</ul>
+<h2 id="eigenschaften-eines-decision-systems">Eigenschaften eines Decision Systems</h2>
+<h3 id="1-deterministische-struktur">1. Deterministische Struktur</h3>
+<p>Auch wenn einzelne Agenten generativ oder promptbasiert arbeiten:</p>
+<ul>
+<li>der Graph selbst ist explizit</li>
+<li>die Knoten sind benannt</li>
+<li>die Kanten werden reproduzierbar kompiliert</li>
+</ul>
+<p>Die Runtime fuehrt einen Flow ueber die topologische Ordnung des zugehoerigen Graph-Abschlusses aus.</p>
+<h3 id="2-zustandsfaehigkeit">2. Zustandsfaehigkeit</h3>
+<p>Ein Decision System kann zustandslos entworfen werden, aber in der Praxis wird es oft durch <code>state.set</code> dauerhaft gemacht.</p>
+<p>Beispiel:</p>
+<pre><code class="language-text">state.set ceo_last_execution execution_plan</code></pre>
+<p>Dadurch wird aus einem einmaligen Ablauf ein beobachtbarer Systemzustand.</p>
+<h3 id="3-ereignisfaehigkeit">3. Ereignisfaehigkeit</h3>
+<p>Decision Systems koennen Ergebnisse weiterreichen oder selbst getriggert werden.</p>
+<p>Beispiel:</p>
+<pre><code class="language-text">event.emit ceo_cycle_ready execution_plan</code></pre>
+<p>Dadurch werden sie:</p>
+<ul>
+<li>triggerbar</li>
+<li>koppelfaehig</li>
+<li>in groessere Systeme integrierbar</li>
+</ul>
+<h3 id="4-graphbasierte-ausfuehrung">4. Graphbasierte Ausfuehrung</h3>
+<p>Nova-shell kompiliert deklarative <code>.ns</code>-Programme in einen <code>ExecutionGraph</code>.</p>
+<p>Wichtig ist die Nuance:</p>
+<ul>
+<li>Autoren schreiben Flows meist als lineare Schrittfolge</li>
+<li>die Runtime kompiliert daraus einen DAG-basierten Ausfuehrungsgraphen</li>
+<li>Daten- und Kontrollkanten werden dabei explizit</li>
+</ul>
+<p>Deshalb ist die Ausfuehrung nicht nur &quot;ein Skript von oben nach unten&quot;, sondern ein graphisch modellierter Laufzeitpfad.</p>
+<p>Siehe auch:</p>
+<pre><code class="language-powershell">ns.graph .\examples\CEO_ns\CEO_Lifecycle.ns</code></pre>
+<h3 id="5-trennung-von-rollen-und-struktur">5. Trennung von Rollen und Struktur</h3>
+<p>Wichtig:</p>
+<ul>
+<li>Agenten definieren Rollen</li>
+<li>Flows definieren Verhalten</li>
+<li>Datasets definieren Eingaben</li>
+<li>State und Events definieren Kopplung und Dauer</li>
+</ul>
+<p>Ein Decision System entsteht erst aus dieser Kombination.</p>
+<h2 id="abgrenzung-zu-anderen-systemfamilien">Abgrenzung zu anderen Systemfamilien</h2>
+<h3 id="gegenueber-klassischen-workflow-systemen">Gegenueber klassischen Workflow-Systemen</h3>
+<p>Bei klassischen Workflow- oder DAG-Systemen steht oft primaer die Aufgabenorchestrierung im Vordergrund.</p>
+<p>Nova-shell unterscheidet sich hier durch:</p>
+<ul>
+<li>Agenten als erstklassige Graph-Knoten</li>
+<li>State im selben Programmmodell</li>
+<li>Event-Kopplung im selben deklarativen Pfad</li>
+<li>explizite Entscheidungslogik innerhalb des Flows</li>
+</ul>
+<p>Der Punkt ist nicht, dass andere Systeme keine DAGs haben, sondern dass Nova Entscheidungsrollen und Orchestrierung enger zusammenbindet.</p>
+<h3 id="gegenueber-llm-agent-frameworks">Gegenueber LLM-Agent-Frameworks</h3>
+<p>Viele Agent-Frameworks sind prompt- oder sessionzentriert.</p>
+<p>Nova-shell kann das ebenfalls, macht aber zusaetzlich die Struktur explizit:</p>
+<ul>
+<li>Rollen koennen als <code>agent { ... }</code> deklariert werden</li>
+<li>Entscheidungswege koennen als <code>flow</code> modelliert werden</li>
+<li><code>ns.graph</code> macht die Struktur direkt sichtbar</li>
+</ul>
+<p>Der Unterschied ist also weniger &quot;LLM vs. kein LLM&quot;, sondern:</p>
+<ul>
+<li>implizite Agent-Kette</li>
+<p>vs.</p>
+<li>explizit modellierter Ausfuehrungsgraph</li>
+</ul>
+<h3 id="gegenueber-infrastruktur-orchestratoren">Gegenueber Infrastruktur-Orchestratoren</h3>
+<p>Nova-shell hat Plattform- und Service-Bausteine, ist aber nicht einfach ein Ersatz fuer Kubernetes oder reine Infrastrukturorchestrierung.</p>
+<p>Der Schwerpunkt eines Decision Systems in Nova liegt auf:</p>
+<ul>
+<li>Fachentscheidung</li>
+<li>Rollenlogik</li>
+<li>Runtime-Zustand</li>
+<li>Ereigniskopplung</li>
+</ul>
+<p>Infrastruktur ist moeglich, aber nicht die alleinige Hauptsache.</p>
+<h2 id="decision-system-als-wiederverwendbares-muster">Decision System als wiederverwendbares Muster</h2>
+<p>Das Modell ist domaenenunabhaengig.</p>
+<p>Es eignet sich fuer:</p>
+<ul>
+<li>CEO- und Management-Systeme</li>
+<li>Security-Entscheidungssysteme</li>
+<li>Trading- und Portfolio-Logik</li>
+<li>autonome Infrastruktursteuerung</li>
+<li>AI-Orchestratoren</li>
+</ul>
+<h2 id="template-nutzung">Template-Nutzung</h2>
+<p>Das generische Beispiel:</p>
+<pre><code class="language-text">examples/decision_lifecycle_template.ns</code></pre>
+<p>stellt eine neutrale Blaupause bereit fuer:</p>
+<ul>
+<li>schnelles Ableiten neuer Systeme</li>
+<li>konsistente Struktur</li>
+<li><code>ns.run</code>- und <code>ns.graph</code>-Pruefung</li>
+<li>einfache Testbarkeit</li>
+</ul>
+<h2 id="testbarkeit">Testbarkeit</h2>
+<p>Decision Systems lassen sich auf mehreren Ebenen pruefen:</p>
+<h3 id="struktur">Struktur</h3>
+<pre><code class="language-powershell">ns.graph &lt;file&gt;.ns</code></pre>
+<h3 id="ausfuehrung">Ausfuehrung</h3>
+<pre><code class="language-powershell">ns.run &lt;file&gt;.ns</code></pre>
+<h3 id="automatisierte-regression">Automatisierte Regression</h3>
+<p>Typisch sind Tests fuer:</p>
+<ul>
+<li>Laden</li>
+<li>Graph-Erzeugung</li>
+<li>Flow-Ausfuehrung</li>
+<li>erwartete Outputs</li>
+<li>erwartete State- oder Event-Effekte</li>
+</ul>
+<h2 id="zentrale-konsequenz">Zentrale Konsequenz</h2>
+<p>Der Unterschied zu vielen klassischen Skriptpfaden ist:</p>
+<blockquote><p>In Nova-shell wird nicht nur Code ausgefuehrt, sondern Entscheidungslogik als expliziter, testbarer und visualisierbarer Ausfuehrungsgraph modelliert.</p></blockquote>
 <h2 id="verwandte-seiten">Verwandte Seiten</h2>
 <ul>
-<li><a href="AIOSConcept.html">AIOSConcept</a></li>
-<li><a href="BuildAndRelease.html">BuildAndRelease</a></li>
-<li><a href="Research.html">Research</a></li>
+<li><a href="NovaSemantics.html">NovaSemantics</a></li>
+<li><a href="DecisionPatterns.html">DecisionPatterns</a></li>
+<li><a href="CEOAgentExamples.html">CEOAgentExamples</a></li>
+<li><a href="nsPatterns.html">nsPatterns</a></li>
+<li><a href="NovaRuntime.html">NovaRuntime</a></li>
+<li><a href="Architecture.html">Architecture</a></li>
 </ul>
         </article>
         <aside class="wiki-toc">
           <div class="wiki-toc-card"><h2>On this page</h2><ul>
 <li class="wiki-toc-link"><a href="#zweck">Zweck</a></li>
-<li class="wiki-toc-link"><a href="#kurzfristig">Kurzfristig</a></li>
-<li class="wiki-toc-link"><a href="#mittelfristig">Mittelfristig</a></li>
-<li class="wiki-toc-link"><a href="#langfristig">Langfristig</a></li>
-<li class="wiki-toc-link"><a href="#wie-die-roadmap-gelesen-werden-sollte">Wie die Roadmap gelesen werden sollte</a></li>
-<li class="wiki-toc-link"><a href="#verknuepfung-mit-releases">Verknuepfung mit Releases</a></li>
+<li class="wiki-toc-link"><a href="#kerndefinition">Kerndefinition</a></li>
+<li class="wiki-toc-link"><a href="#das-allgemeine-entscheidungsmodell">Das allgemeine Entscheidungsmodell</a></li>
+<li class="wiki-toc-link"><a href="#mapping-auf-nova-konstrukte">Mapping auf Nova-Konstrukte</a></li>
+<li class="wiki-toc-link"><a href="#minimalstruktur">Minimalstruktur</a></li>
+<li class="wiki-toc-link"><a href="#beispiel-ceo-lifecycle-als-instanz">Beispiel: CEO-Lifecycle als Instanz</a></li>
+<li class="wiki-toc-link"><a href="#eigenschaften-eines-decision-systems">Eigenschaften eines Decision Systems</a></li>
+<li class="wiki-toc-link level-3"><a href="#1-deterministische-struktur">1. Deterministische Struktur</a></li>
+<li class="wiki-toc-link level-3"><a href="#2-zustandsfaehigkeit">2. Zustandsfaehigkeit</a></li>
+<li class="wiki-toc-link level-3"><a href="#3-ereignisfaehigkeit">3. Ereignisfaehigkeit</a></li>
+<li class="wiki-toc-link level-3"><a href="#4-graphbasierte-ausfuehrung">4. Graphbasierte Ausfuehrung</a></li>
+<li class="wiki-toc-link level-3"><a href="#5-trennung-von-rollen-und-struktur">5. Trennung von Rollen und Struktur</a></li>
+<li class="wiki-toc-link"><a href="#abgrenzung-zu-anderen-systemfamilien">Abgrenzung zu anderen Systemfamilien</a></li>
+<li class="wiki-toc-link level-3"><a href="#gegenueber-klassischen-workflow-systemen">Gegenueber klassischen Workflow-Systemen</a></li>
+<li class="wiki-toc-link level-3"><a href="#gegenueber-llm-agent-frameworks">Gegenueber LLM-Agent-Frameworks</a></li>
+<li class="wiki-toc-link level-3"><a href="#gegenueber-infrastruktur-orchestratoren">Gegenueber Infrastruktur-Orchestratoren</a></li>
+<li class="wiki-toc-link"><a href="#decision-system-als-wiederverwendbares-muster">Decision System als wiederverwendbares Muster</a></li>
+<li class="wiki-toc-link"><a href="#template-nutzung">Template-Nutzung</a></li>
+<li class="wiki-toc-link"><a href="#testbarkeit">Testbarkeit</a></li>
+<li class="wiki-toc-link level-3"><a href="#struktur">Struktur</a></li>
+<li class="wiki-toc-link level-3"><a href="#ausfuehrung">Ausfuehrung</a></li>
+<li class="wiki-toc-link level-3"><a href="#automatisierte-regression">Automatisierte Regression</a></li>
+<li class="wiki-toc-link"><a href="#zentrale-konsequenz">Zentrale Konsequenz</a></li>
 <li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
 </ul></div>
         </aside>
@@ -221,7 +456,7 @@
   </div>
   <script>
     window.NOVA_WIKI = {
-      currentPage: "Roadmap.html",
+      currentPage: "NovaDecisionSystem.html",
       searchIndex: "assets/search-index.json"
     };
   </script>

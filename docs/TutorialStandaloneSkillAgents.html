@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="Nova-shell wiki builder">
-  <title>Roadmap | Nova-shell Wiki</title>
+  <title>Tutorial Standalone Skill Agents | Nova-shell Wiki</title>
   <link rel="stylesheet" href="assets/wiki.css">
 </head>
 <body>
@@ -72,7 +72,7 @@
 <li><a class="wiki-nav-link" data-nav-href="TutorialPredictiveFederatedCoevolution.html" href="TutorialPredictiveFederatedCoevolution.html">TutorialPredictiveFederatedCoevolution</a></li>
 <li><a class="wiki-nav-link" data-nav-href="TutorialAtheriaALS.html" href="TutorialAtheriaALS.html">TutorialAtheriaALS</a></li>
 <li><a class="wiki-nav-link" data-nav-href="TutorialProjectWatchMonitor.html" href="TutorialProjectWatchMonitor.html">TutorialProjectWatchMonitor</a></li>
-<li><a class="wiki-nav-link" data-nav-href="TutorialStandaloneSkillAgents.html" href="TutorialStandaloneSkillAgents.html">TutorialStandaloneSkillAgents</a></li>
+<li><a class="wiki-nav-link active" data-nav-href="TutorialStandaloneSkillAgents.html" href="TutorialStandaloneSkillAgents.html">TutorialStandaloneSkillAgents</a></li>
 </ul></section>
 <section class="wiki-nav-section">
 <h2>Architektur</h2>
@@ -136,7 +136,7 @@
 <li><a class="wiki-nav-link" data-nav-href="PerformanceAndScaling.html" href="PerformanceAndScaling.html">PerformanceAndScaling</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Troubleshooting.html" href="Troubleshooting.html">Troubleshooting</a></li>
 <li><a class="wiki-nav-link" data-nav-href="LensTroubleshooting.html" href="LensTroubleshooting.html">LensTroubleshooting</a></li>
-<li><a class="wiki-nav-link active" data-nav-href="Roadmap.html" href="Roadmap.html">Roadmap</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Roadmap.html" href="Roadmap.html">Roadmap</a></li>
 <li><a class="wiki-nav-link" data-nav-href="Contributing.html" href="Contributing.html">Contributing</a></li>
 <li><a class="wiki-nav-link" data-nav-href="License.html" href="License.html">License</a></li>
 </ul></section>
@@ -159,57 +159,141 @@
         <button type="button" class="wiki-nav-toggle" data-nav-toggle>Menu</button>
         <div class="wiki-header-copy">
           <span class="wiki-kicker">Nova-shell Documentation</span>
-          <h1>Roadmap</h1>
-          <p>Source: Roadmap.md</p>
+          <h1>Tutorial Standalone Skill Agents</h1>
+          <p>Source: TutorialStandaloneSkillAgents.md</p>
         </div>
       </header>
       <div class="wiki-layout">
         <article class="wiki-article">
-          <h1 id="roadmap">Roadmap</h1>
-<h2 id="zweck">Zweck</h2>
-<p>Diese Seite beschreibt die erwartete Entwicklungsrichtung von Nova-shell. Sie soll die grossen Ausbaustufen ordnen, nicht jede kleine Aufgabe einzeln erfassen.</p>
-<h2 id="kurzfristig">Kurzfristig</h2>
+          <h1 id="tutorial-standalone-skill-agents">Tutorial Standalone Skill Agents</h1>
+<h2 id="ziel">Ziel</h2>
+<p>Dieses Tutorial zeigt, wie aus <code>agent-skills-main</code> lokale, eigenstaendige <code>.ns</code>-Agenten entstehen und wie man sie direkt in Nova-shell nutzt.</p>
+<h2 id="voraussetzungen">Voraussetzungen</h2>
 <ul>
-<li>weitere Stabilisierung des deklarativen Runtimepfads</li>
-<li>tiefere Toolchain-Reife</li>
-<li>Ausbau nativer Backend-Isolation</li>
+<li>Nova-shell ist installiert oder lokal aus dem Repo startbar</li>
+<li>der Ordner <code>agent-skills-main</code> liegt im Repo</li>
+<li><code>agent list</code> funktioniert</li>
 </ul>
-<h2 id="mittelfristig">Mittelfristig</h2>
+<h2 id="schritt-1-quellbestand-verstehen">Schritt 1: Quellbestand verstehen</h2>
+<p>Der Skill-Quellordner ist nur Eingabe.</p>
+<p>Relevant sind:</p>
 <ul>
-<li>staerkere Plattformautomatisierung</li>
-<li>tiefere AI-Evaluations- und Governance-Funktionen</li>
-<li>breitere Service- und Traffic-Steuerung</li>
+<li><code>agent-skills-main/skills/react-best-practices</code></li>
+<li><code>agent-skills-main/skills/react-native-skills</code></li>
+<li><code>agent-skills-main/skills/composition-patterns</code></li>
 </ul>
-<h2 id="langfristig">Langfristig</h2>
+<p>Nicht portable Skills werden standardmaessig uebersprungen.</p>
+<h2 id="schritt-2-agenten-erzeugen">Schritt 2: Agenten erzeugen</h2>
+<pre><code class="language-powershell">ns.skills build agent-skills-main .\examples</code></pre>
+<p>Erwartung:</p>
 <ul>
-<li>weiter verdichtete AI-OS-Plattform fuer verteilte Agenten- und Compute-Systeme</li>
+<li>ein JSON-Manifest wird ausgegeben</li>
+<li><code>generated</code> enthaelt die erzeugten Skill-Agenten</li>
+<li><code>skipped</code> enthaelt bewusst ausgeschlossene Skills mit Grund</li>
 </ul>
-<h2 id="wie-die-roadmap-gelesen-werden-sollte">Wie die Roadmap gelesen werden sollte</h2>
-<p>Die Roadmap ist kein exakter Sprintplan. Sie gibt an, welche Produktachsen fuer Nova-shell wichtig bleiben:</p>
-<ol>
-<li>Sprache</li>
-<li>Runtime</li>
-<li>Plattform</li>
-<li>AI- und Knowledge-Systeme</li>
-<li>Developer Experience</li>
-</ol>
-<h2 id="verknuepfung-mit-releases">Verknuepfung mit Releases</h2>
-<p>Wenn ein Release groessere neue Faehigkeiten bringt, sollte diese Seite aktualisiert und auf <a href="BuildAndRelease.html">BuildAndRelease</a> verwiesen werden.</p>
+<p>Typischer portabler Satz:</p>
+<ul>
+<li><code>react_best_practices_agents.ns</code></li>
+<li><code>react_native_skills_agents.ns</code></li>
+<li><code>composition_patterns_agents.ns</code></li>
+</ul>
+<h2 id="schritt-3-erzeugte-dateien-pruefen">Schritt 3: Erzeugte Dateien pruefen</h2>
+<pre><code class="language-powershell">dir .\examples\*_agents.ns</code></pre>
+<p>Erwartung:</p>
+<ul>
+<li>nur portable Bundles liegen dort</li>
+<li>keine Vercel-Deploy-Agenten werden erzeugt</li>
+</ul>
+<h2 id="schritt-4-ein-skill-buendel-laden">Schritt 4: Ein Skill-Buendel laden</h2>
+<pre><code class="language-powershell">ns.run .\examples\react_best_practices_agents.ns</code></pre>
+<p>Danach:</p>
+<pre><code class="language-powershell">agent list</code></pre>
+<p>Erwartung:</p>
+<ul>
+<li><code>react_best_practices_router</code></li>
+<li>viele Spezialagenten wie <code>react_best_practices_async_parallel</code></li>
+</ul>
+<h2 id="schritt-5-router-agent-verwenden">Schritt 5: Router-Agent verwenden</h2>
+<pre><code class="language-powershell">agent run react_best_practices_router &quot;Ich habe serielle Fetches, zu grosse Client-Bundles und zu viele Re-Renders.&quot;</code></pre>
+<p>Erwartung:</p>
+<ul>
+<li>der Router nennt die passendsten Spezialagenten</li>
+<li>die Antwort bleibt im Skill-Kontext</li>
+</ul>
+<h2 id="schritt-6-spezialagent-direkt-verwenden">Schritt 6: Spezialagent direkt verwenden</h2>
+<pre><code class="language-powershell">agent run react_best_practices_async_parallel &quot;const user = await fetchUser(); const posts = await fetchPosts();&quot;</code></pre>
+<p>Erwartung:</p>
+<ul>
+<li>der Agent bewertet genau die Regel <code>async_parallel</code></li>
+<li>die Antwort bleibt konkret und code-nah</li>
+</ul>
+<h2 id="schritt-7-zweites-bundle-laden">Schritt 7: Zweites Bundle laden</h2>
+<pre><code class="language-powershell">ns.run .\examples\react_native_skills_agents.ns
+agent list</code></pre>
+<p>Dann zum Beispiel:</p>
+<pre><code class="language-powershell">agent run react_native_skills_ui_pressable &quot;Mein Button reagiert in React Native schlecht auf Touch-Eingaben.&quot;
+agent run react_native_skills_router &quot;Meine Liste ruckelt, Bilder sind langsam und State-Updates fuehlen sich zu schwer an.&quot;</code></pre>
+<h2 id="schritt-8-composition-patterns-nutzen">Schritt 8: Composition-Patterns nutzen</h2>
+<pre><code class="language-powershell">ns.run .\examples\composition_patterns_agents.ns
+agent run composition_patterns_router &quot;Meine React-Komponente hat zu viele Boolean-Props und wird unwartbar.&quot;</code></pre>
+<p>Erwartung:</p>
+<ul>
+<li>der Router verweist auf Compound-Components, State-Lifting oder explicit variants</li>
+</ul>
+<h2 id="schritt-9-python-generator-direkt-nutzen">Schritt 9: Python-Generator direkt nutzen</h2>
+<p>Wenn du ausserhalb der Shell pruefen willst:</p>
+<pre><code class="language-powershell">python scripts\generate_agent_skills_examples.py --skills-root .\agent-skills-main\skills --output-dir .\examples</code></pre>
+<p>Erwartung:</p>
+<ul>
+<li>dieselben portablen Bundles werden erzeugt</li>
+<li><code>skipped</code> ist im JSON sichtbar</li>
+</ul>
+<h2 id="schritt-10-ergebnis-einordnen">Schritt 10: Ergebnis einordnen</h2>
+<p>Die erzeugten Agenten sind:</p>
+<ul>
+<li>lokale Prompt-/Wissensagenten</li>
+<li>deklarative <code>.ns</code>-Programme</li>
+<li>ohne Laufzeitabhaengigkeit auf <code>agent-skills-main</code></li>
+</ul>
+<p>Sie sind bewusst <strong>keine</strong> 1:1-Kopie fremder Vendor-Automation.</p>
+<h2 id="typische-fehler">Typische Fehler</h2>
+<h3 id="warum-wurde-ein-skill-nicht-erzeugt">Warum wurde ein Skill nicht erzeugt?</h3>
+<p>Dann taucht er unter <code>skipped</code> auf. Meist liegt der Grund in:</p>
+<ul>
+<li>externer Vendor-CLI</li>
+<li>Token-/Projektzustand</li>
+<li>Live-Fetch fremder Inhalte</li>
+</ul>
+<h3 id="warum-sehe-ich-agenten-erst-nach-ns-run">Warum sehe ich Agenten erst nach <code>ns.run</code>?</h3>
+<p>Weil die <code>.ns</code>-Datei zuerst in die deklarative Runtime geladen und dann in die Shell-Agentenwelt exportiert wird.</p>
+<h3 id="muss-agent-skills-main-spaeter-mit-ausgeliefert-werden">Muss <code>agent-skills-main</code> spaeter mit ausgeliefert werden?</h3>
+<p>Nein. Zur Laufzeit genuegt die erzeugte <code>.ns</code>-Datei.</p>
 <h2 id="verwandte-seiten">Verwandte Seiten</h2>
 <ul>
-<li><a href="AIOSConcept.html">AIOSConcept</a></li>
-<li><a href="BuildAndRelease.html">BuildAndRelease</a></li>
-<li><a href="Research.html">Research</a></li>
+<li><a href="StandaloneSkillAgents.html">StandaloneSkillAgents</a></li>
+<li><a href="StandaloneSkillAgentsForDevelopers.html">StandaloneSkillAgentsForDevelopers</a></li>
+<li><a href="NovaAgents.html">NovaAgents</a></li>
+<li><a href="Tutorials.html">Tutorials</a></li>
 </ul>
         </article>
         <aside class="wiki-toc">
           <div class="wiki-toc-card"><h2>On this page</h2><ul>
-<li class="wiki-toc-link"><a href="#zweck">Zweck</a></li>
-<li class="wiki-toc-link"><a href="#kurzfristig">Kurzfristig</a></li>
-<li class="wiki-toc-link"><a href="#mittelfristig">Mittelfristig</a></li>
-<li class="wiki-toc-link"><a href="#langfristig">Langfristig</a></li>
-<li class="wiki-toc-link"><a href="#wie-die-roadmap-gelesen-werden-sollte">Wie die Roadmap gelesen werden sollte</a></li>
-<li class="wiki-toc-link"><a href="#verknuepfung-mit-releases">Verknuepfung mit Releases</a></li>
+<li class="wiki-toc-link"><a href="#ziel">Ziel</a></li>
+<li class="wiki-toc-link"><a href="#voraussetzungen">Voraussetzungen</a></li>
+<li class="wiki-toc-link"><a href="#schritt-1-quellbestand-verstehen">Schritt 1: Quellbestand verstehen</a></li>
+<li class="wiki-toc-link"><a href="#schritt-2-agenten-erzeugen">Schritt 2: Agenten erzeugen</a></li>
+<li class="wiki-toc-link"><a href="#schritt-3-erzeugte-dateien-pruefen">Schritt 3: Erzeugte Dateien pruefen</a></li>
+<li class="wiki-toc-link"><a href="#schritt-4-ein-skill-buendel-laden">Schritt 4: Ein Skill-Buendel laden</a></li>
+<li class="wiki-toc-link"><a href="#schritt-5-router-agent-verwenden">Schritt 5: Router-Agent verwenden</a></li>
+<li class="wiki-toc-link"><a href="#schritt-6-spezialagent-direkt-verwenden">Schritt 6: Spezialagent direkt verwenden</a></li>
+<li class="wiki-toc-link"><a href="#schritt-7-zweites-bundle-laden">Schritt 7: Zweites Bundle laden</a></li>
+<li class="wiki-toc-link"><a href="#schritt-8-composition-patterns-nutzen">Schritt 8: Composition-Patterns nutzen</a></li>
+<li class="wiki-toc-link"><a href="#schritt-9-python-generator-direkt-nutzen">Schritt 9: Python-Generator direkt nutzen</a></li>
+<li class="wiki-toc-link"><a href="#schritt-10-ergebnis-einordnen">Schritt 10: Ergebnis einordnen</a></li>
+<li class="wiki-toc-link"><a href="#typische-fehler">Typische Fehler</a></li>
+<li class="wiki-toc-link level-3"><a href="#warum-wurde-ein-skill-nicht-erzeugt">Warum wurde ein Skill nicht erzeugt?</a></li>
+<li class="wiki-toc-link level-3"><a href="#warum-sehe-ich-agenten-erst-nach-ns-run">Warum sehe ich Agenten erst nach `ns.run`?</a></li>
+<li class="wiki-toc-link level-3"><a href="#muss-agent-skills-main-spaeter-mit-ausgeliefert-werden">Muss `agent-skills-main` spaeter mit ausgeliefert werden?</a></li>
 <li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
 </ul></div>
         </aside>
@@ -221,7 +305,7 @@
   </div>
   <script>
     window.NOVA_WIKI = {
-      currentPage: "Roadmap.html",
+      currentPage: "TutorialStandaloneSkillAgents.html",
       searchIndex: "assets/search-index.json"
     };
   </script>

@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="Nova-shell wiki builder">
+  <title>Nova Semantics | Nova-shell Wiki</title>
+  <link rel="stylesheet" href="assets/wiki.css">
+</head>
+<body>
+  <div class="wiki-shell">
+    <aside class="wiki-sidebar" data-sidebar>
+      <div class="wiki-brand">
+        <a href="Home.html">Nova-shell Wiki</a>
+        <p>HTML documentation for the Nova-shell platform.</p>
+      </div>
+      <label class="wiki-search">
+        <span>Search</span>
+        <input type="search" placeholder="Find pages, classes, methods..." data-wiki-search>
+      </label>
+      <div class="wiki-search-results" data-search-results></div>
+      <nav class="wiki-nav">
+        <section class="wiki-nav-section">
+<h2>Einstieg</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="Home.html" href="Home.html">Home</a></li>
+<li><a class="wiki-nav-link" data-nav-href="GermanLanguage.html" href="GermanLanguage.html">GermanLanguage</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Dokumentation.html" href="Dokumentation.html">Dokumentation</a></li>
+<li><a class="wiki-nav-link" data-nav-href="QuickStart.html" href="QuickStart.html">QuickStart</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Installation.html" href="Installation.html">Installation</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
+<li><a class="wiki-nav-link" data-nav-href="nsCreate.html" href="nsCreate.html">nsCreate</a></li>
+<li><a class="wiki-nav-link" data-nav-href="nsReference.html" href="nsReference.html">nsReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="nsPatterns.html" href="nsPatterns.html">nsPatterns</a></li>
+<li><a class="wiki-nav-link active" data-nav-href="NovaSemantics.html" href="NovaSemantics.html">NovaSemantics</a></li>
+</ul></section>
+<section class="wiki-nav-section">
+<h2>Nutzung</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="Dokumentation.html" href="Dokumentation.html">Dokumentation</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaCLI.html" href="NovaCLI.html">NovaCLI</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ShellCommandReference.html" href="ShellCommandReference.html">ShellCommandReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaLens.html" href="NovaLens.html">NovaLens</a></li>
+<li><a class="wiki-nav-link" data-nav-href="LensForDevelopers.html" href="LensForDevelopers.html">LensForDevelopers</a></li>
+<li><a class="wiki-nav-link" data-nav-href="LensTroubleshooting.html" href="LensTroubleshooting.html">LensTroubleshooting</a></li>
+<li><a class="wiki-nav-link" data-nav-href="LensRecipes.html" href="LensRecipes.html">LensRecipes</a></li>
+<li><a class="wiki-nav-link" data-nav-href="APIReference.html" href="APIReference.html">APIReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ExamplesAndRecipes.html" href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
+<li><a class="wiki-nav-link" data-nav-href="DecisionPatterns.html" href="DecisionPatterns.html">DecisionPatterns</a></li>
+<li><a class="wiki-nav-link" data-nav-href="CEOAgentExamples.html" href="CEOAgentExamples.html">CEOAgentExamples</a></li>
+<li><a class="wiki-nav-link" data-nav-href="StandaloneSkillAgents.html" href="StandaloneSkillAgents.html">StandaloneSkillAgents</a></li>
+<li><a class="wiki-nav-link" data-nav-href="StandaloneSkillAgentsForDevelopers.html" href="StandaloneSkillAgentsForDevelopers.html">StandaloneSkillAgentsForDevelopers</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NSBlobGenerator.html" href="NSBlobGenerator.html">NSBlobGenerator</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaSynthPredictiveEngineShifting.html" href="NovaSynthPredictiveEngineShifting.html">NovaSynthPredictiveEngineShifting</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ZeroCopyFederatedLearningMesh.html" href="ZeroCopyFederatedLearningMesh.html">ZeroCopyFederatedLearningMesh</a></li>
+<li><a class="wiki-nav-link" data-nav-href="MyceliaAtheriaCoEvolution.html" href="MyceliaAtheriaCoEvolution.html">MyceliaAtheriaCoEvolution</a></li>
+<li><a class="wiki-nav-link" data-nav-href="AtheriaContinuousEvolutionAndLiveStream.html" href="AtheriaContinuousEvolutionAndLiveStream.html">AtheriaContinuousEvolutionAndLiveStream</a></li>
+<li><a class="wiki-nav-link" data-nav-href="AtheriaVoice.html" href="AtheriaVoice.html">AtheriaVoice</a></li>
+<li><a class="wiki-nav-link" data-nav-href="AtheriaALSForDevelopers.html" href="AtheriaALSForDevelopers.html">AtheriaALSForDevelopers</a></li>
+<li><a class="wiki-nav-link" data-nav-href="WatchMonitor.html" href="WatchMonitor.html">WatchMonitor</a></li>
+<li><a class="wiki-nav-link" data-nav-href="SystemGuardMonitor.html" href="SystemGuardMonitor.html">SystemGuardMonitor</a></li>
+<li><a class="wiki-nav-link" data-nav-href="WatchMonitorQuickStart.html" href="WatchMonitorQuickStart.html">WatchMonitorQuickStart</a></li>
+<li><a class="wiki-nav-link" data-nav-href="WatchMonitorReportReference.html" href="WatchMonitorReportReference.html">WatchMonitorReportReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="WatchMonitorAutomationAndAI.html" href="WatchMonitorAutomationAndAI.html">WatchMonitorAutomationAndAI</a></li>
+<li><a class="wiki-nav-link" data-nav-href="WatchMonitorTroubleshooting.html" href="WatchMonitorTroubleshooting.html">WatchMonitorTroubleshooting</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Tutorials.html" href="Tutorials.html">Tutorials</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialTechnologyRadar.html" href="TutorialTechnologyRadar.html">TutorialTechnologyRadar</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialMultiAgentCluster.html" href="TutorialMultiAgentCluster.html">TutorialMultiAgentCluster</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialLMStudioIntegration.html" href="TutorialLMStudioIntegration.html">TutorialLMStudioIntegration</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialBlobSeeds.html" href="TutorialBlobSeeds.html">TutorialBlobSeeds</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialPredictiveFederatedCoevolution.html" href="TutorialPredictiveFederatedCoevolution.html">TutorialPredictiveFederatedCoevolution</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialAtheriaALS.html" href="TutorialAtheriaALS.html">TutorialAtheriaALS</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialProjectWatchMonitor.html" href="TutorialProjectWatchMonitor.html">TutorialProjectWatchMonitor</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialStandaloneSkillAgents.html" href="TutorialStandaloneSkillAgents.html">TutorialStandaloneSkillAgents</a></li>
+</ul></section>
+<section class="wiki-nav-section">
+<h2>Architektur</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="Architecture.html" href="Architecture.html">Architecture</a></li>
+<li><a class="wiki-nav-link" data-nav-href="SystemOverview.html" href="SystemOverview.html">SystemOverview</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ComponentModel.html" href="ComponentModel.html">ComponentModel</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ExecutionModel.html" href="ExecutionModel.html">ExecutionModel</a></li>
+<li><a class="wiki-nav-link" data-nav-href="DataFlow.html" href="DataFlow.html">DataFlow</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaLanguage.html" href="NovaLanguage.html">NovaLanguage</a></li>
+<li><a class="wiki-nav-link" data-nav-href="nsCreate.html" href="nsCreate.html">nsCreate</a></li>
+<li><a class="wiki-nav-link" data-nav-href="nsReference.html" href="nsReference.html">nsReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="nsPatterns.html" href="nsPatterns.html">nsPatterns</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaDecisionSystem.html" href="NovaDecisionSystem.html">NovaDecisionSystem</a></li>
+<li><a class="wiki-nav-link active" data-nav-href="NovaSemantics.html" href="NovaSemantics.html">NovaSemantics</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaRuntime.html" href="NovaRuntime.html">NovaRuntime</a></li>
+<li><a class="wiki-nav-link" data-nav-href="DecisionPatterns.html" href="DecisionPatterns.html">DecisionPatterns</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaLens.html" href="NovaLens.html">NovaLens</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaGraphEngine.html" href="NovaGraphEngine.html">NovaGraphEngine</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaPlanner.html" href="NovaPlanner.html">NovaPlanner</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ParserAndASTReference.html" href="ParserAndASTReference.html">ParserAndASTReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="RuntimeMethodReference.html" href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ClassReference.html" href="ClassReference.html">ClassReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="CodeReferenceIndex.html" href="CodeReferenceIndex.html">CodeReferenceIndex</a></li>
+<li><a class="wiki-nav-link" data-nav-href="LensForDevelopers.html" href="LensForDevelopers.html">LensForDevelopers</a></li>
+<li><a class="wiki-nav-link" data-nav-href="LensRecipes.html" href="LensRecipes.html">LensRecipes</a></li>
+</ul></section>
+<section class="wiki-nav-section">
+<h2>Plattformfunktionen</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="NovaAgents.html" href="NovaAgents.html">NovaAgents</a></li>
+<li><a class="wiki-nav-link" data-nav-href="DecisionPatterns.html" href="DecisionPatterns.html">DecisionPatterns</a></li>
+<li><a class="wiki-nav-link" data-nav-href="CEOAgentExamples.html" href="CEOAgentExamples.html">CEOAgentExamples</a></li>
+<li><a class="wiki-nav-link" data-nav-href="StandaloneSkillAgents.html" href="StandaloneSkillAgents.html">StandaloneSkillAgents</a></li>
+<li><a class="wiki-nav-link" data-nav-href="StandaloneSkillAgentsForDevelopers.html" href="StandaloneSkillAgentsForDevelopers.html">StandaloneSkillAgentsForDevelopers</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaMesh.html" href="NovaMesh.html">NovaMesh</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NSBlobGenerator.html" href="NSBlobGenerator.html">NSBlobGenerator</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaSynthPredictiveEngineShifting.html" href="NovaSynthPredictiveEngineShifting.html">NovaSynthPredictiveEngineShifting</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ZeroCopyFederatedLearningMesh.html" href="ZeroCopyFederatedLearningMesh.html">ZeroCopyFederatedLearningMesh</a></li>
+<li><a class="wiki-nav-link" data-nav-href="MyceliaAtheriaCoEvolution.html" href="MyceliaAtheriaCoEvolution.html">MyceliaAtheriaCoEvolution</a></li>
+<li><a class="wiki-nav-link" data-nav-href="AtheriaContinuousEvolutionAndLiveStream.html" href="AtheriaContinuousEvolutionAndLiveStream.html">AtheriaContinuousEvolutionAndLiveStream</a></li>
+<li><a class="wiki-nav-link" data-nav-href="AtheriaVoice.html" href="AtheriaVoice.html">AtheriaVoice</a></li>
+<li><a class="wiki-nav-link" data-nav-href="AtheriaALSForDevelopers.html" href="AtheriaALSForDevelopers.html">AtheriaALSForDevelopers</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaSensors.html" href="NovaSensors.html">NovaSensors</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaMemory.html" href="NovaMemory.html">NovaMemory</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaTools.html" href="NovaTools.html">NovaTools</a></li>
+</ul></section>
+<section class="wiki-nav-section">
+<h2>Entwicklung und Betrieb</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="DevelopmentGuide.html" href="DevelopmentGuide.html">DevelopmentGuide</a></li>
+<li><a class="wiki-nav-link" data-nav-href="PageTemplate.html" href="PageTemplate.html">PageTemplate</a></li>
+<li><a class="wiki-nav-link" data-nav-href="RepositoryStructure.html" href="RepositoryStructure.html">RepositoryStructure</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Testing.html" href="Testing.html">Testing</a></li>
+<li><a class="wiki-nav-link" data-nav-href="BuildAndRelease.html" href="BuildAndRelease.html">BuildAndRelease</a></li>
+<li><a class="wiki-nav-link" data-nav-href="WatchMonitor.html" href="WatchMonitor.html">WatchMonitor</a></li>
+<li><a class="wiki-nav-link" data-nav-href="SystemGuardMonitor.html" href="SystemGuardMonitor.html">SystemGuardMonitor</a></li>
+<li><a class="wiki-nav-link" data-nav-href="WatchMonitorReportReference.html" href="WatchMonitorReportReference.html">WatchMonitorReportReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="WatchMonitorAutomationAndAI.html" href="WatchMonitorAutomationAndAI.html">WatchMonitorAutomationAndAI</a></li>
+<li><a class="wiki-nav-link" data-nav-href="SecurityModel.html" href="SecurityModel.html">SecurityModel</a></li>
+<li><a class="wiki-nav-link" data-nav-href="PerformanceAndScaling.html" href="PerformanceAndScaling.html">PerformanceAndScaling</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Troubleshooting.html" href="Troubleshooting.html">Troubleshooting</a></li>
+<li><a class="wiki-nav-link" data-nav-href="LensTroubleshooting.html" href="LensTroubleshooting.html">LensTroubleshooting</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Roadmap.html" href="Roadmap.html">Roadmap</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Contributing.html" href="Contributing.html">Contributing</a></li>
+<li><a class="wiki-nav-link" data-nav-href="License.html" href="License.html">License</a></li>
+</ul></section>
+<section class="wiki-nav-section">
+<h2>Theorie</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="Research.html" href="Research.html">Research</a></li>
+<li><a class="wiki-nav-link" data-nav-href="AIOSConcept.html" href="AIOSConcept.html">AIOSConcept</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Whitepaper.html" href="Whitepaper.html">Whitepaper</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Was-es-Ist.html" href="Was-es-Ist.html">Was-es-Ist</a></li>
+<li><a class="wiki-nav-link" data-nav-href="wirtschaftlicher_nutzen.html" href="wirtschaftlicher_nutzen.html">wirtschaftlicher_nutzen</a></li>
+<li><a class="wiki-nav-link" data-nav-href="AgentSystems.html" href="AgentSystems.html">AgentSystems</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Glossary.html" href="Glossary.html">Glossary</a></li>
+<li><a class="wiki-nav-link" data-nav-href="FAQ.html" href="FAQ.html">FAQ</a></li>
+</ul></section>
+      </nav>
+    </aside>
+    <main class="wiki-main">
+      <header class="wiki-header">
+        <button type="button" class="wiki-nav-toggle" data-nav-toggle>Menu</button>
+        <div class="wiki-header-copy">
+          <span class="wiki-kicker">Nova-shell Documentation</span>
+          <h1>Nova Semantics</h1>
+          <p>Source: NovaSemantics.md</p>
+        </div>
+      </header>
+      <div class="wiki-layout">
+        <article class="wiki-article">
+          <h1 id="nova-semantics">Nova Semantics</h1>
+<h2 id="zweck">Zweck</h2>
+<p>Diese Seite beschreibt die formale Semantik des deklarativen <code>.ns</code>-Kerns von Nova-shell.</p>
+<p>Sie beantwortet drei Fragen:</p>
+<ul>
+<li>Was ist ein Nova-Programm auf AST-Ebene?</li>
+<li>Wie wird daraus ein gerichteter Ausfuehrungsgraph?</li>
+<li>Was bedeutet die Ausfuehrung eines Flows zur Laufzeit?</li>
+</ul>
+<p>Die Seite beschreibt den aktuell implementierten Kern, nicht ein Wunschmodell. Grundlage sind vor allem:</p>
+<ul>
+<li><code>nova/parser/ast.py</code></li>
+<li><code>nova/parser/parser.py</code></li>
+<li><code>nova/graph/model.py</code></li>
+<li><code>nova/graph/compiler.py</code></li>
+<li><code>nova/runtime/runtime.py</code></li>
+</ul>
+<h2 id="geltungsbereich">Geltungsbereich</h2>
+<p>Die Semantik dieser Seite gilt fuer den deklarativen Runtime-Pfad in <code>nova/</code>.</p>
+<p>Sie beschreibt insbesondere:</p>
+<ul>
+<li><code>import</code></li>
+<li><code>agent</code></li>
+<li><code>dataset</code></li>
+<li><code>tool</code></li>
+<li><code>service</code></li>
+<li><code>package</code></li>
+<li><code>state</code></li>
+<li><code>system</code></li>
+<li><code>event</code></li>
+<li><code>flow</code></li>
+</ul>
+<p>Nicht alles davon wird gleich stark in den Ausfuehrungsgraphen ueberfuehrt. <code>state</code> und <code>system</code> sind zum Beispiel wichtige Laufzeitbausteine, aber keine eigenen <code>GraphNode</code>-Typen.</p>
+<h2 id="1-abstract-syntax">1. Abstract Syntax</h2>
+<p>Ein geparstes Nova-Programm ist ein <code>NovaAST</code>:</p>
+<pre><code class="language-text">NovaAST = [Declaration_1, Declaration_2, ..., Declaration_n]</code></pre>
+<p>mit folgenden Top-Level-Deklarationen:</p>
+<pre><code class="language-text">Declaration ::=
+    ImportDeclaration
+  | AgentDeclaration
+  | DatasetDeclaration
+  | ToolDeclaration
+  | ServiceDeclaration
+  | PackageDeclaration
+  | StateDeclaration
+  | SystemDeclaration
+  | EventDeclaration
+  | FlowDeclaration</code></pre>
+<p>Ein <code>flow</code> enthaelt wiederum eine geordnete Liste von <code>FlowStep</code>-Eintraegen:</p>
+<pre><code class="language-text">FlowStep = (operation, arguments, alias?)</code></pre>
+<p>Praktisch heisst das:</p>
+<ul>
+<li><code>operation</code> ist der erste Token einer Flow-Zeile</li>
+<li><code>arguments</code> sind die restlichen Tokens</li>
+<li><code>alias</code> entsteht ueber <code>-&gt; alias</code></li>
+</ul>
+<p>Beispiel:</p>
+<pre><code class="language-ns">flow radar {
+  rss.fetch tech_rss -&gt; fresh_news
+  researcher summarize tech_rss -&gt; briefing
+}</code></pre>
+<p>wird auf Schritt-Ebene konzeptionell zu:</p>
+<pre><code class="language-text">(&quot;rss.fetch&quot;, [&quot;tech_rss&quot;], &quot;fresh_news&quot;)
+(&quot;researcher&quot;, [&quot;summarize&quot;, &quot;tech_rss&quot;], &quot;briefing&quot;)</code></pre>
+<h2 id="2-statische-wohlgeformtheit">2. Statische Wohlgeformtheit</h2>
+<p>Ein <code>.ns</code>-Programm ist semantisch sinnvoll, wenn mindestens die folgenden Bedingungen erfuellt sind.</p>
+<h3 id="2-1-referenzen-muessen-aufloesbar-sein">2.1 Referenzen muessen aufloesbar sein</h3>
+<p>Fuer die Graph-Kompilation gilt:</p>
+<ul>
+<li>ein <code>event</code> muss auf existierende <code>flow</code>-Namen zeigen</li>
+<li>ein Flow-Schritt, dessen <code>operation</code> kein deklarierter <code>agent</code> ist, wird als</li>
+<p><code>tool</code> interpretiert</p>
+<li>Argumente, die Dataset-, State- oder Alias-Namen sind, werden als</li>
+<p>referenzierbare Eingaben behandelt</p>
+</ul>
+<p>Wenn ein <code>event</code> einen unbekannten Flow referenziert, bricht die Graph-Kompilation mit <code>GraphCompileError</code> ab.</p>
+<h3 id="2-2-flows-muessen-azyklisch-kompiliert-werden-koennen">2.2 Flows muessen azyklisch kompiliert werden koennen</h3>
+<p>Der Compiler erzeugt einen <code>ExecutionGraph</code> und prueft anschliessend dessen topologische Ordnung.</p>
+<p>Formal:</p>
+<pre><code class="language-text">valid(program) =&gt; topological_order(compile(program)) exists</code></pre>
+<p>Wenn die Ordnung nicht existiert, meldet der Compiler einen <code>GraphCycleError</code>.</p>
+<h3 id="2-3-flow-schritte-haben-eine-disambiguierte-rolle">2.3 Flow-Schritte haben eine disambiguierte Rolle</h3>
+<p>Ein Schritt</p>
+<pre><code class="language-text">op a1 a2 ... ak</code></pre>
+<p>wird wie folgt interpretiert:</p>
+<ul>
+<li>falls <code>op</code> ein deklarierter Agent ist:</li>
+<li>wenn <code>a1</code> ein Dataset- oder State-Name ist, dann ist <code>action = None</code> und</li>
+<p>alle Argumente sind Inputs</p>
+<li>sonst ist <code>action = a1</code> und die restlichen Argumente sind Inputs</li>
+<li>andernfalls wird <code>op</code> als Tool-Aufruf behandelt</li>
+</ul>
+<p>Beispiele:</p>
+<pre><code class="language-ns">researcher tech_rss</code></pre>
+<pre><code class="language-text">agent = researcher
+action = None
+inputs = [tech_rss]</code></pre>
+<pre><code class="language-ns">researcher summarize tech_rss</code></pre>
+<pre><code class="language-text">agent = researcher
+action = summarize
+inputs = [tech_rss]</code></pre>
+<h2 id="3-graph-semantik">3. Graph-Semantik</h2>
+<p>Die Kompilierung bildet ein <code>NovaAST</code> auf einen <code>ExecutionGraph</code> ab:</p>
+<pre><code class="language-text">compile : NovaAST -&gt; ExecutionGraph</code></pre>
+<h3 id="3-1-knoten">3.1 Knoten</h3>
+<p>Der aktuelle Graph kennt diese Knotentypen:</p>
+<pre><code class="language-text">GraphNode ::=
+    DatasetNode
+  | ToolNode
+  | AgentNode
+  | ServiceNode
+  | PackageNode
+  | FlowNode
+  | EventNode</code></pre>
+<p>Top-Level-Ressourcen werden mit <code>resource = true</code> angelegt. Flow-Schritte erzeugen zusaetzliche nicht-top-level Knoten mit <code>resource = false</code>.</p>
+<h3 id="3-2-kanten">3.2 Kanten</h3>
+<p>Eine Kante ist formal:</p>
+<pre><code class="language-text">ExecutionEdge = (source, target, edge_type, label)</code></pre>
+<p>Der Compiler verwendet vor allem diese Kantentypen:</p>
+<ul>
+<li><code>control</code></li>
+<li>fuer die sequentielle Schrittfolge eines Flows</li>
+<li><code>data</code></li>
+<li>fuer Dataset- und Alias-Eingaben</li>
+<li><code>definition</code></li>
+<li>fuer die Bindung eines Schrittknotens an seine <code>agent</code>- oder</li>
+<p><code>tool</code>-Definition</p>
+<li><code>trigger</code></li>
+<li>fuer die Bindung eines <code>event</code> an einen <code>flow</code></li>
+</ul>
+<h3 id="3-3-form-eines-kompilierten-flows">3.3 Form eines kompilierten Flows</h3>
+<p>Ein Flow</p>
+<pre><code class="language-ns">flow lifecycle {
+  rss.fetch signals -&gt; snapshot
+  strategist assess signals -&gt; proposal
+  event.emit verdict_ready proposal
+}</code></pre>
+<p>wird konzeptionell zu einem Teilgraphen:</p>
+<pre><code class="language-text">flow::lifecycle
+  -&gt; flow::lifecycle::step::1
+  -&gt; flow::lifecycle::step::2
+  -&gt; flow::lifecycle::step::3</code></pre>
+<p>zusaetzlich mit:</p>
+<ul>
+<li><code>dataset::signals -&gt; step::1</code> als <code>data</code></li>
+<li><code>agent::strategist -&gt; step::2</code> als <code>definition</code></li>
+<li><code>step::2 -&gt; step::3</code> indirekt ueber Alias/Data-Nutzung, falls <code>proposal</code></li>
+<p>referenziert wird</p>
+</ul>
+<p>Wichtig:</p>
+<ul>
+<li>Autoren schreiben Flow-Schritte linear</li>
+<li>die Runtime arbeitet aber auf einem expliziten DAG-basierten</li>
+<p><code>ExecutionGraph</code></p>
+</ul>
+<h2 id="4-operationale-semantik">4. Operationale Semantik</h2>
+<p>Die Laufzeit arbeitet auf einem geladenen <code>CompiledNovaProgram</code> und einem <code>RuntimeContext</code>.</p>
+<p>Formal:</p>
+<pre><code class="language-text">run(program, flow?) -&gt; (executed_flows, events, context_snapshot)</code></pre>
+<h3 id="4-1-laden">4.1 Laden</h3>
+<p><code>load</code> fuehrt diese Schritte aus:</p>
+<ol>
+<li>Parse Quelltext zu <code>NovaAST</code></li>
+<li>Kompiliere <code>NovaAST</code> zu <code>ExecutionGraph</code></li>
+<li>Initialisiere <code>RuntimeContext</code></li>
+<li>Registriere Ressourcen, Events, Policies, State- und Service-Kontext</li>
+</ol>
+<h3 id="4-2-auswahl-der-entry-flows">4.2 Auswahl der Entry-Flows</h3>
+<p>Wenn <code>run(..., flow=None)</code> aufgerufen wird, bestimmt die Runtime die Start-Flows so:</p>
+<ul>
+<li>zuerst werden alle Flows gesammelt</li>
+<li>dann werden alle Flows entfernt, die an <code>event</code>-Deklarationen gebunden sind</li>
+<li>wenn danach noch ungebundene Flows bleiben, werden genau diese gestartet</li>
+<li>sonst werden alle Flows verwendet</li>
+</ul>
+<p>Formal:</p>
+<pre><code class="language-text">entry_flows(ast) =
+  unbound_flows(ast), falls diese nicht leer sind
+  sonst all_flows(ast)</code></pre>
+<h3 id="4-3-ausfuehrung-eines-flows">4.3 Ausfuehrung eines Flows</h3>
+<p>Die Ausfuehrung eines Flows <code>f</code> ist:</p>
+<pre><code class="language-text">execute_flow(f):
+  order := topological_order(closure_for_flow(f))
+  fuer jeden node in order:
+    execute(node)</code></pre>
+<p>Dabei gilt:</p>
+<ul>
+<li><code>closure_for_flow(f)</code> enthaelt den Flow-Wurzelknoten und alle davon</li>
+<p>erreichbaren Knoten plus benoetigte Vorgaenger</p>
+<li>die resultierende Reihenfolge ist topologisch, also zyklenfrei</li>
+</ul>
+<h3 id="4-4-knotenbedeutung">4.4 Knotenbedeutung</h3>
+<p>Semantisch verhalten sich die wichtigsten Knoten so:</p>
+<ul>
+<li><code>FlowNode(resource=true)</code></li>
+<li>beschreibt die Flow-Definition</li>
+<li>erzeugt einen <code>NodeExecutionRecord</code>, aber keine externe Aktion</li>
+<li><code>EventNode(resource=true)</code></li>
+<li>beschreibt einen Triggerpunkt</li>
+<li>erzeugt einen <code>NodeExecutionRecord</code>, fuehrt aber keinen Flow-Schritt aus</li>
+<li><code>DatasetNode(resource=true)</code></li>
+<li>repraesentiert eine deklarierte Datenquelle</li>
+<li>konkrete Datenbeschaffung erfolgt typischerweise erst ueber Tools wie</li>
+<p><code>rss.fetch</code></p>
+<li><code>ToolNode</code></li>
+<li>fuehrt ein Tool lokal oder ueber den Backend-/Mesh-Pfad aus</li>
+<li><code>AgentNode</code></li>
+<li>erstellt einen <code>AgentTask</code> und uebergibt Inputs aus dem</li>
+<p><code>RuntimeContext</code></p>
+</ul>
+<h3 id="4-5-alias-und-output-semantik">4.5 Alias- und Output-Semantik</h3>
+<p>Wenn ein Agent- oder Tool-Schritt ausgefuehrt wurde, speichert die Runtime:</p>
+<ul>
+<li>das Ergebnis unter <code>context.outputs[node.node_id]</code></li>
+<li>zusaetzlich unter <code>context.outputs[alias]</code>, falls der Schritt ein Alias hat</li>
+</ul>
+<p>Damit ist ein Alias semantisch eine benannte Referenz auf den Output eines vorherigen Knotens.</p>
+<h3 id="4-6-event-semantik">4.6 Event-Semantik</h3>
+<p><code>emit(event_name, payload)</code> erzeugt ein externes Event im Event-Bus. Gebundene Flows werden dadurch ausgefuehrt.</p>
+<p>Formal:</p>
+<pre><code class="language-text">emit(e, p):
+  publish_event(e, p)
+  fuer jeden an e gebundenen flow f:
+    execute_flow(f, trigger_event=e)</code></pre>
+<p>Die Runtime schuetzt sich dabei gegen direkte Rekursion: ein Flow, der bereits auf dem Stack liegt, wird nicht erneut durch dasselbe Event gestartet.</p>
+<h3 id="4-7-state-semantik">4.7 State-Semantik</h3>
+<p><code>state</code> hat zwei Ebenen:</p>
+<ul>
+<li>deklarativ als <code>state { ... }</code>-Ressource</li>
+<li>operational ueber <code>state.set</code> und <code>state.get</code></li>
+</ul>
+<p><code>state.set key value</code> bedeutet:</p>
+<ul>
+<li>resolve <code>value</code> ueber den aktuellen Kontext</li>
+<li>persistiere den Wert im <code>PersistentStateStore</code></li>
+<li>aktualisiere <code>context.states[key]</code></li>
+<li>repliziere den State-Eintrag in den Replikationslog</li>
+</ul>
+<p><code>state.get key</code> bedeutet:</p>
+<ul>
+<li>lade den Wert aus dem <code>PersistentStateStore</code>, falls vorhanden</li>
+<li>sonst aus dem aktuellen <code>context.states</code></li>
+<li>liefere ihn als Tool-Resultat zurueck</li>
+</ul>
+<h2 id="5-effektmodell">5. Effektmodell</h2>
+<p>Die deklarative Struktur von Nova ist staerker formalisiert als die Seiteneffekte einzelner Knoten.</p>
+<p>Deshalb ist die korrekte Semantik zweistufig:</p>
+<ul>
+<li><strong>Strukturelle Semantik</strong>: Parser, AST, Graph, topologische Ordnung,</li>
+<p>Event-Bindung, Alias-Aufloesung</p>
+<li><strong>Effekt-Semantik</strong>: konkrete Wirkung von Agenten, Tools, Backends, Shell,</li>
+<p>externen Diensten und Providern</p>
+</ul>
+<h3 id="5-1-deterministische-teile">5.1 Deterministische Teile</h3>
+<p>Bei gleichem Quelltext sind deterministisch:</p>
+<ul>
+<li>Parsing in <code>NovaAST</code></li>
+<li>Graph-Kompilation</li>
+<li>Knotentypisierung</li>
+<li>topologische Ordnung</li>
+<li>Event-zu-Flow-Bindung</li>
+<li>lokale State-Persistenzlogik</li>
+</ul>
+<h3 id="5-2-partiell-nichtdeterministische-teile">5.2 Partiell nichtdeterministische Teile</h3>
+<p>Nicht voll deterministisch sind:</p>
+<ul>
+<li>Agent-Ausgaben ueber externe oder generative Provider</li>
+<li>Tool-Aufrufe mit externen Datenquellen</li>
+<li>Mesh-Dispatch und Remote-Backends</li>
+<li>Zeit, Netzwerk und Umgebungszustand</li>
+</ul>
+<p>Formal ist Nova deshalb kein voll rein funktionales System, sondern:</p>
+<blockquote><p>ein formal beschreibbarer Ausfuehrungsgraph mit expliziten Effektknoten</p></blockquote>
+<h2 id="6-mathematische-sicht-auf-flows">6. Mathematische Sicht auf Flows</h2>
+<p>Ein Flow kann als partielle Zustandsueberfuehrung aufgefasst werden:</p>
+<pre><code class="language-text">F : RuntimeContext -&gt; RuntimeContext&#x27;</code></pre>
+<p>genauer:</p>
+<pre><code class="language-text">F(ctx) = execute(topological_order(closure(flow)), ctx)</code></pre>
+<p>Jeder Knoten transformiert dabei lokal einen Kontext:</p>
+<pre><code class="language-text">step_i : ctx_i -&gt; ctx_{i+1}</code></pre>
+<p>Der gesamte Flow ist die Komposition dieser Uebergaenge:</p>
+<pre><code class="language-text">F = step_n o ... o step_2 o step_1</code></pre>
+<p>mit der Einschraenkung, dass einzelne <code>step_i</code> Effektknoten sein koennen und damit nicht rein deterministisch sein muessen.</p>
+<h2 id="7-konsequenzen-fuer-design-und-papers">7. Konsequenzen fuer Design und Papers</h2>
+<p>Diese Semantik ist stark genug fuer:</p>
+<ul>
+<li>Architektur-Wiki</li>
+<li>Whitepaper-Argumentation</li>
+<li>Linter- und Validator-Regeln</li>
+<li>kuenftige Graph-Optimierungen</li>
+<li>saubere Trennung von Struktur und Effekt</li>
+</ul>
+<p>Die korrekte starke Aussage fuer Nova-shell ist deshalb:</p>
+<blockquote><p>Nova-shell besitzt eine formal beschreibbare Struktur- und Ausfuehrungssemantik fuer deklarative Programme und markiert nichtdeterministische Wirkung ueber explizite Effektknoten.</p></blockquote>
+<p>Nicht korrekt waere die staerkere Behauptung:</p>
+<blockquote><p>alle Nova-Programme sind voll deterministisch</p></blockquote>
+<h2 id="verwandte-seiten">Verwandte Seiten</h2>
+<ul>
+<li><a href="NovaDecisionSystem.html">NovaDecisionSystem</a></li>
+<li><a href="DecisionPatterns.html">DecisionPatterns</a></li>
+<li><a href="nsPatterns.html">nsPatterns</a></li>
+<li><a href="NovaLanguage.html">NovaLanguage</a></li>
+<li><a href="NovaRuntime.html">NovaRuntime</a></li>
+<li><a href="ParserAndASTReference.html">ParserAndASTReference</a></li>
+<li><a href="ExecutionModel.html">ExecutionModel</a></li>
+</ul>
+        </article>
+        <aside class="wiki-toc">
+          <div class="wiki-toc-card"><h2>On this page</h2><ul>
+<li class="wiki-toc-link"><a href="#zweck">Zweck</a></li>
+<li class="wiki-toc-link"><a href="#geltungsbereich">Geltungsbereich</a></li>
+<li class="wiki-toc-link"><a href="#1-abstract-syntax">1. Abstract Syntax</a></li>
+<li class="wiki-toc-link"><a href="#2-statische-wohlgeformtheit">2. Statische Wohlgeformtheit</a></li>
+<li class="wiki-toc-link level-3"><a href="#2-1-referenzen-muessen-aufloesbar-sein">2.1 Referenzen muessen aufloesbar sein</a></li>
+<li class="wiki-toc-link level-3"><a href="#2-2-flows-muessen-azyklisch-kompiliert-werden-koennen">2.2 Flows muessen azyklisch kompiliert werden koennen</a></li>
+<li class="wiki-toc-link level-3"><a href="#2-3-flow-schritte-haben-eine-disambiguierte-rolle">2.3 Flow-Schritte haben eine disambiguierte Rolle</a></li>
+<li class="wiki-toc-link"><a href="#3-graph-semantik">3. Graph-Semantik</a></li>
+<li class="wiki-toc-link level-3"><a href="#3-1-knoten">3.1 Knoten</a></li>
+<li class="wiki-toc-link level-3"><a href="#3-2-kanten">3.2 Kanten</a></li>
+<li class="wiki-toc-link level-3"><a href="#3-3-form-eines-kompilierten-flows">3.3 Form eines kompilierten Flows</a></li>
+<li class="wiki-toc-link"><a href="#4-operationale-semantik">4. Operationale Semantik</a></li>
+<li class="wiki-toc-link level-3"><a href="#4-1-laden">4.1 Laden</a></li>
+<li class="wiki-toc-link level-3"><a href="#4-2-auswahl-der-entry-flows">4.2 Auswahl der Entry-Flows</a></li>
+<li class="wiki-toc-link level-3"><a href="#4-3-ausfuehrung-eines-flows">4.3 Ausfuehrung eines Flows</a></li>
+<li class="wiki-toc-link level-3"><a href="#4-4-knotenbedeutung">4.4 Knotenbedeutung</a></li>
+<li class="wiki-toc-link level-3"><a href="#4-5-alias-und-output-semantik">4.5 Alias- und Output-Semantik</a></li>
+<li class="wiki-toc-link level-3"><a href="#4-6-event-semantik">4.6 Event-Semantik</a></li>
+<li class="wiki-toc-link level-3"><a href="#4-7-state-semantik">4.7 State-Semantik</a></li>
+<li class="wiki-toc-link"><a href="#5-effektmodell">5. Effektmodell</a></li>
+<li class="wiki-toc-link level-3"><a href="#5-1-deterministische-teile">5.1 Deterministische Teile</a></li>
+<li class="wiki-toc-link level-3"><a href="#5-2-partiell-nichtdeterministische-teile">5.2 Partiell nichtdeterministische Teile</a></li>
+<li class="wiki-toc-link"><a href="#6-mathematische-sicht-auf-flows">6. Mathematische Sicht auf Flows</a></li>
+<li class="wiki-toc-link"><a href="#7-konsequenzen-fuer-design-und-papers">7. Konsequenzen fuer Design und Papers</a></li>
+<li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
+</ul></div>
+        </aside>
+      </div>
+      <footer class="wiki-footer">
+        <p><a href="Home.html">Home</a> | <a href="QuickStart.html">QuickStart</a> | <a href="Architecture.html">Architecture</a> | <a href="NovaCLI.html">NovaCLI</a> | <a href="DevelopmentGuide.html">DevelopmentGuide</a> | <a href="FAQ.html">FAQ</a></p>
+      </footer>
+    </main>
+  </div>
+  <script>
+    window.NOVA_WIKI = {
+      currentPage: "NovaSemantics.html",
+      searchIndex: "assets/search-index.json"
+    };
+  </script>
+  <script src="assets/wiki.js" defer></script>
+</body>
+</html>
