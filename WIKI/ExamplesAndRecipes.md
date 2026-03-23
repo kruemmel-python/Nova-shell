@@ -199,6 +199,47 @@ import "agents/research.ns"
 import "flows/radar.ns"
 ```
 
+### 10. CEO-Agenten als Bundle oder Lifecycle nutzen
+
+Einzelnen Agenten interaktiv nutzen:
+
+```powershell
+ai use lmstudio <modellname>
+ns.run .\examples\CEO_ns\RiskAgent.ns
+agent run RiskAgent "Die Nachfrage steigt, aber die GPU-Kapazitaet ist fast ausgeschoepft."
+```
+
+Den kompletten CEO-Lifecycle ausfuehren:
+
+```powershell
+ns.run .\examples\CEO_ns\CEO_Lifecycle.ns
+```
+
+Wenn du die Rollen, Unterschiede und den Tutorialpfad dazu brauchst:
+
+- [CEOAgentExamples](./CEOAgentExamples.md)
+
+### 11. Generalisiertes Decision-Lifecycle-Template nutzen
+
+Wenn du das CEO-Muster ohne CEO-Sprache als neutrale Blaupause willst:
+
+```powershell
+ns.graph .\examples\decision_lifecycle_template.ns
+ns.run .\examples\decision_lifecycle_template.ns
+```
+
+Das Template bildet explizit ab:
+
+- `input`
+- `transform`
+- `merge`
+- `decide`
+- `act`
+
+Details dazu:
+
+- [DecisionPatterns](./DecisionPatterns.md)
+
 Toolchain:
 
 ```python
@@ -233,6 +274,8 @@ Erwartung:
 - `agent list` zeigt danach die generierten Agenten direkt in der Shell
 - `agent run` arbeitet gegen die geladene `.ns`-Datei, nicht mehr gegen den Rohordner
 - vendor- oder servicegebundene Skills werden nicht als scheinbar lokale Nova-shell-Agenten erzeugt
+- fuer den kompletten Ablauf siehe [TutorialStandaloneSkillAgents](./TutorialStandaloneSkillAgents.md)
+- fuer Generatorarchitektur und Portabilitaet siehe [StandaloneSkillAgentsForDevelopers](./StandaloneSkillAgentsForDevelopers.md)
 
 ### 12. Backup und Restore
 

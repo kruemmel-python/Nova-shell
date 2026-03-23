@@ -31,9 +31,15 @@ Wenn du neu im Projekt bist:
 - [nsCreate](./nsCreate.md)
 - [nsReference](./nsReference.md)
 - [nsPatterns](./nsPatterns.md)
+- [NovaDecisionSystem](./NovaDecisionSystem.md)
+- [NovaSemantics](./NovaSemantics.md)
 - [NovaCLI](./NovaCLI.md)
 - [ExamplesAndRecipes](./ExamplesAndRecipes.md)
+- [DecisionPatterns](./DecisionPatterns.md)
+- [CEOAgentExamples](./CEOAgentExamples.md)
 - [StandaloneSkillAgents](./StandaloneSkillAgents.md)
+- [StandaloneSkillAgentsForDevelopers](./StandaloneSkillAgentsForDevelopers.md)
+- [TutorialStandaloneSkillAgents](./TutorialStandaloneSkillAgents.md)
 
 Wenn du die Architektur verstehen willst:
 
@@ -42,6 +48,9 @@ Wenn du die Architektur verstehen willst:
 - [ComponentModel](./ComponentModel.md)
 - [NovaLanguage](./NovaLanguage.md)
 - [NovaRuntime](./NovaRuntime.md)
+- [NovaDecisionSystem](./NovaDecisionSystem.md)
+- [NovaSemantics](./NovaSemantics.md)
+- [DecisionPatterns](./DecisionPatterns.md)
 - [NovaLens](./NovaLens.md)
 - [NovaAgents](./NovaAgents.md)
 - [NovaMesh](./NovaMesh.md)
@@ -100,7 +109,12 @@ Wenn du Klassen, Methoden, Endpunkte und Einstiegspunkte suchst:
 - [TutorialAtheriaALS](./TutorialAtheriaALS.md): residentes ALS aufsetzen, befragen, mit Voice betreiben und wieder stoppen
 - [Tutorials](./Tutorials.md): gefuehrte Workflows
 - [ExamplesAndRecipes](./ExamplesAndRecipes.md): kurze, konkrete Anwendungsrezepte
+- [NovaDecisionSystem](./NovaDecisionSystem.md): formale Definition eines Decision Systems als deklarativer, graphbasierter Laufzeitpfad
+- [DecisionPatterns](./DecisionPatterns.md): formale Muster fuer Bundle-, Flow-, Lifecycle- und Entscheidungsarchitekturen
+- [CEOAgentExamples](./CEOAgentExamples.md): modulare CEO-Agenten als einzelne Bundles und als zusammenhaengender Lifecycle
 - [StandaloneSkillAgents](./StandaloneSkillAgents.md): eigenstaendige `.ns`-Agenten aus lokalen Skill-Daten erzeugen und ohne Quellordner weiterverwenden
+- [StandaloneSkillAgentsForDevelopers](./StandaloneSkillAgentsForDevelopers.md): Generatorarchitektur, Portabilitaetsregeln und Debugging fuer Skill-Agenten
+- [TutorialStandaloneSkillAgents](./TutorialStandaloneSkillAgents.md): Schritt-fuer-Schritt vom Skill-Quellordner bis zum nutzbaren `agent run`
 
 ### Architektur
 

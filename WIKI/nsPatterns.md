@@ -7,6 +7,9 @@ Sie ist nicht die reine Syntaxreferenz, sondern ein Leitfaden fuer Struktur, Les
 
 Wenn du die Sprache erst lernen willst, beginne mit [nsCreate](./nsCreate.md).
 Wenn du nur Syntax nachschlagen willst, lies [nsReference](./nsReference.md).
+Wenn du ausfuehrbare Architektur- und Entscheidungsblaupausen suchst, lies auch [DecisionPatterns](./DecisionPatterns.md).
+Wenn du die formale AST-, Graph- und Ausfuehrungssemantik suchst, lies auch
+[NovaSemantics](./NovaSemantics.md).
 
 ## Gute Grundmuster
 

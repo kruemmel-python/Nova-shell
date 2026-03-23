@@ -112,6 +112,9 @@ Wichtig fuer deklarative Agenten:
 - `ns.run` laedt nicht nur Flows und Events, sondern exportiert deklarative `agent { ... }`-Bloecke jetzt direkt in die Shell-Agentenwelt
 - dadurch koennen Agenten aus einer geladenen `.ns`-Datei sofort ueber `agent list` und `agent run` genutzt werden
 - fuer generierte standalone Agenten aus Skill-Daten siehe [StandaloneSkillAgents](./StandaloneSkillAgents.md)
+- fuer die modularen Management-Agenten unter `examples/CEO_ns` siehe [CEOAgentExamples](./CEOAgentExamples.md)
+- fuer Architektur und Portabilitaetsregeln siehe [StandaloneSkillAgentsForDevelopers](./StandaloneSkillAgentsForDevelopers.md)
+- fuer den praktischen Ablauf siehe [TutorialStandaloneSkillAgents](./TutorialStandaloneSkillAgents.md)
 
 ## API
 
@@ -204,3 +207,6 @@ An Provider, Modell und Runtime-Kontext.
 - [AtheriaVoice](./AtheriaVoice.md)
 - [RuntimeMethodReference](./RuntimeMethodReference.md)
 - [ExamplesAndRecipes](./ExamplesAndRecipes.md)
+- [StandaloneSkillAgents](./StandaloneSkillAgents.md)
+- [StandaloneSkillAgentsForDevelopers](./StandaloneSkillAgentsForDevelopers.md)
+- [TutorialStandaloneSkillAgents](./TutorialStandaloneSkillAgents.md)

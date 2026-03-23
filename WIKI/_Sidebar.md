@@ -11,6 +11,7 @@
 - [nsCreate](./nsCreate.md)
 - [nsReference](./nsReference.md)
 - [nsPatterns](./nsPatterns.md)
+- [NovaSemantics](./NovaSemantics.md)
 
 ## Nutzung
 
@@ -24,7 +25,10 @@
 - [LensRecipes](./LensRecipes.md)
 - [APIReference](./APIReference.md)
 - [ExamplesAndRecipes](./ExamplesAndRecipes.md)
+- [DecisionPatterns](./DecisionPatterns.md)
+- [CEOAgentExamples](./CEOAgentExamples.md)
 - [StandaloneSkillAgents](./StandaloneSkillAgents.md)
+- [StandaloneSkillAgentsForDevelopers](./StandaloneSkillAgentsForDevelopers.md)
 - [NSBlobGenerator](./NSBlobGenerator.md)
 - [NovaSynthPredictiveEngineShifting](./NovaSynthPredictiveEngineShifting.md)
 - [ZeroCopyFederatedLearningMesh](./ZeroCopyFederatedLearningMesh.md)
@@ -46,6 +50,7 @@
 - [TutorialPredictiveFederatedCoevolution](./TutorialPredictiveFederatedCoevolution.md)
 - [TutorialAtheriaALS](./TutorialAtheriaALS.md)
 - [TutorialProjectWatchMonitor](./TutorialProjectWatchMonitor.md)
+- [TutorialStandaloneSkillAgents](./TutorialStandaloneSkillAgents.md)
 
 ## Architektur
 
@@ -58,7 +63,10 @@
 - [nsCreate](./nsCreate.md)
 - [nsReference](./nsReference.md)
 - [nsPatterns](./nsPatterns.md)
+- [NovaDecisionSystem](./NovaDecisionSystem.md)
+- [NovaSemantics](./NovaSemantics.md)
 - [NovaRuntime](./NovaRuntime.md)
+- [DecisionPatterns](./DecisionPatterns.md)
 - [NovaLens](./NovaLens.md)
 - [NovaGraphEngine](./NovaGraphEngine.md)
 - [NovaPlanner](./NovaPlanner.md)
@@ -72,7 +80,10 @@
 ## Plattformfunktionen
 
 - [NovaAgents](./NovaAgents.md)
+- [DecisionPatterns](./DecisionPatterns.md)
+- [CEOAgentExamples](./CEOAgentExamples.md)
 - [StandaloneSkillAgents](./StandaloneSkillAgents.md)
+- [StandaloneSkillAgentsForDevelopers](./StandaloneSkillAgentsForDevelopers.md)
 - [NovaMesh](./NovaMesh.md)
 - [NSBlobGenerator](./NSBlobGenerator.md)
 - [NovaSynthPredictiveEngineShifting](./NovaSynthPredictiveEngineShifting.md)

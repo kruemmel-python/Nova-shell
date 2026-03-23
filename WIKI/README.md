@@ -16,6 +16,8 @@ Sie beschreibt das Projekt aus sich selbst heraus und ist nicht als Verweissamml
 - [nsCreate](./nsCreate.md)
 - [nsReference](./nsReference.md)
 - [nsPatterns](./nsPatterns.md)
+- [NovaDecisionSystem](./NovaDecisionSystem.md)
+- [NovaSemantics](./NovaSemantics.md)
 
 ## Kernbereiche
 
@@ -32,6 +34,8 @@ Sie beschreibt das Projekt aus sich selbst heraus und ist nicht als Verweissamml
 - [nsReference](./nsReference.md)
 - [nsPatterns](./nsPatterns.md)
 - [NovaRuntime](./NovaRuntime.md)
+- [NovaDecisionSystem](./NovaDecisionSystem.md)
+- [NovaSemantics](./NovaSemantics.md)
 - [NovaAgents](./NovaAgents.md)
 - [NovaMesh](./NovaMesh.md)
 - [NSBlobGenerator](./NSBlobGenerator.md)
@@ -44,7 +48,11 @@ Sie beschreibt das Projekt aus sich selbst heraus und ist nicht als Verweissamml
 - [NovaMemory](./NovaMemory.md)
 - [NovaTools](./NovaTools.md)
 - [ExamplesAndRecipes](./ExamplesAndRecipes.md)
+- [DecisionPatterns](./DecisionPatterns.md)
+- [CEOAgentExamples](./CEOAgentExamples.md)
 - [StandaloneSkillAgents](./StandaloneSkillAgents.md)
+- [StandaloneSkillAgentsForDevelopers](./StandaloneSkillAgentsForDevelopers.md)
+- [TutorialStandaloneSkillAgents](./TutorialStandaloneSkillAgents.md)
 - [WatchMonitor](./WatchMonitor.md)
 - [SystemGuardMonitor](./SystemGuardMonitor.md)
 - [WatchMonitorQuickStart](./WatchMonitorQuickStart.md)
@@ -89,8 +97,10 @@ Wenn du neu bist:
 7. [NovaCLI](./NovaCLI.md)
 8. [ExamplesAndRecipes](./ExamplesAndRecipes.md)
 9. [StandaloneSkillAgents](./StandaloneSkillAgents.md)
-10. [WatchMonitorQuickStart](./WatchMonitorQuickStart.md)
-11. [SystemGuardMonitor](./SystemGuardMonitor.md)
+10. [StandaloneSkillAgentsForDevelopers](./StandaloneSkillAgentsForDevelopers.md)
+11. [TutorialStandaloneSkillAgents](./TutorialStandaloneSkillAgents.md)
+12. [WatchMonitorQuickStart](./WatchMonitorQuickStart.md)
+13. [SystemGuardMonitor](./SystemGuardMonitor.md)
 
 ### Technik und Architektur
 
