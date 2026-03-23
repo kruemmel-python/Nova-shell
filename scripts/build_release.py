@@ -449,9 +449,16 @@ def enable_fault_dumps() -> None:
         _FAULT_HANDLE.write(f"{timestamp} faulthandler enabled\n")
         _FAULT_HANDLE.flush()
         faulthandler.enable(file=_FAULT_HANDLE, all_threads=True)
-        faulthandler.dump_traceback_later(30, repeat=True, file=_FAULT_HANDLE)
+        # Periodic faulthandler dumps have triggered native access violations
+        # on Windows during large filesystem staging operations.
+        if periodic_fault_dumps_enabled():
+            faulthandler.dump_traceback_later(30, repeat=True, file=_FAULT_HANDLE)
     except Exception:
         _FAULT_HANDLE = None
+
+
+def periodic_fault_dumps_enabled() -> bool:
+    return os.name != "nt"
 
 
 def run(
@@ -563,7 +570,7 @@ def _relative_archive_name(path: Path, root: Path) -> str:
 def archive_bundle(bundle_dir: Path, archive_base: Path, *, source_date_epoch: int | None) -> Path:
     members = sorted(path for path in bundle_dir.rglob("*"))
     if os.name == "nt":
-        archive_path = archive_base.with_suffix(".zip")
+        archive_path = archive_base.parent / f"{archive_base.name}.zip"
         tar_executable = shutil.which("tar.exe") or shutil.which("tar")
         if tar_executable:
             with contextlib.suppress(FileNotFoundError):
@@ -602,7 +609,7 @@ def archive_bundle(bundle_dir: Path, archive_base: Path, *, source_date_epoch: i
                         shutil.copyfileobj(handle, archive_handle, length=1024 * 1024)
         return archive_path
 
-    archive_path = archive_base.with_suffix(".tar.gz")
+    archive_path = archive_base.parent / f"{archive_base.name}.tar.gz"
     with tarfile.open(archive_path, "w:gz", format=tarfile.PAX_FORMAT) as tf:
         for path in members:
             rel_name = _relative_archive_name(path, bundle_dir.parent)

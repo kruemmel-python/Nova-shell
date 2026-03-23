@@ -45,6 +45,19 @@ from multiprocessing import shared_memory
 from pathlib import Path
 from typing import Any, Callable, Iterable
 
+
+def _configure_frozen_windows_runtime_env() -> None:
+    if not getattr(sys, "frozen", False):
+        return
+    if not (os.name == "nt" or sys.platform.startswith("win")):
+        return
+    # Keep BLAS/OpenMP worker counts conservative in the frozen Windows bundle.
+    for key in ("OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS", "MKL_NUM_THREADS", "NUMEXPR_NUM_THREADS"):
+        os.environ.setdefault(key, "1")
+
+
+_configure_frozen_windows_runtime_env()
+
 from nova import NovaRuntime as DeclarativeNovaRuntime, WorkerNode
 from nova.agents.coevolution import MyceliaAtheriaCoEvolutionLab
 from nova.agents.skill_examples import generate_examples as generate_skill_examples, inspect_skills as inspect_skill_examples
@@ -65,7 +78,7 @@ except ImportError:  # pragma: no cover - platform dependent
     readline = None
 
 
-__version__ = "0.8.28"
+__version__ = "0.8.29"
 SIDELOAD_PACKAGE_DIR = "vendor-py"
 RUNTIME_CONFIG_FILE = "nova-shell-runtime.json"
 BRIEFING_REPORT_FILES: tuple[tuple[str, str, str], ...] = (
@@ -6391,11 +6404,69 @@ class NovaShell:
                         "qualified_agents": [f"{source_stem}.{name}" for name in agent_names],
                     }
                 else:
-                    payload = result.to_dict()
+                    payload = self._compact_ceo_lifecycle_payload(source_name, flows, runtime.context.outputs if runtime.context else {}) or result.to_dict()
 
             return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
         except Exception as exc:
             return CommandResult(output="", error=str(exc))
+
+    def _compact_ceo_lifecycle_payload(self, source_name: str, flows: list[Any], outputs: dict[str, Any]) -> dict[str, Any] | None:
+        flow_records = []
+        for flow in flows:
+            flow_name = str(getattr(flow, "flow", "") or "")
+            if not flow_name:
+                continue
+            flow_records.append(
+                {
+                    "flow": flow_name,
+                    "trigger_event": getattr(flow, "trigger_event", None),
+                    "node_count": len(list(getattr(flow, "nodes", []) or [])),
+                }
+            )
+        if "ceo_lifecycle" not in {item["flow"] for item in flow_records}:
+            return None
+        if not isinstance(outputs, dict):
+            return None
+        if not all(key in outputs for key in ("decision_packet", "execution_plan", "artifact_paths")):
+            return None
+
+        decision_packet = dict(outputs.get("decision_packet") or {})
+        execution_plan = dict(outputs.get("execution_plan") or {})
+        outcome_packet = dict(outputs.get("outcome_packet") or {})
+        narrative_packet = dict(outputs.get("narrative_packet") or {})
+        artifact_paths = dict(outputs.get("artifact_paths") or {})
+        market_event = dict(outputs.get("market_event") or {})
+        capacity_event = dict(outputs.get("capacity_event") or {})
+        capital_event = dict(outputs.get("capital_event") or {})
+        ceo_report = dict(outputs.get("ceo_report") or {})
+        final_state = dict(outputs.get("final_state") or {})
+        decisions_history = list(final_state.get("decisions_history") or [])
+        signal_count = 0
+        signals_payload = ceo_report.get("signals")
+        if isinstance(signals_payload, dict):
+            signal_count = _safe_int(signals_payload.get("count"), 0)
+        if signal_count <= 0:
+            signal_count = len(list(outputs.get("unified_signals") or []))
+
+        return {
+            "source_name": source_name,
+            "mode": "ceo_lifecycle",
+            "loaded": True,
+            "flow": "ceo_lifecycle",
+            "flows": flow_records,
+            "decision_packet": decision_packet,
+            "execution_plan": execution_plan,
+            "outcome_packet": outcome_packet,
+            "narrative_packet": narrative_packet,
+            "market_event": market_event,
+            "capacity_event": capacity_event,
+            "capital_event": capital_event,
+            "artifact_paths": artifact_paths,
+            "report_headline": str(ceo_report.get("headline") or ""),
+            "history_length": len(decisions_history),
+            "signal_count": signal_count,
+            "status_command": "ns.status",
+        }
 
     def _register_declarative_mesh_workers(self, runtime: DeclarativeNovaRuntime) -> None:
         if runtime.context is None:

@@ -9,6 +9,15 @@ import tempfile
 from pathlib import Path
 
 
+def smoke_runtime_env(extra: dict[str, str] | None = None) -> dict[str, str]:
+    env = os.environ.copy()
+    for key in ("OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS", "MKL_NUM_THREADS", "NUMEXPR_NUM_THREADS"):
+        env.setdefault(key, "1")
+    if extra:
+        env.update(extra)
+    return env
+
+
 def run_check(command: list[str], *, cwd: Path, expected_stdout: str | None = None, env: dict[str, str] | None = None) -> str:
     completed = subprocess.run(command, capture_output=True, text=True, cwd=str(cwd), env=env)
     if completed.returncode != 0:
@@ -64,9 +73,11 @@ def main(argv: list[str] | None = None) -> int:
     if not executable.exists():
         raise SystemExit(f"standalone executable not found: {executable}")
 
-    run_check([str(executable), "--version"], cwd=executable.parent)
-    run_check([str(executable), "--no-plugins", "-c", "py 1 + 1"], cwd=executable.parent, expected_stdout="2")
-    doctor_stdout = run_check([str(executable), "--no-plugins", "-c", "doctor json"], cwd=executable.parent)
+    base_env = smoke_runtime_env()
+
+    run_check([str(executable), "--version"], cwd=executable.parent, env=base_env)
+    run_check([str(executable), "--no-plugins", "-c", "py 1 + 1"], cwd=executable.parent, expected_stdout="2", env=base_env)
+    doctor_stdout = run_check([str(executable), "--no-plugins", "-c", "doctor json"], cwd=executable.parent, env=base_env)
     doctor_payload = json.loads(doctor_stdout)
     if args.profile == "enterprise" and not doctor_payload.get("sandbox_default"):
         raise SystemExit("doctor sandbox_default check failed for enterprise profile")
@@ -87,9 +98,9 @@ def main(argv: list[str] | None = None) -> int:
         if not bool(atheria_payload.get("available")):
             raise SystemExit("doctor atheria availability check failed for enterprise profile")
     if bool(atheria_payload.get("available")):
-        run_check([str(executable), "--no-plugins", "-c", "atheria init"], cwd=executable.parent)
+        run_check([str(executable), "--no-plugins", "-c", "atheria init"], cwd=executable.parent, env=base_env)
         with tempfile.TemporaryDirectory(dir=str(executable.parent)) as tmp:
-            sensor_env = os.environ.copy()
+            sensor_env = smoke_runtime_env()
             sensor_env["INDUSTRY_TREND_STATE"] = str(Path(tmp) / "trend-state.json")
             payload_path = Path(tmp) / "trend-payload.json"
             payload_path.write_text(
@@ -133,7 +144,7 @@ def main(argv: list[str] | None = None) -> int:
                 raise SystemExit(
                     f"trend sensor smoke test returned unexpected forecast_direction: {metadata.get('forecast_direction')!r}"
                 )
-    wiki_stdout = run_check([str(executable), "--no-plugins", "-c", "wiki build"], cwd=executable.parent)
+    wiki_stdout = run_check([str(executable), "--no-plugins", "-c", "wiki build"], cwd=executable.parent, env=base_env)
     wiki_payload = json.loads(wiki_stdout)
     if int(wiki_payload.get("page_count") or 0) <= 0:
         raise SystemExit("wiki build did not generate any pages")
@@ -143,7 +154,7 @@ def main(argv: list[str] | None = None) -> int:
     if not (wiki_output_dir / "Home.html").exists() and not (wiki_output_dir / "index.html").exists():
         raise SystemExit("wiki build did not produce a home page")
     if sys.platform.startswith("win"):
-        sandbox_env = os.environ.copy()
+        sandbox_env = smoke_runtime_env()
         temp_root = executable.parent / ".smoke-temp"
         temp_root.mkdir(parents=True, exist_ok=True)
         with tempfile.TemporaryDirectory(dir=str(temp_root)) as tmp:

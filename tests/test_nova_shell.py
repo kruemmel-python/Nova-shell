@@ -3392,21 +3392,18 @@ agent helper {
                 self.assertIsNone(result.error, f"{target.name}: {result.error}")
                 payload = json.loads(result.output)
                 if target.name == "CEO_Lifecycle.ns":
-                    self.assertEqual(payload["flows"][0]["flow"], "ceo_lifecycle")
-                    self.assertIn("execution_plan", payload["context"]["outputs"])
-                    self.assertIsInstance(payload["context"]["outputs"]["execution_plan"], dict)
-                    self.assertIn("decision_packet", payload["context"]["outputs"])
-                    self.assertIsInstance(payload["context"]["outputs"]["decision_packet"], dict)
-                    self.assertIn("ceo_report", payload["context"]["outputs"])
-                    self.assertIsInstance(payload["context"]["outputs"]["ceo_report"], dict)
-                    self.assertIn("final_state", payload["context"]["outputs"])
-                    self.assertIsInstance(payload["context"]["outputs"]["final_state"], dict)
-                    self.assertIn("decisions_history", payload["context"]["outputs"]["final_state"])
-                    self.assertGreaterEqual(len(payload["context"]["outputs"]["final_state"]["decisions_history"]), 1)
-                    self.assertIn("artifact_paths", payload["context"]["outputs"])
-                    self.assertIsInstance(payload["context"]["outputs"]["artifact_paths"], dict)
-                    self.assertTrue(Path(payload["context"]["outputs"]["artifact_paths"]["report_path"]).is_file())
-                    self.assertTrue(Path(payload["context"]["outputs"]["artifact_paths"]["html_path"]).is_file())
+                    self.assertEqual(payload["mode"], "ceo_lifecycle")
+                    self.assertEqual(payload["flow"], "ceo_lifecycle")
+                    self.assertIn("execution_plan", payload)
+                    self.assertIsInstance(payload["execution_plan"], dict)
+                    self.assertIn("decision_packet", payload)
+                    self.assertIsInstance(payload["decision_packet"], dict)
+                    self.assertIn("artifact_paths", payload)
+                    self.assertIsInstance(payload["artifact_paths"], dict)
+                    self.assertTrue(Path(payload["artifact_paths"]["report_path"]).is_file())
+                    self.assertTrue(Path(payload["artifact_paths"]["html_path"]).is_file())
+                    self.assertGreaterEqual(int(payload["history_length"]), 1)
+                    self.assertEqual(payload["status_command"], "ns.status")
                 else:
                     self.assertEqual(payload["mode"], "agent_bundle")
                     self.assertEqual(payload["agent_count"], 1)
@@ -3468,10 +3465,10 @@ agent helper {
             try:
                 self.assertIsNone(result.error)
                 payload = json.loads(result.output)
-                decision = payload["context"]["outputs"]["decision_packet"]
+                decision = payload["decision_packet"]
                 self.assertEqual(decision["decision"], "revise")
                 self.assertTrue(decision["selected_option"]["blocks"])
-                capital_event = payload["context"]["outputs"]["capital_event"]
+                capital_event = payload["capital_event"]
                 self.assertTrue(capital_event["active"])
             finally:
                 with suppress(Exception):
@@ -3489,7 +3486,7 @@ agent helper {
                 try:
                     self.assertIsNone(result.error)
                     payload = json.loads(result.output)
-                    decision = dict(payload["context"]["outputs"]["decision_packet"])
+                    decision = dict(payload["decision_packet"])
                     selected = dict(decision.get("selected_option") or {})
                     decisions.append(
                         {
@@ -3529,9 +3526,32 @@ agent helper {
             try:
                 self.assertIsNone(result.error)
                 payload = json.loads(result.output)
-                decision = payload["context"]["outputs"]["decision_packet"]
+                decision = payload["decision_packet"]
                 self.assertEqual(decision["decision"], "revise")
                 self.assertIn("Kapitalgrenze ueberschritten", decision["selected_option"]["blocks"])
+            finally:
+                with suppress(Exception):
+                    if self.shell._declarative_nova is not None:
+                        self.shell._declarative_nova.close()
+                        self.shell._declarative_nova = None
+
+    def test_ceo_lifecycle_compact_summary_keeps_full_runtime_in_ns_status(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self._copy_ceo_runtime_fixture(root)
+            result = self.shell.route(f'ns.run "{root / "CEO_Lifecycle.ns"}"')
+            try:
+                self.assertIsNone(result.error)
+                payload = json.loads(result.output)
+                self.assertEqual(payload["mode"], "ceo_lifecycle")
+                self.assertNotIn("context", payload)
+
+                status_result = self.shell.route("ns.status")
+                self.assertIsNone(status_result.error)
+                status_payload = json.loads(status_result.output)
+                self.assertIn("decision_packet", status_payload["context"]["outputs"])
+                self.assertIn("ceo_report", status_payload["context"]["outputs"])
+                self.assertIn("final_state", status_payload["context"]["outputs"])
             finally:
                 with suppress(Exception):
                     if self.shell._declarative_nova is not None:

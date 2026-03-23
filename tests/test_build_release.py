@@ -8,7 +8,7 @@ import unittest
 import zipfile
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import ANY, patch
 
 
 SCRIPT_PATH = Path(__file__).resolve().parents[1] / "scripts" / "build_release.py"
@@ -17,6 +17,13 @@ build_release = importlib.util.module_from_spec(SPEC)
 assert SPEC.loader is not None
 sys.modules[SPEC.name] = build_release
 SPEC.loader.exec_module(build_release)
+
+SMOKE_SCRIPT_PATH = Path(__file__).resolve().parents[1] / "scripts" / "smoke_test_release.py"
+SMOKE_SPEC = importlib.util.spec_from_file_location("smoke_test_release_module", SMOKE_SCRIPT_PATH)
+smoke_test_release = importlib.util.module_from_spec(SMOKE_SPEC)
+assert SMOKE_SPEC.loader is not None
+sys.modules[SMOKE_SPEC.name] = smoke_test_release
+SMOKE_SPEC.loader.exec_module(smoke_test_release)
 
 
 def _cleanup_tempdir(path: Path, *, attempts: int = 8, delay_seconds: float = 0.1) -> None:
@@ -33,6 +40,31 @@ def _cleanup_tempdir(path: Path, *, attempts: int = 8, delay_seconds: float = 0.
 
 
 class BuildReleaseTests(unittest.TestCase):
+    def setUp(self) -> None:
+        build_release._FAULT_HANDLE = None
+
+    def tearDown(self) -> None:
+        handle = getattr(build_release, "_FAULT_HANDLE", None)
+        if handle is not None:
+            handle.close()
+            build_release._FAULT_HANDLE = None
+
+    def test_smoke_runtime_env_limits_blas_threads_by_default(self) -> None:
+        with patch.dict(os.environ, {}, clear=True):
+            env = smoke_test_release.smoke_runtime_env()
+
+        self.assertEqual(env["OPENBLAS_NUM_THREADS"], "1")
+        self.assertEqual(env["OMP_NUM_THREADS"], "1")
+        self.assertEqual(env["MKL_NUM_THREADS"], "1")
+        self.assertEqual(env["NUMEXPR_NUM_THREADS"], "1")
+
+    def test_smoke_runtime_env_preserves_explicit_thread_settings(self) -> None:
+        with patch.dict(os.environ, {"OPENBLAS_NUM_THREADS": "4"}, clear=True):
+            env = smoke_test_release.smoke_runtime_env()
+
+        self.assertEqual(env["OPENBLAS_NUM_THREADS"], "4")
+        self.assertEqual(env["OMP_NUM_THREADS"], "1")
+
     def test_default_source_date_epoch_reads_environment(self) -> None:
         with patch.dict(os.environ, {"SOURCE_DATE_EPOCH": "1700000000"}):
             self.assertEqual(build_release.default_source_date_epoch(), 1700000000)
@@ -41,6 +73,48 @@ class BuildReleaseTests(unittest.TestCase):
         with patch.dict(os.environ, {"SOURCE_DATE_EPOCH": "invalid"}):
             with self.assertRaises(SystemExit):
                 build_release.default_source_date_epoch()
+
+    def test_enable_fault_dumps_skips_periodic_dump_on_windows(self) -> None:
+        tmp = Path(tempfile.mkdtemp())
+        try:
+            fault_path = tmp / "fault.log"
+            with (
+                patch.dict(os.environ, {build_release.FAULT_FILE_ENV: str(fault_path)}, clear=True),
+                patch.object(build_release, "periodic_fault_dumps_enabled", return_value=False),
+                patch.object(build_release.faulthandler, "enable") as enable_mock,
+                patch.object(build_release.faulthandler, "dump_traceback_later") as dump_mock,
+            ):
+                build_release.enable_fault_dumps()
+        finally:
+            handle = getattr(build_release, "_FAULT_HANDLE", None)
+            if handle is not None:
+                handle.close()
+                build_release._FAULT_HANDLE = None
+            _cleanup_tempdir(tmp)
+
+        enable_mock.assert_called_once()
+        dump_mock.assert_not_called()
+
+    def test_enable_fault_dumps_enables_periodic_dump_off_windows(self) -> None:
+        tmp = Path(tempfile.mkdtemp())
+        try:
+            fault_path = tmp / "fault.log"
+            with (
+                patch.dict(os.environ, {build_release.FAULT_FILE_ENV: str(fault_path)}, clear=True),
+                patch.object(build_release, "periodic_fault_dumps_enabled", return_value=True),
+                patch.object(build_release.faulthandler, "enable") as enable_mock,
+                patch.object(build_release.faulthandler, "dump_traceback_later") as dump_mock,
+            ):
+                build_release.enable_fault_dumps()
+        finally:
+            handle = getattr(build_release, "_FAULT_HANDLE", None)
+            if handle is not None:
+                handle.close()
+                build_release._FAULT_HANDLE = None
+            _cleanup_tempdir(tmp)
+
+        enable_mock.assert_called_once()
+        dump_mock.assert_called_once_with(30, repeat=True, file=ANY)
 
     def test_write_subject_checksums_writes_expected_lines(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -109,6 +183,40 @@ class BuildReleaseTests(unittest.TestCase):
             self.assertEqual(archive_path, created_archive)
             self.assertTrue(created_archive.is_file())
             run_mock.assert_called_once()
+
+    def test_archive_bundle_preserves_dotted_archive_base_name_on_windows(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            bundle_dir = root / "standalone" / "nova_shell.dist"
+            bundle_dir.mkdir(parents=True)
+            (bundle_dir / "nova_shell.exe").write_text("binary", encoding="utf-8")
+
+            with patch.object(build_release.os, "name", "nt"), patch.object(build_release.shutil, "which", return_value=None):
+                archive_path = build_release.archive_bundle(
+                    bundle_dir,
+                    root / "nova-shell-0.8.29-windows-amd64-core",
+                    source_date_epoch=None,
+                )
+
+            self.assertEqual(archive_path.name, "nova-shell-0.8.29-windows-amd64-core.zip")
+            self.assertTrue(archive_path.is_file())
+
+    def test_archive_bundle_preserves_dotted_archive_base_name_on_posix(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            bundle_dir = root / "standalone" / "nova_shell.dist"
+            bundle_dir.mkdir(parents=True)
+            (bundle_dir / "nova_shell").write_text("binary", encoding="utf-8")
+
+            with patch.object(build_release.os, "name", "posix"):
+                archive_path = build_release.archive_bundle(
+                    bundle_dir,
+                    root / "nova-shell-0.8.29-linux-x86_64-core",
+                    source_date_epoch=None,
+                )
+
+            self.assertEqual(archive_path.name, "nova-shell-0.8.29-linux-x86_64-core.tar.gz")
+            self.assertTrue(archive_path.is_file())
 
     def test_safe_copy2_file_copies_contents(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
