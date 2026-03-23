@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="Nova-shell wiki builder">
+  <title>Serverstart und Bootstrap | Nova-shell Wiki</title>
+  <link rel="stylesheet" href="assets/wiki.css">
+</head>
+<body>
+  <div class="wiki-shell">
+    <aside class="wiki-sidebar" data-sidebar>
+      <div class="wiki-brand">
+        <a href="Home.html">Nova-shell Wiki</a>
+        <p>HTML documentation for the Nova-shell platform.</p>
+      </div>
+      <label class="wiki-search">
+        <span>Search</span>
+        <input type="search" placeholder="Find pages, classes, methods..." data-wiki-search>
+      </label>
+      <div class="wiki-search-results" data-search-results></div>
+      <nav class="wiki-nav">
+        <section class="wiki-nav-section">
+<h2>Pages</h2>
+<ul>
+<li><a class="wiki-nav-link active" data-nav-href="01_Serverstart_und_Bootstrap.html" href="01_Serverstart_und_Bootstrap.html">01_Serverstart_und_Bootstrap</a></li>
+<li><a class="wiki-nav-link" data-nav-href="02_Paedagogische_Begleitung.html" href="02_Paedagogische_Begleitung.html">02_Paedagogische_Begleitung</a></li>
+<li><a class="wiki-nav-link" data-nav-href="03_Rollen_Rechte_und_Moderation.html" href="03_Rollen_Rechte_und_Moderation.html">03_Rollen_Rechte_und_Moderation</a></li>
+<li><a class="wiki-nav-link" data-nav-href="04_Systembetrieb_Sicherheit_und_Workspaces.html" href="04_Systembetrieb_Sicherheit_und_Workspaces.html">04_Systembetrieb_Sicherheit_und_Workspaces</a></li>
+<li><a class="wiki-nav-link" data-nav-href="05_Playground_Reviews_und_Deployments.html" href="05_Playground_Reviews_und_Deployments.html">05_Playground_Reviews_und_Deployments</a></li>
+<li><a class="wiki-nav-link" data-nav-href="README.html" href="README.html">README</a></li>
+</ul></section>
+      </nav>
+    </aside>
+    <main class="wiki-main">
+      <header class="wiki-header">
+        <button type="button" class="wiki-nav-toggle" data-nav-toggle>Menu</button>
+        <div class="wiki-header-copy">
+          <span class="wiki-kicker">Nova-shell Documentation</span>
+          <h1>Serverstart und Bootstrap</h1>
+          <p>Source: 01_Serverstart_und_Bootstrap.md</p>
+        </div>
+      </header>
+      <div class="wiki-layout">
+        <article class="wiki-article">
+          <h1 id="serverstart-und-bootstrap">Serverstart und Bootstrap</h1>
+<p>Dieses Dokument beschreibt den professionellen Erststart und den laufenden Startbetrieb des Nova School Servers auf Windows und Linux.</p>
+<h2 id="voraussetzungen">Voraussetzungen</h2>
+<ul>
+<li>Python <code>&gt;= 3.12</code></li>
+<li>Schreibzugriff auf <code>D:\Nova_school_server</code></li>
+<li>Optional für interaktive PTY-Sessions auf Windows: Abhängigkeiten aus <code>requirements.txt</code></li>
+<li>Optional für harte Laufzeitisolierung: Docker oder Podman</li>
+<li>Optional für KI-Hilfe: laufender LM-Studio-Server</li>
+</ul>
+<h2 id="startbefehle">Startbefehle</h2>
+<h3 id="windows">Windows</h3>
+<pre><code class="language-powershell">cd D:\Nova_school_server
+.\start_server.ps1</code></pre>
+<h3 id="linux">Linux</h3>
+<pre><code class="language-bash">cd /pfad/zu/Nova_school_server
+./start_server.sh</code></pre>
+<h2 id="standard-endpunkt">Standard-Endpunkt</h2>
+<ul>
+<li>Host: <code>127.0.0.1</code></li>
+<li>Port: <code>8877</code></li>
+<li>Standard-URL: <code>http://127.0.0.1:8877</code></li>
+</ul>
+<h2 id="was-beim-ersten-start-automatisch-passiert">Was beim ersten Start automatisch passiert</h2>
+<p>Beim Bootstrap werden zentrale Datenstrukturen, Inhalte und Demo-Daten angelegt:</p>
+<ul>
+<li>Datenordner unter <code>data/</code></li>
+<li>Hauptdatenbank <code>data/school.db</code></li>
+<li>Offline-Dokumentation unter <code>data/docs/</code></li>
+<li>Profilordner für Benutzer und Gruppen</li>
+<li>Demo-Benutzer</li>
+<li>Demo-Gruppe</li>
+<li>Demo-Projekte</li>
+</ul>
+<h2 id="demo-zug-nge">Demo-Zugänge</h2>
+<table><thead><tr>
+<th>Rolle</th>
+<th>Benutzername</th>
+<th>Passwort</th>
+</tr></thead><tbody>
+<tr>
+<td>Admin</td>
+<td><code>admin</code></td>
+<td><code>NovaSchool!admin</code></td>
+</tr>
+<tr>
+<td>Lehrkraft</td>
+<td><code>teacher</code></td>
+<td><code>NovaSchool!teacher</code></td>
+</tr>
+<tr>
+<td>Schüler</td>
+<td><code>student</code></td>
+<td><code>NovaSchool!student</code></td>
+</tr>
+</tbody></table>
+<h2 id="standard-demodaten">Standard-Demodaten</h2>
+<ul>
+<li>Gruppe: <code>class-1a</code></li>
+<li>Persönliches Schülerprojekt: <code>Python Labor</code></li>
+<li>Gruppenprojekt: <code>Web Labor</code></li>
+<li>Lehrkraftprojekt: <code>Distributed Playground</code></li>
+</ul>
+<h2 id="betriebsrelevante-einstellungen">Betriebsrelevante Einstellungen</h2>
+<p>Die Laufzeitkonfiguration kommt aus:</p>
+<ul>
+<li><code>server_config.json</code> im Projektwurzelverzeichnis</li>
+<li>Umgebungsvariablen</li>
+<li>Standardwerten aus dem Server</li>
+</ul>
+<p>Wichtige Parameter:</p>
+<table><thead><tr>
+<th>Schlüssel</th>
+<th>Standardwert</th>
+<th>Bedeutung</th>
+</tr></thead><tbody>
+<tr>
+<td><code>host</code></td>
+<td><code>127.0.0.1</code></td>
+<td>Bind-Adresse des HTTP-Servers</td>
+</tr>
+<tr>
+<td><code>port</code></td>
+<td><code>8877</code></td>
+<td>Port der Weboberfläche</td>
+</tr>
+<tr>
+<td><code>session_ttl_seconds</code></td>
+<td><code>43200</code></td>
+<td>Sitzungsdauer in Sekunden</td>
+</tr>
+<tr>
+<td><code>run_timeout_seconds</code></td>
+<td><code>20</code></td>
+<td>Timeout für einfache Dateiläufe</td>
+</tr>
+<tr>
+<td><code>live_run_timeout_seconds</code></td>
+<td><code>300</code></td>
+<td>Timeout für Live- und PTY-Sessions</td>
+</tr>
+<tr>
+<td><code>tenant_id</code></td>
+<td><code>nova-school</code></td>
+<td>Tenant-Kontext für Security Plane und Quoten</td>
+</tr>
+<tr>
+<td><code>school_name</code></td>
+<td><code>Nova School Server</code></td>
+<td>Anzeigename in der Oberfläche</td>
+</tr>
+<tr>
+<td><code>nova_shell_path</code></td>
+<td><code>H:\Nova-shell-main</code></td>
+<td>Read-only-Referenz auf NovaShell-Bausteine</td>
+</tr>
+</tbody></table>
+<h2 id="lm-studio-einbinden">LM Studio einbinden</h2>
+<p>Standardmäßig wird Folgendes vorbelegt:</p>
+<ul>
+<li>Base URL: <code>http://127.0.0.1:1234/v1</code></li>
+<li>Modellname: leer, bis aktiv gesetzt</li>
+</ul>
+<p>Empfehlung:</p>
+<ul>
+<li>LM Studio lokal auf dem Server hosten</li>
+<li>Base URL und Modell über das Admin-Panel speichern</li>
+<li>KI-Zugriff nur den Gruppen und Benutzern freigeben, die ihn didaktisch benötigen</li>
+</ul>
+<h2 id="runner-backends">Runner-Backends</h2>
+<p>Nova School kennt zwei Betriebsarten:</p>
+<table><thead><tr>
+<th>Backend</th>
+<th>Beschreibung</th>
+<th>Empfehlung</th>
+</tr></thead><tbody>
+<tr>
+<td><code>process</code></td>
+<td>Direkter Host-Prozess-Runner</td>
+<td>Für lokale Entwicklung und Debugging</td>
+</tr>
+<tr>
+<td><code>container</code></td>
+<td>Lauf in Docker oder Podman</td>
+<td>Für Unterrichtsbetrieb und harte Isolation</td>
+</tr>
+</tbody></table>
+<h2 id="empfohlener-goldstandard-betrieb">Empfohlener Goldstandard-Betrieb</h2>
+<p>Für den schulischen Produktionseinsatz wird empfohlen:</p>
+<ol>
+<li><code>runner_backend = container</code></li>
+<li><code>container_runtime = docker</code> oder <code>podman</code></li>
+<li>Container-Images je Sprache gepflegt halten</li>
+<li><code>web.access</code> nur gezielt freigeben</li>
+<li>LM Studio lokal hosten und nicht offen ins Internet exponieren</li>
+</ol>
+<h2 id="typische-erstpr-fung-nach-dem-start">Typische Erstprüfung nach dem Start</h2>
+<ol>
+<li>Mit <code>admin</code> anmelden.</li>
+<li>Im Admin-Bereich prüfen, ob Benutzer, Gruppe und Projekte vorhanden sind.</li>
+<li>Im Einstellungsbereich Runner, Container-Runtime und LM-Studio-Base-URL kontrollieren.</li>
+<li>Testprojekt starten.</li>
+<li>Chat, Notebook, Review und Deployment-Artefakte einmal durchtesten.</li>
+</ol>
+<h2 id="h-ufige-betriebsprobleme">Häufige Betriebsprobleme</h2>
+<h3 id="oberfl-che-l-dt-nicht">Oberfläche lädt nicht</h3>
+<ul>
+<li>Prüfen, ob der Serverprozess läuft.</li>
+<li>Prüfen, ob der Port <code>8877</code> bereits belegt ist.</li>
+<li>Prüfen, ob lokale Firewall-Regeln den Browserzugriff blockieren.</li>
+</ul>
+<h3 id="lm-studio-antwortet-nicht">LM Studio antwortet nicht</h3>
+<ul>
+<li>Läuft LM Studio auf dem Server?</li>
+<li>Stimmt die Base URL?</li>
+<li>Ist ein Modell geladen oder in der Konfiguration hinterlegt?</li>
+<li>Hat der Benutzer das Recht <code>ai.use</code>?</li>
+</ul>
+<h3 id="container-l-ufe-starten-nicht">Container-Läufe starten nicht</h3>
+<ul>
+<li>Läuft Docker oder Podman wirklich?</li>
+<li>Stimmen Runtime-Name und Image-Tags?</li>
+<li>Sind Speicher- und CPU-Limits in einer realistischen Größenordnung gesetzt?</li>
+</ul>
+<h3 id="pty-oder-live-terminal-unter-windows-fehlen">PTY- oder Live-Terminal unter Windows fehlen</h3>
+<ul>
+<li><code>requirements.txt</code> installieren:</li>
+</ul>
+<pre><code class="language-powershell">py -3 -m pip install -r requirements.txt</code></pre>
+        </article>
+        <aside class="wiki-toc">
+          <div class="wiki-toc-card"><h2>On this page</h2><ul>
+<li class="wiki-toc-link"><a href="#voraussetzungen">Voraussetzungen</a></li>
+<li class="wiki-toc-link"><a href="#startbefehle">Startbefehle</a></li>
+<li class="wiki-toc-link level-3"><a href="#windows">Windows</a></li>
+<li class="wiki-toc-link level-3"><a href="#linux">Linux</a></li>
+<li class="wiki-toc-link"><a href="#standard-endpunkt">Standard-Endpunkt</a></li>
+<li class="wiki-toc-link"><a href="#was-beim-ersten-start-automatisch-passiert">Was beim ersten Start automatisch passiert</a></li>
+<li class="wiki-toc-link"><a href="#demo-zug-nge">Demo-Zugänge</a></li>
+<li class="wiki-toc-link"><a href="#standard-demodaten">Standard-Demodaten</a></li>
+<li class="wiki-toc-link"><a href="#betriebsrelevante-einstellungen">Betriebsrelevante Einstellungen</a></li>
+<li class="wiki-toc-link"><a href="#lm-studio-einbinden">LM Studio einbinden</a></li>
+<li class="wiki-toc-link"><a href="#runner-backends">Runner-Backends</a></li>
+<li class="wiki-toc-link"><a href="#empfohlener-goldstandard-betrieb">Empfohlener Goldstandard-Betrieb</a></li>
+<li class="wiki-toc-link"><a href="#typische-erstpr-fung-nach-dem-start">Typische Erstprüfung nach dem Start</a></li>
+<li class="wiki-toc-link"><a href="#h-ufige-betriebsprobleme">Häufige Betriebsprobleme</a></li>
+<li class="wiki-toc-link level-3"><a href="#oberfl-che-l-dt-nicht">Oberfläche lädt nicht</a></li>
+<li class="wiki-toc-link level-3"><a href="#lm-studio-antwortet-nicht">LM Studio antwortet nicht</a></li>
+<li class="wiki-toc-link level-3"><a href="#container-l-ufe-starten-nicht">Container-Läufe starten nicht</a></li>
+<li class="wiki-toc-link level-3"><a href="#pty-oder-live-terminal-unter-windows-fehlen">PTY- oder Live-Terminal unter Windows fehlen</a></li>
+</ul></div>
+        </aside>
+      </div>
+      <footer class="wiki-footer">
+        <p>Generated by Nova-shell wiki builder.</p>
+      </footer>
+    </main>
+  </div>
+  <script>
+    window.NOVA_WIKI = {
+      currentPage: "01_Serverstart_und_Bootstrap.html",
+      searchIndex: "assets/search-index.json"
+    };
+  </script>
+  <script src="assets/wiki.js" defer></script>
+</body>
+</html>

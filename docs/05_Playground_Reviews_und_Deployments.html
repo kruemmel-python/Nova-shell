@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="Nova-shell wiki builder">
+  <title>Playground, Reviews und Deployments | Nova-shell Wiki</title>
+  <link rel="stylesheet" href="assets/wiki.css">
+</head>
+<body>
+  <div class="wiki-shell">
+    <aside class="wiki-sidebar" data-sidebar>
+      <div class="wiki-brand">
+        <a href="Home.html">Nova-shell Wiki</a>
+        <p>HTML documentation for the Nova-shell platform.</p>
+      </div>
+      <label class="wiki-search">
+        <span>Search</span>
+        <input type="search" placeholder="Find pages, classes, methods..." data-wiki-search>
+      </label>
+      <div class="wiki-search-results" data-search-results></div>
+      <nav class="wiki-nav">
+        <section class="wiki-nav-section">
+<h2>Pages</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="01_Serverstart_und_Bootstrap.html" href="01_Serverstart_und_Bootstrap.html">01_Serverstart_und_Bootstrap</a></li>
+<li><a class="wiki-nav-link" data-nav-href="02_Paedagogische_Begleitung.html" href="02_Paedagogische_Begleitung.html">02_Paedagogische_Begleitung</a></li>
+<li><a class="wiki-nav-link" data-nav-href="03_Rollen_Rechte_und_Moderation.html" href="03_Rollen_Rechte_und_Moderation.html">03_Rollen_Rechte_und_Moderation</a></li>
+<li><a class="wiki-nav-link" data-nav-href="04_Systembetrieb_Sicherheit_und_Workspaces.html" href="04_Systembetrieb_Sicherheit_und_Workspaces.html">04_Systembetrieb_Sicherheit_und_Workspaces</a></li>
+<li><a class="wiki-nav-link active" data-nav-href="05_Playground_Reviews_und_Deployments.html" href="05_Playground_Reviews_und_Deployments.html">05_Playground_Reviews_und_Deployments</a></li>
+<li><a class="wiki-nav-link" data-nav-href="README.html" href="README.html">README</a></li>
+</ul></section>
+      </nav>
+    </aside>
+    <main class="wiki-main">
+      <header class="wiki-header">
+        <button type="button" class="wiki-nav-toggle" data-nav-toggle>Menu</button>
+        <div class="wiki-header-copy">
+          <span class="wiki-kicker">Nova-shell Documentation</span>
+          <h1>Playground, Reviews und Deployments</h1>
+          <p>Source: 05_Playground_Reviews_und_Deployments.md</p>
+        </div>
+      </header>
+      <div class="wiki-layout">
+        <article class="wiki-article">
+          <h1 id="playground-reviews-und-deployments">Playground, Reviews und Deployments</h1>
+<p>Dieses Modul deckt die drei fortgeschrittenen Bereiche des Systems ab, die für projektorientierten Unterricht und professionelle Abgabeprozesse besonders relevant sind.</p>
+<h2 id="distributed-playground">Distributed Playground</h2>
+<p>Der Distributed Playground ist für Unterricht zu verteilten Systemen, Service-Orchestrierung und Vertrauensbeziehungen gedacht.</p>
+<h3 id="grundprinzip">Grundprinzip</h3>
+<p>Ein Projekt beschreibt seine Service-Topologie in <code>topology.json</code>. Jeder Service enthält mindestens:</p>
+<ul>
+<li><code>name</code></li>
+<li><code>runtime</code></li>
+<li><code>entrypoint</code></li>
+</ul>
+<p>Optional möglich:</p>
+<ul>
+<li><code>port</code></li>
+<li><code>env</code></li>
+<li><code>kind</code></li>
+</ul>
+<h3 id="unterst-tzte-runtimes">Unterstützte Runtimes</h3>
+<ul>
+<li>Python</li>
+<li>JavaScript oder Node</li>
+<li>Rust</li>
+</ul>
+<h3 id="was-der-server-automatisch-erg-nzt">Was der Server automatisch ergänzt</h3>
+<p>Beim Start des Playgrounds werden systemseitig Sicherheits- und Laufzeitobjekte aufgebaut:</p>
+<ul>
+<li>Certificate Authority für das Playground-Projekt</li>
+<li>Trust Policy für das Playground-Projekt</li>
+<li>Worker-Enrollments pro Service</li>
+<li>Umgebungsvariablen für Service-Namen, Ports, URLs und Tenant-Kontext</li>
+</ul>
+<h3 id="log-orte">Log-Orte</h3>
+<p>Service-Logs liegen unter:</p>
+<pre><code class="language-text">.nova-school/playground/&lt;service&gt;.log</code></pre>
+<h3 id="didaktische-einsatzformen">Didaktische Einsatzformen</h3>
+<ul>
+<li>Master-Worker-Modelle</li>
+<li>fehlertolerante Services</li>
+<li>sichere Service-Kommunikation</li>
+<li>Einführung in verteilte Architekturen</li>
+</ul>
+<h2 id="peer-review">Peer Review</h2>
+<p>Das Review-System ist anonymisiert und auditierbar.</p>
+<h3 id="ablauf">Ablauf</h3>
+<ol>
+<li>Schüler reicht Projekt ein.</li>
+<li>Der Server erstellt einen Snapshot.</li>
+<li>Reviewer werden zugewiesen.</li>
+<li>Feedback wird strukturiert erfasst.</li>
+<li>Analytics ergänzen die didaktische Bewertung.</li>
+</ol>
+<h3 id="wichtige-fakten">Wichtige Fakten</h3>
+<ul>
+<li>Reviewer-Aliasse werden systemseitig erzeugt.</li>
+<li>Es gibt keine manuelle Alias-Verwaltung im Frontend.</li>
+<li>Die Einreichung enthält eine Vorschau auf den Snapshot.</li>
+<li>Lehrkräfte sehen zusätzlich aggregierte Analytics.</li>
+</ul>
+<h2 id="audit-basierte-analytics">Audit-basierte Analytics</h2>
+<p>Das System nutzt protokollierte Projektläufe, um Lernpfade sichtbar zu machen.</p>
+<p>Wesentliche Kennzahlen:</p>
+<ul>
+<li>Anzahl der Runs</li>
+<li>Anzahl der Fehlversuche bis zum ersten Erfolg</li>
+<li>Erfolg ja oder nein</li>
+</ul>
+<p>Diese Werte sollten als Prozessindikatoren und nicht als alleinige Leistungsbewertung verstanden werden.</p>
+<h2 id="shares-und-exporte">Shares und Exporte</h2>
+<p>Nova School unterstützt zwei Artefaktarten:</p>
+<table><thead><tr>
+<th>Artefakt</th>
+<th>Zweck</th>
+</tr></thead><tbody>
+<tr>
+<td>Share</td>
+<td>öffentlich oder schulisch erreichbare Bereitstellung einer Web-App</td>
+</tr>
+<tr>
+<td>Export</td>
+<td>ZIP-Bundle zur Abgabe, Archivierung oder Weiterverwendung</td>
+</tr>
+</tbody></table>
+<h3 id="shares">Shares</h3>
+<p>Voraussetzung:</p>
+<ul>
+<li>Im Projektwurzelverzeichnis muss eine <code>index.html</code> existieren.</li>
+</ul>
+<p>Ergebnis:</p>
+<ul>
+<li>URL im Format <code>/share/&lt;artifact_id&gt;/index.html</code></li>
+</ul>
+<h3 id="exporte">Exporte</h3>
+<p>Ergebnis:</p>
+<ul>
+<li>Download unter <code>/download/&lt;artifact_id&gt;</code></li>
+<li>Source-Snapshot</li>
+<li>Laufzeithinweise in <code>README_EXPORT.txt</code></li>
+<li>je nach Sprache optionale vorkompilierte Artefakte</li>
+<li>bei Build-Fehlern ein <code>BUILD_ERROR.txt</code></li>
+</ul>
+<h2 id="quoten">Quoten</h2>
+<p>Shares und Exporte unterliegen Tenant-Quoten. Relevant sind vor allem:</p>
+<ul>
+<li><code>max_active_shares</code></li>
+<li><code>max_export_artifacts</code></li>
+</ul>
+<p>Administrativ bedeutet das:</p>
+<ul>
+<li>Quoten nicht zu knapp setzen, wenn Portfolio-Arbeit oder viele Web-Abgaben geplant sind</li>
+<li>Quoten regelmäßig aufräumen, wenn Artefakte nicht mehr gebraucht werden</li>
+</ul>
+<h2 id="empfohlene-praxis">Empfohlene Praxis</h2>
+<ul>
+<li>Für öffentliche Präsentationen nur bewusst freigegebene Web-Projekte teilen</li>
+<li>Für Bewertung und Archivierung Exporte bevorzugen</li>
+<li>Playground gezielt in fortgeschrittenen Modulen einsetzen, nicht als Default für Einsteigergruppen</li>
+</ul>
+        </article>
+        <aside class="wiki-toc">
+          <div class="wiki-toc-card"><h2>On this page</h2><ul>
+<li class="wiki-toc-link"><a href="#distributed-playground">Distributed Playground</a></li>
+<li class="wiki-toc-link level-3"><a href="#grundprinzip">Grundprinzip</a></li>
+<li class="wiki-toc-link level-3"><a href="#unterst-tzte-runtimes">Unterstützte Runtimes</a></li>
+<li class="wiki-toc-link level-3"><a href="#was-der-server-automatisch-erg-nzt">Was der Server automatisch ergänzt</a></li>
+<li class="wiki-toc-link level-3"><a href="#log-orte">Log-Orte</a></li>
+<li class="wiki-toc-link level-3"><a href="#didaktische-einsatzformen">Didaktische Einsatzformen</a></li>
+<li class="wiki-toc-link"><a href="#peer-review">Peer Review</a></li>
+<li class="wiki-toc-link level-3"><a href="#ablauf">Ablauf</a></li>
+<li class="wiki-toc-link level-3"><a href="#wichtige-fakten">Wichtige Fakten</a></li>
+<li class="wiki-toc-link"><a href="#audit-basierte-analytics">Audit-basierte Analytics</a></li>
+<li class="wiki-toc-link"><a href="#shares-und-exporte">Shares und Exporte</a></li>
+<li class="wiki-toc-link level-3"><a href="#shares">Shares</a></li>
+<li class="wiki-toc-link level-3"><a href="#exporte">Exporte</a></li>
+<li class="wiki-toc-link"><a href="#quoten">Quoten</a></li>
+<li class="wiki-toc-link"><a href="#empfohlene-praxis">Empfohlene Praxis</a></li>
+</ul></div>
+        </aside>
+      </div>
+      <footer class="wiki-footer">
+        <p>Generated by Nova-shell wiki builder.</p>
+      </footer>
+    </main>
+  </div>
+  <script>
+    window.NOVA_WIKI = {
+      currentPage: "05_Playground_Reviews_und_Deployments.html",
+      searchIndex: "assets/search-index.json"
+    };
+  </script>
+  <script src="assets/wiki.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="Nova-shell wiki builder">
+  <title>Rollen, Rechte und Moderation | Nova-shell Wiki</title>
+  <link rel="stylesheet" href="assets/wiki.css">
+</head>
+<body>
+  <div class="wiki-shell">
+    <aside class="wiki-sidebar" data-sidebar>
+      <div class="wiki-brand">
+        <a href="Home.html">Nova-shell Wiki</a>
+        <p>HTML documentation for the Nova-shell platform.</p>
+      </div>
+      <label class="wiki-search">
+        <span>Search</span>
+        <input type="search" placeholder="Find pages, classes, methods..." data-wiki-search>
+      </label>
+      <div class="wiki-search-results" data-search-results></div>
+      <nav class="wiki-nav">
+        <section class="wiki-nav-section">
+<h2>Pages</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="01_Serverstart_und_Bootstrap.html" href="01_Serverstart_und_Bootstrap.html">01_Serverstart_und_Bootstrap</a></li>
+<li><a class="wiki-nav-link" data-nav-href="02_Paedagogische_Begleitung.html" href="02_Paedagogische_Begleitung.html">02_Paedagogische_Begleitung</a></li>
+<li><a class="wiki-nav-link active" data-nav-href="03_Rollen_Rechte_und_Moderation.html" href="03_Rollen_Rechte_und_Moderation.html">03_Rollen_Rechte_und_Moderation</a></li>
+<li><a class="wiki-nav-link" data-nav-href="04_Systembetrieb_Sicherheit_und_Workspaces.html" href="04_Systembetrieb_Sicherheit_und_Workspaces.html">04_Systembetrieb_Sicherheit_und_Workspaces</a></li>
+<li><a class="wiki-nav-link" data-nav-href="05_Playground_Reviews_und_Deployments.html" href="05_Playground_Reviews_und_Deployments.html">05_Playground_Reviews_und_Deployments</a></li>
+<li><a class="wiki-nav-link" data-nav-href="README.html" href="README.html">README</a></li>
+</ul></section>
+      </nav>
+    </aside>
+    <main class="wiki-main">
+      <header class="wiki-header">
+        <button type="button" class="wiki-nav-toggle" data-nav-toggle>Menu</button>
+        <div class="wiki-header-copy">
+          <span class="wiki-kicker">Nova-shell Documentation</span>
+          <h1>Rollen, Rechte und Moderation</h1>
+          <p>Source: 03_Rollen_Rechte_und_Moderation.md</p>
+        </div>
+      </header>
+      <div class="wiki-layout">
+        <article class="wiki-article">
+          <h1 id="rollen-rechte-und-moderation">Rollen, Rechte und Moderation</h1>
+<p>Nova School löst Rechte mehrstufig auf. Für den professionellen Betrieb ist wichtig, nicht nur einzelne Häkchen zu setzen, sondern die Vererbungslogik zu verstehen.</p>
+<h2 id="aufl-sungslogik-der-berechtigungen">Auflösungslogik der Berechtigungen</h2>
+<p>Die effektiven Rechte eines Benutzers entstehen in dieser Reihenfolge:</p>
+<ol>
+<li>Rollen-Default</li>
+<li>Gruppen-Overrides</li>
+<li>Benutzer-Overrides</li>
+</ol>
+<p>Wichtige Regel:</p>
+<ul>
+<li>Wenn ein Benutzer in mehreren Gruppen ist und eine Gruppe für ein Recht explizit <code>false</code> setzt, gewinnt dieses <code>false</code> auf Gruppenebene.</li>
+<li>Ein expliziter Benutzer-Override wird danach als letzte Instanz angewendet.</li>
+</ul>
+<h2 id="standardrollen">Standardrollen</h2>
+<table><thead><tr>
+<th>Rolle</th>
+<th>Charakteristik</th>
+</tr></thead><tbody>
+<tr>
+<td><code>student</code></td>
+<td>Arbeitsrechte aktiv, aber standardmäßig kein Webzugriff, keine LM-Studio-Codehilfe, keine Moderations- oder Admin-Rechte</td>
+</tr>
+<tr>
+<td><code>teacher</code></td>
+<td>Technisch vollständig freigeschaltet</td>
+</tr>
+<tr>
+<td><code>admin</code></td>
+<td>Technisch vollständig freigeschaltet</td>
+</tr>
+</tbody></table>
+<h2 id="rechtekatalog">Rechtekatalog</h2>
+<p>Der aktuelle Rechtekatalog umfasst 24 Permission-Keys.</p>
+<table><thead><tr>
+<th>Key</th>
+<th>Kategorie</th>
+<th>Wirkung im System</th>
+</tr></thead><tbody>
+<tr>
+<td><code>project.create</code></td>
+<td>Arbeitsbereich</td>
+<td>Neue Projekte anlegen</td>
+</tr>
+<tr>
+<td><code>workspace.personal</code></td>
+<td>Arbeitsbereich</td>
+<td>Eigenen Profilordner und persönliche Projekte nutzen</td>
+</tr>
+<tr>
+<td><code>workspace.group</code></td>
+<td>Arbeitsbereich</td>
+<td>Gruppenordner und Gruppenprojekte nutzen</td>
+</tr>
+<tr>
+<td><code>files.write</code></td>
+<td>Arbeitsbereich</td>
+<td>Dateien im Editor speichern und ändern</td>
+</tr>
+<tr>
+<td><code>notebook.collaborate</code></td>
+<td>Arbeitsbereich</td>
+<td>Live-Sync und gemeinsame Notebook-Bearbeitung verwenden</td>
+</tr>
+<tr>
+<td><code>chat.use</code></td>
+<td>Kommunikation</td>
+<td>Chats im Editor nutzen</td>
+</tr>
+<tr>
+<td><code>docs.read</code></td>
+<td>Lernen</td>
+<td>Offline-Dokumentation im System lesen</td>
+</tr>
+<tr>
+<td><code>web.access</code></td>
+<td>Netzwerk</td>
+<td>Projektläufe mit Webzugriff zulassen</td>
+</tr>
+<tr>
+<td><code>ai.use</code></td>
+<td>KI</td>
+<td>LM Studio und KI-Assistenz aktivieren</td>
+</tr>
+<tr>
+<td><code>mentor.use</code></td>
+<td>KI</td>
+<td>Sokratischen Mentor verwenden</td>
+</tr>
+<tr>
+<td><code>run.python</code></td>
+<td>Runner</td>
+<td>Python-Dateien und Python-Zellen ausführen</td>
+</tr>
+<tr>
+<td><code>run.javascript</code></td>
+<td>Runner</td>
+<td>JavaScript-Dateien ausführen</td>
+</tr>
+<tr>
+<td><code>run.cpp</code></td>
+<td>Runner</td>
+<td>C++ kompilieren und ausführen</td>
+</tr>
+<tr>
+<td><code>run.java</code></td>
+<td>Runner</td>
+<td>Java kompilieren und ausführen</td>
+</tr>
+<tr>
+<td><code>run.rust</code></td>
+<td>Runner</td>
+<td>Rust kompilieren und ausführen</td>
+</tr>
+<tr>
+<td><code>run.html</code></td>
+<td>Runner</td>
+<td>HTML-Vorschau verwenden</td>
+</tr>
+<tr>
+<td><code>run.node</code></td>
+<td>Runner</td>
+<td>Node.js-Dateien ausführen</td>
+</tr>
+<tr>
+<td><code>run.npm</code></td>
+<td>Runner</td>
+<td>npm-Kommandos starten</td>
+</tr>
+<tr>
+<td><code>playground.manage</code></td>
+<td>Runner</td>
+<td>Distributed Playground starten und stoppen</td>
+</tr>
+<tr>
+<td><code>review.use</code></td>
+<td>Lernen</td>
+<td>Peer Review einreichen und bearbeiten</td>
+</tr>
+<tr>
+<td><code>deploy.use</code></td>
+<td>Deployment</td>
+<td>Shares und Exporte erzeugen</td>
+</tr>
+<tr>
+<td><code>teacher.chat.observe</code></td>
+<td>Moderation</td>
+<td>Chats systemweit einsehen</td>
+</tr>
+<tr>
+<td><code>teacher.chat.moderate</code></td>
+<td>Moderation</td>
+<td>Benutzer zeitweise stummschalten</td>
+</tr>
+<tr>
+<td><code>admin.manage</code></td>
+<td>Administration</td>
+<td>Admin-Panel und Systemverwaltung nutzen</td>
+</tr>
+</tbody></table>
+<h2 id="didaktisch-sinnvolle-rechteprofile">Didaktisch sinnvolle Rechteprofile</h2>
+<h3 id="standard-f-r-sch-ler">Standard für Schüler</h3>
+<ul>
+<li>Projektarbeit, Dateibearbeitung und Notebook-Kollaboration aktiv</li>
+<li><code>web.access</code> standardmäßig nur bei Bedarf</li>
+<li><code>ai.use</code> nur gezielt nach Unterrichtsziel</li>
+<li><code>mentor.use</code> bevorzugt gemeinsam mit <code>ai.use</code> freigeben, wenn KI didaktisch vorgesehen ist</li>
+</ul>
+<h3 id="standard-f-r-lehrkr-fte">Standard für Lehrkräfte</h3>
+<ul>
+<li>alle Unterrichtsfunktionen aktiv</li>
+<li>Moderationsrechte aktiv</li>
+<li>Zugriff auf Review, Mentor und Projekte aller Teilnehmer aktiv</li>
+</ul>
+<h3 id="standard-f-r-admins">Standard für Admins</h3>
+<ul>
+<li>globale Einstellungen, Benutzerverwaltung, Gruppenverwaltung und Infrastrukturoperation</li>
+</ul>
+<h2 id="wichtiger-ki-hinweis">Wichtiger KI-Hinweis</h2>
+<p>Im Frontend ist der Mentor-Modus nur dann praktisch nutzbar, wenn sowohl <code>mentor.use</code> als auch <code>ai.use</code> verfügbar sind. Für Schüler reicht daher <code>mentor.use</code> allein in der Praxis nicht aus.</p>
+<h2 id="moderation-von-chats">Moderation von Chats</h2>
+<p>Chats existieren in drei typischen Räumen:</p>
+<ul>
+<li>Schul-Lounge</li>
+<li>Gruppenraum</li>
+<li>Projektraum</li>
+</ul>
+<p>Lehrkräfte können alle Räume einsehen. Mit <code>teacher.chat.moderate</code> kann ein Mute gesetzt werden mit:</p>
+<ul>
+<li>Raum</li>
+<li>Zielbenutzer</li>
+<li>Dauer in Minuten</li>
+<li>Begründung</li>
+</ul>
+<h2 id="professionelle-betriebsregeln-f-r-rechte">Professionelle Betriebsregeln für Rechte</h2>
+<ul>
+<li>Rechte sparsam und begründet freigeben</li>
+<li>Webzugriff nur für Web-Projekte, Paketmanagement oder bewusst geplante Aufgaben freischalten</li>
+<li><code>run.npm</code> nicht pauschal für alle Gruppen aktivieren</li>
+<li><code>deploy.use</code> nur dort freigeben, wo Abgabe oder Präsentation wirklich gebraucht wird</li>
+<li><code>admin.manage</code> nicht als Alltagsrolle für Klassenbetrieb verwenden</li>
+</ul>
+<h2 id="empfohlene-kontrollroutine-pro-halbjahr">Empfohlene Kontrollroutine pro Halbjahr</h2>
+<ol>
+<li>Gruppenrechte prüfen.</li>
+<li>Benutzer-Overrides bereinigen.</li>
+<li>LM-Studio-Freigaben kontrollieren.</li>
+<li>Webzugriff auf notwendige Gruppen beschränken.</li>
+<li>Deployment-Rechte und Quoten mit Unterrichtszielen abgleichen.</li>
+</ol>
+        </article>
+        <aside class="wiki-toc">
+          <div class="wiki-toc-card"><h2>On this page</h2><ul>
+<li class="wiki-toc-link"><a href="#aufl-sungslogik-der-berechtigungen">Auflösungslogik der Berechtigungen</a></li>
+<li class="wiki-toc-link"><a href="#standardrollen">Standardrollen</a></li>
+<li class="wiki-toc-link"><a href="#rechtekatalog">Rechtekatalog</a></li>
+<li class="wiki-toc-link"><a href="#didaktisch-sinnvolle-rechteprofile">Didaktisch sinnvolle Rechteprofile</a></li>
+<li class="wiki-toc-link level-3"><a href="#standard-f-r-sch-ler">Standard für Schüler</a></li>
+<li class="wiki-toc-link level-3"><a href="#standard-f-r-lehrkr-fte">Standard für Lehrkräfte</a></li>
+<li class="wiki-toc-link level-3"><a href="#standard-f-r-admins">Standard für Admins</a></li>
+<li class="wiki-toc-link"><a href="#wichtiger-ki-hinweis">Wichtiger KI-Hinweis</a></li>
+<li class="wiki-toc-link"><a href="#moderation-von-chats">Moderation von Chats</a></li>
+<li class="wiki-toc-link"><a href="#professionelle-betriebsregeln-f-r-rechte">Professionelle Betriebsregeln für Rechte</a></li>
+<li class="wiki-toc-link"><a href="#empfohlene-kontrollroutine-pro-halbjahr">Empfohlene Kontrollroutine pro Halbjahr</a></li>
+</ul></div>
+        </aside>
+      </div>
+      <footer class="wiki-footer">
+        <p>Generated by Nova-shell wiki builder.</p>
+      </footer>
+    </main>
+  </div>
+  <script>
+    window.NOVA_WIKI = {
+      currentPage: "03_Rollen_Rechte_und_Moderation.html",
+      searchIndex: "assets/search-index.json"
+    };
+  </script>
+  <script src="assets/wiki.js" defer></script>
+</body>
+</html>

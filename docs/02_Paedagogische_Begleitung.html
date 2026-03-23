@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="Nova-shell wiki builder">
+  <title>Pädagogische Begleitung | Nova-shell Wiki</title>
+  <link rel="stylesheet" href="assets/wiki.css">
+</head>
+<body>
+  <div class="wiki-shell">
+    <aside class="wiki-sidebar" data-sidebar>
+      <div class="wiki-brand">
+        <a href="Home.html">Nova-shell Wiki</a>
+        <p>HTML documentation for the Nova-shell platform.</p>
+      </div>
+      <label class="wiki-search">
+        <span>Search</span>
+        <input type="search" placeholder="Find pages, classes, methods..." data-wiki-search>
+      </label>
+      <div class="wiki-search-results" data-search-results></div>
+      <nav class="wiki-nav">
+        <section class="wiki-nav-section">
+<h2>Pages</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="01_Serverstart_und_Bootstrap.html" href="01_Serverstart_und_Bootstrap.html">01_Serverstart_und_Bootstrap</a></li>
+<li><a class="wiki-nav-link active" data-nav-href="02_Paedagogische_Begleitung.html" href="02_Paedagogische_Begleitung.html">02_Paedagogische_Begleitung</a></li>
+<li><a class="wiki-nav-link" data-nav-href="03_Rollen_Rechte_und_Moderation.html" href="03_Rollen_Rechte_und_Moderation.html">03_Rollen_Rechte_und_Moderation</a></li>
+<li><a class="wiki-nav-link" data-nav-href="04_Systembetrieb_Sicherheit_und_Workspaces.html" href="04_Systembetrieb_Sicherheit_und_Workspaces.html">04_Systembetrieb_Sicherheit_und_Workspaces</a></li>
+<li><a class="wiki-nav-link" data-nav-href="05_Playground_Reviews_und_Deployments.html" href="05_Playground_Reviews_und_Deployments.html">05_Playground_Reviews_und_Deployments</a></li>
+<li><a class="wiki-nav-link" data-nav-href="README.html" href="README.html">README</a></li>
+</ul></section>
+      </nav>
+    </aside>
+    <main class="wiki-main">
+      <header class="wiki-header">
+        <button type="button" class="wiki-nav-toggle" data-nav-toggle>Menu</button>
+        <div class="wiki-header-copy">
+          <span class="wiki-kicker">Nova-shell Documentation</span>
+          <h1>Pädagogische Begleitung</h1>
+          <p>Source: 02_Paedagogische_Begleitung.md</p>
+        </div>
+      </header>
+      <div class="wiki-layout">
+        <article class="wiki-article">
+          <h1 id="p-dagogische-begleitung">Pädagogische Begleitung</h1>
+<p>Dieses Modul beschreibt, wie Lehrkräfte Nova School nicht nur als Code-Editor, sondern als Lernbeobachtungs- und Begleitsystem nutzen.</p>
+<h2 id="grundidee">Grundidee</h2>
+<p>Nova School kombiniert drei für Unterricht besonders wertvolle Perspektiven:</p>
+<ul>
+<li>sichtbare Arbeitsstände in Dateien und Notebooks</li>
+<li>sichtbare Kommunikationsräume im Projekt- und Gruppenkontext</li>
+<li>sichtbare Lernspuren durch Mentor-Verläufe, Review-Einreichungen und Run-Analytics</li>
+</ul>
+<h2 id="zugriff-auf-sch-lerprojekte">Zugriff auf Schülerprojekte</h2>
+<p>Lehrkräfte können im aktuellen Systemstand alle Projekte öffnen. Das ist didaktisch relevant für:</p>
+<ul>
+<li>gezielte Hilfestellung in laufenden Projekten</li>
+<li>Sicht auf Gruppenarbeit</li>
+<li>Einsicht in Mentor-Verläufe</li>
+<li>Moderation in Projektchats</li>
+</ul>
+<h2 id="sokratischer-mentor-als-diagnoseinstrument">Sokratischer Mentor als Diagnoseinstrument</h2>
+<p>Der Mentor ist nicht als Lösungsautomat gedacht, sondern als fragender Lernbegleiter. Intern wird der Verlauf pro Projekt und Benutzer als Thread geführt.</p>
+<h3 id="wof-r-lehrkr-fte-den-mentor-verlauf-nutzen-sollten">Wofür Lehrkräfte den Mentor-Verlauf nutzen sollten</h3>
+<ul>
+<li>um zu prüfen, ob der Schüler mit Verständnis arbeitet oder nur nach der Lösung sucht</li>
+<li>um zu sehen, ob die KI gute Rückfragen stellt</li>
+<li>um wiederkehrende fachliche Fehlvorstellungen zu erkennen</li>
+<li>um bei Bedarf die Aufgabenstellung nachzuschärfen</li>
+</ul>
+<h3 id="didaktische-auswertung">Didaktische Auswertung</h3>
+<p>Achten Sie auf folgende Muster:</p>
+<ul>
+<li>Der Schüler beschreibt den Fehler präzise: gutes Problembewusstsein</li>
+<li>Der Schüler fragt nur nach fertigem Code: erhöhtes Copy-Paste-Risiko</li>
+<li>Der Mentor stellt kleinschrittige Fragen: guter sokratischer Verlauf</li>
+<li>Der Mentor springt zu schnell zur Lösung: Prompt oder Freigabepraxis nachjustieren</li>
+</ul>
+<h2 id="review-analytics-f-r-lernstandsdiagnose">Review-Analytics für Lernstandsdiagnose</h2>
+<p>Im Review-Modul werden nicht nur Einreichungen und Zuweisungen angezeigt, sondern auch Kennzahlen aus den Audit-Daten.</p>
+<p>Wichtige Metriken:</p>
+<table><thead><tr>
+<th>Metrik</th>
+<th>Bedeutung</th>
+</tr></thead><tbody>
+<tr>
+<td><code>run_count</code></td>
+<td>Anzahl protokollierter Ausführungen des Projekts</td>
+</tr>
+<tr>
+<td><code>failed_runs_before_success</code></td>
+<td>Anzahl fehlgeschlagener Läufe vor dem ersten erfolgreichen Lauf</td>
+</tr>
+<tr>
+<td><code>succeeded</code></td>
+<td>Ob mindestens ein erfolgreicher Run erfasst wurde</td>
+</tr>
+</tbody></table>
+<h3 id="interpretation-in-der-praxis">Interpretation in der Praxis</h3>
+<ul>
+<li>Viele Fehlversuche bei anschließendem Erfolg sprechen oft für produktives iteratives Lernen.</li>
+<li>Sehr wenige Läufe bei plötzlich korrektem Ergebnis können auf externe Hilfen oder Copy-Paste hindeuten.</li>
+<li>Viele Fehlversuche ohne Erfolg deuten häufig auf Blockaden, unklare Grundlagen oder zu hohe Aufgabenkomplexität hin.</li>
+</ul>
+<h2 id="p-dagogisch-sinnvolle-eingriffsreihenfolge">Pädagogisch sinnvolle Eingriffsreihenfolge</h2>
+<p>Empfohlenes Vorgehen vor einer direkten Intervention:</p>
+<ol>
+<li>Letzten Run und Fehlermeldung lesen.</li>
+<li>Mentor-Thread prüfen.</li>
+<li>Review-Status und Feedback sichten.</li>
+<li>Falls Gruppenarbeit vorliegt: Presence und Kollaborationsmuster im Notebook betrachten.</li>
+<li>Erst danach entscheiden, ob ein direkter Hinweis, eine Rückfrage oder eine Umgruppierung sinnvoll ist.</li>
+</ol>
+<h2 id="chat-als-unterrichtsraum">Chat als Unterrichtsraum</h2>
+<p>Lehrkräfte können projektbezogene und gruppenbezogene Chats einsehen. Das ist besonders nützlich für:</p>
+<ul>
+<li>Begleitung von Gruppenarbeit</li>
+<li>Beobachtung von Rollenverteilung</li>
+<li>Erkennen von Sackgassen oder Off-Topic-Kommunikation</li>
+<li>Moderiertes Eingreifen bei Verstößen</li>
+</ul>
+<h2 id="muting-professionell-einsetzen">Muting professionell einsetzen</h2>
+<p>Die Mute-Funktion ist ein Moderationswerkzeug, kein Strafmechanismus. Gute Praxis:</p>
+<ul>
+<li>klaren Grund dokumentieren</li>
+<li>kurze, verhältnismäßige Dauer wählen</li>
+<li>im Anschluss Lern- oder Kommunikationsregel transparent erklären</li>
+</ul>
+<h2 id="grenzen-des-aktuellen-stands">Grenzen des aktuellen Stands</h2>
+<p>Wichtig für eine saubere Erwartungssteuerung:</p>
+<ul>
+<li>Es gibt derzeit keine separate Vollansicht aller Audit-Log-Einträge für Lehrkräfte.</li>
+<li>Die Analytics werden vor allem im Review-Kontext sichtbar.</li>
+<li>Die Live-Sync-Revisionsnummern sind keine vollständige Versionshistorie.</li>
+<li>Eine grafische Wiederherstellung älterer Dateistände ist aktuell nicht Teil der Oberfläche.</li>
+</ul>
+<h2 id="gute-unterrichtsszenarien">Gute Unterrichtsszenarien</h2>
+<h3 id="einzelarbeit-mit-mentor">Einzelarbeit mit Mentor</h3>
+<ul>
+<li>Lehrkraft gibt eine klar eingegrenzte Programmieraufgabe.</li>
+<li>Schüler arbeitet mit Live-Run und Mentor.</li>
+<li>Lehrkraft prüft bei Bedarf den Mentor-Thread und die Run-Entwicklung.</li>
+</ul>
+<h3 id="gruppenarbeit-im-notebook">Gruppenarbeit im Notebook</h3>
+<ul>
+<li>Gruppe arbeitet im gemeinsamen Notebook.</li>
+<li>Lehrkraft beobachtet Presence-Chips und Projektchat.</li>
+<li>Bei Bedarf greift die Lehrkraft moderierend oder fachlich ein.</li>
+</ul>
+<h3 id="abgabe-mit-peer-review">Abgabe mit Peer Review</h3>
+<ul>
+<li>Schüler reichen Projekte ein.</li>
+<li>Das System weist Reviews anonymisiert zu.</li>
+<li>Lehrkraft nutzt Feedback und Analytics nicht nur für Bewertung, sondern für Diagnose des Arbeitsprozesses.</li>
+</ul>
+        </article>
+        <aside class="wiki-toc">
+          <div class="wiki-toc-card"><h2>On this page</h2><ul>
+<li class="wiki-toc-link"><a href="#grundidee">Grundidee</a></li>
+<li class="wiki-toc-link"><a href="#zugriff-auf-sch-lerprojekte">Zugriff auf Schülerprojekte</a></li>
+<li class="wiki-toc-link"><a href="#sokratischer-mentor-als-diagnoseinstrument">Sokratischer Mentor als Diagnoseinstrument</a></li>
+<li class="wiki-toc-link level-3"><a href="#wof-r-lehrkr-fte-den-mentor-verlauf-nutzen-sollten">Wofür Lehrkräfte den Mentor-Verlauf nutzen sollten</a></li>
+<li class="wiki-toc-link level-3"><a href="#didaktische-auswertung">Didaktische Auswertung</a></li>
+<li class="wiki-toc-link"><a href="#review-analytics-f-r-lernstandsdiagnose">Review-Analytics für Lernstandsdiagnose</a></li>
+<li class="wiki-toc-link level-3"><a href="#interpretation-in-der-praxis">Interpretation in der Praxis</a></li>
+<li class="wiki-toc-link"><a href="#p-dagogisch-sinnvolle-eingriffsreihenfolge">Pädagogisch sinnvolle Eingriffsreihenfolge</a></li>
+<li class="wiki-toc-link"><a href="#chat-als-unterrichtsraum">Chat als Unterrichtsraum</a></li>
+<li class="wiki-toc-link"><a href="#muting-professionell-einsetzen">Muting professionell einsetzen</a></li>
+<li class="wiki-toc-link"><a href="#grenzen-des-aktuellen-stands">Grenzen des aktuellen Stands</a></li>
+<li class="wiki-toc-link"><a href="#gute-unterrichtsszenarien">Gute Unterrichtsszenarien</a></li>
+<li class="wiki-toc-link level-3"><a href="#einzelarbeit-mit-mentor">Einzelarbeit mit Mentor</a></li>
+<li class="wiki-toc-link level-3"><a href="#gruppenarbeit-im-notebook">Gruppenarbeit im Notebook</a></li>
+<li class="wiki-toc-link level-3"><a href="#abgabe-mit-peer-review">Abgabe mit Peer Review</a></li>
+</ul></div>
+        </aside>
+      </div>
+      <footer class="wiki-footer">
+        <p>Generated by Nova-shell wiki builder.</p>
+      </footer>
+    </main>
+  </div>
+  <script>
+    window.NOVA_WIKI = {
+      currentPage: "02_Paedagogische_Begleitung.html",
+      searchIndex: "assets/search-index.json"
+    };
+  </script>
+  <script src="assets/wiki.js" defer></script>
+</body>
+</html>
