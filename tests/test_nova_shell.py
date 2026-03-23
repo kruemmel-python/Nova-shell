@@ -3413,6 +3413,20 @@ agent helper {
                         self.shell._declarative_nova.close()
                         self.shell._declarative_nova = None
 
+    def test_ceo_partner_event_signal_escalates_deadline_pressure(self) -> None:
+        root = Path(__file__).resolve().parents[1] / "examples" / "CEO_ns"
+        helper = runpy.run_path(str(root / "ceo_runtime_helper.py"))
+        normalized = helper["normalize_signal_batch"](
+            json.loads((root / "event_signals.json").read_text(encoding="utf-8")),
+            source_kind="event",
+            default_domain="market",
+        )
+        partner_signal = next(item for item in normalized if item["signal_id"] == "event_partner_coinvest")
+
+        self.assertGreaterEqual(float(partner_signal["severity"]), 0.86)
+        self.assertEqual(partner_signal["payload"]["partner"], "NorthBridge")
+        self.assertEqual(int(partner_signal["payload"]["deadline_days"]), 18)
+
     def test_declarative_py_exec_can_import_local_helper_module(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -4103,6 +4117,128 @@ agent demo_skill_generalist {
         self.assertIsNone(history.error)
         history_payload = json.loads(history.output)
         self.assertTrue(any(str(entry["stage"]).startswith("event local_event") for entry in history_payload))
+
+    def test_event_emit_reports_triggered_declarative_flows(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            script_path = Path(tmp) / "program.ns"
+            try:
+                script_path.write_text(
+                    """
+dataset tech_rss {
+  source: rss
+  items: [{title: "Alpha", source: "feed-a"}]
+}
+
+flow radar {
+  rss.fetch tech_rss -> fetched
+}
+
+event new_information {
+  on: new_information
+  flow: radar
+}
+""".strip(),
+                    encoding="utf-8",
+                )
+
+                load_result = self.shell.route(f'ns.run "{script_path}"')
+                self.assertIsNone(load_result.error)
+
+                emitted = self.shell.route("event emit new_information ping")
+                self.assertIsNone(emitted.error)
+                payload = json.loads(emitted.output)
+                self.assertEqual(payload["declarative"]["flow_count"], 1)
+                self.assertEqual(payload["declarative"]["triggered_flows"][0]["flow"], "radar")
+                self.assertEqual(payload["declarative"]["triggered_flows"][0]["trigger_event"], "new_information")
+            finally:
+                with suppress(Exception):
+                    if self.shell._declarative_nova is not None:
+                        self.shell._declarative_nova.close()
+                        self.shell._declarative_nova = None
+
+    def test_open_command_opens_relative_file(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            target = base / "report.html"
+            target.write_text("<html><body>ok</body></html>", encoding="utf-8")
+            self.shell.cwd = base
+            self.shell.ai_runtime.cwd = base
+
+            with patch.object(self.shell, "_open_external_target", return_value=True) as open_mock:
+                result = self.shell.route("open report.html")
+
+            self.assertIsNone(result.error)
+            payload = json.loads(result.output)
+            self.assertEqual(payload["kind"], "file")
+            self.assertEqual(payload["target"], str(target.resolve(strict=False)))
+            open_mock.assert_called_once_with(str(target.resolve(strict=False)))
+
+    def test_open_command_errors_for_missing_file(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            self.shell.cwd = base
+            self.shell.ai_runtime.cwd = base
+            result = self.shell.route("open missing-report.html")
+
+        self.assertIsNotNone(result.error)
+        self.assertIn("file not found", result.error)
+
+    def test_agent_run_normalizes_simple_output_format_for_declarative_shell_agents(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            script_path = Path(tmp) / "risk_agent.ns"
+            try:
+                script_path.write_text(
+                    """
+agent helper {
+  provider: shell
+  model: active
+  system_prompt: "You are concise."
+  prompts: {v1: "Bewerte den Input. Ausgabeformat:\\nRisiko: <niedrig/mittel/hoch>\\nScore: <0.00-1.00>\\nEmpfehlung: <allow/block/revise>\\nWarnsignal: <kurz>\\nBegruendung: <kurz>\\n\\n{{input}}"}
+  prompt_version: v1
+}
+""".strip(),
+                    encoding="utf-8",
+                )
+                verbose_response = (
+                    "**Risiko:** **Hoch**\n"
+                    "**Score:** 0.85\n"
+                    "**Empfehlung:** revise\n"
+                    "**Warnsignal:** Kapitalbedarf\n"
+                    "**Begruendung:** Knappes Kapital.\n\n"
+                    "Weitere Analyse folgt."
+                )
+
+                with (
+                    patch.object(self.shell.ai_runtime, "get_active_provider", return_value="lmstudio"),
+                    patch.object(self.shell.ai_runtime, "get_active_model", return_value="local-model"),
+                    patch.object(
+                        self.shell.ai_runtime,
+                        "complete_prompt",
+                        return_value=CommandResult(output=verbose_response, data={"text": verbose_response}, data_type=PipelineType.OBJECT),
+                    ),
+                ):
+                    load_result = self.shell.route(f'ns.run "{script_path}"')
+                    self.assertIsNone(load_result.error)
+                    run_result = self.shell.route('agent run helper "Ein Partner fordert Kapital."')
+            finally:
+                with suppress(Exception):
+                    if self.shell._declarative_nova is not None:
+                        self.shell._declarative_nova.close()
+                        self.shell._declarative_nova = None
+
+        self.assertIsNone(run_result.error)
+        self.assertEqual(
+            run_result.output.strip(),
+            "\n".join(
+                [
+                    "Risiko: Hoch",
+                    "Score: 0.85",
+                    "Empfehlung: revise",
+                    "Warnsignal: Kapitalbedarf",
+                    "Begruendung: Knappes Kapital.",
+                ]
+            ),
+        )
 
     def test_gpu_graph_plan_and_run(self) -> None:
         calls: list[tuple[str, str]] = []

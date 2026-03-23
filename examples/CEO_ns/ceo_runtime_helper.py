@@ -149,8 +149,21 @@ def apply_policy_overrides(state_like: Any, overrides_like: Any) -> dict[str, An
 
 
 def _derive_signal_severity(record: dict[str, Any], source_kind: str) -> float:
+    payload = dict(record.get("payload") or {}) if isinstance(record.get("payload"), dict) else {}
+    text = " ".join(
+        [
+            str(record.get("title") or ""),
+            str(record.get("summary") or ""),
+            str(record.get("source") or ""),
+            str(source_kind or ""),
+            str(payload.get("partner") or ""),
+        ]
+    ).lower()
+    deadline_days = int(_safe_float(payload.get("deadline_days"), -1.0))
+
+    base_severity: float | None = None
     if "severity" in record:
-        return _clamp(record.get("severity"), 0.0, 1.0)
+        base_severity = _clamp(record.get("severity"), 0.0, 1.0)
     metrics = dict(record.get("metrics") or {})
     candidates = [
         metrics.get("utilization"),
@@ -162,21 +175,26 @@ def _derive_signal_severity(record: dict[str, Any], source_kind: str) -> float:
     ]
     numeric = [_safe_float(item, -1.0) for item in candidates if item is not None]
     valid = [item for item in numeric if item >= 0.0]
-    if valid:
-        return _clamp(sum(valid) / len(valid))
-    text = " ".join(
-        [
-            str(record.get("title") or ""),
-            str(record.get("summary") or ""),
-            str(record.get("source") or ""),
-            str(source_kind or ""),
-        ]
-    ).lower()
-    if any(token in text for token in ("critical", "high", "urgent", "capacity", "deadline", "investment")):
-        return 0.76
-    if any(token in text for token in ("growth", "demand", "partner", "expand", "opportunity")):
-        return 0.64
-    return 0.45
+    if base_severity is None:
+        if valid:
+            base_severity = _clamp(sum(valid) / len(valid))
+        elif any(token in text for token in ("critical", "high", "urgent", "capacity", "deadline", "investment")):
+            base_severity = 0.76
+        elif any(token in text for token in ("growth", "demand", "partner", "expand", "opportunity")):
+            base_severity = 0.64
+        else:
+            base_severity = 0.45
+
+    # Strategic partner signals with a near-term commitment window should not stay in the
+    # mid-0.7 range; they represent concrete board-level pressure rather than soft demand.
+    if ("partner" in text or payload.get("partner")) and (str(record.get("type") or source_kind or "").lower() in {"event", "opportunity", "market"}):
+        base_severity = max(base_severity, 0.82)
+        if 0 < deadline_days <= 30:
+            base_severity = max(base_severity, 0.86)
+        if 0 < deadline_days <= 14:
+            base_severity = max(base_severity, 0.9)
+
+    return _clamp(base_severity, 0.0, 1.0)
 
 
 def normalize_signal_batch(records_like: Any, *, source_kind: str, default_domain: str) -> list[dict[str, Any]]:
@@ -188,11 +206,13 @@ def normalize_signal_batch(records_like: Any, *, source_kind: str, default_domai
         domain = str(record.get("domain") or default_domain or "general")
         signal_type = str(record.get("type") or source_kind or "signal")
         metrics = dict(record.get("metrics") or {})
-        payload = {
+        payload = dict(record.get("payload") or {}) if isinstance(record.get("payload"), dict) else {}
+        extra_payload = {
             key: value
             for key, value in record.items()
-            if key not in {"signal_id", "title", "summary", "source", "type", "domain", "severity", "metrics"}
+            if key not in {"signal_id", "title", "summary", "source", "type", "domain", "severity", "metrics", "payload"}
         }
+        payload.update(extra_payload)
         signal_id = str(record.get("signal_id") or hashlib.sha1(f"{title}|{domain}|{summary}|{index}".encode("utf-8")).hexdigest()[:12])
         normalized.append(
             {

@@ -78,7 +78,7 @@ except ImportError:  # pragma: no cover - platform dependent
     readline = None
 
 
-__version__ = "0.8.29"
+__version__ = "0.8.30"
 SIDELOAD_PACKAGE_DIR = "vendor-py"
 RUNTIME_CONFIG_FILE = "nova-shell-runtime.json"
 BRIEFING_REPORT_FILES: tuple[tuple[str, str, str], ...] = (
@@ -5536,6 +5536,7 @@ class NovaShell:
             "studio": self._run_studio,
             "watch": self._watch,
             "wiki": self._run_wiki,
+            "open": self._run_open,
             "sys": self._run_system,
             "cd": self._cd,
             "pwd": self._pwd,
@@ -5667,6 +5668,26 @@ class NovaShell:
         if not target.is_absolute():
             target = self.cwd / target
         return target.resolve(strict=False)
+
+    def _looks_like_external_url(self, target_text: str) -> bool:
+        if re.match(r"^[A-Za-z]:[\\/]", target_text):
+            return False
+        parsed = urllib.parse.urlparse(target_text)
+        return bool(parsed.scheme and (parsed.netloc or parsed.scheme == "file"))
+
+    def _open_external_target(self, target: str) -> bool:
+        if _is_windows_runtime() and hasattr(os, "startfile"):
+            os.startfile(target)  # type: ignore[attr-defined]
+            return True
+        opener = ""
+        if sys.platform == "darwin":
+            opener = "open"
+        elif sys.platform.startswith("linux"):
+            opener = "xdg-open"
+        if opener and shutil.which(opener):
+            subprocess.Popen([opener, target], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            return True
+        return bool(webbrowser.open(target))
 
     def _resource_root(self) -> Path:
         candidates = [
@@ -6231,6 +6252,25 @@ class NovaShell:
         if output:
             output += "\n"
         return CommandResult(output=output, data=selected, data_type=PipelineType.TEXT_STREAM)
+
+    def _run_open(self, args: str, _: str, __: Any) -> CommandResult:
+        target_text = " ".join(split_command(args)).strip()
+        if not target_text:
+            return CommandResult(output="", error="usage: open <file-or-url>")
+        kind = "url" if self._looks_like_external_url(target_text) else "file"
+        resolved_target = target_text
+        if kind == "file":
+            target_path = self._resolve_path(target_text)
+            if not target_path.exists():
+                return CommandResult(output="", error=f"file not found: {target_path}")
+            resolved_target = str(target_path)
+        try:
+            opened = self._open_external_target(resolved_target)
+        except Exception as exc:
+            return CommandResult(output="", error=str(exc))
+        if not opened:
+            return CommandResult(output="", error="no system opener available")
+        return self._json_command_result({"target": resolved_target, "kind": kind, "opened": True})
 
     def _run_wiki(self, args: str, _: str, __: Any) -> CommandResult:
         parts = split_command(args)
@@ -10709,6 +10749,58 @@ class NovaShell:
     def _render_agent_prompt(self, agent: AIAgentDefinition, input_text: str) -> str:
         return self._render_prompt_template(agent.prompt_template, input_text)
 
+    def _normalize_structured_response_key(self, value: str) -> str:
+        return re.sub(r"[^a-z0-9]+", "", value.casefold())
+
+    def _structured_agent_response_labels(self, prompt_template: str) -> list[str]:
+        labels: list[str] = []
+        capture = False
+        for raw_line in prompt_template.splitlines():
+            line = raw_line.strip()
+            lowered = re.sub(r"\s+", " ", line.casefold())
+            if not capture:
+                if "ausgabeformat" in lowered or "dieses format" in lowered:
+                    capture = True
+                continue
+            if not line or "{{input}}" in line or "{input}" in line:
+                break
+            match = re.fullmatch(r"([A-Za-z0-9_./ ÄÖÜäöüß-]+):\s*<[^>]+>", line)
+            if match is None:
+                return []
+            labels.append(match.group(1).strip())
+        return labels
+
+    def _normalize_structured_agent_response(self, prompt_template: str, response: str) -> str:
+        reply = response.strip()
+        if not reply:
+            return reply
+        labels = self._structured_agent_response_labels(prompt_template)
+        if not labels:
+            return reply
+        extracted: dict[str, str] = {}
+        for raw_line in reply.splitlines():
+            line = re.sub(r"^[>\-*]+\s*", "", raw_line.strip())
+            if not line:
+                continue
+            candidate = line.replace("**", "").replace("__", "").strip()
+            if ":" not in candidate:
+                continue
+            key_text, value = candidate.split(":", 1)
+            key = self._normalize_structured_response_key(key_text)
+            if key in extracted:
+                continue
+            cleaned_value = re.sub(r"[*_`]+", "", value).strip()
+            if cleaned_value:
+                extracted[key] = cleaned_value
+        normalized_lines: list[str] = []
+        for label in labels:
+            key = self._normalize_structured_response_key(label)
+            value = extracted.get(key)
+            if not value:
+                return reply
+            normalized_lines.append(f"{label}: {value}")
+        return "\n".join(normalized_lines)
+
     def _run_shell_backed_ai_prompt(self, prompt: str, *, system_prompt: str = "") -> CommandResult:
         provider = self.ai_runtime.get_active_provider()
         if not provider or provider == "atheria":
@@ -10736,14 +10828,19 @@ class NovaShell:
             )
         if result.error:
             return result
+        raw_reply = result.output.strip()
+        reply = self._normalize_structured_agent_response(agent.prompt_template, raw_reply)
         payload = {
             "agent": agent.name,
             "provider": (result.data or {}).get("provider", agent.provider) if isinstance(result.data, dict) else agent.provider,
             "model": (result.data or {}).get("model", agent.model) if isinstance(result.data, dict) else agent.model,
             "prompt": prompt,
-            "response": result.output.strip(),
+            "response": reply,
         }
-        return CommandResult(output=result.output, data=payload, data_type=PipelineType.OBJECT)
+        if reply != raw_reply:
+            payload["raw_response"] = raw_reply
+        output = result.output if reply == raw_reply else (reply + "\n")
+        return CommandResult(output=output, data=payload, data_type=PipelineType.OBJECT)
 
     def _run_agent_instance_message(self, instance: AgentRuntimeInstance, message: str) -> CommandResult:
         instance.history.append({"role": "user", "content": message})
@@ -10762,7 +10859,8 @@ class NovaShell:
             )
         if result.error:
             return result
-        reply = result.output.strip()
+        raw_reply = result.output.strip()
+        reply = self._normalize_structured_agent_response(instance.prompt_template, raw_reply)
         instance.history.append({"role": "assistant", "content": reply})
         payload = {
             "agent": instance.name,
@@ -10773,7 +10871,10 @@ class NovaShell:
             "history_length": len(instance.history),
             "source_agent": instance.source_agent,
         }
-        return CommandResult(output=result.output, data=payload, data_type=PipelineType.OBJECT)
+        if reply != raw_reply:
+            payload["raw_response"] = raw_reply
+        output = result.output if reply == raw_reply else (reply + "\n")
+        return CommandResult(output=output, data=payload, data_type=PipelineType.OBJECT)
 
     def _run_agent(self, args: str, _: str, __: Any) -> CommandResult:
         parts = split_command(args)
@@ -11187,10 +11288,33 @@ class NovaShell:
                 req = urllib.request.Request(worker["url"].rstrip("/") + "/flow/event", data=event_data, headers={"Content-Type": "application/json"}, method="POST")
                 with contextlib.suppress(Exception):
                     urllib.request.urlopen(req, timeout=5).read()
+        declarative_payload: dict[str, Any] | None = None
         if self._declarative_nova is not None:
-            with contextlib.suppress(Exception):
-                self._declarative_nova.emit(event_name, payload)
+            try:
+                runtime_result = self._declarative_nova.emit(event_name, payload)
+                triggered_flows = [
+                    {
+                        "flow": flow.flow,
+                        "trigger_event": flow.trigger_event,
+                        "node_count": len(flow.nodes),
+                    }
+                    for flow in runtime_result.flows
+                ]
+                declarative_payload = {
+                    "loaded": True,
+                    "flow_count": len(triggered_flows),
+                    "triggered_flows": triggered_flows,
+                }
+            except Exception as exc:
+                declarative_payload = {
+                    "loaded": True,
+                    "flow_count": 0,
+                    "triggered_flows": [],
+                    "error": str(exc),
+                }
         out = {"event": event_name, "payload": payload, "broadcast": broadcast, "executed": executed}
+        if declarative_payload is not None:
+            out["declarative"] = declarative_payload
         return CommandResult(output=json.dumps(out, ensure_ascii=False) + "\n", data=out, data_type=PipelineType.OBJECT)
 
     def _run_event(self, args: str, _: str, __: Any) -> CommandResult:
