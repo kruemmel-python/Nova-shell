@@ -13,7 +13,6 @@ import importlib.util
 import io
 import html
 import http.server
-import runpy
 import threading
 import time
 import json
@@ -48,6 +47,7 @@ from typing import Any, Callable, Iterable
 
 from nova import NovaRuntime as DeclarativeNovaRuntime, WorkerNode
 from nova.agents.coevolution import MyceliaAtheriaCoEvolutionLab
+from nova.agents.skill_examples import generate_examples as generate_skill_examples, inspect_skills as inspect_skill_examples
 from nova.events.bus import Event as DeclarativeEvent
 from nova.mesh.federated import FederatedLearningMesh
 from nova.mesh.protocol import ExecutorResult, ExecutorTask
@@ -65,7 +65,7 @@ except ImportError:  # pragma: no cover - platform dependent
     readline = None
 
 
-__version__ = "0.8.27"
+__version__ = "0.8.28"
 SIDELOAD_PACKAGE_DIR = "vendor-py"
 RUNTIME_CONFIG_FILE = "nova-shell-runtime.json"
 BRIEFING_REPORT_FILES: tuple[tuple[str, str, str], ...] = (
@@ -6379,7 +6379,19 @@ class NovaShell:
                 flows = [runtime.execute_flow(flow_name) for flow_name in target_flows]
                 result = runtime.emit("runtime.loaded", {"source_name": source_name})
                 result.flows = flows
-                payload = result.to_dict()
+                agent_names = sorted(program.ast.agents().keys())
+                if not target_flows and agent_names:
+                    source_stem = re.sub(r"[^A-Za-z0-9_.-]+", "_", Path(source_name).stem).strip("._") or "ns"
+                    payload = {
+                        "source_name": source_name,
+                        "mode": "agent_bundle",
+                        "loaded": True,
+                        "agent_count": len(agent_names),
+                        "agents": agent_names,
+                        "qualified_agents": [f"{source_stem}.{name}" for name in agent_names],
+                    }
+                else:
+                    payload = result.to_dict()
 
             return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
         except Exception as exc:
@@ -6438,7 +6450,9 @@ class NovaShell:
                 if isinstance(providers, list) and providers:
                     provider = str(providers[0]).strip()
             provider = provider or "atheria"
-            model = str(properties.get("model") or "").strip() or "atheria-core"
+            model = str(properties.get("model") or "").strip()
+            if not model and provider != "shell":
+                model = "atheria-core"
             prompt_template = self._declarative_agent_prompt_template(properties)
             system_prompt = str(properties.get("system_prompt") or "").strip()
             definition = AIAgentDefinition(
@@ -6565,34 +6579,37 @@ class NovaShell:
             return CommandResult(output="", error=str(exc))
 
     def _ns_skills(self, payload: str, _: str, __: Any) -> CommandResult:
-        parts = split_command(payload)
-        if not parts or parts[0] != "build":
-            return CommandResult(output="", error="usage: ns.skills build [agent-skills-main|skills_dir] [output_dir]")
-        script_path = (Path(__file__).resolve().parent / "scripts" / "generate_agent_skills_examples.py").resolve()
-        generator = runpy.run_path(str(script_path))
-        skills_root: Path
-        output_dir: Path
-        if len(parts) > 1:
-            skills_root = self._resolve_path(parts[1])
-        else:
-            skills_root = self._resolve_path("agent-skills-main")
-        if skills_root.is_dir() and (skills_root / "skills").is_dir():
-            skills_root = skills_root / "skills"
-        output_dir = self._resolve_path(parts[2]) if len(parts) > 2 else self._resolve_path("examples")
-        if not skills_root.exists():
-            return CommandResult(output="", error=f"skills root not found: {skills_root}")
-        if not any(path.is_dir() for path in skills_root.iterdir()):
-            return CommandResult(output="", error=f"skills root has no skill directories: {skills_root}")
-        inventory = generator["inspect_skills"](skills_root.resolve()) if "inspect_skills" in generator else {"portable": {}, "skipped": {}}
-        manifest = generator["generate_examples"](skills_root.resolve(), output_dir.resolve())
-        payload_data = {
-            "skills_root": str(skills_root.resolve()),
-            "output_dir": str(output_dir.resolve()),
-            "generated": manifest,
-            "skipped": inventory.get("skipped", {}),
-            "count": len(manifest),
-        }
-        return self._json_command_result(payload_data)
+        try:
+            parts = split_command(payload)
+            if not parts or parts[0] != "build":
+                return CommandResult(output="", error="usage: ns.skills build [agent-skills-main|skills_dir] [output_dir]")
+            skills_root: Path
+            output_dir: Path
+            if len(parts) > 1:
+                skills_root = self._resolve_path(parts[1])
+            else:
+                skills_root = self._resolve_path("agent-skills-main")
+            if skills_root.is_dir() and (skills_root / "skills").is_dir():
+                skills_root = skills_root / "skills"
+            output_dir = self._resolve_path(parts[2]) if len(parts) > 2 else self._resolve_path("examples")
+            if not skills_root.exists():
+                return CommandResult(output="", error=f"skills root not found: {skills_root}")
+            if not any(path.is_dir() for path in skills_root.iterdir()):
+                return CommandResult(output="", error=f"skills root has no skill directories: {skills_root}")
+            resolved_skills_root = skills_root.resolve()
+            resolved_output_dir = output_dir.resolve()
+            inventory = inspect_skill_examples(resolved_skills_root)
+            manifest = generate_skill_examples(resolved_skills_root, resolved_output_dir)
+            payload_data = {
+                "skills_root": str(resolved_skills_root),
+                "output_dir": str(resolved_output_dir),
+                "generated": manifest,
+                "skipped": inventory.get("skipped", {}),
+                "count": len(manifest),
+            }
+            return self._json_command_result(payload_data)
+        except Exception as exc:
+            return CommandResult(output="", error=str(exc))
 
     def _ns_status(self, _: str, __: str, ___: Any) -> CommandResult:
         if self._declarative_nova is None or self._declarative_nova.context is None or self._declarative_nova.program is None:
@@ -10564,6 +10581,7 @@ class NovaShell:
             return self._execute_plan_payload(prompt, plan_payload, max_replans=max_replans)
         if action == "prompt":
             file_path_text: str | None = None
+            system_prompt = ""
             prompt_tokens: list[str] = []
             i = 1
             while i < len(parts):
@@ -10572,11 +10590,15 @@ class NovaShell:
                     file_path_text = parts[i + 1]
                     i += 2
                     continue
+                if token == "--system" and i + 1 < len(parts):
+                    system_prompt = parts[i + 1]
+                    i += 2
+                    continue
                 prompt_tokens.append(token)
                 i += 1
             prompt = " ".join(prompt_tokens).strip().strip('"')
             if not prompt:
-                return CommandResult(output="", error="usage: ai prompt [--file path] <prompt>")
+                return CommandResult(output="", error="usage: ai prompt [--file path] [--system text] <prompt>")
             enriched_prompt, context_error = self._build_ai_prompt_with_context(
                 prompt,
                 pipeline_input=pipeline_input,
@@ -10590,7 +10612,7 @@ class NovaShell:
                     output="",
                     error='dataset context missing. use `data load file.csv | ai prompt "Summarize this dataset"` or `ai prompt --file file.csv "Summarize this dataset"`',
                 )
-            return self.ai_runtime.complete_prompt(enriched_prompt)
+            return self.ai_runtime.complete_prompt(enriched_prompt, system_prompt=system_prompt)
 
         prompt = args.strip().strip('"')
         if not prompt:
@@ -10616,20 +10638,37 @@ class NovaShell:
     def _render_agent_prompt(self, agent: AIAgentDefinition, input_text: str) -> str:
         return self._render_prompt_template(agent.prompt_template, input_text)
 
+    def _run_shell_backed_ai_prompt(self, prompt: str, *, system_prompt: str = "") -> CommandResult:
+        provider = self.ai_runtime.get_active_provider()
+        if not provider or provider == "atheria":
+            return CommandResult(
+                output="",
+                error="shell-backed agents require a configured generative ai provider; use `ai use lmstudio <model>` or another chat provider before `agent run`",
+            )
+        return self.ai_runtime.complete_prompt(
+            prompt,
+            provider=provider,
+            model=self.ai_runtime.get_active_model(provider),
+            system_prompt=system_prompt,
+        )
+
     def _run_agent_once(self, agent: AIAgentDefinition, input_text: str) -> CommandResult:
         prompt = self._render_agent_prompt(agent, input_text)
-        result = self.ai_runtime.complete_prompt(
-            prompt,
-            provider=agent.provider,
-            model=agent.model,
-            system_prompt=agent.system_prompt,
-        )
+        if agent.provider == "shell":
+            result = self._run_shell_backed_ai_prompt(prompt, system_prompt=agent.system_prompt)
+        else:
+            result = self.ai_runtime.complete_prompt(
+                prompt,
+                provider=agent.provider,
+                model=agent.model,
+                system_prompt=agent.system_prompt,
+            )
         if result.error:
             return result
         payload = {
             "agent": agent.name,
-            "provider": agent.provider,
-            "model": agent.model,
+            "provider": (result.data or {}).get("provider", agent.provider) if isinstance(result.data, dict) else agent.provider,
+            "model": (result.data or {}).get("model", agent.model) if isinstance(result.data, dict) else agent.model,
             "prompt": prompt,
             "response": result.output.strip(),
         }
@@ -10641,12 +10680,15 @@ class NovaShell:
         if instance.history:
             transcript = "\n".join(f"{item['role']}: {item['content']}" for item in instance.history[-12:])
             prompt = prompt.strip() + "\n\nConversation history:\n" + transcript
-        result = self.ai_runtime.complete_prompt(
-            prompt,
-            provider=instance.provider,
-            model=instance.model,
-            system_prompt=instance.system_prompt,
-        )
+        if instance.provider == "shell":
+            result = self._run_shell_backed_ai_prompt(prompt, system_prompt=instance.system_prompt)
+        else:
+            result = self.ai_runtime.complete_prompt(
+                prompt,
+                provider=instance.provider,
+                model=instance.model,
+                system_prompt=instance.system_prompt,
+            )
         if result.error:
             return result
         reply = result.output.strip()

@@ -1,0 +1,28 @@
+[
+  {
+    "signal_id": "market_enterprise_demand",
+    "title": "Enterprise demand rising",
+    "source": "market.feed",
+    "domain": "market",
+    "type": "demand",
+    "severity": 0.79,
+    "summary": "Qualified enterprise pipeline is up 24 percent quarter over quarter.",
+    "metrics": {
+      "demand": 0.81,
+      "opportunity": 0.74
+    }
+  },
+  {
+    "signal_id": "market_runtime_security_window",
+    "title": "Runtime security becomes a buyer priority",
+    "source": "market.feed",
+    "domain": "strategy",
+    "type": "opportunity",
+    "severity": 0.68,
+    "summary": "Buyers increasingly prefer vendors that can combine secure agent runtimes with enterprise observability.",
+    "metrics": {
+      "opportunity": 0.69,
+      "pressure": 0.57
+    }
+  }
+]

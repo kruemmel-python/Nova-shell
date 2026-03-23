@@ -72,17 +72,37 @@ PROFILE_NUITKA_MODULES = {
 PROFILE_NUITKA_NOFOLLOW = {
     "arrow": ["pyarrow.tests", "pyarrow.vendored"],
 }
-LOCAL_RUNTIME_DIRS = ["Atheria", "WIKI", "nova"]
+LOCAL_RUNTIME_DIRS = ["Atheria", "WIKI", "nova", "examples", "agent-skills-main"]
 LOCAL_RUNTIME_FILES = [
     "industry_scanner.py",
     "trend_rss_sensor.py",
     "watch_the_big_players.ns",
     "watch_the_big_players_test.ns",
+    "nova_project_monitor.ns",
     "morning_briefing.ns",
     "sample_news.json",
     "beispiel_rss.md",
     "morning_briefing.md",
+    "THIRD_PARTY_NOTICES.md",
 ]
+LOCAL_RUNTIME_IGNORE_PATTERNS = (
+    "__pycache__",
+    "*.pyc",
+    "*.pyo",
+    ".nova",
+    ".nova_ceo",
+    ".nova_lens",
+    ".nova_project_monitor",
+    ".pytest_cache",
+    ".mypy_cache",
+    ".ruff_cache",
+    ".tox",
+    ".nox",
+    ".venv",
+    "venv",
+    ".DS_Store",
+    "Thumbs.db",
+)
 WINDOWS_INSTALLER_SUPPORT_FILES = [
     "scripts/upgrade_windows_install.ps1",
     "scripts/upgrade_windows_install.README.txt",
@@ -740,7 +760,11 @@ def native_fs_path(path: Path) -> str:
 def safe_copy2_file(src: Path, dst: Path) -> None:
     dst.parent.mkdir(parents=True, exist_ok=True)
     with open(native_fs_path(src), "rb") as source_handle, open(native_fs_path(dst), "wb") as target_handle:
-        shutil.copyfileobj(source_handle, target_handle, length=4 * 1024 * 1024)
+        while True:
+            chunk = source_handle.read(256 * 1024)
+            if not chunk:
+                break
+            target_handle.write(chunk)
     with contextlib.suppress(OSError):
         stat_result = os.stat(native_fs_path(src))
         os.chmod(native_fs_path(dst), stat.S_IMODE(stat_result.st_mode))
@@ -1031,7 +1055,7 @@ def stage_local_runtime_directories(bundle_dir: Path, *, build_context: BuildCon
     step("Staging local runtime directories")
     for source_dir in runtime_dirs:
         target_dir = bundle_dir / source_dir.name
-        copytree_filtered(source_dir, target_dir)
+        safe_copytree(source_dir, target_dir, ignore_patterns=LOCAL_RUNTIME_IGNORE_PATTERNS)
         normalize_tree_timestamps(target_dir, build_context.source_date_epoch)
     for source_file in runtime_files:
         target_file = bundle_dir / source_file.name
@@ -1268,14 +1292,14 @@ def stage_emsdk_runtime_subset(cache_dir: Path, target_root: Path) -> None:
         source = cache_dir / relative_path
         if not source.exists():
             continue
-        # robocopy is fast for general staging, but it has proven unstable with the
-        # bundled Emscripten subset on some Windows hosts. Keep this path on the
-        # pure-Python copier so the release build remains reproducible.
+        # The Python walker has shown access violations on large Emscripten trees
+        # on some Windows hosts. Prefer robocopy here and keep the ignore list
+        # explicit so the subset remains stable.
         safe_copytree(
             source,
             target_root / relative_path,
             ignore_patterns=ignore_patterns,
-            prefer_robocopy=False,
+            prefer_robocopy=True,
         )
     stage_minimal_node_runtime(cache_dir, target_root / "node")
     stage_minimal_python_runtime(target_root / PYTHON_RUNTIME_DIR)

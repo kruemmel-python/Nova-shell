@@ -865,6 +865,9 @@ Erwartung:
 
 - [ExamplesAndRecipes](./ExamplesAndRecipes.md)
 - [ProgrammingWithNovaShell](./ProgrammingWithNovaShell.md)
+- [StandaloneSkillAgents](./StandaloneSkillAgents.md)
+- [StandaloneSkillAgentsForDevelopers](./StandaloneSkillAgentsForDevelopers.md)
+- [TutorialStandaloneSkillAgents](./TutorialStandaloneSkillAgents.md)
 - [ShellCommandReference](./ShellCommandReference.md)
 - [CodeReferenceIndex](./CodeReferenceIndex.md)
 - [NSBlobGenerator](./NSBlobGenerator.md)

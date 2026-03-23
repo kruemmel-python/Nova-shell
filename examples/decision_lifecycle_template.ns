@@ -1,0 +1,80 @@
+system Decision_Runtime {
+  mode: local
+  observability: structured
+}
+
+state decision_memory {
+  backend: atheria
+  namespace: decision_lifecycle_template
+}
+
+agent SignalTransformer {
+  provider: local
+  model: local
+  memory: decision_memory
+  system_prompt: "Du transformierst Rohsignale in eine knappe, strukturierte Bewertung."
+  prompts: {v1: "Verdichte den Input in dieses Format:\nSignal: <kurz>\nPrioritaet: <niedrig/mittel/hoch>\nChance: <kurz>\nRisiko: <kurz>\n\n{{input}}"}
+  prompt_version: v1
+}
+
+agent ConstraintTransformer {
+  provider: local
+  model: local
+  memory: decision_memory
+  system_prompt: "Du extrahierst Einschraenkungen, Kapazitaetsgrenzen und harte Bedingungen aus Rohsignalen."
+  prompts: {v1: "Verdichte den Input in dieses Format:\nConstraint: <kurz>\nGrenze: <kurz>\nEngpass: <kurz>\nAuswirkung: <kurz>\n\n{{input}}"}
+  prompt_version: v1
+}
+
+agent MergerAgent {
+  provider: local
+  model: local
+  memory: decision_memory
+  system_prompt: "Du fuehrst zwei transformierte Perspektiven zu einem gemeinsamen Entscheidungsbild zusammen."
+  prompts: {v1: "Fuehre die Eingaben zu einem gemeinsamen Lagebild zusammen. Ausgabeformat:\nLagebild: <kurz>\nSpannung: <kurz>\nEntscheidungsraum: <kurz>\n\n{{input}}"}
+  prompt_version: v1
+}
+
+agent DecisionAgent {
+  provider: local
+  model: local
+  memory: decision_memory
+  system_prompt: "Du leitest aus einem zusammengefuehrten Lagebild eine klare Entscheidung ab."
+  prompts: {v1: "Leite aus dem Input eine Entscheidung ab. Ausgabeformat:\nEntscheidung: <go/hold/revise>\nBegruendung: <kurz>\nKonfidenz: <0.00-1.00>\n\n{{input}}"}
+  prompt_version: v1
+}
+
+agent ActionAgent {
+  provider: local
+  model: local
+  memory: decision_memory
+  system_prompt: "Du uebersetzt Entscheidungen in konkrete operative erste Schritte."
+  prompts: {v1: "Leite aus dem Input konkrete Aktion ab. Ausgabeformat:\nAktion: <kurz>\nOwner: <Rolle>\nErste_Schritte: <kurz>\nKommunikation: <kurz>\n\n{{input}}"}
+  prompt_version: v1
+}
+
+dataset raw_signals {
+  items: [{title: "Demand rises", source: "market", summary: "Qualified demand grows faster than expected."}, {title: "Compute budget tightens", source: "finance", summary: "Budget and capacity constraints narrow the execution window."}]
+}
+
+flow decision_cycle {
+  rss.fetch raw_signals -> ingested_signals
+  SignalTransformer transform raw_signals -> transformed_signal_raw
+  ConstraintTransformer transform raw_signals -> transformed_constraint_raw
+  py.exec "(_ or {}).get('memory_record', {}).get('text', '')" transformed_signal_raw -> transformed_signal
+  py.exec "(_ or {}).get('memory_record', {}).get('text', '')" transformed_constraint_raw -> transformed_constraint
+  py.exec "json.dumps({'signal': _[0], 'constraint': _[1]}, ensure_ascii=False)" transformed_signal transformed_constraint -> merge_packet
+  MergerAgent merge merge_packet -> merged_raw
+  py.exec "(_ or {}).get('memory_record', {}).get('text', '')" merged_raw -> merged_context
+  DecisionAgent decide merged_context -> decision_raw
+  py.exec "(_ or {}).get('memory_record', {}).get('text', '')" decision_raw -> final_decision
+  ActionAgent act final_decision -> action_raw
+  py.exec "(_ or {}).get('memory_record', {}).get('text', '')" action_raw -> action_plan
+  state.set decision_last_action action_plan
+  event.emit decision_ready action_plan
+}
+
+event decision_tick {
+  on: decision.tick
+  flow: decision_cycle
+}

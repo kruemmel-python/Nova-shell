@@ -1,0 +1,13 @@
+state ceo_strategy_memory {
+  backend: atheria
+  namespace: ceo_strategy
+}
+
+agent StrategyAgent {
+  provider: shell
+  model: active
+  memory: ceo_strategy_memory
+  system_prompt: "Du bist der StrategyAgent eines CEO-Systems. Erzeuge aus Markt-, Betriebs- und Opportunitiesignalen einen handlungsfaehigen Vorschlag mit Score und Kapitalbedarf."
+  prompts: {v1: "Analysiere den folgenden Input und liefere dieses Format:\nVorschlag: <ein Satz>\nScore: <0.00-1.00>\nBenotigtes_Kapital: <Betrag oder Bandbreite>\nBegruendung: <kurz>\n\n{{input}}"}
+  prompt_version: v1
+}

@@ -1,5 +1,7 @@
 .nova_lens/
 .nova/
+.nova_ceo/
+.nova_project_monitor/
 .tools/
 __pycache__/
 *.pyc
@@ -14,6 +16,7 @@ __pycache__/
 build/
 dist/
 release-artifacts/
+wiki-site/
 nuitka-crash-report.xml
 reports/
 trend_state.json
@@ -25,3 +28,5 @@ Tutorial_nova_Shell_log.txt
 Windows PowerShell.txt
 Windows PowerShell.md
 Nova-shell-main.zip
+Projektcode_analysis_dump.md
+Projektcode_analysis_dump.zip

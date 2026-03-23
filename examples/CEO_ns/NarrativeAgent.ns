@@ -1,0 +1,13 @@
+state ceo_narrative_memory {
+  backend: atheria
+  namespace: ceo_narrative
+}
+
+agent NarrativeAgent {
+  provider: shell
+  model: active
+  memory: ceo_narrative_memory
+  system_prompt: "Du bist der NarrativeAgent eines CEO-Systems. Uebersetze Entscheidungen in ein verstaendliches Board-Narrativ."
+  prompts: {v1: "Formuliere aus dem folgenden Input ein kurzes Board-Narrativ. Ausgabeformat:\nBoard_Narrativ: <2-3 Saetze>\nWarum_Jetzt: <kurz>\nWas_zu_beobachten: <kurz>\n\n{{input}}"}
+  prompt_version: v1
+}

@@ -16,6 +16,7 @@ import urllib.request
 import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 from nova.mesh.protocol import ExecutorResult, ExecutorTask
@@ -73,16 +74,43 @@ class _StreamTee(io.TextIOBase):
 
 
 class _PythonAdapter:
+    @contextlib.contextmanager
+    def _push_context(self, base_path: Path) -> Any:
+        previous_cwd = Path.cwd()
+        inserted = False
+        base_text = str(base_path)
+        if base_text not in sys.path:
+            sys.path.insert(0, base_text)
+            inserted = True
+        os.chdir(base_path)
+        try:
+            yield
+        finally:
+            os.chdir(previous_cwd)
+            if inserted:
+                with contextlib.suppress(ValueError):
+                    sys.path.remove(base_text)
+
     def execute(self, task: ExecutorTask) -> ExecutorResult:
         code = task.command or (task.arguments[0] if task.arguments else "")
-        globals_ns: dict[str, Any] = {"json": json, "os": os, "time": time, "_": task.pipeline_data}
+        base_path = Path(str(task.metadata.get("base_path") or Path.cwd())).resolve(strict=False)
+        globals_ns: dict[str, Any] = {
+            "json": json,
+            "os": os,
+            "time": time,
+            "sys": sys,
+            "Path": Path,
+            "context": SimpleNamespace(base_path=base_path),
+            "_": task.pipeline_data,
+        }
         stream_mode = str(task.metadata.get("stream_mode") or "")
         stdout: io.StringIO | _StreamTee = _StreamTee(sys.stdout) if stream_mode == "tee" else io.StringIO()
         try:
-            with contextlib.redirect_stdout(stdout):
+            with self._push_context(base_path), contextlib.redirect_stdout(stdout):
                 try:
                     value = eval(code, globals_ns, globals_ns)
                     if value is not None:
+                        globals_ns["_"] = value
                         print(value)
                 except SyntaxError:
                     exec(code, globals_ns, globals_ns)

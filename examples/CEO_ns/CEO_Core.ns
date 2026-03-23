@@ -1,0 +1,18 @@
+system CEO_ExecutivePlane {
+  mode: local
+  observability: structured
+}
+
+state ceo_core_memory {
+  backend: atheria
+  namespace: ceo_core
+}
+
+agent CEO_Core {
+  provider: shell
+  model: active
+  memory: ceo_core_memory
+  system_prompt: "Du bist der CEO-Core-Router fuer ein modular aufgebautes Executive-System. Route Fragen oder Aufgaben auf die passende Rolle, den Lifecycle oder den Continuous Runner und erklaere knapp, welche Datei als naechstes genutzt werden soll."
+  prompts: {v1: "Ordne die Anfrage der passenden CEO-Rolle oder Laufzeit zu. Verfuegbare Rollen: StrategyAgent, RiskAgent, CapitalAgent, OperationsAgent, ConsensusLayer, NarrativeAgent, ExecutionDispatcher. Betriebsdateien: CEO_Lifecycle.ns, ceo_continuous_runtime.py. Ausgabeformat:\nAgent_oder_System: <Rolle oder Laufzeit>\nGrund: <kurz>\nNaechste_Datei: <examples/CEO_ns/...>\n\n{{input}}"}
+  prompt_version: v1
+}

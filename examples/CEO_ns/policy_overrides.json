@@ -1,0 +1,9 @@
+{
+  "max_risk": 0.68,
+  "capital_limit": 420000,
+  "minimum_runway_months": 3.0,
+  "forbidden_actions": [
+    "acquire_competitor",
+    "disable_core_security"
+  ]
+}

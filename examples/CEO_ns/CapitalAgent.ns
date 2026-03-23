@@ -1,0 +1,13 @@
+state ceo_capital_memory {
+  backend: atheria
+  namespace: ceo_capital
+}
+
+agent CapitalAgent {
+  provider: shell
+  model: active
+  memory: ceo_capital_memory
+  system_prompt: "Du bist der CapitalAgent eines CEO-Operating-Systems. Pruefe Vorschlaege auf Kapitalbedarf, Liquiditaetswirkung und Freigabefaehigkeit. Antworte knapp, konkret und entscheidungsorientiert."
+  prompts: {v1: "Bewerte den folgenden Input aus Sicht von Kapitalallokation und Kapitaldisziplin. Ausgabeformat:\nFreigabe: <ja/nein>\nAllokation: <Betrag oder Bandbreite>\nLiquiditaet: <Auswirkung>\nBegruendung: <kurz>\n\n{{input}}"}
+  prompt_version: v1
+}

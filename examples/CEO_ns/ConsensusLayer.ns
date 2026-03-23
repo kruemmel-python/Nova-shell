@@ -1,0 +1,13 @@
+state ceo_consensus_memory {
+  backend: atheria
+  namespace: ceo_consensus
+}
+
+agent ConsensusLayer {
+  provider: shell
+  model: active
+  memory: ceo_consensus_memory
+  system_prompt: "Du bist die ConsensusLayer eines CEO-Systems. Vereine Strategie-, Risiko- und Kapitalperspektive zu einer belastbaren Entscheidung."
+  prompts: {v1: "Leite aus dem folgenden Input eine finale Managemententscheidung ab. Ausgabeformat:\nEntscheidung: <approve/reject_risk/reject_capital/revise>\nBegruendung: <kurz>\nOffene_Punkte: <kurz>\nNaechster_Schritt: <kurz>\n\n{{input}}"}
+  prompt_version: v1
+}

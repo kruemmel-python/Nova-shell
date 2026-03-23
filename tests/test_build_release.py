@@ -423,6 +423,81 @@ class BuildReleaseTests(unittest.TestCase):
             self.assertTrue((bundle_dir / "nova" / "__init__.py").exists())
             self.assertTrue((bundle_dir / "nova" / "runtime" / "predictive.py").exists())
 
+    def test_stage_local_runtime_directories_copies_examples_tree(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source_dir = root / "examples"
+            source_dir.mkdir()
+            (source_dir / "demo_agent.ns").write_text("agent demo { provider: atheria }\n", encoding="utf-8")
+
+            bundle_dir = root / "bundle"
+            bundle_dir.mkdir()
+
+            with patch.object(build_release, "collect_local_runtime_directories", return_value=[source_dir]):
+                build_release.stage_local_runtime_directories(
+                    bundle_dir,
+                    build_context=build_release.BuildContext(
+                        source_date_epoch=None,
+                        timestamp_utc="2026-03-08T00:00:00+00:00",
+                        env={},
+                    ),
+                )
+
+            self.assertTrue((bundle_dir / "examples" / "demo_agent.ns").exists())
+
+    def test_stage_local_runtime_directories_excludes_runtime_state_folders(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source_dir = root / "examples"
+            source_dir.mkdir()
+            (source_dir / "demo_agent.ns").write_text("agent demo { provider: atheria }\n", encoding="utf-8")
+            (source_dir / ".nova_ceo").mkdir()
+            (source_dir / ".nova_ceo" / "ceo_report.html").write_text("<html></html>", encoding="utf-8")
+            (source_dir / ".nova_project_monitor").mkdir()
+            (source_dir / ".nova_project_monitor" / "latest_status.json").write_text("{}", encoding="utf-8")
+
+            bundle_dir = root / "bundle"
+            bundle_dir.mkdir()
+
+            with patch.object(build_release, "collect_local_runtime_directories", return_value=[source_dir]):
+                build_release.stage_local_runtime_directories(
+                    bundle_dir,
+                    build_context=build_release.BuildContext(
+                        source_date_epoch=None,
+                        timestamp_utc="2026-03-23T00:00:00+00:00",
+                        env={},
+                    ),
+                )
+
+            self.assertTrue((bundle_dir / "examples" / "demo_agent.ns").exists())
+            self.assertFalse((bundle_dir / "examples" / ".nova_ceo").exists())
+            self.assertFalse((bundle_dir / "examples" / ".nova_project_monitor").exists())
+
+    def test_stage_local_runtime_directories_copies_agent_skill_tree(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source_dir = root / "agent-skills-main"
+            (source_dir / "skills" / "demo" / "rules").mkdir(parents=True)
+            (source_dir / "README.md").write_text("# Demo\n", encoding="utf-8")
+            (source_dir / "skills" / "demo" / "SKILL.md").write_text("# Demo Skill\n", encoding="utf-8")
+            (source_dir / "skills" / "demo" / "rules" / "focus.md").write_text("# Focus\n", encoding="utf-8")
+
+            bundle_dir = root / "bundle"
+            bundle_dir.mkdir()
+
+            with patch.object(build_release, "collect_local_runtime_directories", return_value=[source_dir]):
+                build_release.stage_local_runtime_directories(
+                    bundle_dir,
+                    build_context=build_release.BuildContext(
+                        source_date_epoch=None,
+                        timestamp_utc="2026-03-08T00:00:00+00:00",
+                        env={},
+                    ),
+                )
+
+            self.assertTrue((bundle_dir / "agent-skills-main" / "README.md").exists())
+            self.assertTrue((bundle_dir / "agent-skills-main" / "skills" / "demo" / "SKILL.md").exists())
+
     def test_stage_bundled_emsdk_writes_wrapper_and_runtime_config(self) -> None:
         root = Path(tempfile.mkdtemp())
         self.addCleanup(_cleanup_tempdir, root)
@@ -467,7 +542,7 @@ class BuildReleaseTests(unittest.TestCase):
         self.assertIn("EMSCRIPTEN_ROOT", config.read_text(encoding="utf-8"))
         self.assertIn("if not defined EM_CACHE", wrapper.read_text(encoding="utf-8"))
 
-    def test_stage_emsdk_runtime_subset_avoids_robocopy_for_windows_copy(self) -> None:
+    def test_stage_emsdk_runtime_subset_prefers_robocopy_for_windows_copy(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             cache_root = root / "emsdk-cache"
@@ -496,7 +571,7 @@ class BuildReleaseTests(unittest.TestCase):
                 build_release.stage_emsdk_runtime_subset(cache_root, target_root)
 
             self.assertTrue(recorded_calls)
-            self.assertTrue(all(call["prefer_robocopy"] is False for call in recorded_calls))
+            self.assertTrue(all(call["prefer_robocopy"] is True for call in recorded_calls))
 
     def test_stage_local_runtime_directories_copies_runtime_files(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -528,6 +603,23 @@ class BuildReleaseTests(unittest.TestCase):
         files = build_release.collect_local_runtime_files()
         names = {path.name for path in files}
         self.assertIn("morning_briefing.ns", names)
+
+    def test_collect_local_runtime_files_includes_project_monitor_script(self) -> None:
+        files = build_release.collect_local_runtime_files()
+        names = {path.name for path in files}
+        self.assertIn("nova_project_monitor.ns", names)
+
+    def test_collect_local_runtime_directories_include_examples_and_agent_skills(self) -> None:
+        directories = build_release.collect_local_runtime_directories()
+        names = {path.name for path in directories}
+        self.assertIn("WIKI", names)
+        self.assertIn("examples", names)
+        self.assertIn("agent-skills-main", names)
+
+    def test_collect_local_runtime_files_includes_third_party_notices(self) -> None:
+        files = build_release.collect_local_runtime_files()
+        names = {path.name for path in files}
+        self.assertIn("THIRD_PARTY_NOTICES.md", names)
 
     def test_prune_bundle_runtime_state_removes_nova_lens_directory(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

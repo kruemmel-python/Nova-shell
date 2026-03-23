@@ -1,0 +1,13 @@
+state ceo_execution_memory {
+  backend: atheria
+  namespace: ceo_execution
+}
+
+agent ExecutionDispatcher {
+  provider: shell
+  model: active
+  memory: ceo_execution_memory
+  system_prompt: "Du bist der ExecutionDispatcher eines CEO-Systems. Uebersetze Entscheidungen in operative erste Schritte, Zustandswechsel und Verantwortlichkeiten."
+  prompts: {v1: "Leite aus dem folgenden Input einen operativen Dispatch ab. Ausgabeformat:\nAktion: <deploy_capital/abort_high_risk/wait_for_funds/request_revision>\nOwner: <Rolle oder Team>\nErste_Schritte: <kurz>\nKommunikation: <kurz>\n\n{{input}}"}
+  prompt_version: v1
+}

@@ -1,0 +1,88 @@
+system CEO_Runtime {
+  mode: local
+  observability: structured
+}
+
+state ceo_operating_memory {
+  backend: atheria
+  namespace: ceo_operating_system
+}
+
+dataset internal_telemetry {
+  path: internal_telemetry.json
+  format: json
+}
+
+dataset external_market_signals {
+  path: external_market_signals.json
+  format: json
+}
+
+dataset event_signal_feed {
+  path: event_signals.json
+  format: json
+}
+
+dataset policy_overrides {
+  path: policy_overrides.json
+  format: json
+}
+
+flow ceo_lifecycle {
+  state.get ceo_domain_state -> stored_state
+  py.exec "import ceo_runtime_helper as ceo; _ = ceo.load_or_bootstrap_state(_)" stored_state -> domain_state
+  rss.fetch policy_overrides -> policy_snapshot
+  py.exec "import ceo_runtime_helper as ceo; _ = ceo.apply_policy_overrides(_[0], _[1])" domain_state policy_overrides -> governed_state
+  rss.fetch internal_telemetry -> telemetry_snapshot
+  rss.fetch external_market_signals -> market_snapshot
+  rss.fetch event_signal_feed -> event_snapshot
+  py.exec "import ceo_runtime_helper as ceo; _ = ceo.normalize_signal_batch(_, source_kind='telemetry', default_domain='operations')" internal_telemetry -> internal_signals
+  py.exec "import ceo_runtime_helper as ceo; _ = ceo.normalize_signal_batch(_, source_kind='market', default_domain='market')" external_market_signals -> market_signals
+  py.exec "import ceo_runtime_helper as ceo; _ = ceo.normalize_signal_batch(_, source_kind='event', default_domain='market')" event_signal_feed -> event_signals
+  py.exec "import ceo_runtime_helper as ceo; _ = ceo.merge_signal_batches(*_)" internal_signals market_signals event_signals -> unified_signals
+  state.set ceo_last_signals unified_signals
+  py.exec "import ceo_runtime_helper as ceo; _ = ceo.refresh_state_from_signals(_[0], _[1])" governed_state unified_signals -> refreshed_state
+  py.exec "import ceo_runtime_helper as ceo; _ = ceo.strategy_agent(_[0], _[1])" unified_signals refreshed_state -> strategy_packet
+  py.exec "import ceo_runtime_helper as ceo; _ = ceo.risk_agent(_[0], _[1], _[2])" strategy_packet unified_signals refreshed_state -> risk_packet
+  py.exec "import ceo_runtime_helper as ceo; _ = ceo.capital_agent(_[0], _[1])" strategy_packet refreshed_state -> capital_packet
+  py.exec "import ceo_runtime_helper as ceo; _ = ceo.operations_agent(_[0], _[1], _[2])" strategy_packet refreshed_state unified_signals -> operations_packet
+  py.exec "import ceo_runtime_helper as ceo; _ = ceo.consensus_layer(_[0], _[1], _[2], _[3], _[4])" strategy_packet risk_packet capital_packet operations_packet refreshed_state -> decision_packet
+  state.set ceo_last_decision decision_packet
+  py.exec "import ceo_runtime_helper as ceo; _ = ceo.execution_agent(_[0], _[1])" decision_packet refreshed_state -> execution_plan
+  state.set ceo_last_execution execution_plan
+  py.exec "import ceo_runtime_helper as ceo; _ = ceo.apply_execution(_[0], _[1], _[2])" refreshed_state execution_plan decision_packet -> executed_state
+  py.exec "import ceo_runtime_helper as ceo; _ = ceo.evaluate_outcome(_[0], _[1], _[2], _[3])" execution_plan decision_packet executed_state unified_signals -> outcome_packet
+  py.exec "import ceo_runtime_helper as ceo; _ = ceo.feedback_update(_[0], _[1], _[2], _[3])" executed_state decision_packet execution_plan outcome_packet -> final_state
+  state.set ceo_domain_state final_state
+  state.set ceo_last_outcome outcome_packet
+  py.exec "import ceo_runtime_helper as ceo; _ = ceo.build_narrative(_[0], _[1], _[2], _[3])" decision_packet execution_plan outcome_packet final_state -> narrative_packet
+  state.set ceo_last_board_message narrative_packet
+  py.exec "import ceo_runtime_helper as ceo; _ = ceo.build_report(_[0], _[1], _[2], _[3], _[4], _[5], _[6], _[7], _[8], _[9])" final_state unified_signals strategy_packet risk_packet capital_packet operations_packet decision_packet execution_plan outcome_packet narrative_packet -> ceo_report
+  state.set ceo_last_report ceo_report
+  py.exec "import ceo_runtime_helper as ceo; _ = ceo.persist_runtime_artifacts(context.base_path, _[0], _[1], _[2])" ceo_report execution_plan final_state -> artifact_paths
+  state.set ceo_last_artifacts artifact_paths
+  py.exec "import ceo_runtime_helper as ceo; _ = ceo.market_event_payload(_[0], _[1])" unified_signals decision_packet -> market_event
+  py.exec "import ceo_runtime_helper as ceo; _ = ceo.capacity_event_payload(_[0], _[1])" final_state execution_plan -> capacity_event
+  py.exec "import ceo_runtime_helper as ceo; _ = ceo.capital_event_payload(_[0], _[1])" final_state decision_packet -> capital_event
+  event.emit event.market.change market_event
+  event.emit event.capacity.limit capacity_event
+  event.emit event.capital.alert capital_event
+  event.emit event.decision.made decision_packet
+  event.emit event.execution.done execution_plan
+  event.emit ceo_cycle_ready ceo_report
+}
+
+event board_review {
+  on: board.review
+  flow: ceo_lifecycle
+}
+
+event ceo_tick {
+  on: ceo.tick
+  flow: ceo_lifecycle
+}
+
+event market_change {
+  on: event.market.change
+  flow: ceo_lifecycle
+}

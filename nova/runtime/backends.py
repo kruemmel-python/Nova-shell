@@ -5,6 +5,7 @@ import io
 import json
 import os
 import subprocess
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, TYPE_CHECKING
@@ -24,7 +25,25 @@ class BackendExecutionRequest:
 
 class LocalPythonBackend:
     def __init__(self) -> None:
-        self.globals: dict[str, Any] = {"os": os, "json": json}
+        self.globals: dict[str, Any] = {"os": os, "json": json, "sys": sys, "Path": Path}
+
+    @contextlib.contextmanager
+    def _push_context(self, context: "RuntimeContext") -> Any:
+        base_path = context.base_path.resolve(strict=False)
+        previous_cwd = Path.cwd()
+        inserted = False
+        base_text = str(base_path)
+        if base_text not in sys.path:
+            sys.path.insert(0, base_text)
+            inserted = True
+        os.chdir(base_path)
+        try:
+            yield
+        finally:
+            os.chdir(previous_cwd)
+            if inserted:
+                with contextlib.suppress(ValueError):
+                    sys.path.remove(base_text)
 
     def execute(self, code: str, inputs: list[Any], context: "RuntimeContext") -> CommandExecution:
         stdout_buffer = io.StringIO()
@@ -32,7 +51,7 @@ class LocalPythonBackend:
         self.globals["_"] = inputs[0] if len(inputs) == 1 else (inputs if inputs else None)
 
         try:
-            with contextlib.redirect_stdout(stdout_buffer):
+            with self._push_context(context), contextlib.redirect_stdout(stdout_buffer):
                 try:
                     value = eval(code, self.globals, self.globals)
                     if value is not None:
@@ -90,7 +109,10 @@ class BackendRouter:
                     arguments=list(request.arguments),
                     command=request.arguments[0] if request.arguments else None,
                     pipeline_data=primary_input,
-                    metadata=dict(request.metadata),
+                    metadata={
+                        **dict(request.metadata),
+                        "base_path": str(context.base_path),
+                    },
                 )
                 return self.executor_manager.execute(native_backend, task)
             except Exception as exc:

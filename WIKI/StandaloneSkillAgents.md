@@ -181,4 +181,6 @@ So bleibt das Repo leichtgewichtig und die Laufzeitartefakte bleiben trotzdem kl
 - [NovaCLI](./NovaCLI.md)
 - [NovaAgents](./NovaAgents.md)
 - [ExamplesAndRecipes](./ExamplesAndRecipes.md)
+- [StandaloneSkillAgentsForDevelopers](./StandaloneSkillAgentsForDevelopers.md)
+- [TutorialStandaloneSkillAgents](./TutorialStandaloneSkillAgents.md)
 - [nsCreate](./nsCreate.md)

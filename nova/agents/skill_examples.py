@@ -5,8 +5,8 @@ import re
 from pathlib import Path
 
 
-DEFAULT_PROVIDER = "atheria"
-DEFAULT_MODEL = "atheria-core"
+DEFAULT_PROVIDER = "shell"
+DEFAULT_MODEL = "active"
 NON_PORTABLE_SKILLS = {
     "deploy-to-vercel": "requires Vercel deployment infrastructure and external deploy/link flows that are not native Nova-shell capabilities",
     "vercel-cli-with-tokens": "requires Vercel CLI token workflows, .vercel project state, and external Vercel service access",
@@ -83,6 +83,36 @@ def strip_markdown(text: str, *, limit: int = 700) -> str:
     return payload[:limit].rstrip()
 
 
+def extract_labeled_code_examples(text: str) -> dict[str, str]:
+    examples: dict[str, str] = {}
+    lines = text.splitlines()
+    pending_label = ""
+    index = 0
+    while index < len(lines):
+        stripped = lines[index].strip()
+        lowered = stripped.lower()
+        if lowered.startswith("**incorrect") or lowered.startswith("incorrect"):
+            pending_label = "incorrect"
+            index += 1
+            continue
+        if lowered.startswith("**correct") or lowered.startswith("correct"):
+            pending_label = "correct"
+            index += 1
+            continue
+        if pending_label and stripped.startswith("```"):
+            code_lines: list[str] = []
+            index += 1
+            while index < len(lines) and not lines[index].strip().startswith("```"):
+                code_lines.append(lines[index].rstrip())
+                index += 1
+            example = "\n".join(code_lines).strip()
+            if example and pending_label not in examples:
+                examples[pending_label] = example
+            pending_label = ""
+        index += 1
+    return examples
+
+
 def read_skill_summary(skill_dir: Path) -> tuple[str, str]:
     skill_file = skill_dir / "SKILL.md"
     text = skill_file.read_text(encoding="utf-8")
@@ -93,17 +123,21 @@ def read_skill_summary(skill_dir: Path) -> tuple[str, str]:
 
 
 def read_rule_payload(rule_path: Path) -> dict[str, str]:
-    metadata, body = parse_front_matter(rule_path.read_text(encoding="utf-8"))
+    raw_text = rule_path.read_text(encoding="utf-8")
+    metadata, body = parse_front_matter(raw_text)
     title = metadata.get("title") or next((line.lstrip("# ").strip() for line in body.splitlines() if line.strip().startswith("#")), rule_path.stem.replace("-", " "))
     impact = metadata.get("impact", "").strip()
     tags = metadata.get("tags", "").strip()
     summary = strip_markdown(body, limit=650)
+    examples = extract_labeled_code_examples(body)
     return {
         "name": rule_path.stem,
         "title": title,
         "impact": impact,
         "tags": tags,
         "summary": summary,
+        "incorrect_example": examples.get("incorrect", ""),
+        "correct_example": examples.get("correct", ""),
     }
 
 
@@ -148,11 +182,31 @@ def build_rule_agent(skill_slug: str, skill_title: str, rule: dict[str, str], me
         parts.append(f"Tags: {rule['tags']}.")
     if rule["summary"]:
         parts.append(f"Hintergrund: {rule['summary']}")
-    parts.append("Arbeite konkret, code-nah und mit klaren Verbesserungsschritten.")
+    if rule["incorrect_example"]:
+        parts.append("Typischer Fehlfall:")
+        parts.append(rule["incorrect_example"])
+    if rule["correct_example"]:
+        parts.append("Zielmuster:")
+        parts.append(rule["correct_example"])
+    parts.append(
+        "Arbeite konkret, code-nah und mit klaren Verbesserungsschritten. "
+        "Wenn der Input die Regel verletzt, beginne mit einem direkten Patch oder Rewrite und erklaere erst danach kurz den Befund. "
+        "Wenn der Input bereits konform ist, schreibe deutlich 'Status: bereits konform' und begruende das knapp."
+    )
     system_prompt = " ".join(parts)
     prompt = (
         f"Pruefe oder verbessere den folgenden Input strikt nach der Regel {rule['title']}. "
-        "Antworte mit: 1. Befund 2. Empfohlene Aenderung 3. Beispiel oder Patch-Hinweis.\n\n{{input}}"
+        "Ausgabeformat:\n"
+        "Patch:\n"
+        "```text\n"
+        "<direkter Rewrite oder gezielter Patch>\n"
+        "```\n"
+        "Befund: <ein kurzer Satz>\n"
+        "Warum: <ein kurzer Satz>\n"
+        "Wenn kein Patch noetig ist, schreibe stattdessen:\n"
+        "Status: bereits konform\n"
+        "Warum: <ein kurzer Satz>\n\n"
+        "{{input}}"
     )
     return "\n".join(
         [
@@ -176,7 +230,10 @@ def build_single_skill_agent(skill_slug: str, display_name: str, summary: str, m
         f"Nutze dieses Wissen als Grundlage: {summary} "
         "Antworte umsetzungsnah, knapp und mit konkreten Schritten."
     )
-    prompt = "Bearbeite die Anfrage mit dem eingebetteten Skill-Wissen.\n\n{{input}}"
+    prompt = (
+        "Bearbeite die Anfrage mit dem eingebetteten Skill-Wissen. "
+        "Wenn du Code verbesserst, beginne mit einem direkten Rewrite oder Patch und erklaere erst danach kurz warum.\n\n{{input}}"
+    )
     return "\n".join(
         [
             f"agent {agent_name} {{",

@@ -1,0 +1,13 @@
+state ceo_risk_memory {
+  backend: atheria
+  namespace: ceo_risk
+}
+
+agent RiskAgent {
+  provider: shell
+  model: active
+  memory: ceo_risk_memory
+  system_prompt: "Du bist der RiskAgent eines CEO-Systems. Bewerte Risiken, Exponierung und Warnsignale. Antworte so, dass ein Vorstand direkt entscheiden kann."
+  prompts: {v1: "Bewerte den folgenden Input aus Risikosicht. Ausgabeformat:\nRisiko: <niedrig/mittel/hoch>\nScore: <0.00-1.00>\nEmpfehlung: <allow/block/revise>\nWarnsignal: <kurz>\nBegruendung: <kurz>\n\n{{input}}"}
+  prompt_version: v1
+}

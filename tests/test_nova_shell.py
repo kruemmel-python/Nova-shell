@@ -19,7 +19,7 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from nova.runtime import AtheriaVoiceRuntime
-from nova_shell import CommandResult, CppEngine, NovaAtheriaRuntime, NovaShell, PipelineType, __version__, main, render_trend_explanation, resolve_emcc_command
+from nova_shell import AIAgentDefinition, CommandResult, CppEngine, NovaAtheriaRuntime, NovaShell, PipelineType, __version__, main, render_trend_explanation, resolve_emcc_command
 from novascript import Assignment, Command, ForLoop, IfBlock, NovaInterpreter, NovaParser
 
 
@@ -1009,7 +1009,54 @@ if len(files_lines) == 2:
             self.assertIn("Aenderung erkannt", html_body)
             self.assertIn("Review-Agent", html_body)
             self.assertIn("Datei-Hotspots", html_body)
-            self.assertIn("Detailseite", html_body)
+
+    def test_project_monitor_limits_snapshot_text_capture_for_large_projects(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        helper = runpy.run_path(str(root / "examples" / "nova_project_monitor_helper.py"))
+
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp).resolve()
+            state_dir = project / ".nova_project_monitor"
+            state_dir.mkdir(parents=True, exist_ok=True)
+            source_dir = project / "src"
+            source_dir.mkdir(parents=True, exist_ok=True)
+            large_file = source_dir / "large.ts"
+            large_file.write_text(("const line = 'x';\n" * 4000), encoding="utf-8")
+            with patch.dict(
+                os.environ,
+                {"NOVA_PROJECT_MONITOR_OPEN": "0", "NOVA_PROJECT_MONITOR_MAX_TEXT_BYTES": "128"},
+                clear=False,
+            ):
+                payload = helper["monitor_once"](project, state_dir, runtime_status={"watch_mode": "poll"})
+            self.assertTrue((state_dir / "project_monitor_report.html").is_file())
+            self.assertTrue((state_dir / "latest_status.json").is_file())
+            self.assertEqual(payload["runtime"]["watch_mode"], "poll")
+            snapshot = json.loads((state_dir / "snapshot.json").read_text(encoding="utf-8"))
+            self.assertGreaterEqual(int(snapshot.get("text_capture_omitted_files", 0)), 1)
+            self.assertTrue(any(entry.get("text_state") == "text_budget_skipped" for entry in snapshot.get("files", {}).values()))
+            html_body = (state_dir / "project_monitor_report.html").read_text(encoding="utf-8")
+            self.assertIn("Speichergruenden", html_body)
+
+    def test_project_monitor_excludes_runtime_state_directories(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        helper = runpy.run_path(str(root / "examples" / "nova_project_monitor_helper.py"))
+
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp).resolve()
+            (project / "src").mkdir(parents=True, exist_ok=True)
+            (project / "src" / "app.ts").write_text("export const value = 1;\n", encoding="utf-8")
+            (project / ".nova").mkdir(parents=True, exist_ok=True)
+            (project / ".nova" / "runtime.db").write_text("internal\n", encoding="utf-8")
+            (project / ".nova_lens" / "cas").mkdir(parents=True, exist_ok=True)
+            (project / ".nova_lens" / "cas" / "blob").write_text("lens\n", encoding="utf-8")
+            (project / ".pytest_cache").mkdir(parents=True, exist_ok=True)
+            (project / ".pytest_cache" / "state").write_text("cache\n", encoding="utf-8")
+
+            snapshot = helper["scan_project"](project)
+            self.assertIn("src/app.ts", snapshot["files"])
+            self.assertNotIn(".nova/runtime.db", snapshot["files"])
+            self.assertNotIn(".nova_lens/cas/blob", snapshot["files"])
+            self.assertNotIn(".pytest_cache/state", snapshot["files"])
 
     def test_ns_run_project_monitor_can_use_ai_review_provider(self) -> None:
         root = Path(__file__).resolve().parents[1]
@@ -3220,9 +3267,15 @@ agent helper {
             self.assertTrue(target.exists())
             source = target.read_text(encoding="utf-8")
             self.assertNotIn("agent-skills-main", source)
+            self.assertIn("provider: shell", source)
+            self.assertIn("Patch:", source)
+            self.assertIn("Promise.all([", source)
 
             result = self.shell.route(f"ns.run {target}")
             self.assertIsNone(result.error)
+            loaded_payload = json.loads(result.output)
+            self.assertEqual(loaded_payload["mode"], "agent_bundle")
+            self.assertIn("react_best_practices_async_parallel", loaded_payload["agents"])
             listing = json.loads(self.shell.route("agent list").output)
             names = {item["name"] for item in listing}
             self.assertIn("react_best_practices_router", names)
@@ -3275,6 +3328,336 @@ Prefer focused changes with concrete reasoning.
             source = target.read_text(encoding="utf-8")
             self.assertIn("agent demo_skill_focus", source)
             self.assertNotIn("agent-skills-main", source)
+            self.assertIn("provider: shell", source)
+            self.assertIn("Patch:", source)
+
+    def test_ns_run_agent_bundle_returns_compact_summary(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            script_path = root / "bundle.ns"
+            script_path.write_text(
+                """
+state helper_memory {
+  backend: atheria
+  namespace: helper
+}
+
+agent helper {
+  provider: shell
+  model: active
+  memory: helper_memory
+  system_prompt: "You are concise."
+  prompts: {v1: "Summarize {{input}}"}
+  prompt_version: v1
+}
+""".strip(),
+                encoding="utf-8",
+            )
+            result = self.shell.route(f"ns.run {script_path}")
+            try:
+                if self.shell._declarative_nova is not None:
+                    self.shell._declarative_nova.close()
+                    self.shell._declarative_nova = None
+            except Exception:
+                pass
+
+        self.assertIsNone(result.error)
+        payload = json.loads(result.output)
+        self.assertEqual(payload["mode"], "agent_bundle")
+        self.assertEqual(payload["agent_count"], 1)
+        self.assertIn("helper", payload["agents"])
+
+    def _copy_ceo_runtime_fixture(self, target_root: Path) -> None:
+        source_root = Path(__file__).resolve().parents[1] / "examples" / "CEO_ns"
+        for name in (
+            "CEO_Lifecycle.ns",
+            "ceo_runtime_helper.py",
+            "ceo_continuous_runtime.py",
+            "internal_telemetry.json",
+            "external_market_signals.json",
+            "event_signals.json",
+            "policy_overrides.json",
+        ):
+            (target_root / name).write_text((source_root / name).read_text(encoding="utf-8"), encoding="utf-8")
+
+    def test_ceo_ns_examples_load_successfully(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        ceo_dir = root / "examples" / "CEO_ns"
+        targets = sorted(ceo_dir.glob("*.ns"))
+        self.assertGreaterEqual(len(targets), 9)
+
+        for target in targets:
+            result = self.shell.route(f'ns.run "{target}"')
+            try:
+                self.assertIsNone(result.error, f"{target.name}: {result.error}")
+                payload = json.loads(result.output)
+                if target.name == "CEO_Lifecycle.ns":
+                    self.assertEqual(payload["flows"][0]["flow"], "ceo_lifecycle")
+                    self.assertIn("execution_plan", payload["context"]["outputs"])
+                    self.assertIsInstance(payload["context"]["outputs"]["execution_plan"], dict)
+                    self.assertIn("decision_packet", payload["context"]["outputs"])
+                    self.assertIsInstance(payload["context"]["outputs"]["decision_packet"], dict)
+                    self.assertIn("ceo_report", payload["context"]["outputs"])
+                    self.assertIsInstance(payload["context"]["outputs"]["ceo_report"], dict)
+                    self.assertIn("final_state", payload["context"]["outputs"])
+                    self.assertIsInstance(payload["context"]["outputs"]["final_state"], dict)
+                    self.assertIn("decisions_history", payload["context"]["outputs"]["final_state"])
+                    self.assertGreaterEqual(len(payload["context"]["outputs"]["final_state"]["decisions_history"]), 1)
+                    self.assertIn("artifact_paths", payload["context"]["outputs"])
+                    self.assertIsInstance(payload["context"]["outputs"]["artifact_paths"], dict)
+                    self.assertTrue(Path(payload["context"]["outputs"]["artifact_paths"]["report_path"]).is_file())
+                    self.assertTrue(Path(payload["context"]["outputs"]["artifact_paths"]["html_path"]).is_file())
+                else:
+                    self.assertEqual(payload["mode"], "agent_bundle")
+                    self.assertEqual(payload["agent_count"], 1)
+            finally:
+                with suppress(Exception):
+                    if self.shell._declarative_nova is not None:
+                        self.shell._declarative_nova.close()
+                        self.shell._declarative_nova = None
+
+    def test_declarative_py_exec_can_import_local_helper_module(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "local_helper.py").write_text(
+                "def load_value():\n"
+                "    return {'status': 'ok', 'source': 'local-helper'}\n",
+                encoding="utf-8",
+            )
+            script = root / "import_demo.ns"
+            script.write_text(
+                """flow demo {
+  py.exec "import local_helper as helper; _ = helper.load_value()" -> imported_value
+}
+""",
+                encoding="utf-8",
+            )
+
+            result = self.shell.route(f'ns.run "{script}"')
+            try:
+                self.assertIsNone(result.error)
+                payload = json.loads(result.output)
+                self.assertEqual(payload["flows"][0]["flow"], "demo")
+                self.assertEqual(payload["context"]["outputs"]["imported_value"]["status"], "ok")
+                self.assertEqual(payload["context"]["outputs"]["imported_value"]["source"], "local-helper")
+            finally:
+                with suppress(Exception):
+                    if self.shell._declarative_nova is not None:
+                        self.shell._declarative_nova.close()
+                        self.shell._declarative_nova = None
+
+    def test_ceo_lifecycle_respects_governance_overrides(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self._copy_ceo_runtime_fixture(root)
+            (root / "policy_overrides.json").write_text(
+                json.dumps(
+                    {
+                        "max_risk": 0.2,
+                        "capital_limit": 90000,
+                        "minimum_runway_months": 4.0,
+                        "forbidden_actions": ["scale_enterprise_capacity"],
+                    },
+                    ensure_ascii=False,
+                    indent=2,
+                ),
+                encoding="utf-8",
+            )
+
+            result = self.shell.route(f'ns.run "{root / "CEO_Lifecycle.ns"}"')
+            try:
+                self.assertIsNone(result.error)
+                payload = json.loads(result.output)
+                decision = payload["context"]["outputs"]["decision_packet"]
+                self.assertEqual(decision["decision"], "revise")
+                self.assertTrue(decision["selected_option"]["blocks"])
+                capital_event = payload["context"]["outputs"]["capital_event"]
+                self.assertTrue(capital_event["active"])
+            finally:
+                with suppress(Exception):
+                    if self.shell._declarative_nova is not None:
+                        self.shell._declarative_nova.close()
+                        self.shell._declarative_nova = None
+
+    def test_ceo_lifecycle_is_consistent_for_identical_inputs(self) -> None:
+        decisions: list[dict[str, object]] = []
+        with tempfile.TemporaryDirectory() as tmp_a, tempfile.TemporaryDirectory() as tmp_b:
+            for root_text in (tmp_a, tmp_b):
+                root = Path(root_text)
+                self._copy_ceo_runtime_fixture(root)
+                result = self.shell.route(f'ns.run "{root / "CEO_Lifecycle.ns"}"')
+                try:
+                    self.assertIsNone(result.error)
+                    payload = json.loads(result.output)
+                    decision = dict(payload["context"]["outputs"]["decision_packet"])
+                    selected = dict(decision.get("selected_option") or {})
+                    decisions.append(
+                        {
+                            "decision": decision.get("decision"),
+                            "recommended_action": decision.get("recommended_action"),
+                            "selected_option": selected.get("option_id"),
+                            "score": decision.get("score"),
+                        }
+                    )
+                finally:
+                    with suppress(Exception):
+                        if self.shell._declarative_nova is not None:
+                            self.shell._declarative_nova.close()
+                            self.shell._declarative_nova = None
+
+        self.assertEqual(len(decisions), 2)
+        self.assertEqual(decisions[0], decisions[1])
+
+    def test_ceo_lifecycle_blocks_when_capital_limit_is_exceeded(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self._copy_ceo_runtime_fixture(root)
+            (root / "policy_overrides.json").write_text(
+                json.dumps(
+                    {
+                        "max_risk": 0.95,
+                        "capital_limit": 100000,
+                        "minimum_runway_months": 1.0,
+                        "forbidden_actions": [],
+                    },
+                    ensure_ascii=False,
+                    indent=2,
+                ),
+                encoding="utf-8",
+            )
+            result = self.shell.route(f'ns.run "{root / "CEO_Lifecycle.ns"}"')
+            try:
+                self.assertIsNone(result.error)
+                payload = json.loads(result.output)
+                decision = payload["context"]["outputs"]["decision_packet"]
+                self.assertEqual(decision["decision"], "revise")
+                self.assertIn("Kapitalgrenze ueberschritten", decision["selected_option"]["blocks"])
+            finally:
+                with suppress(Exception):
+                    if self.shell._declarative_nova is not None:
+                        self.shell._declarative_nova.close()
+                        self.shell._declarative_nova = None
+
+    def test_ceo_continuous_runtime_writes_status_file(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self._copy_ceo_runtime_fixture(root)
+            runner = runpy.run_path(str(root / "ceo_continuous_runtime.py"))
+            status = runner["run_cycle"](1)
+            self.assertEqual(status["cycle"], 1)
+            self.assertGreaterEqual(int(status["flow_count"]), 1)
+            self.assertIn("decision_packet", dict(status.get("outputs") or {}))
+            status_path = root / ".nova_ceo" / "continuous_status.json"
+            self.assertTrue(status_path.is_file())
+            persisted = json.loads(status_path.read_text(encoding="utf-8"))
+            self.assertEqual(persisted["cycle"], 1)
+            self.assertIn("execution_plan", dict(persisted.get("outputs") or {}))
+
+    def test_decision_lifecycle_template_loads_and_graphs(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        target = root / "examples" / "decision_lifecycle_template.ns"
+
+        run_result = self.shell.route(f'ns.run "{target}"')
+        self.assertIsNone(run_result.error)
+        run_payload = json.loads(run_result.output)
+        self.assertEqual(run_payload["flows"][0]["flow"], "decision_cycle")
+        self.assertIn("action_plan", run_payload["context"]["outputs"])
+        self.assertIsInstance(run_payload["context"]["outputs"]["action_plan"], str)
+
+        graph_result = self.shell.route(f'ns.graph "{target}"')
+        self.assertIsNone(graph_result.error)
+        graph_payload = json.loads(graph_result.output)
+        self.assertIn("graph", graph_payload)
+        node_names = {node.get("name") or node.get("id") for node in graph_payload["graph"]["nodes"]}
+        self.assertTrue(any("DecisionAgent" in str(name) for name in node_names))
+        self.assertTrue(any("ActionAgent" in str(name) for name in node_names))
+
+    def test_ns_skills_build_uses_runtime_generators_without_script_dependency(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            skills_root = root / "agent-skills-main" / "skills"
+            skill_dir = skills_root / "demo-skill"
+            skill_dir.mkdir(parents=True, exist_ok=True)
+            (skill_dir / "SKILL.md").write_text(
+                """---
+name: demo-skill
+description: Demo skill.
+---
+
+# Demo Skill
+
+Use this skill for demos.
+""",
+                encoding="utf-8",
+            )
+            output_dir = root / "generated"
+            import nova_shell as nova_shell_module
+
+            called: dict[str, object] = {}
+
+            def _inspect(path: Path) -> dict[str, dict[str, dict[str, object]]]:
+                called["inspect"] = str(path)
+                return {"portable": {"demo-skill": {"skill": "demo-skill"}}, "skipped": {}}
+
+            def _generate(skills: Path, output: Path) -> dict[str, dict[str, object]]:
+                called["generate"] = (str(skills), str(output))
+                output.mkdir(parents=True, exist_ok=True)
+                target = output / "demo_skill_agents.ns"
+                target.write_text(
+                    """state demo_skill_memory {
+  backend: atheria
+  namespace: demo_skill
+}
+
+agent demo_skill_generalist {
+  provider: atheria
+  model: atheria-core
+  memory: demo_skill_memory
+  system_prompt: "demo"
+  prompts: {v1: "demo {{input}}"}
+  prompt_version: v1
+}
+""",
+                    encoding="utf-8",
+                )
+                return {
+                    "demo-skill": {
+                        "skill": "demo-skill",
+                        "agent_count": 1,
+                        "router": "",
+                        "agents": ["demo_skill_generalist"],
+                        "portable": True,
+                        "file_name": target.name,
+                        "path": str(target),
+                    }
+                }
+
+            with (
+                patch.object(nova_shell_module, "inspect_skill_examples", side_effect=_inspect),
+                patch.object(nova_shell_module, "generate_skill_examples", side_effect=_generate),
+            ):
+                result = self.shell.route(f"ns.skills build {root / 'agent-skills-main'} {output_dir}")
+
+            self.assertIsNone(result.error)
+            self.assertIn("inspect", called)
+            self.assertIn("generate", called)
+            payload = json.loads(result.output)
+            self.assertEqual(payload["count"], 1)
+            self.assertTrue((output_dir / "demo_skill_agents.ns").exists())
+
+    def test_ns_skills_build_returns_error_instead_of_crashing_on_generation_failure(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            skills_root = root / "agent-skills-main" / "skills"
+            skill_dir = skills_root / "demo-skill"
+            skill_dir.mkdir(parents=True, exist_ok=True)
+            (skill_dir / "SKILL.md").write_text("# Demo Skill\n", encoding="utf-8")
+            import nova_shell as nova_shell_module
+
+            with patch.object(nova_shell_module, "inspect_skill_examples", side_effect=RuntimeError("generator boom")):
+                result = self.shell.route(f"ns.skills build {root / 'agent-skills-main'}")
+
+            self.assertEqual(result.error, "generator boom")
 
     def test_generate_agent_skills_examples_script_runs_from_repo_root(self) -> None:
         root = Path(__file__).resolve().parents[1]
@@ -3301,6 +3684,45 @@ Prefer focused changes with concrete reasoning.
             self.assertTrue((Path(tmp) / "react_best_practices_agents.ns").exists())
             self.assertFalse((Path(tmp) / "deploy_to_vercel_agents.ns").exists())
             self.assertFalse((Path(tmp) / "web_design_guidelines_agents.ns").exists())
+
+    def test_run_agent_once_with_shell_provider_uses_active_generative_provider(self) -> None:
+        agent = AIAgentDefinition(
+            name="skill_agent",
+            prompt_template="Review {{input}}",
+            provider="shell",
+            model="active",
+            system_prompt="Be concise.",
+        )
+        with patch.object(
+            self.shell.ai_runtime,
+            "complete_prompt",
+            return_value=CommandResult(output="fixed\n", data={"provider": "lmstudio", "model": "local-model"}, data_type=PipelineType.OBJECT),
+        ) as mocked_complete, patch.object(self.shell.ai_runtime, "get_active_provider", return_value="lmstudio"), patch.object(
+            self.shell.ai_runtime,
+            "get_active_model",
+            return_value="local-model",
+        ):
+            result = self.shell._run_agent_once(agent, "const user = await fetchUser();")
+
+        self.assertIsNone(result.error)
+        self.assertEqual(result.output.strip(), "fixed")
+        mocked_complete.assert_called_once()
+        self.assertEqual(mocked_complete.call_args.kwargs["provider"], "lmstudio")
+        self.assertEqual(mocked_complete.call_args.kwargs["model"], "local-model")
+        self.assertEqual(mocked_complete.call_args.kwargs["system_prompt"], "Be concise.")
+
+    def test_run_agent_once_with_shell_provider_requires_non_atheria_provider(self) -> None:
+        agent = AIAgentDefinition(
+            name="skill_agent",
+            prompt_template="Review {{input}}",
+            provider="shell",
+            model="active",
+            system_prompt="Be concise.",
+        )
+        with patch.object(self.shell.ai_runtime, "get_active_provider", return_value="atheria"):
+            result = self.shell._run_agent_once(agent, "const user = await fetchUser();")
+
+        self.assertIn("configured generative ai provider", str(result.error))
 
     def test_generate_agent_skills_examples_reports_nonportable_skills(self) -> None:
         root = Path(__file__).resolve().parents[1]

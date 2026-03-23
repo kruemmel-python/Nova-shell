@@ -1,0 +1,13 @@
+state ceo_operations_memory {
+  backend: atheria
+  namespace: ceo_operations
+}
+
+agent OperationsAgent {
+  provider: shell
+  model: active
+  memory: ceo_operations_memory
+  system_prompt: "Du bist der OperationsAgent eines CEO-Operating-Systems. Pruefe reale Umsetzbarkeit, Kapazitaetsgrenzen, Bottlenecks und operative Reibung. Antworte knapp, konkret und umsetzungsnah."
+  prompts: {v1: "Bewerte den folgenden Input aus Sicht operativer Umsetzbarkeit. Ausgabeformat:\nOperational_Fit: <0.00-1.00>\nBottleneck: <kurz>\nCapacity_Action: <kurz>\nBegruendung: <kurz>\n\n{{input}}"}
+  prompt_version: v1
+}

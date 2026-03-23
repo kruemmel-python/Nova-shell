@@ -1,0 +1,30 @@
+[
+  {
+    "signal_id": "telemetry_capacity",
+    "title": "Inference cluster nearing capacity",
+    "source": "internal.telemetry",
+    "domain": "operations",
+    "type": "capacity",
+    "severity": 0.84,
+    "summary": "GPU utilization has moved above 87 percent during the last three peak windows.",
+    "metrics": {
+      "utilization": 0.87,
+      "capacity": 1.0,
+      "pressure": 0.78
+    }
+  },
+  {
+    "signal_id": "telemetry_liquidity",
+    "title": "Runway stable but finite",
+    "source": "internal.finance",
+    "domain": "capital",
+    "type": "liquidity",
+    "severity": 0.46,
+    "summary": "Current liquidity remains healthy, but planned hiring compresses runway if growth spend accelerates.",
+    "metrics": {
+      "liquidity": 1600000,
+      "burn_rate": 210000,
+      "pressure": 0.41
+    }
+  }
+]

@@ -13,6 +13,7 @@ Die Tutorials sollen nicht nur erklaeren, was ein Feature ist, sondern einen nac
 - [TutorialBlobSeeds](./TutorialBlobSeeds.md)
 - [TutorialPredictiveFederatedCoevolution](./TutorialPredictiveFederatedCoevolution.md)
 - [TutorialProjectWatchMonitor](./TutorialProjectWatchMonitor.md)
+- [TutorialStandaloneSkillAgents](./TutorialStandaloneSkillAgents.md)
 
 ## Lernreihenfolge
 
@@ -62,6 +63,10 @@ Wenn du die neuen Plattformfunktionen als zusammenhaengenden Forecast-, Mesh- un
 
 - [TutorialPredictiveFederatedCoevolution](./TutorialPredictiveFederatedCoevolution.md)
 
+Wenn du portable `.ns`-Agenten aus dem mitgefuehrten Skill-Quellbestand erzeugen und direkt in Nova-shell nutzen willst, beginne hier:
+
+- [TutorialStandaloneSkillAgents](./TutorialStandaloneSkillAgents.md)
+
 ## Verwandte Seiten
 
 - [ExamplesAndRecipes](./ExamplesAndRecipes.md)
@@ -70,3 +75,4 @@ Wenn du die neuen Plattformfunktionen als zusammenhaengenden Forecast-, Mesh- un
 - [WatchMonitor](./WatchMonitor.md)
 - [TutorialBlobSeeds](./TutorialBlobSeeds.md)
 - [TutorialPredictiveFederatedCoevolution](./TutorialPredictiveFederatedCoevolution.md)
+- [TutorialStandaloneSkillAgents](./TutorialStandaloneSkillAgents.md)

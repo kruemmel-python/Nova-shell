@@ -1,0 +1,15 @@
+[
+  {
+    "signal_id": "event_partner_coinvest",
+    "title": "Partner requests co-investment",
+    "source": "executive.event",
+    "domain": "market",
+    "type": "event",
+    "severity": 0.74,
+    "summary": "A strategic channel partner offers accelerated access to a new segment if co-investment is committed within the quarter.",
+    "payload": {
+      "partner": "NorthBridge",
+      "deadline_days": 18
+    }
+  }
+]

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Protocol
 
@@ -30,7 +31,11 @@ class ShellProviderAdapter:
     def invoke(self, specification: "AgentSpecification", prompt: str, inputs: list[Any], context: "RuntimeContext", model_name: str) -> str | None:
         if context.command_executor is None:
             return None
-        result = context.command_executor.execute(f'ai prompt {prompt!r}', pipeline_data=inputs)
+        command = "ai prompt"
+        if specification.system_prompt.strip():
+            command += f" --system {json.dumps(specification.system_prompt, ensure_ascii=False)}"
+        command += f" {json.dumps(prompt, ensure_ascii=False)}"
+        result = context.command_executor.execute(command, pipeline_data=inputs)
         if result.error:
             return None
         return result.output.strip() or str(result.data or "")

@@ -30,18 +30,31 @@ MAX_HISTORY = 80
 MAX_FILE_BYTES = 1024 * 1024
 MAX_DIFF_HUNKS = 24
 MAX_HUNK_LINES = 14
+MAX_SNAPSHOT_TEXT_BYTES = 8 * 1024 * 1024
 EXCLUDED_DIRS = {
     ".git",
     ".hg",
     ".svn",
     ".idea",
     ".vscode",
+    ".mypy_cache",
+    ".next",
+    ".nox",
+    ".nova",
+    ".nova_lens",
     "node_modules",
+    ".pytest_cache",
     "dist",
+    ".ruff_cache",
+    ".tox",
+    ".turbo",
+    ".venv",
+    "venv",
     "build",
     "coverage",
     "__pycache__",
     ".nova_project_monitor",
+    ".nova_shell_memory",
 }
 EXCLUDED_FILES = {
     "nova_project_monitor.ns",
@@ -209,7 +222,8 @@ def load_json(path: pathlib.Path, default: Any) -> Any:
 
 
 def save_json(path: pathlib.Path, payload: Any) -> None:
-    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    with path.open("w", encoding="utf-8") as handle:
+        json.dump(payload, handle, ensure_ascii=False, indent=2)
 
 
 def is_text_candidate(path: pathlib.Path) -> bool:
@@ -232,37 +246,48 @@ def sha1_file(path: pathlib.Path) -> str:
     return digest.hexdigest()
 
 
-def read_text_payload(path: pathlib.Path) -> tuple[str | None, str]:
+def read_text_payload(path: pathlib.Path) -> tuple[str | None, str, int]:
     try:
         data = path.read_bytes()
     except Exception as exc:
-        return None, f"unreadable:{exc.__class__.__name__}"
+        return None, f"unreadable:{exc.__class__.__name__}", 0
     if len(data) > MAX_FILE_BYTES:
-        return None, "too_large"
+        return None, "too_large", len(data)
     if b"\x00" in data[:8192]:
-        return None, "binary"
+        return None, "binary", len(data)
     try:
         text = data.decode("utf-8")
     except UnicodeDecodeError:
         try:
             text = data.decode("utf-8", errors="replace")
         except Exception:
-            return None, "binary"
-    return text, "text"
+            return None, "binary", len(data)
+    return text, "text", len(data)
 
 
-def snapshot_entry(root: pathlib.Path, path: pathlib.Path) -> dict[str, Any] | None:
+def snapshot_entry(root: pathlib.Path, path: pathlib.Path, *, remaining_text_budget: int) -> tuple[dict[str, Any] | None, int, bool]:
     rel_path = path.relative_to(root).as_posix()
     try:
         stat = path.stat()
         sha_value = sha1_file(path)
     except OSError:
-        return None
+        return None, 0, False
     text = None
     text_state = "skipped"
+    text_bytes = 0
     if is_text_candidate(path):
-        text, text_state = read_text_payload(path)
-    lines = text.splitlines() if text is not None else []
+        text, text_state, text_bytes = read_text_payload(path)
+    parsed_lines = text.splitlines() if text is not None else []
+    stored_lines: list[str] = []
+    omitted_for_budget = False
+    captured_bytes = 0
+    if text_state == "text":
+        if text_bytes <= max(0, remaining_text_budget):
+            stored_lines = parsed_lines
+            captured_bytes = text_bytes
+        else:
+            text_state = "text_budget_skipped"
+            omitted_for_budget = True
     return {
         "relative_path": rel_path,
         "name": path.name,
@@ -270,16 +295,19 @@ def snapshot_entry(root: pathlib.Path, path: pathlib.Path) -> dict[str, Any] | N
         "size": stat.st_size,
         "modified_at": stat.st_mtime,
         "sha1": sha_value,
-        "line_count": len(lines),
+        "line_count": len(parsed_lines),
         "text_state": text_state,
-        "lines": lines,
-    }
+        "lines": stored_lines,
+    }, captured_bytes, omitted_for_budget
 
 
 def scan_project(root: pathlib.Path) -> dict[str, Any]:
     files: dict[str, dict[str, Any]] = {}
     extension_counts: Counter[str] = Counter()
     directory_counts: Counter[str] = Counter()
+    text_budget = int(float(os.environ.get("NOVA_PROJECT_MONITOR_MAX_TEXT_BYTES") or MAX_SNAPSHOT_TEXT_BYTES))
+    captured_text_bytes = 0
+    omitted_text_files = 0
     for path in root.rglob("*"):
         if not path.is_file():
             continue
@@ -288,10 +316,14 @@ def scan_project(root: pathlib.Path) -> dict[str, Any]:
             continue
         if path.name in EXCLUDED_FILES:
             continue
-        entry = snapshot_entry(root, path)
+        remaining_budget = max(0, text_budget - captured_text_bytes)
+        entry, consumed_bytes, omitted_for_budget = snapshot_entry(root, path, remaining_text_budget=remaining_budget)
         if not entry:
             continue
         files[entry["relative_path"]] = entry
+        captured_text_bytes += consumed_bytes
+        if omitted_for_budget:
+            omitted_text_files += 1
         extension_counts[entry["extension"]] += 1
         parent_key = pathlib.Path(entry["relative_path"]).parent.as_posix()
         directory_counts[parent_key if parent_key != "." else "/"] += 1
@@ -302,6 +334,9 @@ def scan_project(root: pathlib.Path) -> dict[str, Any]:
         "files": files,
         "extension_counts": dict(sorted(extension_counts.items())),
         "directory_counts": dict(directory_counts),
+        "text_capture_budget_bytes": text_budget,
+        "text_capture_bytes": captured_text_bytes,
+        "text_capture_omitted_files": omitted_text_files,
     }
 
 
@@ -540,6 +575,11 @@ def build_analysis(history_events: list[dict[str, Any]], snapshot: dict[str, Any
     if directory_ranking:
         folder, count = directory_ranking[0]
         insight_lines.append(f"Groesster Ordner im Scan: {folder} ({count} Dateien)")
+    omitted_text_files = int(snapshot.get("text_capture_omitted_files", 0) or 0)
+    if omitted_text_files > 0:
+        warnings.append(
+            f"Fuer {omitted_text_files} Textdateien wurden aus Speichergruenden keine Vollzeilen im Snapshot gespeichert. Diff-Hunks koennen dort eingeschraenkt sein."
+        )
     return {
         "generated_at": snapshot.get("generated_at"),
         "warnings": warnings,
