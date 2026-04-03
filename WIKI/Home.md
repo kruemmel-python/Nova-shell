@@ -27,6 +27,7 @@ Wenn du neu im Projekt bist:
 - [QuickStart](./QuickStart.md)
 - [Installation](./Installation.md)
 - [Dokumentation](./Dokumentation.md)
+- [examples_index](./examples_index.md)
 - [ProgrammingWithNovaShell](./ProgrammingWithNovaShell.md)
 - [nsCreate](./nsCreate.md)
 - [nsReference](./nsReference.md)
@@ -40,6 +41,23 @@ Wenn du neu im Projekt bist:
 - [StandaloneSkillAgents](./StandaloneSkillAgents.md)
 - [StandaloneSkillAgentsForDevelopers](./StandaloneSkillAgentsForDevelopers.md)
 - [TutorialStandaloneSkillAgents](./TutorialStandaloneSkillAgents.md)
+
+## Neuer Einstieg in die Beispielwelt
+
+Wenn du Nova-shell nicht nur lesen, sondern ueber die vorhandenen Beispielprogramme praktisch verstehen willst, beginne mit dem neuen Examples-Block:
+
+- [examples_index](./examples_index.md): zentrales Portal fuer alle Example-Seiten
+- [examples.md](./examples.md): vollstaendige Referenz aller Dateien unter `examples/`
+- [examples_quickstart](./examples_quickstart.md): Copy-Paste-Befehle fuer direkte Tests
+- [examples_by_level](./examples_by_level.md): Sortierung nach Einsteiger, Fortgeschritten, Plattform, Lifecycle und Agenten
+- [examples_matrix](./examples_matrix.md): tabellarischer Vergleich nach Kategorie, AI, Mesh und Artefakten
+
+Empfohlene Reihenfolge fuer neue Nutzer:
+
+1. [examples_index](./examples_index.md)
+2. [examples_by_level](./examples_by_level.md)
+3. [examples_quickstart](./examples_quickstart.md)
+4. [examples.md](./examples.md)
 
 Wenn du die Architektur verstehen willst:
 
@@ -94,6 +112,11 @@ Wenn du Klassen, Methoden, Endpunkte und Einstiegspunkte suchst:
 - [LensTroubleshooting](./LensTroubleshooting.md): kaputte CAS-Referenzen, leerer Replay und Cleanup-/Reset-Regeln
 - [LensRecipes](./LensRecipes.md): Copy-Paste-Rezepte fuer Lookup, Replay, CAS-Zuordnung und sicheren Reset
 - [APIReference](./APIReference.md): HTTP-Control-Plane-API mit Beispielen
+- [examples_index](./examples_index.md): zentrales Portal fuer alle Example-Dokumentationen
+- [examples](./examples.md): vollstaendige Referenz aller vorhandenen Beispiele unter `examples/`
+- [examples_quickstart](./examples_quickstart.md): direkte Startbefehle fuer die wichtigsten Beispiele
+- [examples_by_level](./examples_by_level.md): didaktische Einordnung nach Lernstufe und Ziel
+- [examples_matrix](./examples_matrix.md): Vergleichsmatrix fuer Beispiele nach Typ und Einsatzzweck
 - [NSBlobGenerator](./NSBlobGenerator.md): verifizierbare Seed-Kapselung, Rehydrierung und mobiler Mesh-Transport
 - [NovaSynthPredictiveEngineShifting](./NovaSynthPredictiveEngineShifting.md): forecast-basierte Umschaltung zwischen `py`, `cpp`, `gpu` und `mesh`
 - [ZeroCopyFederatedLearningMesh](./ZeroCopyFederatedLearningMesh.md): signierte Invariant-Synchronisation und same-host zero-copy im Mesh
@@ -177,8 +200,10 @@ Wenn du Klassen, Methoden, Endpunkte und Einstiegspunkte suchst:
 1. [QuickStart](./QuickStart.md)
 2. [ProgrammingWithNovaShell](./ProgrammingWithNovaShell.md)
 3. [NovaCLI](./NovaCLI.md)
-4. [ExamplesAndRecipes](./ExamplesAndRecipes.md)
-5. [TutorialAtheriaALS](./TutorialAtheriaALS.md)
+4. [examples_index](./examples_index.md)
+5. [examples_quickstart](./examples_quickstart.md)
+6. [ExamplesAndRecipes](./ExamplesAndRecipes.md)
+7. [TutorialAtheriaALS](./TutorialAtheriaALS.md)
 
 ### Fuer Sprach- und Runtime-Entwickler
 

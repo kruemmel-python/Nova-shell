@@ -53,6 +53,8 @@ Wichtige Seiten:
 - [nsCreate](./nsCreate.md)
 - [nsReference](./nsReference.md)
 - [nsPatterns](./nsPatterns.md)
+- [examples_index](./examples_index.md)
+- [examples](./examples.md)
 
 ### AI, Atheria und Memory
 Nova-shell enthaelt eine produktive Wissens- und Agentenschicht. Dazu gehoeren Agenten, Tool-Aufrufe, Prompt-/Memory-Pfade und Atheria als lokales Wissens- und Trainingssystem.
@@ -131,6 +133,16 @@ Wichtige Seiten:
 ## Wo der schnellste praktische Nutzen liegt
 Fuer viele Teams sind diese Bereiche heute der direkteste Einstieg mit echtem Mehrwert:
 
+### 0. Example-Portal
+Wenn du moeglichst schnell verstehen willst, was die vorhandenen Beispielprogramme im Repository leisten, beginne hier.
+
+Weiterlesen:
+
+- [examples_index](./examples_index.md)
+- [examples_quickstart](./examples_quickstart.md)
+- [examples_by_level](./examples_by_level.md)
+- [examples_matrix](./examples_matrix.md)
+
 ### 1. Watch Monitor
 Projektordner beobachten, Diffs und Hotspots anzeigen, HTML-Berichte erzeugen und optional Build/Test/AI-Review ausloesen.
 
@@ -165,6 +177,8 @@ Weiterlesen:
 - [nsCreate](./nsCreate.md)
 - [nsReference](./nsReference.md)
 - [nsPatterns](./nsPatterns.md)
+- [examples](./examples.md)
+- [examples_quickstart](./examples_quickstart.md)
 
 ## Empfohlene Lesepfade
 
@@ -173,8 +187,10 @@ Weiterlesen:
 1. [Home](./Home.md)
 2. [QuickStart](./QuickStart.md)
 3. [Dokumentation](./Dokumentation.md)
-4. [NovaCLI](./NovaCLI.md)
-5. [ExamplesAndRecipes](./ExamplesAndRecipes.md)
+4. [examples_index](./examples_index.md)
+5. [examples_quickstart](./examples_quickstart.md)
+6. [NovaCLI](./NovaCLI.md)
+7. [ExamplesAndRecipes](./ExamplesAndRecipes.md)
 
 ### Fuer technische Leiter und Architekten
 
@@ -196,6 +212,11 @@ Weiterlesen:
 
 - [Home](./Home.md)
 - [README](./README.md)
+- [examples_index](./examples_index.md)
+- [examples](./examples.md)
+- [examples_quickstart](./examples_quickstart.md)
+- [examples_by_level](./examples_by_level.md)
+- [examples_matrix](./examples_matrix.md)
 - [Was-es-Ist](./Was-es-Ist.md)
 - [Whitepaper](./Whitepaper.md)
 - [wirtschaftlicher_nutzen](./wirtschaftlicher_nutzen.md)
