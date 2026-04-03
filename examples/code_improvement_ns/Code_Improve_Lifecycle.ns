@@ -1,0 +1,107 @@
+system Code_Improve_Runtime {
+  mode: local
+  observability: structured
+}
+
+state code_improve_memory {
+  backend: atheria
+  namespace: code_improvement_ns
+}
+
+dataset improvement_request {
+  path: code_improvement_request.json
+  format: json
+}
+
+agent CodeReviewAgent {
+  provider: shell
+  model: active
+  system_prompt: "Du bist der CodeReviewAgent. Du analysierst Quellcode auf Risiken, Chancen, Verhaltenstreue, Testluecken und Refactoring-Hebel. Du antwortest knapp, konkret und code-nah."
+  prompts: {v1: "Pruefe den Input als Review-Artefakt. Ausgabeformat:\nBefund: <kurz>\nRisiken: <kurz>\nChancen: <kurz>\nTests: <kurz>\n\n{{input}}"}
+  prompt_version: v1
+}
+
+agent RefactorAgent {
+  provider: shell
+  model: active
+  system_prompt: "Du bist der RefactorAgent. Du verbesserst Struktur, Lesbarkeit und Wartbarkeit, ohne das beabsichtigte Verhalten zu brechen. Gib immer den vollstaendigen Dateiinhalt aus, niemals nur Diffs oder Platzhalter."
+  prompts: {v1: "{{input}}"}
+  prompt_version: v1
+}
+
+agent ReliabilityAgent {
+  provider: shell
+  model: active
+  system_prompt: "Du bist der ReliabilityAgent. Du verstaerkst Korrektheit, defensive Behandlung von Randfaellen, Fehlermeldungen und Verhaltenstreue. Gib immer den vollstaendigen Dateiinhalt aus, niemals nur Diffs oder Platzhalter."
+  prompts: {v1: "{{input}}"}
+  prompt_version: v1
+}
+
+agent SimplifyAgent {
+  provider: shell
+  model: active
+  system_prompt: "Du bist der SimplifyAgent. Du reduzierst ueberfluessige Komplexitaet, machst den Code direkter und einfacher zu warten, ohne Funktionalitaet zu verlieren. Gib immer den vollstaendigen Dateiinhalt aus, niemals nur Diffs oder Platzhalter."
+  prompts: {v1: "{{input}}"}
+  prompt_version: v1
+}
+
+agent SelectorAgent {
+  provider: shell
+  model: active
+  system_prompt: "Du bist der SelectorAgent. Du waehlst aus mehreren Kandidaten die beste neue Codeversion fuer den Zielkontext aus. Bewerte Robustheit, Zielerfuellung und Realisierbarkeit. Antworte nur im angeforderten Format."
+  prompts: {v1: "Waehle den besten Kandidaten. Ausgabeformat:\nGewinner: <refactor/reliability/simplify/original>\nScore: <0.00-1.00>\nWarum: <kurz>\n\n{{input}}"}
+  prompt_version: v1
+}
+
+flow code_improvement_cycle {
+  py.exec "import code_improve_runtime_helper as helper; _ = helper.load_request(context.base_path, _)" improvement_request -> request_payload
+  state.set code_improve_last_request request_payload
+  py.exec "import code_improve_runtime_helper as helper; _ = helper.build_review_prompt(_)" request_payload -> review_prompt
+  CodeReviewAgent review review_prompt -> review_raw
+  py.exec "import code_improve_runtime_helper as helper; _ = helper.extract_agent_text(_)" review_raw -> review_text
+
+  py.exec "import code_improve_runtime_helper as helper; _ = helper.build_candidate_prompt(_[0], _[1], 'refactor')" request_payload review_text -> refactor_prompt
+  RefactorAgent improve refactor_prompt -> refactor_raw
+  py.exec "import code_improve_runtime_helper as helper; _ = helper.extract_agent_text(_)" refactor_raw -> refactor_text
+  py.exec "import code_improve_runtime_helper as helper; _ = helper.parse_candidate_response('refactor', _[0], _[1])" request_payload refactor_text -> refactor_candidate
+  py.exec "import code_improve_runtime_helper as helper; _ = helper.build_candidate_repair_prompt(_[0], _[1], _[2], _[3], 'refactor')" request_payload review_text refactor_text refactor_candidate -> refactor_repair_prompt
+  RefactorAgent repair refactor_repair_prompt -> refactor_repair_raw
+  py.exec "import code_improve_runtime_helper as helper; _ = helper.extract_agent_text(_)" refactor_repair_raw -> refactor_repair_text
+  py.exec "import code_improve_runtime_helper as helper; _ = helper.select_candidate_version('refactor', _[0], _[1], _[2])" request_payload refactor_candidate refactor_repair_text -> refactor_final_candidate
+
+  py.exec "import code_improve_runtime_helper as helper; _ = helper.build_candidate_prompt(_[0], _[1], 'reliability')" request_payload review_text -> reliability_prompt
+  ReliabilityAgent improve reliability_prompt -> reliability_raw
+  py.exec "import code_improve_runtime_helper as helper; _ = helper.extract_agent_text(_)" reliability_raw -> reliability_text
+  py.exec "import code_improve_runtime_helper as helper; _ = helper.parse_candidate_response('reliability', _[0], _[1])" request_payload reliability_text -> reliability_candidate
+  py.exec "import code_improve_runtime_helper as helper; _ = helper.build_candidate_repair_prompt(_[0], _[1], _[2], _[3], 'reliability')" request_payload review_text reliability_text reliability_candidate -> reliability_repair_prompt
+  ReliabilityAgent repair reliability_repair_prompt -> reliability_repair_raw
+  py.exec "import code_improve_runtime_helper as helper; _ = helper.extract_agent_text(_)" reliability_repair_raw -> reliability_repair_text
+  py.exec "import code_improve_runtime_helper as helper; _ = helper.select_candidate_version('reliability', _[0], _[1], _[2])" request_payload reliability_candidate reliability_repair_text -> reliability_final_candidate
+
+  py.exec "import code_improve_runtime_helper as helper; _ = helper.build_candidate_prompt(_[0], _[1], 'simplify')" request_payload review_text -> simplify_prompt
+  SimplifyAgent improve simplify_prompt -> simplify_raw
+  py.exec "import code_improve_runtime_helper as helper; _ = helper.extract_agent_text(_)" simplify_raw -> simplify_text
+  py.exec "import code_improve_runtime_helper as helper; _ = helper.parse_candidate_response('simplify', _[0], _[1])" request_payload simplify_text -> simplify_candidate
+  py.exec "import code_improve_runtime_helper as helper; _ = helper.build_candidate_repair_prompt(_[0], _[1], _[2], _[3], 'simplify')" request_payload review_text simplify_text simplify_candidate -> simplify_repair_prompt
+  SimplifyAgent repair simplify_repair_prompt -> simplify_repair_raw
+  py.exec "import code_improve_runtime_helper as helper; _ = helper.extract_agent_text(_)" simplify_repair_raw -> simplify_repair_text
+  py.exec "import code_improve_runtime_helper as helper; _ = helper.select_candidate_version('simplify', _[0], _[1], _[2])" request_payload simplify_candidate simplify_repair_text -> simplify_final_candidate
+
+  py.exec "import code_improve_runtime_helper as helper; _ = helper.build_selector_prompt(_[0], _[1], _[2], _[3], _[4])" request_payload review_text refactor_final_candidate reliability_final_candidate simplify_final_candidate -> selector_prompt
+  SelectorAgent select selector_prompt -> selector_raw
+  py.exec "import code_improve_runtime_helper as helper; _ = helper.extract_agent_text(_)" selector_raw -> selector_text
+
+  py.exec "import code_improve_runtime_helper as helper; _ = helper.persist_best_candidate(context.base_path, _[0], _[1], _[2], _[3], _[4], _[5])" request_payload review_text refactor_final_candidate reliability_final_candidate simplify_final_candidate selector_text -> improvement_result
+  py.exec "import code_improve_runtime_helper as helper; _ = helper.extract_artifact_paths(_)" improvement_result -> artifact_paths
+  py.exec "import code_improve_runtime_helper as helper; _ = helper.extract_selected_candidate(_)" improvement_result -> selected_candidate
+  state.set code_improve_last_result improvement_result
+  state.set code_improve_last_artifacts artifact_paths
+  state.set code_improve_last_selection selected_candidate
+  system.log artifact_paths
+  event.emit code.improvement.ready improvement_result
+}
+
+event code_improvement_requested {
+  on: code.improvement.requested
+  flow: code_improvement_cycle
+}

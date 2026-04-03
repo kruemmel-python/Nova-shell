@@ -1,0 +1,14 @@
+{
+  "source_dir": "demo_project",
+  "goal": "Verbessere das kleine Python-Projekt in Bezug auf Robustheit und Wartbarkeit, ohne die beabsichtigten Rueckgabewerte zu brechen.",
+  "constraints": [
+    "Behalte die bestehenden Dateinamen bei.",
+    "Gib nur vollstaendige neue Dateiinhalt pro geaenderter Datei aus.",
+    "Halte die Projektstruktur stabil."
+  ],
+  "include": [
+    "**/*.py"
+  ],
+  "output_path": "generated/demo_project.improved",
+  "report_path": ".nova_code_improve/demo_project.report.json"
+}

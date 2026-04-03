@@ -100,6 +100,26 @@ oder nach Installation:
 nova-shell
 ```
 
+## Android Preview
+
+Es gibt jetzt ein separates Android-Grundgeruest unter `android/`. Der Pfad ist bewusst als mobile Preview getrennt vom Desktop-Release und nutzt `Chaquopy`, um eine APK mit eingebetteter Python-Runtime und gestagter Nova-shell-Codebasis zu bauen.
+
+Vorbereitung:
+
+```bash
+python scripts/build_android.py prepare
+```
+
+Der Schritt kopiert `nova_shell.py`, `nova/`, `examples/` und die benoetigten Begleitdateien direkt nach `android/app/src/main/python/`, damit sie in die APK gepackt werden.
+
+Danach kann das Projekt `android/` in Android Studio geoeffnet oder lokal per
+
+```bash
+python scripts/build_android.py assemble --variant debug
+```
+
+gebaut werden. Der Android-Pfad laesst die meisten Kommandogruppen inzwischen direkt zur Runtime durch. Hart blockiert bleiben nur schwere lokale Toolchain- und Hardwarepfade wie `cpp`, `gpu`, `wasm` und `jit_wasm`.
+
 Einzelkommando ohne REPL:
 
 ```bash
@@ -124,8 +144,8 @@ nova-shell -c "ai prompt \"Summarize this dataset\""
 Mit Dateikontext oder Pipeline:
 
 ```bash
-nova-shell -c "ai prompt --file items.csv \"Summarize this dataset\""
-nova-shell -c "data load items.csv | ai prompt \"Summarize this dataset\""
+nova-shell -c "ai prompt --file examples/items.csv \"Summarize this dataset\""
+nova-shell -c "data load examples/items.csv | ai prompt \"Summarize this dataset\""
 ```
 
 Fuer langsame lokale Modelle kann das Timeout per `LM_STUDIO_TIMEOUT` oder `NOVA_AI_TIMEOUT` erhoeht werden.
@@ -221,10 +241,10 @@ nova-shell -c "memory project q1"
 nova-shell -c "memory embed --id sales-q1 \"Q1 revenue grew 18 percent in DACH\""
 nova-shell -c "memory search \"DACH revenue\""
 nova-shell -c "tool register summarize_csv --description \"summarize a csv file\" --schema '{\"type\":\"object\",\"properties\":{\"file\":{\"type\":\"string\"}},\"required\":[\"file\"]}' --pipeline 'ai prompt --file {{file}} \"Summarize this dataset\"'"
-nova-shell -c "tool.call summarize_csv file=items.csv"
+nova-shell -c "tool.call summarize_csv file=examples/items.csv"
 nova-shell -c "ai plan \"calculate csv average\""
-nova-shell -c "ai plan --run \"calculate average price in items.csv\""
-nova-shell -c "ai plan --run --retries 2 \"calculate average price in items.csv\""
+nova-shell -c "ai plan --run \"calculate average price in examples/items.csv\""
+nova-shell -c "ai plan --run --retries 2 \"calculate average price in examples/items.csv\""
 nova-shell -c "agent graph create review_chain --nodes analyst,reviewer"
 nova-shell -c "agent graph run review_chain --input \"quarterly report\""
 nova-shell -c "mycelia population create colony --goal \"review incoming platform signals\" --seed analyst,reviewer --target-size 4"

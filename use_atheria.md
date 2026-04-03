@@ -99,7 +99,7 @@ nova> atheria chat "What is Nova-shell?"
 Mit Dateikontext:
 
 ```text
-nova> atheria chat --file items.csv "Summarize this dataset"
+nova> atheria chat --file examples/items.csv "Summarize this dataset"
 ```
 
 Mit Systemfokus:
@@ -172,7 +172,7 @@ Datensatz + Erklaerung kombinieren:
 
 ```text
 nova> atheria train file Whitepaper.md --category whitepaper
-nova> atheria chat --file items.csv "Explain this dataset in the style of the whitepaper."
+nova> atheria chat --file examples/items.csv "Explain this dataset in the style of the whitepaper."
 ```
 
 ## 11. Wichtige Hinweise

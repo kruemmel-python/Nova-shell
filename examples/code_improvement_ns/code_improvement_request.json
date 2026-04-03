@@ -1,0 +1,11 @@
+{
+  "source_path": "sample_target.py",
+  "language": "python",
+  "goal": "Verbessere Lesbarkeit, Robustheit und Wartbarkeit, ohne die Funktion clean_numbers semantisch zu brechen.",
+  "constraints": [
+    "Behalte den Funktionsnamen clean_numbers bei.",
+    "Gib den vollstaendigen verbesserten Dateiinhalt aus.",
+    "Fuege nur so viel Logik hinzu, wie fuer Robustheit und Klarheit noetig ist."
+  ],
+  "output_path": "generated/sample_target.improved.py"
+}

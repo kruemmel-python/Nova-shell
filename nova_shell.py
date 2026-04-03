@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import atexit
 import asyncio
+import base64
 import codeop
 import contextlib
 import copy
@@ -46,6 +47,10 @@ from pathlib import Path
 from typing import Any, Callable, Iterable
 
 
+# Support `python -m nova_shell.worker` while nova_shell remains a single-file module.
+__path__ = [str(Path(__file__).resolve().parent)]
+
+
 def _configure_frozen_windows_runtime_env() -> None:
     if not getattr(sys, "frozen", False):
         return
@@ -78,7 +83,7 @@ except ImportError:  # pragma: no cover - platform dependent
     readline = None
 
 
-__version__ = "0.8.30"
+__version__ = "0.8.31"
 SIDELOAD_PACKAGE_DIR = "vendor-py"
 RUNTIME_CONFIG_FILE = "nova-shell-runtime.json"
 BRIEFING_REPORT_FILES: tuple[tuple[str, str, str], ...] = (
@@ -768,7 +773,10 @@ class PythonEngine:
 
         try:
             with self._execution_lock:
-                self.globals["_"] = pipeline_data if pipeline_data is not None else pipeline_input
+                current_value = pipeline_data if pipeline_data is not None else pipeline_input
+                self.globals["_"] = current_value
+                self.globals["item"] = current_value
+                self.globals["row"] = current_value
                 with self._push_cwd(cwd), contextlib.redirect_stdout(stdout_buffer):
                     try:
                         value = eval(code, self.globals, self.globals)
@@ -947,10 +955,21 @@ class GPUEngine:
 class DataEngine:
     """Load and emit structured data for pipelines."""
 
+    def _validate_csv_path(self, file_path: str) -> tuple[Path | None, str | None]:
+        path = Path(file_path)
+        if path.is_dir():
+            return None, f"csv path points to a directory, not a file: {path}"
+        if not path.exists():
+            return None, f"csv file not found: {path}"
+        return path, None
+
     def load_csv(self, file_path: str) -> CommandResult:
+        path, error = self._validate_csv_path(file_path)
+        if error is not None or path is None:
+            return CommandResult(output="", error=error or "invalid csv path")
         try:
             rows: list[dict[str, str]] = []
-            with Path(file_path).open(newline="", encoding="utf-8") as handle:
+            with path.open(newline="", encoding="utf-8") as handle:
                 reader = csv.DictReader(handle)
                 rows.extend(reader)
             return CommandResult(output=json.dumps(rows, ensure_ascii=False) + "\n", data=rows, data_type=PipelineType.OBJECT_STREAM)
@@ -963,8 +982,11 @@ class DataEngine:
         except ImportError:
             return CommandResult(output="", error="pyarrow is required for arrow mode")
 
+        path, error = self._validate_csv_path(file_path)
+        if error is not None or path is None:
+            return CommandResult(output="", error=error or "invalid csv path")
         try:
-            table = pacsv.read_csv(file_path)
+            table = pacsv.read_csv(str(path))
             return CommandResult(
                 output=f"ArrowTable rows={table.num_rows} cols={table.num_columns}\n",
                 data=table,
@@ -2453,6 +2475,20 @@ class RemoteEngine:
                 error=body.get("error"),
                 data_type=PipelineType(body.get("data_type", PipelineType.TEXT.value)),
             )
+        except urllib.error.HTTPError as exc:
+            try:
+                body = json.loads(exc.read().decode("utf-8"))
+            except Exception:
+                body = {}
+            error = body.get("error")
+            if error:
+                return CommandResult(
+                    output=str(body.get("output", "")),
+                    data=body.get("data"),
+                    error=str(error),
+                    data_type=PipelineType(body.get("data_type", PipelineType.TEXT.value)),
+                )
+            return CommandResult(output="", error=f"remote worker error: {exc}")
         except urllib.error.URLError as exc:
             return CommandResult(output="", error=f"remote worker error: {exc}")
         except Exception as exc:
@@ -6444,7 +6480,11 @@ class NovaShell:
                         "qualified_agents": [f"{source_stem}.{name}" for name in agent_names],
                     }
                 else:
-                    payload = self._compact_ceo_lifecycle_payload(source_name, flows, runtime.context.outputs if runtime.context else {}) or result.to_dict()
+                    payload = (
+                        self._compact_ceo_lifecycle_payload(source_name, flows, runtime.context.outputs if runtime.context else {})
+                        or self._compact_code_improvement_payload(source_name, flows, runtime.context.outputs if runtime.context else {})
+                        or result.to_dict()
+                    )
 
             return CommandResult(output=json.dumps(payload, ensure_ascii=False) + "\n", data=payload, data_type=PipelineType.OBJECT)
         except Exception as exc:
@@ -6505,6 +6545,49 @@ class NovaShell:
             "report_headline": str(ceo_report.get("headline") or ""),
             "history_length": len(decisions_history),
             "signal_count": signal_count,
+            "status_command": "ns.status",
+        }
+
+    def _compact_code_improvement_payload(self, source_name: str, flows: list[Any], outputs: dict[str, Any]) -> dict[str, Any] | None:
+        flow_records = []
+        for flow in flows:
+            flow_name = str(getattr(flow, "flow", "") or "")
+            if not flow_name:
+                continue
+            flow_records.append(
+                {
+                    "flow": flow_name,
+                    "trigger_event": getattr(flow, "trigger_event", None),
+                    "node_count": len(list(getattr(flow, "nodes", []) or [])),
+                }
+            )
+        if "code_improvement_cycle" not in {item["flow"] for item in flow_records}:
+            return None
+        if not isinstance(outputs, dict):
+            return None
+        if not all(key in outputs for key in ("improvement_result", "artifact_paths", "selected_candidate")):
+            return None
+
+        improvement_result = dict(outputs.get("improvement_result") or {})
+        artifact_paths = dict(outputs.get("artifact_paths") or {})
+        selected_candidate = dict(outputs.get("selected_candidate") or {})
+        request_payload = dict(outputs.get("request_payload") or {})
+
+        return {
+            "source_name": source_name,
+            "mode": "code_improvement",
+            "loaded": True,
+            "flow": "code_improvement_cycle",
+            "flows": flow_records,
+            "source_path": str(request_payload.get("source_path") or ""),
+            "source_dir": str(request_payload.get("source_dir") or ""),
+            "source_file_count": int(request_payload.get("source_file_count") or 0),
+            "goal": str(request_payload.get("goal") or ""),
+            "selected_candidate": selected_candidate,
+            "artifact_paths": artifact_paths,
+            "output_kind": str(artifact_paths.get("output_kind") or ""),
+            "warnings": list(improvement_result.get("warnings") or []),
+            "output_preview": str(improvement_result.get("output_preview") or ""),
             "status_command": "ns.status",
         }
 
@@ -7387,9 +7470,13 @@ class NovaShell:
         return CommandResult(output="", error="usage: graph aot <pipeline> | graph run <pipeline> | graph show <id>")
 
     def _run_python(self, code: str, pipeline_input: str, pipeline_data: Any) -> CommandResult:
+        if not code.strip():
+            return CommandResult(output="", error="usage: py <python expression or statements>")
         return self.python.execute(code, pipeline_input, pipeline_data, cwd=self.cwd)
 
     def _run_cpp(self, code: str, pipeline_input: str, _: Any) -> CommandResult:
+        if not code.strip():
+            return CommandResult(output="", error="usage: cpp <c++ source code>")
         blocked = self._is_ebpf_blocked(code)
         if blocked:
             return CommandResult(output="", error=blocked)
@@ -7823,7 +7910,14 @@ class NovaShell:
             command.extend(["--worker-ca", cafile])
         return command
 
-    def _wait_for_worker_health(self, url: str, *, timeout_seconds: float = 10.0, cafile: str | None = None) -> bool:
+    def _wait_for_worker_health(
+        self,
+        url: str,
+        *,
+        timeout_seconds: float = 20.0,
+        cafile: str | None = None,
+        process: subprocess.Popen[str] | subprocess.Popen[bytes] | None = None,
+    ) -> bool:
         deadline = time.time() + timeout_seconds
         while time.time() < deadline:
             try:
@@ -7841,6 +7935,8 @@ class NovaShell:
                 if payload.get("status") == "ok":
                     return True
             except Exception:
+                if process is not None and process.poll() is not None:
+                    return False
                 time.sleep(0.1)
         return False
 
@@ -9096,7 +9192,7 @@ class NovaShell:
                 text = self._load_ai_file_context(file_path)
                 metadata.setdefault("source_file", str(file_path))
             elif not text and pipeline_data is not None:
-                text = self._serialize_ai_context_value(pipeline_data)
+                text = self._serialize_memory_embed_value(pipeline_data)
             elif not text:
                 text = pipeline_input.strip()
             if not text:
@@ -9936,6 +10032,14 @@ class NovaShell:
         text = str(value)
         return text[:4000]
 
+    def _serialize_memory_embed_value(self, value: Any) -> str:
+        if isinstance(value, dict):
+            for key in ("text", "answer", "summary", "content", "message", "output"):
+                candidate = value.get(key)
+                if isinstance(candidate, str) and candidate.strip():
+                    return candidate.strip()[:4000]
+        return self._serialize_ai_context_value(value)
+
     def _load_ai_file_context(self, file_path: Path) -> str:
         suffix = file_path.suffix.lower()
         if suffix == ".csv":
@@ -10724,6 +10828,29 @@ class NovaShell:
                     error='dataset context missing. use `data load file.csv | ai prompt "Summarize this dataset"` or `ai prompt --file file.csv "Summarize this dataset"`',
                 )
             return self.ai_runtime.complete_prompt(enriched_prompt, system_prompt=system_prompt)
+        if action == "prompt64":
+            system_prompt = ""
+            prompt_text = ""
+            i = 1
+            while i < len(parts):
+                token = parts[i]
+                if token == "--system64" and i + 1 < len(parts):
+                    try:
+                        system_prompt = base64.b64decode(parts[i + 1], validate=True).decode("utf-8")
+                    except Exception as exc:
+                        return CommandResult(output="", error=f"invalid --system64 payload: {exc}")
+                    i += 2
+                    continue
+                if prompt_text:
+                    return CommandResult(output="", error="usage: ai prompt64 [--system64 b64] <prompt_b64>")
+                try:
+                    prompt_text = base64.b64decode(token, validate=True).decode("utf-8")
+                except Exception as exc:
+                    return CommandResult(output="", error=f"invalid prompt64 payload: {exc}")
+                i += 1
+            if not prompt_text:
+                return CommandResult(output="", error="usage: ai prompt64 [--system64 b64] <prompt_b64>")
+            return self.ai_runtime.complete_prompt(prompt_text, system_prompt=system_prompt)
 
         prompt = args.strip().strip('"')
         if not prompt:
@@ -11629,10 +11756,15 @@ class NovaShell:
             command = self._local_worker_command(host, port, caps, auth_token=auth_token, certfile=certfile, keyfile=keyfile, cafile=cafile)
             with log_path.open("w", encoding="utf-8") as handle:
                 process = subprocess.Popen(command, stdout=handle, stderr=subprocess.STDOUT, cwd=str(self.cwd))
-            if not self._wait_for_worker_health(url, cafile=cafile):
+            if not self._wait_for_worker_health(url, cafile=cafile, process=process):
                 with contextlib.suppress(Exception):
                     process.terminate()
-                return CommandResult(output="", error=f"worker failed to start: {url}")
+                log_tail = ""
+                with contextlib.suppress(Exception):
+                    lines = log_path.read_text(encoding="utf-8", errors="replace").splitlines()
+                    if lines:
+                        log_tail = f" ({lines[-1]})"
+                return CommandResult(output="", error=f"worker failed to start: {url}{log_tail}")
             if tls_profile and self._declarative_nova is not None and self._declarative_nova.context is not None and certfile and keyfile:
                 with contextlib.suppress(Exception):
                     self._declarative_nova.set_tls_profile(tls_profile, certfile, keyfile, cafile=cafile, verify=bool(cafile))
@@ -11726,7 +11858,7 @@ class NovaShell:
             worker = self.mesh.select_worker(capability)
             if worker is None:
                 return CommandResult(output="", error=f"no worker available for capability: {capability}")
-            command = " ".join(parts[2:])
+            command = self._normalize_mesh_command(capability, " ".join(parts[2:]))
             try:
                 return self.remote.execute(worker["url"], command)
             finally:
@@ -11744,12 +11876,31 @@ class NovaShell:
             if worker is None:
                 return CommandResult(output="", error=f"no worker available for capability: {capability}")
             command_tokens = [t for t in parts[2:] if t not in {"--handle", data_handle}]
-            command = " ".join(command_tokens)
+            command = self._normalize_mesh_command(capability, " ".join(command_tokens))
             try:
                 return self.remote.execute(worker["url"], command)
             finally:
                 worker["load"] = max(worker["load"] - 1, 0)
         return CommandResult(output="", error="usage: mesh add|list|run|intelligent-run|beat|start-worker|stop-worker|federated ...")
+
+    def _normalize_mesh_command(self, capability: str, command: str) -> str:
+        normalized = command.strip()
+        if not normalized:
+            return normalized
+        if command_name(normalized) in self.commands:
+            return normalized
+        capability_prefixes = {
+            "py": "py",
+            "python": "py",
+            "cpp": "cpp",
+            "gpu": "gpu",
+            "sys": "sys",
+            "wasm": "wasm",
+        }
+        prefix = capability_prefixes.get(capability.strip().lower())
+        if prefix is None:
+            return normalized
+        return f"{prefix} {normalized}"
 
     def _run_guard(self, args: str, _: str, __: Any) -> CommandResult:
         parts = split_command(args)
@@ -12653,6 +12804,8 @@ class NovaShell:
             return CommandResult(output="", error="usage: observe run <pipeline>")
 
         pipeline = args[len("run") :].strip()
+        if len(pipeline) >= 2 and pipeline[0] == pipeline[-1] and pipeline[0] in {"'", '"'}:
+            pipeline = pipeline[1:-1]
         trace_id = uuid.uuid4().hex[:12]
         self.current_trace_id = trace_id
         result = self.route(pipeline)

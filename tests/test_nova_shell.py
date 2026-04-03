@@ -1,8 +1,11 @@
+import base64
 import io
+import importlib
 import json
 import os
 import re
 import runpy
+import shutil
 import socket
 import subprocess
 import sys
@@ -10,6 +13,7 @@ import tempfile
 import threading
 import time
 import unittest
+import urllib.error
 import urllib.parse
 import urllib.request
 import zipfile
@@ -18,7 +22,10 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
+from nova.agents.providers import ShellProviderAdapter
+from nova.agents.runtime import AgentRuntime, AgentSpecification
 from nova.runtime import AtheriaVoiceRuntime
+from nova.runtime.context import RuntimeContext
 from nova_shell import AIAgentDefinition, CommandResult, CppEngine, NovaAtheriaRuntime, NovaShell, PipelineType, __version__, main, render_trend_explanation, resolve_emcc_command
 from novascript import Assignment, Command, ForLoop, IfBlock, NovaInterpreter, NovaParser
 
@@ -42,6 +49,15 @@ class FakeHTTPResponse:
 
 
 class NovaShellTests(unittest.TestCase):
+    @staticmethod
+    def _reserve_free_port() -> int:
+        sock = socket.socket()
+        try:
+            sock.bind(("127.0.0.1", 0))
+            return int(sock.getsockname()[1])
+        finally:
+            sock.close()
+
     def setUp(self) -> None:
         self.original_cwd = Path.cwd()
         self._temp_home = tempfile.TemporaryDirectory()
@@ -65,6 +81,47 @@ class NovaShellTests(unittest.TestCase):
         self.assertIsNone(result.error)
         self.assertEqual(result.output.strip(), "3")
 
+    def test_python_requires_code(self) -> None:
+        result = self.shell.route("py")
+        self.assertEqual(result.error, "usage: py <python expression or statements>")
+
+    def test_cpp_requires_code(self) -> None:
+        result = self.shell.route("cpp")
+        self.assertEqual(result.error, "usage: cpp <c++ source code>")
+
+    def test_agent_runtime_provider_output_uses_prompt_text_without_task_footer(self) -> None:
+        runtime = AgentRuntime()
+        specification = AgentSpecification(name="ReviewAgent", provider="shell", model="active")
+        captured: dict[str, object] = {}
+
+        def fake_execute(spec: AgentSpecification, prompt: str, inputs: list[object], context: RuntimeContext) -> tuple[str, str, str]:
+            captured["spec"] = spec
+            captured["prompt"] = prompt
+            captured["inputs"] = list(inputs)
+            return ("ok", "shell", "active")
+
+        tmp = tempfile.TemporaryDirectory()
+        try:
+            context = RuntimeContext(base_path=Path(tmp.name), command_executor=None)
+            try:
+                with patch.object(context.provider_registry, "execute", side_effect=fake_execute):
+                    routed = runtime._provider_output(
+                        specification,
+                        "run",
+                        [{"input_name": "sample.py"}],
+                        context,
+                        "REAL PROMPT BODY",
+                        [],
+                    )
+            finally:
+                context.close()
+        finally:
+            tmp.cleanup()
+
+        self.assertEqual(routed, ("ok", "shell", "active"))
+        self.assertEqual(captured["prompt"], "REAL PROMPT BODY")
+        self.assertEqual(captured["inputs"], [{"input_name": "sample.py"}])
+
     def test_cli_main_version(self) -> None:
         stdout = io.StringIO()
         with redirect_stdout(stdout):
@@ -80,6 +137,123 @@ class NovaShellTests(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         self.assertEqual(stdout.getvalue().strip(), "2")
         self.assertEqual(stderr.getvalue(), "")
+
+    def test_worker_module_translates_compatibility_flags(self) -> None:
+        worker_module = importlib.import_module("nova_shell.worker")
+        captured: dict[str, object] = {}
+
+        def fake_main(argv: list[str]) -> int:
+            captured["argv"] = argv
+            return 0
+
+        with patch("nova_shell.main", side_effect=fake_main):
+            exit_code = worker_module.main(["--port", "8766", "--caps", "py"])
+
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(
+            captured["argv"],
+            ["--serve-worker", "--worker-host", "127.0.0.1", "--worker-port", "8766", "--worker-caps", "py"],
+        )
+
+    def test_documented_local_cli_examples_smoke(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            examples_dir = root / "examples"
+            examples_dir.mkdir()
+            items = examples_dir / "items.csv"
+            items.write_text("name,price\napple,1.5\nbread,2.5\n", encoding="utf-8")
+            app_log = root / "app.log"
+            app_log.write_text("line-1\nline-2\n", encoding="utf-8")
+
+            self.assertIsNone(self.shell.route(f'cd "{root}"').error)
+
+            for command in [
+                "help",
+                "doctor json",
+                "pwd",
+                f'watch "{app_log}" --lines 1 --follow-seconds 0',
+                "sys echo hello",
+                "py 1 + 1",
+                "python sum([1,2,3])",
+                'graph run "py 1 + 1 | py _ * 2"',
+                'observe run "py 1 + 1 | py _ * 2"',
+                "data load examples/items.csv",
+                "data.load examples/items.csv",
+                'data load examples/items.csv | parallel py row["price"]',
+                "pulse status",
+                "pulse snapshot",
+                "studio completions ath",
+                "studio graph",
+                "studio events",
+            ]:
+                result = self.shell.route(command)
+                self.assertIsNone(result.error, command)
+
+            register = self.shell.route(
+                "tool register doc_echo --description 'Echo value' "
+                "--schema '{\"type\":\"object\",\"properties\":{\"name\":{\"type\":\"string\"}},\"required\":[\"name\"]}' "
+                "--pipeline 'py {{py:name}}'"
+            )
+            self.assertIsNone(register.error)
+            self.assertIsNone(self.shell.route("tool list").error)
+            self.assertIsNone(self.shell.route("tool show doc_echo").error)
+            called = self.shell.route("tool call doc_echo name=Nova")
+            self.assertIsNone(called.error)
+            self.assertEqual(called.output.strip(), "Nova")
+
+            embedded = self.shell.route('memory embed --id groceries "Brot Käse Apfel Preise Lebensmittel"')
+            self.assertIsNone(embedded.error)
+            self.assertIsNone(self.shell.route('memory search "Käse Lebensmittel"').error)
+            self.assertIsNone(self.shell.route("memory list").error)
+            self.assertIsNone(self.shell.route("memory status").error)
+
+            subscribed = self.shell.route("event on doc_event 'py _.upper()'")
+            self.assertIsNone(subscribed.error)
+            emitted = self.shell.route("event emit doc_event hello nova")
+            self.assertIsNone(emitted.error)
+            self.assertIn("HELLO NOVA", emitted.output)
+            self.assertIsNone(self.shell.route("event list").error)
+            self.assertIsNone(self.shell.route("event history 5").error)
+            self.assertIsNone(self.shell.route("events last").error)
+            self.assertIsNone(self.shell.route("events stats").error)
+
+            self.assertIsNone(self.shell.route("flow state set last_run ok").error)
+            flow_get = self.shell.route("flow state get last_run")
+            self.assertIsNone(flow_get.error)
+            self.assertIn("ok", flow_get.output)
+
+            zero_put = self.shell.route("zero put hello-zero")
+            self.assertIsNone(zero_put.error)
+            handle = json.loads(zero_put.output)["handle"]
+            self.assertIsNone(self.shell.route("zero list").error)
+            zero_get = self.shell.route(f"zero get {handle}")
+            self.assertIsNone(zero_get.error)
+            self.assertIn("hello-zero", zero_get.output)
+            self.assertIsNone(self.shell.route(f"zero release {handle}").error)
+
+            blob_pack = self.shell.route('blob pack --text "21 * 2" --type py')
+            self.assertIsNone(blob_pack.error)
+            blob_path = json.loads(blob_pack.output)["path"]
+            self.assertIsNone(self.shell.route(f"blob verify {blob_path}").error)
+            blob_exec = self.shell.route(f"blob exec {blob_path}")
+            self.assertIsNone(blob_exec.error)
+            self.assertEqual(blob_exec.output.strip(), "42")
+
+            started = self.shell.route("mesh start-worker --port 8769 --caps py")
+            self.assertIsNone(started.error)
+            worker_id = json.loads(started.output)["worker_id"]
+            try:
+                mesh_run = self.shell.route('mesh run py "1 + 1"')
+                self.assertIsNone(mesh_run.error)
+                self.assertEqual(mesh_run.output.strip(), "2")
+                mesh_intelligent = self.shell.route('mesh intelligent-run py "print(\'Hello from Mesh\')"')
+                self.assertIsNone(mesh_intelligent.error)
+                self.assertEqual(mesh_intelligent.output.strip(), "Hello from Mesh")
+                self.assertIsNone(self.shell.route("mesh list").error)
+            finally:
+                self.assertIsNone(self.shell.route(f"mesh stop-worker {worker_id}").error)
+
+            self.assertIsNone(self.shell.route("ns.check H:/Nova-shell-main/morning_briefing.ns").error)
 
     def test_persistent_python_context(self) -> None:
         self.shell.route("py x = 10")
@@ -328,10 +502,29 @@ class NovaShellTests(unittest.TestCase):
             self.assertEqual(len(parsed), 2)
             self.assertEqual(parsed[1]["name"], "b")
 
+    def test_data_load_reports_directory_path_clearly(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            csv_dir = Path(tmp) / "items.csv"
+            csv_dir.mkdir()
+
+            result = self.shell.route(f'data load "{csv_dir}"')
+
+            self.assertEqual(result.error, f"csv path points to a directory, not a file: {csv_dir}")
+
     def test_parallel_pipeline(self) -> None:
         result = self.shell.route("printf 'a\nb\n' | parallel py _.upper()")
         self.assertIsNone(result.error)
         self.assertEqual(result.output.strip().splitlines(), ["A", "B"])
+
+    def test_parallel_pipeline_supports_row_alias_for_object_items(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            csv_file = Path(tmp) / "items.csv"
+            csv_file.write_text("name,price\napple,1.5\nbread,2.5\n", encoding="utf-8")
+
+            result = self.shell.route(f'data load "{csv_file}" | parallel py row["price"]')
+
+            self.assertIsNone(result.error)
+            self.assertEqual(result.output.strip().splitlines(), ["1.5", "2.5"])
 
     def test_parallel_pipeline_accepts_generator_input(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -3169,6 +3362,32 @@ if len(files_lines) == 2:
         self.assertIn("Nova-shell context", calls[0])
         self.assertIn("Brot", calls[0])
 
+    def test_documented_price_pipeline_can_flow_into_ai_and_memory(self) -> None:
+        def fake_complete(prompt: str, *, provider: str | None = None, model: str | None = None, system_prompt: str = "") -> CommandResult:
+            self.assertEqual(provider, None)
+            self.assertEqual(model, None)
+            self.assertEqual(system_prompt, "")
+            self.assertIn("Ist das teuer?", prompt)
+            self.assertIn("1.5", prompt)
+            self.assertIn("2.5", prompt)
+            return CommandResult(
+                output="Eher guenstig bis mittel.\n",
+                data={"text": "Eher guenstig bis mittel."},
+                data_type=PipelineType.OBJECT,
+            )
+
+        with tempfile.TemporaryDirectory() as tmp, patch.object(self.shell.ai_runtime, "complete_prompt", side_effect=fake_complete):
+            csv_file = Path(tmp) / "items.csv"
+            csv_file.write_text("name,price\napple,1.5\nbread,2.5\n", encoding="utf-8")
+            result = self.shell.route(
+                f'data load "{csv_file}" | parallel py row["price"] | ai prompt "Ist das teuer?" | memory embed --id price_check'
+            )
+
+            self.assertIsNone(result.error)
+            payload = json.loads(result.output)
+            self.assertEqual(payload["id"], "price_check")
+            self.assertEqual(payload["text_preview"], "Eher guenstig bis mittel.")
+
     def test_ai_prompt_file_option_uses_shell_cwd(self) -> None:
         calls: list[str] = []
 
@@ -3196,6 +3415,21 @@ if len(files_lines) == 2:
         self.assertIsNotNone(result.error)
         self.assertIn("dataset context missing", result.error)
         complete_mock.assert_not_called()
+
+    def test_ai_prompt64_decodes_payload_and_system_prompt(self) -> None:
+        prompt = "Zeile 1\n{\"risk\": true}\n"
+        system_prompt = "Sei knapp und korrekt."
+        prompt_b64 = base64.b64encode(prompt.encode("utf-8")).decode("ascii")
+        system_b64 = base64.b64encode(system_prompt.encode("utf-8")).decode("ascii")
+        with patch.object(
+            self.shell.ai_runtime,
+            "complete_prompt",
+            return_value=CommandResult(output="ok\n", data={"provider": "lmstudio"}, data_type=PipelineType.OBJECT),
+        ) as complete_mock:
+            result = self.shell.route(f"ai prompt64 {prompt_b64} --system64 {system_b64}")
+        self.assertIsNone(result.error)
+        self.assertEqual(result.output.strip(), "ok")
+        complete_mock.assert_called_once_with(prompt, system_prompt=system_prompt)
 
     def test_agent_create_and_run(self) -> None:
         calls: list[dict[str, str]] = []
@@ -3369,8 +3603,10 @@ agent helper {
 
     def _copy_ceo_runtime_fixture(self, target_root: Path) -> None:
         source_root = Path(__file__).resolve().parents[1] / "examples" / "CEO_ns"
+        target_root.mkdir(parents=True, exist_ok=True)
+        for ns_file in source_root.glob("*.ns"):
+            (target_root / ns_file.name).write_text(ns_file.read_text(encoding="utf-8"), encoding="utf-8")
         for name in (
-            "CEO_Lifecycle.ns",
             "ceo_runtime_helper.py",
             "ceo_continuous_runtime.py",
             "internal_telemetry.json",
@@ -3380,38 +3616,54 @@ agent helper {
         ):
             (target_root / name).write_text((source_root / name).read_text(encoding="utf-8"), encoding="utf-8")
 
-    def test_ceo_ns_examples_load_successfully(self) -> None:
-        root = Path(__file__).resolve().parents[1]
-        ceo_dir = root / "examples" / "CEO_ns"
-        targets = sorted(ceo_dir.glob("*.ns"))
-        self.assertGreaterEqual(len(targets), 9)
+    def _copy_code_improvement_fixture(self, target_root: Path) -> None:
+        source_root = Path(__file__).resolve().parents[1] / "examples" / "code_improvement_ns"
+        target_root.mkdir(parents=True, exist_ok=True)
+        for name in (
+            "Code_Improve_Lifecycle.ns",
+            "code_improve_runtime_helper.py",
+            "code_improvement_request.json",
+            "code_improvement_project_request.json",
+            "sample_target.py",
+        ):
+            (target_root / name).write_text((source_root / name).read_text(encoding="utf-8"), encoding="utf-8")
+        demo_project_root = source_root / "demo_project"
+        if demo_project_root.is_dir():
+            shutil.copytree(demo_project_root, target_root / "demo_project", dirs_exist_ok=True)
 
-        for target in targets:
-            result = self.shell.route(f'ns.run "{target}"')
-            try:
-                self.assertIsNone(result.error, f"{target.name}: {result.error}")
-                payload = json.loads(result.output)
-                if target.name == "CEO_Lifecycle.ns":
-                    self.assertEqual(payload["mode"], "ceo_lifecycle")
-                    self.assertEqual(payload["flow"], "ceo_lifecycle")
-                    self.assertIn("execution_plan", payload)
-                    self.assertIsInstance(payload["execution_plan"], dict)
-                    self.assertIn("decision_packet", payload)
-                    self.assertIsInstance(payload["decision_packet"], dict)
-                    self.assertIn("artifact_paths", payload)
-                    self.assertIsInstance(payload["artifact_paths"], dict)
-                    self.assertTrue(Path(payload["artifact_paths"]["report_path"]).is_file())
-                    self.assertTrue(Path(payload["artifact_paths"]["html_path"]).is_file())
-                    self.assertGreaterEqual(int(payload["history_length"]), 1)
-                    self.assertEqual(payload["status_command"], "ns.status")
-                else:
-                    self.assertEqual(payload["mode"], "agent_bundle")
-                    self.assertEqual(payload["agent_count"], 1)
-            finally:
-                with suppress(Exception):
-                    if self.shell._declarative_nova is not None:
-                        self.shell._declarative_nova.close()
-                        self.shell._declarative_nova = None
+    def test_ceo_ns_examples_load_successfully(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            ceo_dir = Path(tmp)
+            self._copy_ceo_runtime_fixture(ceo_dir)
+            targets = sorted(ceo_dir.glob("*.ns"))
+            self.assertGreaterEqual(len(targets), 9)
+
+            for target in targets:
+                result = self.shell.route(f'ns.run "{target}"')
+                try:
+                    self.assertIsNone(result.error, f"{target.name}: {result.error}")
+                    payload = json.loads(result.output)
+                    if target.name == "CEO_Lifecycle.ns":
+                        self.assertEqual(payload["mode"], "ceo_lifecycle")
+                        self.assertEqual(payload["flow"], "ceo_lifecycle")
+                        self.assertIn("execution_plan", payload)
+                        self.assertIsInstance(payload["execution_plan"], dict)
+                        self.assertIn("decision_packet", payload)
+                        self.assertIsInstance(payload["decision_packet"], dict)
+                        self.assertIn("artifact_paths", payload)
+                        self.assertIsInstance(payload["artifact_paths"], dict)
+                        self.assertTrue(Path(payload["artifact_paths"]["report_path"]).is_file())
+                        self.assertTrue(Path(payload["artifact_paths"]["html_path"]).is_file())
+                        self.assertGreaterEqual(int(payload["history_length"]), 1)
+                        self.assertEqual(payload["status_command"], "ns.status")
+                    else:
+                        self.assertEqual(payload["mode"], "agent_bundle")
+                        self.assertEqual(payload["agent_count"], 1)
+                finally:
+                    with suppress(Exception):
+                        if self.shell._declarative_nova is not None:
+                            self.shell._declarative_nova.close()
+                            self.shell._declarative_nova = None
 
     def test_ceo_partner_event_signal_escalates_deadline_pressure(self) -> None:
         root = Path(__file__).resolve().parents[1] / "examples" / "CEO_ns"
@@ -3543,6 +3795,828 @@ agent helper {
                 decision = payload["decision_packet"]
                 self.assertEqual(decision["decision"], "revise")
                 self.assertIn("Kapitalgrenze ueberschritten", decision["selected_option"]["blocks"])
+            finally:
+                with suppress(Exception):
+                    if self.shell._declarative_nova is not None:
+                        self.shell._declarative_nova.close()
+                        self.shell._declarative_nova = None
+
+    def test_code_improvement_lifecycle_writes_best_candidate_to_new_file(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self._copy_code_improvement_fixture(root)
+
+            def fake_complete_prompt(prompt: str, *, system_prompt: str = "", **_: object) -> CommandResult:
+                if "CodeReviewAgent" in system_prompt:
+                    output = "\n".join(
+                        [
+                            "Befund: Die Funktion arbeitet, aber der Kontrollfluss ist unnoetig eng verschachtelt.",
+                            "Risiken: values kann leer oder None sein; die None-Pruefung ist unidiomatisch.",
+                            "Chancen: Fruehe Rueckgabe und klarere Normalisierung verbessern Wartbarkeit.",
+                            "Tests: None, Leerstrings und bereits numerische Eingaben pruefen.",
+                        ]
+                    )
+                elif "RefactorAgent" in system_prompt:
+                    output = "\n".join(
+                        [
+                            "Titel: Lesbarerer Ablauf",
+                            "Score: 0.81",
+                            "Strategie: Klare Normalisierung mit continue-Pfaden.",
+                            "Code:",
+                            "```python",
+                            "def clean_numbers(values):",
+                            "    cleaned = []",
+                            "    for value in values or []:",
+                            "        if value is None:",
+                            "            continue",
+                            "        stripped = str(value).strip()",
+                            "        if not stripped:",
+                            "            continue",
+                            "        cleaned.append(int(stripped))",
+                            "    return cleaned",
+                            "```",
+                            "Begruendung: Entfernt unklare Vergleiche und macht den Ablauf linearer.",
+                            "Tests: None, '', ' 3 ' und 7 pruefen.",
+                        ]
+                    )
+                elif "ReliabilityAgent" in system_prompt:
+                    output = "\n".join(
+                        [
+                            "Titel: Robuste Eingabebehandlung",
+                            "Score: 0.93",
+                            "Strategie: Fruehe Rueckgabe fuer leere Eingaben und defensive Normalisierung.",
+                            "Code:",
+                            "```python",
+                            "def clean_numbers(values):",
+                            "    if not values:",
+                            "        return []",
+                            "",
+                            "    cleaned = []",
+                            "    for value in values:",
+                            "        if value is None:",
+                            "            continue",
+                            "        stripped = str(value).strip()",
+                            "        if not stripped:",
+                            "            continue",
+                            "        cleaned.append(int(stripped))",
+                            "    return cleaned",
+                            "```",
+                            "Begruendung: Faengt leere Eingaben sauber ab und behaelt das Zielverhalten fuer normale Werte.",
+                            "Tests: None, [], [' 1 ', None, ''] und ['7'] pruefen.",
+                        ]
+                    )
+                elif "SimplifyAgent" in system_prompt:
+                    output = "\n".join(
+                        [
+                            "Titel: Kompakter Stil",
+                            "Score: 0.72",
+                            "Strategie: Komprimiert die Schleife leicht, ohne auf Lesbarkeit zu verzichten.",
+                            "Code:",
+                            "```python",
+                            "def clean_numbers(values):",
+                            "    cleaned = []",
+                            "    for value in values or []:",
+                            "        stripped = str(value).strip() if value is not None else ''",
+                            "        if stripped:",
+                            "            cleaned.append(int(stripped))",
+                            "    return cleaned",
+                            "```",
+                            "Begruendung: Etwas kuerzer, aber weniger explizit als die robuste Variante.",
+                            "Tests: None, Leerstrings und einfache Zahlen pruefen.",
+                        ]
+                    )
+                elif "SelectorAgent" in system_prompt:
+                    output = "\n".join(
+                        [
+                            "Gewinner: reliability",
+                            "Score: 0.95",
+                            "Warum: Diese Variante ist am robustesten und behaelt zugleich einen klaren Ablauf.",
+                        ]
+                    )
+                else:
+                    output = "Befund: Unbekannter Agent."
+                return CommandResult(
+                    output=output + "\n",
+                    data={"provider": "lmstudio", "model": "test-model", "text": output},
+                    data_type=PipelineType.OBJECT,
+                )
+
+            with patch.object(self.shell.ai_runtime, "complete_prompt", side_effect=fake_complete_prompt):
+                result = self.shell.route(f'ns.run "{root / "Code_Improve_Lifecycle.ns"}"')
+            try:
+                self.assertIsNone(result.error)
+                payload = json.loads(result.output)
+                self.assertEqual(payload["mode"], "code_improvement")
+                self.assertEqual(payload["selected_candidate"]["candidate_id"], "reliability")
+                output_path = Path(payload["artifact_paths"]["output_path"])
+                report_path = Path(payload["artifact_paths"]["report_path"])
+                self.assertTrue(output_path.is_file())
+                self.assertTrue(report_path.is_file())
+                written_code = output_path.read_text(encoding="utf-8")
+                self.assertIn("if not values:", written_code)
+                self.assertIn("cleaned.append(int(stripped))", written_code)
+                report_payload = json.loads(report_path.read_text(encoding="utf-8"))
+                self.assertEqual(report_payload["selected_candidate"]["candidate_id"], "reliability")
+                self.assertFalse(report_payload["warnings"])
+            finally:
+                with suppress(Exception):
+                    if self.shell._declarative_nova is not None:
+                        self.shell._declarative_nova.close()
+                        self.shell._declarative_nova = None
+
+    def test_code_improvement_lifecycle_project_writes_best_candidate_to_output_directory(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self._copy_code_improvement_fixture(root)
+            (root / "code_improvement_request.json").write_text(
+                (root / "code_improvement_project_request.json").read_text(encoding="utf-8"),
+                encoding="utf-8",
+            )
+
+            def fake_complete_prompt(prompt: str, *, system_prompt: str = "", **_: object) -> CommandResult:
+                if "CodeReviewAgent" in system_prompt:
+                    output = "\n".join(
+                        [
+                            "Befund: Das Projekt ist klein, aber clean_numbers behandelt leere Eingaben nicht defensiv.",
+                            "Risiken: None und leere Sequenzen fuehren zu unklaren Fehlerbildern.",
+                            "Chancen: Fruehe Rueckgabe und klarere Schleifen verbessern Wartbarkeit.",
+                            "Tests: clean_numbers mit None, [] und [' 4 '] sowie render_total mit [1, 2] pruefen.",
+                        ]
+                    )
+                elif "RefactorAgent" in system_prompt:
+                    output = "\n".join(
+                        [
+                            "Titel: Lesbarere Projektvariante",
+                            "Score: 0.86",
+                            "Strategie: Vereinheitlicht clean_numbers, laesst reporting.py unveraendert.",
+                            "Dateien:",
+                            "```json",
+                            "{\"clean_numbers.py\": \"def clean_numbers(values):\\n    cleaned = []\\n    for value in values or []:\\n        if value is None:\\n            continue\\n        stripped = str(value).strip()\\n        if not stripped:\\n            continue\\n        cleaned.append(int(stripped))\\n    return cleaned\\n\"}",
+                            "```",
+                            "Begruendung: Der Kontrollfluss wird linearer, ohne das Rueckgabeformat zu aendern.",
+                            "Tests: None, [], [' 4 '] und [7] pruefen.",
+                        ]
+                    )
+                elif "ReliabilityAgent" in system_prompt:
+                    output = "\n".join(
+                        [
+                            "Titel: Robustes Projektupdate",
+                            "Score: 0.94",
+                            "Strategie: Fuegt fruehe Rueckgabe und defensives Rendering hinzu.",
+                            "Dateien:",
+                            "```json",
+                            "{\"clean_numbers.py\": \"def clean_numbers(values):\\n    if not values:\\n        return []\\n\\n    cleaned = []\\n    for value in values:\\n        if value is None:\\n            continue\\n        stripped = str(value).strip()\\n        if not stripped:\\n            continue\\n        cleaned.append(int(stripped))\\n    return cleaned\\n\", \"reporting.py\": \"def render_total(values):\\n    total = 0\\n    for value in values or []:\\n        total += value\\n    return f'total={total}'\\n\"}",
+                            "```",
+                            "Begruendung: Das Projekt wird robuster fuer leere Eingaben und behaelt die Rueckgabeformate bei.",
+                            "Tests: clean_numbers(None), clean_numbers([]) und render_total([]) pruefen.",
+                        ]
+                    )
+                elif "SimplifyAgent" in system_prompt:
+                    output = "\n".join(
+                        [
+                            "Titel: Kompakter Projektstil",
+                            "Score: 0.73",
+                            "Strategie: Vereinfacht clean_numbers leicht, aendert aber sonst nichts.",
+                            "Dateien:",
+                            "```json",
+                            "{\"clean_numbers.py\": \"def clean_numbers(values):\\n    cleaned = []\\n    for value in values or []:\\n        stripped = str(value).strip() if value is not None else ''\\n        if stripped:\\n            cleaned.append(int(stripped))\\n    return cleaned\\n\"}",
+                            "```",
+                            "Begruendung: Kompakter, aber weniger explizit als die robuste Variante.",
+                            "Tests: None, '', ' 5 ' pruefen.",
+                        ]
+                    )
+                elif "SelectorAgent" in system_prompt:
+                    output = "\n".join(
+                        [
+                            "Gewinner: reliability",
+                            "Score: 0.97",
+                            "Warum: Diese Variante verbessert Robustheit und aktualisiert beide betroffenen Dateien konsistent.",
+                        ]
+                    )
+                else:
+                    output = "Befund: Unbekannter Agent."
+                return CommandResult(
+                    output=output + "\n",
+                    data={"provider": "lmstudio", "model": "test-model", "text": output},
+                    data_type=PipelineType.OBJECT,
+                )
+
+            with patch.object(self.shell.ai_runtime, "complete_prompt", side_effect=fake_complete_prompt):
+                result = self.shell.route(f'ns.run "{root / "Code_Improve_Lifecycle.ns"}"')
+            try:
+                self.assertIsNone(result.error)
+                payload = json.loads(result.output)
+                self.assertEqual(payload["mode"], "code_improvement")
+                self.assertEqual(payload["selected_candidate"]["candidate_id"], "reliability")
+                output_path = Path(payload["artifact_paths"]["output_path"])
+                report_path = Path(payload["artifact_paths"]["report_path"])
+                self.assertTrue(output_path.is_dir())
+                self.assertTrue(report_path.is_file())
+                clean_numbers_path = output_path / "clean_numbers.py"
+                reporting_path = output_path / "reporting.py"
+                self.assertTrue(clean_numbers_path.is_file())
+                self.assertTrue(reporting_path.is_file())
+                self.assertIn("if not values:", clean_numbers_path.read_text(encoding="utf-8"))
+                self.assertIn("for value in values or []:", reporting_path.read_text(encoding="utf-8"))
+                report_payload = json.loads(report_path.read_text(encoding="utf-8"))
+                self.assertEqual(report_payload["request"]["mode"], "project")
+                self.assertEqual(report_payload["selected_candidate"]["candidate_id"], "reliability")
+                self.assertEqual(payload["artifact_paths"]["output_kind"], "directory")
+                self.assertFalse(report_payload["warnings"])
+            finally:
+                with suppress(Exception):
+                    if self.shell._declarative_nova is not None:
+                        self.shell._declarative_nova.close()
+                        self.shell._declarative_nova = None
+
+    def test_code_improvement_lifecycle_fallback_selects_plain_code_candidate(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self._copy_code_improvement_fixture(root)
+
+            def fake_complete_prompt(prompt: str, *, system_prompt: str = "", **_: object) -> CommandResult:
+                if "CodeReviewAgent" in system_prompt:
+                    output = "\n".join(
+                        [
+                            "Befund: Die Funktion sollte leere Eingaben defensiver behandeln.",
+                            "Risiken: None und Leerlisten fuehren zu unklaren Pfaden.",
+                            "Chancen: Fruehe Rueckgabe und explizitere Normalisierung verbessern Robustheit.",
+                            "Tests: None, [] und [' 9 ', None, ''] pruefen.",
+                        ]
+                    )
+                elif "RefactorAgent" in system_prompt:
+                    output = "\n".join(
+                        [
+                            "Titel: Ambitioniertes Refactoring",
+                            "Score: 0.91",
+                            "Strategie: Strafft die Funktion stark.",
+                            "Code:",
+                            "```python",
+                            "def clean_numbers(values):",
+                            "    for value in values",
+                            "        pass",
+                            "```",
+                            "Begruendung: Soll kuerzer wirken.",
+                            "Tests: Smoke-Test.",
+                        ]
+                    )
+                elif "ReliabilityAgent" in system_prompt:
+                    output = "\n".join(
+                        [
+                            "Titel: Robuste Eingabebehandlung",
+                            "Strategie: Fruehe Rueckgabe und defensive Normalisierung.",
+                            "Code:",
+                            "def clean_numbers(values):",
+                            "    if not values:",
+                            "        return []",
+                            "",
+                            "    cleaned = []",
+                            "    for value in values:",
+                            "        if value is None:",
+                            "            continue",
+                            "        stripped = str(value).strip()",
+                            "        if not stripped:",
+                            "            continue",
+                            "        cleaned.append(int(stripped))",
+                            "    return cleaned",
+                            "Begruendung: Die Variante bleibt nah am Original, behandelt leere Eingaben aber sauber.",
+                            "Tests: None, [] und [' 9 ', None, ''] pruefen.",
+                        ]
+                    )
+                elif "SimplifyAgent" in system_prompt:
+                    output = "\n".join(
+                        [
+                            "Titel: Kurze Skizze",
+                            "Strategie: Noch keine tragfaehige Ausarbeitung.",
+                            "Begruendung: Absichtlich ohne verwertbaren Code.",
+                            "Tests: Keine.",
+                        ]
+                    )
+                elif "SelectorAgent" in system_prompt:
+                    output = "\n".join(
+                        [
+                            "Gewinner: refactor",
+                            "Score: 0.96",
+                            "Warum: Das Refactoring wirkt auf den ersten Blick am strukturiertesten.",
+                        ]
+                    )
+                else:
+                    output = "Befund: Unbekannter Agent."
+                return CommandResult(
+                    output=output + "\n",
+                    data={"provider": "lmstudio", "model": "test-model", "text": output},
+                    data_type=PipelineType.OBJECT,
+                )
+
+            with patch.object(self.shell.ai_runtime, "complete_prompt", side_effect=fake_complete_prompt):
+                result = self.shell.route(f'ns.run "{root / "Code_Improve_Lifecycle.ns"}"')
+            try:
+                self.assertIsNone(result.error)
+                payload = json.loads(result.output)
+                self.assertEqual(payload["selected_candidate"]["candidate_id"], "reliability")
+                self.assertEqual(payload["selected_candidate"]["selection_mode"], "fallback")
+                self.assertIn("selector chose invalid candidate 'refactor'", payload["warnings"][0])
+                output_path = Path(payload["artifact_paths"]["output_path"])
+                self.assertTrue(output_path.is_file())
+                written_code = output_path.read_text(encoding="utf-8")
+                self.assertIn("if not values:", written_code)
+                self.assertIn("cleaned.append(int(stripped))", written_code)
+            finally:
+                with suppress(Exception):
+                    if self.shell._declarative_nova is not None:
+                        self.shell._declarative_nova.close()
+                        self.shell._declarative_nova = None
+
+    def test_code_improvement_lifecycle_project_parses_plain_json_candidate(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self._copy_code_improvement_fixture(root)
+            (root / "code_improvement_request.json").write_text(
+                (root / "code_improvement_project_request.json").read_text(encoding="utf-8"),
+                encoding="utf-8",
+            )
+
+            def fake_complete_prompt(prompt: str, *, system_prompt: str = "", **_: object) -> CommandResult:
+                if "CodeReviewAgent" in system_prompt:
+                    output = "\n".join(
+                        [
+                            "Befund: Das Projekt profitiert von defensiveren Guard-Pfaden.",
+                            "Risiken: Leere Eingaben und Nullpfade sind noch zu locker behandelt.",
+                            "Chancen: Klare Guards verbessern Robustheit in beiden Dateien.",
+                            "Tests: clean_numbers(None), clean_numbers([]) und render_total([]) pruefen.",
+                        ]
+                    )
+                elif "RefactorAgent" in system_prompt:
+                    output = "\n".join(
+                        [
+                            "Titel: Ueberzogenes Projektrefactoring",
+                            "Score: 0.92",
+                            "Strategie: Baut clean_numbers um.",
+                            "Dateien:",
+                            "{\"clean_numbers.py\": \"def clean_numbers(values):\\n    for value in values\\n        pass\\n\"}",
+                            "Begruendung: Starkes Refactoring.",
+                            "Tests: Smoke-Test.",
+                        ]
+                    )
+                elif "ReliabilityAgent" in system_prompt:
+                    output = "\n".join(
+                        [
+                            "Titel: Robustes Projektupdate",
+                            "Strategie: Fuegt defensive Pfade in beiden Dateien ein.",
+                            "Dateien:",
+                            "{\"clean_numbers.py\": \"def clean_numbers(values):\\n    if not values:\\n        return []\\n\\n    cleaned = []\\n    for value in values:\\n        if value is None:\\n            continue\\n        stripped = str(value).strip()\\n        if not stripped:\\n            continue\\n        cleaned.append(int(stripped))\\n    return cleaned\\n\", \"reporting.py\": \"def render_total(values):\\n    total = 0\\n    for value in values or []:\\n        total += value\\n    return f'total={total}'\\n\"}",
+                            "Begruendung: Beide Dateien bleiben kompakt, werden aber robuster.",
+                            "Tests: clean_numbers(None), clean_numbers([]) und render_total([]) pruefen.",
+                        ]
+                    )
+                elif "SimplifyAgent" in system_prompt:
+                    output = "\n".join(
+                        [
+                            "Titel: Kurze Projektskizze",
+                            "Dateien:",
+                            "{}",
+                            "Begruendung: Keine belastbare Aenderung.",
+                            "Tests: Keine.",
+                        ]
+                    )
+                elif "SelectorAgent" in system_prompt:
+                    output = "\n".join(
+                        [
+                            "Gewinner: refactor",
+                            "Score: 0.95",
+                            "Warum: Das Refactoring klingt am ambitioniertesten.",
+                        ]
+                    )
+                else:
+                    output = "Befund: Unbekannter Agent."
+                return CommandResult(
+                    output=output + "\n",
+                    data={"provider": "lmstudio", "model": "test-model", "text": output},
+                    data_type=PipelineType.OBJECT,
+                )
+
+            with patch.object(self.shell.ai_runtime, "complete_prompt", side_effect=fake_complete_prompt):
+                result = self.shell.route(f'ns.run "{root / "Code_Improve_Lifecycle.ns"}"')
+            try:
+                self.assertIsNone(result.error)
+                payload = json.loads(result.output)
+                self.assertEqual(payload["selected_candidate"]["candidate_id"], "reliability")
+                self.assertEqual(payload["selected_candidate"]["selection_mode"], "fallback")
+                output_path = Path(payload["artifact_paths"]["output_path"])
+                self.assertTrue(output_path.is_dir())
+                self.assertIn("if not values:", (output_path / "clean_numbers.py").read_text(encoding="utf-8"))
+                self.assertIn("values or []", (output_path / "reporting.py").read_text(encoding="utf-8"))
+            finally:
+                with suppress(Exception):
+                    if self.shell._declarative_nova is not None:
+                        self.shell._declarative_nova.close()
+                        self.shell._declarative_nova = None
+
+    def test_code_improvement_lifecycle_parses_markdown_style_candidate_labels(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self._copy_code_improvement_fixture(root)
+
+            def fake_complete_prompt(prompt: str, *, system_prompt: str = "", **_: object) -> CommandResult:
+                if "CodeReviewAgent" in system_prompt:
+                    output = "\n".join(
+                        [
+                            "**Befund:** Die Funktion ist funktional, aber unidiomatisch und zu fragil fuer leere Eingaben.",
+                            "**Risiken:** `None` und leere Sequenzen werden nicht sauber abgefangen.",
+                            "**Chancen:** Fruehe Rueckgabe und klare Guards verbessern Lesbarkeit und Robustheit.",
+                            "**Tests:** None, [] und [' 2 ', None, ''] pruefen.",
+                        ]
+                    )
+                elif "RefactorAgent" in system_prompt:
+                    output = "\n".join(
+                        [
+                            "**Titel:** Lesbarer Guard-Stil",
+                            "**Score:** 0.84",
+                            "**Strategie:** Fuehrt explizite Guards und lineare continue-Pfade ein.",
+                            "**Code:**",
+                            "```python",
+                            "def clean_numbers(values):",
+                            "    if not values:",
+                            "        return []",
+                            "",
+                            "    cleaned = []",
+                            "    for value in values:",
+                            "        if value is None:",
+                            "            continue",
+                            "        stripped = str(value).strip()",
+                            "        if not stripped:",
+                            "            continue",
+                            "        cleaned.append(int(stripped))",
+                            "    return cleaned",
+                            "```",
+                            "**Begruendung:** Die Guards sind klarer und vermeiden semantische Seiteneffekte.",
+                            "**Tests:** None, [] und normale Zahlenstrings pruefen.",
+                        ]
+                    )
+                elif "ReliabilityAgent" in system_prompt:
+                    output = "\n".join(
+                        [
+                            "- **Titel:** Robuster Pfad",
+                            "- **Score:** 0.82",
+                            "- **Strategie:** Aehnlich robust, aber etwas ausfuehrlicher.",
+                            "- **Code:**",
+                            "```python",
+                            "def clean_numbers(values):",
+                            "    if values is None:",
+                            "        return []",
+                            "    cleaned = []",
+                            "    for value in values:",
+                            "        if value is None:",
+                            "            continue",
+                            "        stripped = str(value).strip()",
+                            "        if stripped:",
+                            "            cleaned.append(int(stripped))",
+                            "    return cleaned",
+                            "```",
+                            "- **Begruendung:** Defensive Behandlung von None.",
+                            "- **Tests:** None und Leerstrings pruefen.",
+                        ]
+                    )
+                elif "SimplifyAgent" in system_prompt:
+                    output = "\n".join(
+                        [
+                            "**Titel:** Zu knappe Skizze",
+                            "**Strategie:** Nicht belastbar.",
+                            "**Begruendung:** Keine vollstaendige Variante.",
+                            "**Tests:** Keine.",
+                        ]
+                    )
+                elif "SelectorAgent" in system_prompt:
+                    output = "\n".join(
+                        [
+                            "**Gewinner:** refactor",
+                            "**Score:** 0.93",
+                            "**Warum:** Die Refactor-Variante verbessert Lesbarkeit und Robustheit ohne unnötige Nebeneffekte.",
+                        ]
+                    )
+                else:
+                    output = "Befund: Unbekannter Agent."
+                return CommandResult(
+                    output=output + "\n",
+                    data={"provider": "lmstudio", "model": "test-model", "text": output},
+                    data_type=PipelineType.OBJECT,
+                )
+
+            with patch.object(self.shell.ai_runtime, "complete_prompt", side_effect=fake_complete_prompt):
+                result = self.shell.route(f'ns.run "{root / "Code_Improve_Lifecycle.ns"}"')
+            try:
+                self.assertIsNone(result.error)
+                payload = json.loads(result.output)
+                self.assertEqual(payload["selected_candidate"]["candidate_id"], "refactor")
+                self.assertEqual(payload["selected_candidate"]["selection_mode"], "selector")
+                output_path = Path(payload["artifact_paths"]["output_path"])
+                written_code = output_path.read_text(encoding="utf-8")
+                self.assertIn("if not values:", written_code)
+                self.assertIn("cleaned.append(int(stripped))", written_code)
+                self.assertFalse(payload["warnings"])
+            finally:
+                with suppress(Exception):
+                    if self.shell._declarative_nova is not None:
+                        self.shell._declarative_nova.close()
+                        self.shell._declarative_nova = None
+
+    def test_code_improvement_lifecycle_recovers_python_after_inline_prose(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self._copy_code_improvement_fixture(root)
+
+            def fake_complete_prompt(prompt: str, *, system_prompt: str = "", **_: object) -> CommandResult:
+                if "CodeReviewAgent" in system_prompt:
+                    output = "\n".join(
+                        [
+                            "Befund: Die Funktion ist unnötig fragil bei None und Leerwerten.",
+                            "Risiken: Leere Eingaben und Zwischenwerte werden nicht klar behandelt.",
+                            "Chancen: Guard-Clause plus continue-Pfade machen die Logik lesbarer.",
+                            "Tests: None, [] und gemischte Werte pruefen.",
+                        ]
+                    )
+                elif "RefactorAgent" in system_prompt:
+                    output = "\n".join(
+                        [
+                            "### Titel: Guard-Refactoring",
+                            "### Score: 0.87",
+                            "### Strategie: Klare Guard-Clause und lineare continue-Pfade.",
+                            "### Code:",
+                            "Hier ist die verbesserte Version der Funktion:",
+                            "def clean_numbers(values):",
+                            "    if not values:",
+                            "        return []",
+                            "",
+                            "    cleaned = []",
+                            "    for value in values:",
+                            "        if value is None:",
+                            "            continue",
+                            "        stripped = str(value).strip()",
+                            "        if not stripped:",
+                            "            continue",
+                            "        cleaned.append(int(stripped))",
+                            "    return cleaned",
+                            "### Begruendung: Der Guard entfernt Sonderfallrauschen.",
+                            "### Tests: None, [] und normale Strings pruefen.",
+                        ]
+                    )
+                elif "ReliabilityAgent" in system_prompt:
+                    output = "\n".join(
+                        [
+                            "Titel: Vorsichtige Variante",
+                            "Score: 0.72",
+                            "Strategie: Etwas robuster, aber weniger klar.",
+                            "Code:",
+                            "```python",
+                            "def clean_numbers(values):",
+                            "    if values is None:",
+                            "        return []",
+                            "    cleaned = []",
+                            "    for value in values:",
+                            "        if value is None:",
+                            "            continue",
+                            "        stripped = str(value).strip()",
+                            "        if stripped:",
+                            "            cleaned.append(int(stripped))",
+                            "    return cleaned",
+                            "```",
+                            "Begruendung: Defensive None-Behandlung.",
+                            "Tests: None und Leerstrings pruefen.",
+                        ]
+                    )
+                elif "SimplifyAgent" in system_prompt:
+                    output = "\n".join(
+                        [
+                            "Titel: Zu knappe Skizze",
+                            "Strategie: Nicht belastbar.",
+                            "Begruendung: Keine vollstaendige Variante.",
+                            "Tests: Keine.",
+                        ]
+                    )
+                elif "SelectorAgent" in system_prompt:
+                    output = "\n".join(
+                        [
+                            "### Gewinner: refactor",
+                            "### Score: 0.94",
+                            "### Warum: Die Refactor-Variante ist am lesbarsten und bleibt verhaltenstreu.",
+                        ]
+                    )
+                else:
+                    output = "Befund: Unbekannter Agent."
+                return CommandResult(
+                    output=output + "\n",
+                    data={"provider": "lmstudio", "model": "test-model", "text": output},
+                    data_type=PipelineType.OBJECT,
+                )
+
+            with patch.object(self.shell.ai_runtime, "complete_prompt", side_effect=fake_complete_prompt):
+                result = self.shell.route(f'ns.run "{root / "Code_Improve_Lifecycle.ns"}"')
+            try:
+                self.assertIsNone(result.error)
+                payload = json.loads(result.output)
+                self.assertEqual(payload["selected_candidate"]["candidate_id"], "refactor")
+                self.assertEqual(payload["selected_candidate"]["selection_mode"], "selector")
+                output_path = Path(payload["artifact_paths"]["output_path"])
+                written_code = output_path.read_text(encoding="utf-8")
+                self.assertIn("if not values:", written_code)
+                self.assertIn("cleaned.append(int(stripped))", written_code)
+                self.assertFalse(payload["warnings"])
+            finally:
+                with suppress(Exception):
+                    if self.shell._declarative_nova is not None:
+                        self.shell._declarative_nova.close()
+                        self.shell._declarative_nova = None
+
+    def test_code_improvement_lifecycle_rejects_comment_only_markdown_candidate(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self._copy_code_improvement_fixture(root)
+
+            def fake_complete_prompt(prompt: str, *, system_prompt: str = "", **_: object) -> CommandResult:
+                if "CodeReviewAgent" in system_prompt:
+                    output = "\n".join(
+                        [
+                            "Befund: Die Funktion ist funktional, aber schlecht lesbar.",
+                            "Risiken: Leere Eingaben und unnötige Konvertierungen sind schwer nachvollziehbar.",
+                            "Chancen: Guards und klarere Namen verbessern Wartbarkeit.",
+                            "Tests: None, [] und gemischte Werte pruefen.",
+                        ]
+                    )
+                elif any(agent_name in system_prompt for agent_name in ("RefactorAgent", "ReliabilityAgent", "SimplifyAgent")):
+                    output = "\n".join(
+                        [
+                            "Titel: RefactorAgent Aktiv",
+                            "Score: 0.91",
+                            "Strategie: Beschreibt nur die Zielsetzung.",
+                            "Code:",
+                            "```python",
+                            "# RefactorAgent Aktiv",
+                            "",
+                            "## Zielsetzung",
+                            "```",
+                            "Begruendung: Noch kein echter Code.",
+                            "Tests: Keine.",
+                        ]
+                    )
+                elif "SelectorAgent" in system_prompt:
+                    output = "\n".join(
+                        [
+                            "Gewinner: refactor",
+                            "Score: 0.98",
+                            "Warum: Refactor klingt am besten.",
+                        ]
+                    )
+                else:
+                    output = "Befund: Unbekannter Agent."
+                return CommandResult(
+                    output=output + "\n",
+                    data={"provider": "lmstudio", "model": "test-model", "text": output},
+                    data_type=PipelineType.OBJECT,
+                )
+
+            with patch.object(self.shell.ai_runtime, "complete_prompt", side_effect=fake_complete_prompt):
+                result = self.shell.route(f'ns.run "{root / "Code_Improve_Lifecycle.ns"}"')
+            try:
+                self.assertIsNone(result.error)
+                payload = json.loads(result.output)
+                self.assertEqual(payload["selected_candidate"]["candidate_id"], "original")
+                self.assertEqual(payload["selected_candidate"]["selection_mode"], "fallback")
+                self.assertIn("invalid candidate 'refactor'", " ".join(payload["warnings"]))
+                output_path = Path(payload["artifact_paths"]["output_path"])
+                written_code = output_path.read_text(encoding="utf-8")
+                self.assertIn('if value != None', written_code)
+                self.assertNotIn("# RefactorAgent Aktiv", written_code)
+            finally:
+                with suppress(Exception):
+                    if self.shell._declarative_nova is not None:
+                        self.shell._declarative_nova.close()
+                        self.shell._declarative_nova = None
+
+    def test_code_improvement_lifecycle_repairs_invalid_first_candidate_response(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self._copy_code_improvement_fixture(root)
+            agent_calls: dict[str, int] = {}
+
+            def fake_complete_prompt(prompt: str, *, system_prompt: str = "", **_: object) -> CommandResult:
+                agent_name = "other"
+                for name in ("CodeReviewAgent", "RefactorAgent", "ReliabilityAgent", "SimplifyAgent", "SelectorAgent"):
+                    if name in system_prompt:
+                        agent_name = name
+                        break
+                agent_calls[agent_name] = agent_calls.get(agent_name, 0) + 1
+
+                if agent_name == "CodeReviewAgent":
+                    output = "\n".join(
+                        [
+                            "Befund: Die Funktion ist fragil bei None und Leerwerten.",
+                            "Risiken: Leere Eingaben fuehren zu unklaren Pfaden.",
+                            "Chancen: Eine Guard-Clause verbessert Lesbarkeit und Robustheit.",
+                            "Tests: None, [] und gemischte Werte pruefen.",
+                        ]
+                    )
+                elif agent_name == "RefactorAgent":
+                    if agent_calls[agent_name] == 1:
+                        output = "\n".join(
+                            [
+                                "Titel: Erste Skizze",
+                                "Score: 0.88",
+                                "Strategie: Guard-Clause.",
+                                "Code:",
+                                "Die Funktion sollte defensiver aussehen.",
+                                "Begruendung: Noch zu locker formatiert.",
+                                "Tests: None und [] pruefen.",
+                            ]
+                        )
+                    else:
+                        output = "\n".join(
+                            [
+                                "Titel: Reparierte Guard-Variante",
+                                "Score: 0.89",
+                                "Strategie: Fruehe Rueckgabe plus continue-Pfade.",
+                                "Code:",
+                                "```python",
+                                "def clean_numbers(values):",
+                                "    if not values:",
+                                "        return []",
+                                "",
+                                "    cleaned = []",
+                                "    for value in values:",
+                                "        if value is None:",
+                                "            continue",
+                                "        stripped = str(value).strip()",
+                                "        if not stripped:",
+                                "            continue",
+                                "        cleaned.append(int(stripped))",
+                                "    return cleaned",
+                                "```",
+                                "Begruendung: Die zweite Ausgabe ist strikt parsebar und verhaltenstreu.",
+                                "Tests: None, [] und [' 4 ', None, ''] pruefen.",
+                            ]
+                        )
+                elif agent_name == "ReliabilityAgent":
+                    output = "\n".join(
+                        [
+                            "Titel: Solide Alternative",
+                            "Score: 0.81",
+                            "Strategie: Defensive None-Behandlung.",
+                            "Code:",
+                            "```python",
+                            "def clean_numbers(values):",
+                            "    if values is None:",
+                            "        return []",
+                            "    cleaned = []",
+                            "    for value in values:",
+                            "        if value is None:",
+                            "            continue",
+                            "        stripped = str(value).strip()",
+                            "        if stripped:",
+                            "            cleaned.append(int(stripped))",
+                            "    return cleaned",
+                            "```",
+                            "Begruendung: Robust, aber etwas weniger direkt.",
+                            "Tests: None und Leerstrings pruefen.",
+                        ]
+                    )
+                elif agent_name == "SimplifyAgent":
+                    output = "\n".join(
+                        [
+                            "Titel: Zu knappe Skizze",
+                            "Strategie: Nicht belastbar.",
+                            "Begruendung: Keine vollstaendige Variante.",
+                            "Tests: Keine.",
+                        ]
+                    )
+                elif agent_name == "SelectorAgent":
+                    output = "\n".join(
+                        [
+                            "Gewinner: refactor",
+                            "Score: 0.95",
+                            "Warum: Der reparierte Refactor-Kandidat trifft Lesbarkeit und Robustheit am besten.",
+                        ]
+                    )
+                else:
+                    output = "Befund: Unbekannter Agent."
+
+                return CommandResult(
+                    output=output + "\n",
+                    data={"provider": "lmstudio", "model": "test-model", "text": output},
+                    data_type=PipelineType.OBJECT,
+                )
+
+            with patch.object(self.shell.ai_runtime, "complete_prompt", side_effect=fake_complete_prompt):
+                result = self.shell.route(f'ns.run "{root / "Code_Improve_Lifecycle.ns"}"')
+            try:
+                self.assertIsNone(result.error)
+                payload = json.loads(result.output)
+                self.assertEqual(payload["selected_candidate"]["candidate_id"], "refactor")
+                self.assertEqual(payload["selected_candidate"]["selection_mode"], "selector")
+                self.assertFalse(payload["warnings"])
+                output_path = Path(payload["artifact_paths"]["output_path"])
+                written_code = output_path.read_text(encoding="utf-8")
+                self.assertIn("if not values:", written_code)
+                self.assertIn("cleaned.append(int(stripped))", written_code)
+                self.assertGreaterEqual(agent_calls.get("RefactorAgent", 0), 2)
             finally:
                 with suppress(Exception):
                     if self.shell._declarative_nova is not None:
@@ -3757,6 +4831,33 @@ agent demo_skill_generalist {
             result = self.shell._run_agent_once(agent, "const user = await fetchUser();")
 
         self.assertIn("configured generative ai provider", str(result.error))
+
+    def test_shell_provider_adapter_prefers_active_shell_ai_runtime(self) -> None:
+        adapter = ShellProviderAdapter()
+        specification = SimpleNamespace(system_prompt="Be concise.")
+        fake_executor = SimpleNamespace(shell=self.shell)
+        fake_context = SimpleNamespace(command_executor=fake_executor)
+
+        with patch.object(self.shell.ai_runtime, "get_active_provider", return_value="lmstudio"), patch.object(
+            self.shell.ai_runtime,
+            "get_active_model",
+            return_value="local-model",
+        ), patch.object(
+            self.shell.ai_runtime,
+            "complete_prompt",
+            return_value=CommandResult(
+                output="structured answer\n",
+                data={"provider": "lmstudio", "model": "local-model"},
+                data_type=PipelineType.OBJECT,
+            ),
+        ) as mocked_complete:
+            output = adapter.invoke(specification, "Prompt body", [], fake_context, "active")
+
+        self.assertEqual(output, "structured answer")
+        mocked_complete.assert_called_once()
+        self.assertEqual(mocked_complete.call_args.kwargs["provider"], "lmstudio")
+        self.assertEqual(mocked_complete.call_args.kwargs["model"], "local-model")
+        self.assertEqual(mocked_complete.call_args.kwargs["system_prompt"], "Be concise.")
 
     def test_generate_agent_skills_examples_reports_nonportable_skills(self) -> None:
         root = Path(__file__).resolve().parents[1]
@@ -4763,6 +5864,53 @@ agent helper {
         listed_after = self.shell.route("mesh list")
         self.assertIsNone(listed_after.error)
         self.assertFalse(any(worker.get("worker_id") == worker_id for worker in json.loads(listed_after.output)))
+
+    def test_mesh_run_accepts_bare_python_payload(self) -> None:
+        port = self._reserve_free_port()
+        started = self.shell.route(f"mesh start-worker --port {port} --caps py")
+        self.assertIsNone(started.error)
+        worker_id = json.loads(started.output)["worker_id"]
+        try:
+            run = self.shell.route('mesh run py "1 + 1"')
+            self.assertIsNone(run.error)
+            self.assertEqual(run.output.strip(), "2")
+        finally:
+            stop = self.shell.route(f"mesh stop-worker {worker_id}")
+            self.assertIsNone(stop.error)
+
+    def test_mesh_intelligent_run_accepts_bare_python_payload(self) -> None:
+        port = self._reserve_free_port()
+        started = self.shell.route(f"mesh start-worker --port {port} --caps py")
+        self.assertIsNone(started.error)
+        worker_id = json.loads(started.output)["worker_id"]
+        try:
+            run = self.shell.route('mesh intelligent-run py "1 + 1"')
+            self.assertIsNone(run.error)
+            self.assertEqual(run.output.strip(), "2")
+        finally:
+            stop = self.shell.route(f"mesh stop-worker {worker_id}")
+            self.assertIsNone(stop.error)
+
+    def test_mesh_intelligent_run_accepts_bare_python_print_statement(self) -> None:
+        port = self._reserve_free_port()
+        started = self.shell.route(f"mesh start-worker --port {port} --caps py")
+        self.assertIsNone(started.error)
+        worker_id = json.loads(started.output)["worker_id"]
+        try:
+            run = self.shell.route('mesh intelligent-run py "print(\'Hello from Mesh\')"')
+            self.assertIsNone(run.error)
+            self.assertEqual(run.output.strip(), "Hello from Mesh")
+        finally:
+            stop = self.shell.route(f"mesh stop-worker {worker_id}")
+            self.assertIsNone(stop.error)
+
+    def test_remote_engine_surfaces_worker_error_payload(self) -> None:
+        payload = json.dumps({"output": "", "data": None, "error": "worker boom", "data_type": "text"}).encode("utf-8")
+        error = urllib.error.HTTPError("http://127.0.0.1:9999", 500, "Internal Server Error", hdrs=None, fp=io.BytesIO(payload))
+        with patch("nova_shell.urllib.request.urlopen", side_effect=error):
+            result = self.shell.remote.execute("http://127.0.0.1:9999", "py 1 + 1")
+
+        self.assertEqual(result.error, "worker boom")
 
     def test_guard_ebpf_compile_and_enforce_blocks_term(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

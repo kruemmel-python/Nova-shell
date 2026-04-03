@@ -243,9 +243,10 @@ class AgentRuntime:
         prompt_text: str,
         memory_context: list[dict[str, Any]],
     ) -> tuple[str, str, str] | None:
-        prompt = self._render_output(specification, action, inputs, prompt_text)
         if prompt_text:
-            prompt = f"{self._bounded_text(prompt_text, self.MAX_PROVIDER_PROMPT_CONTEXT_CHARS)}\n\nTask:\n{prompt}"
+            prompt = self._bounded_text(prompt_text, self.MAX_PROVIDER_PROMPT_CONTEXT_CHARS)
+        else:
+            prompt = self._render_output(specification, action, inputs, prompt_text)
         if memory_context:
             prompt += "\n\nMemory:\n" + "\n".join(self._bounded_text(str(item["text"]), self.MAX_PROVIDER_MEMORY_SNIPPET_CHARS) for item in memory_context[:3])
         prompt = self._bounded_text(prompt, self.MAX_PROVIDER_PROMPT_CHARS)

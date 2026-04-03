@@ -129,6 +129,75 @@ PYTHON_STDLIB_EXCLUDES = {
     "turtledemo",
     "venv",
 }
+PROJECT_SOURCE_EXCLUDES = (
+    ".git",
+    ".git/**",
+    "**/.git",
+    "**/.git/**",
+    ".venv",
+    ".venv/**",
+    ".venv-build",
+    ".venv-build/**",
+    "venv",
+    "venv/**",
+    ".tools",
+    ".tools/**",
+    "dist",
+    "dist/**",
+    "build",
+    "build/**",
+    ".pytest_cache",
+    ".pytest_cache/**",
+    ".mypy_cache",
+    ".mypy_cache/**",
+    ".ruff_cache",
+    ".ruff_cache/**",
+    ".tox",
+    ".tox/**",
+    ".nox",
+    ".nox/**",
+    "__pycache__",
+    "__pycache__/**",
+    "**/__pycache__",
+    "**/__pycache__/**",
+    ".nova",
+    ".nova/**",
+    ".nova_ceo",
+    ".nova_ceo/**",
+    ".nova_lens",
+    ".nova_lens/**",
+    ".nova_project_monitor",
+    ".nova_project_monitor/**",
+    ".gradle",
+    ".gradle/**",
+    "android/.gradle",
+    "android/.gradle/**",
+    "android/build",
+    "android/build/**",
+    "android/**/build",
+    "android/**/build/**",
+    "android/**/captures",
+    "android/**/captures/**",
+    "android/app/src/main/python",
+    "android/app/src/main/python/**",
+    "*.pyc",
+    "*.pyo",
+    "*.apk",
+    "*.aab",
+    "*.msi",
+    "*.AppImage",
+    "*.deb",
+    "*.whl",
+    "*.tar.gz",
+    "*.zip",
+    "hs_err_pid*.log",
+    "**/hs_err_pid*.log",
+    "replay_pid*.log",
+    "**/replay_pid*.log",
+)
+PROJECT_SOURCE_INCLUDE_OVERRIDES = (
+    "android/app/src/main/python/nova_mobile_bridge.py",
+)
 
 
 @dataclass
@@ -565,6 +634,52 @@ def normalize_file_timestamp(path: Path, source_date_epoch: int | None) -> None:
 
 def _relative_archive_name(path: Path, root: Path) -> str:
     return os.path.relpath(os.fspath(path), os.fspath(root)).replace("\\", "/")
+
+
+def _path_matches_pattern(path_text: str, pattern: str) -> bool:
+    normalized_path = path_text.replace("\\", "/")
+    normalized_pattern = pattern.replace("\\", "/")
+    return fnmatch.fnmatch(normalized_path, normalized_pattern) or (
+        normalized_pattern.startswith("**/") and fnmatch.fnmatch(normalized_path, normalized_pattern[3:])
+    )
+
+
+def should_include_project_source_path(relative_path: str) -> bool:
+    normalized = relative_path.replace("\\", "/")
+    for override in PROJECT_SOURCE_INCLUDE_OVERRIDES:
+        if normalized == override.replace("\\", "/"):
+            return True
+    for pattern in PROJECT_SOURCE_EXCLUDES:
+        if _path_matches_pattern(normalized, pattern):
+            return False
+    return True
+
+
+def archive_project_source(source_root: Path, archive_base: Path, *, source_date_epoch: int | None) -> Path:
+    archive_path = archive_base.parent / f"{archive_base.name}.zip"
+    archive_path.parent.mkdir(parents=True, exist_ok=True)
+    members = sorted(
+        path
+        for path in source_root.rglob("*")
+        if path.is_file() and should_include_project_source_path(_relative_archive_name(path, source_root))
+    )
+    with zipfile.ZipFile(archive_path, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+        for path in members:
+            rel_name = _relative_archive_name(path, source_root)
+            info = zipfile.ZipInfo(f"{archive_base.name}/{rel_name}")
+            dt = (
+                datetime.fromtimestamp(max(source_date_epoch, 315532800), tz=timezone.utc)
+                if source_date_epoch is not None
+                else datetime.fromtimestamp(path.stat().st_mtime, tz=timezone.utc)
+            )
+            info.date_time = (dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second)
+            info.compress_type = zipfile.ZIP_DEFLATED
+            info.external_attr = (path.stat().st_mode & 0xFFFF) << 16
+            with path.open("rb") as handle:
+                with zf.open(info, "w") as archive_handle:
+                    shutil.copyfileobj(handle, archive_handle, length=1024 * 1024)
+    normalize_file_timestamp(archive_path, source_date_epoch)
+    return archive_path
 
 
 def archive_bundle(bundle_dir: Path, archive_base: Path, *, source_date_epoch: int | None) -> Path:
@@ -1669,6 +1784,11 @@ def main() -> int:
         else:
             installer_paths = build_linux_installers(build_root, bundle_dir, executable, args.profile, build_context=build_context)
         artifacts.extend(record("installer", path) for path in installer_paths)
+
+    step("Archiving project source snapshot")
+    project_archive_name = f"{PROJECT_SLUG}-{__version__}-project-source"
+    project_archive_path = archive_project_source(ROOT, build_root / project_archive_name, source_date_epoch=build_context.source_date_epoch)
+    artifacts.append(record("project-source-archive", project_archive_path))
 
     step("Writing manifest and SBOM metadata")
     subject_artifacts = list(artifacts)

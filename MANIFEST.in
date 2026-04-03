@@ -17,14 +17,17 @@ include morning_briefing.ns
 include beispiel_rss.md
 include morning_briefing.md
 include pyproject.toml
+include mycelia_runtime.py
 include nova_shell.py
 include novascript.py
 include release_packaging.py
 include release_notes.py
 include release_signing.py
 include release_sbom.py
+include worker.py
 recursive-include tests *.py
 recursive-include scripts *.py *.ps1 *.sh
 recursive-include docs *.md
 recursive-include packaging *.json *.svg postinst prerm
+recursive-include android *.md *.gradle *.properties *.xml *.java *.py .gitkeep .gitignore
 recursive-include .github/workflows *.yml

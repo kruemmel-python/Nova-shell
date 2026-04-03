@@ -1,4 +1,5 @@
 import importlib.util
+import json
 import os
 import shutil
 import sys
@@ -217,6 +218,58 @@ class BuildReleaseTests(unittest.TestCase):
 
             self.assertEqual(archive_path.name, "nova-shell-0.8.29-linux-x86_64-core.tar.gz")
             self.assertTrue(archive_path.is_file())
+
+    def test_archive_project_source_includes_code_and_excludes_generated_outputs(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "nova").mkdir()
+            (root / "nova" / "__init__.py").write_text("__all__ = []\n", encoding="utf-8")
+            (root / "scripts").mkdir()
+            (root / "scripts" / "tool.py").write_text("print('ok')\n", encoding="utf-8")
+            (root / "docs").mkdir()
+            (root / "docs" / "README.md").write_text("# Docs\n", encoding="utf-8")
+            (root / "dist" / "release").mkdir(parents=True)
+            (root / "dist" / "release" / "artifact.zip").write_text("binary", encoding="utf-8")
+            (root / ".tools" / "emsdk" / ".git").mkdir(parents=True)
+            (root / ".tools" / "emsdk" / ".git" / "config").write_text("[core]\n", encoding="utf-8")
+            (root / ".venv-build" / "Lib").mkdir(parents=True)
+            (root / ".venv-build" / "Lib" / "site.py").write_text("VALUE = 1\n", encoding="utf-8")
+            (root / "__pycache__").mkdir()
+            (root / "__pycache__" / "cache.pyc").write_bytes(b"cache")
+            (root / "android" / "app" / "build" / "outputs").mkdir(parents=True)
+            (root / "android" / "app" / "build" / "outputs" / "app-debug.apk").write_text("apk", encoding="utf-8")
+            (root / "android" / "build" / "reports").mkdir(parents=True)
+            (root / "android" / "build" / "reports" / "problems-report.html").write_text("<html></html>", encoding="utf-8")
+            (root / "android" / "app" / "src" / "main" / "python" / "examples").mkdir(parents=True)
+            (root / "android" / "app" / "src" / "main" / "python" / "examples" / "demo.ns").write_text("flow demo {}\n", encoding="utf-8")
+            (root / "android" / "app" / "src" / "main" / "python" / "nova_mobile_bridge.py").write_text("READY = True\n", encoding="utf-8")
+            (root / "android" / "hs_err_pid27128.log").write_text("crash", encoding="utf-8")
+            (root / ".nova_ceo").mkdir()
+            (root / ".nova_ceo" / "report.json").write_text("{}", encoding="utf-8")
+
+            archive_path = build_release.archive_project_source(
+                root,
+                root / "out" / "nova-shell-0.8.30-project-source",
+                source_date_epoch=1700000000,
+            )
+
+            self.assertEqual(archive_path.name, "nova-shell-0.8.30-project-source.zip")
+            with zipfile.ZipFile(archive_path, "r") as archive:
+                names = set(archive.namelist())
+
+            self.assertIn("nova-shell-0.8.30-project-source/nova/__init__.py", names)
+            self.assertIn("nova-shell-0.8.30-project-source/scripts/tool.py", names)
+            self.assertIn("nova-shell-0.8.30-project-source/docs/README.md", names)
+            self.assertNotIn("nova-shell-0.8.30-project-source/dist/release/artifact.zip", names)
+            self.assertNotIn("nova-shell-0.8.30-project-source/.tools/emsdk/.git/config", names)
+            self.assertNotIn("nova-shell-0.8.30-project-source/.venv-build/Lib/site.py", names)
+            self.assertNotIn("nova-shell-0.8.30-project-source/__pycache__/cache.pyc", names)
+            self.assertNotIn("nova-shell-0.8.30-project-source/android/app/build/outputs/app-debug.apk", names)
+            self.assertNotIn("nova-shell-0.8.30-project-source/android/build/reports/problems-report.html", names)
+            self.assertNotIn("nova-shell-0.8.30-project-source/android/app/src/main/python/examples/demo.ns", names)
+            self.assertNotIn("nova-shell-0.8.30-project-source/android/hs_err_pid27128.log", names)
+            self.assertIn("nova-shell-0.8.30-project-source/android/app/src/main/python/nova_mobile_bridge.py", names)
+            self.assertNotIn("nova-shell-0.8.30-project-source/.nova_ceo/report.json", names)
 
     def test_safe_copy2_file_copies_contents(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -728,6 +781,62 @@ class BuildReleaseTests(unittest.TestCase):
         files = build_release.collect_local_runtime_files()
         names = {path.name for path in files}
         self.assertIn("THIRD_PARTY_NOTICES.md", names)
+
+    def test_pyproject_lists_mycelia_runtime_and_worker_modules(self) -> None:
+        pyproject = (Path(__file__).resolve().parents[1] / "pyproject.toml").read_text(encoding="utf-8")
+        self.assertIn('"mycelia_runtime"', pyproject)
+        self.assertIn('"worker"', pyproject)
+
+    def test_manifest_includes_mycelia_runtime_and_worker_files(self) -> None:
+        manifest = (Path(__file__).resolve().parents[1] / "MANIFEST.in").read_text(encoding="utf-8")
+        self.assertIn("include mycelia_runtime.py", manifest)
+        self.assertIn("include worker.py", manifest)
+
+    def test_main_adds_project_source_archive_to_manifest(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            output_root = Path(tmp) / "release-out"
+
+            def fake_archive_project_source(source_root: Path, archive_base: Path, *, source_date_epoch: int | None) -> Path:
+                archive_path = archive_base.parent / f"{archive_base.name}.zip"
+                archive_path.parent.mkdir(parents=True, exist_ok=True)
+                archive_path.write_text("project-source", encoding="utf-8")
+                return archive_path
+
+            def fake_write_sbom(path: Path, **_: object) -> Path:
+                path.write_text("{}", encoding="utf-8")
+                return path
+
+            args = SimpleNamespace(
+                profile="core",
+                mode="python",
+                output_dir=str(output_root),
+                python=sys.executable,
+                skip_tests=True,
+                clean=False,
+                base_download_url="",
+                source_date_epoch=1700000000,
+                windows_sign=False,
+                windows_cert_file="",
+                windows_cert_password="",
+                windows_subject_name="",
+                timestamp_url="http://timestamp.digicert.com",
+            )
+
+            with (
+                patch.object(build_release, "parse_args", return_value=args),
+                patch.object(build_release, "build_python_artifacts", return_value=[]),
+                patch.object(build_release, "archive_project_source", side_effect=fake_archive_project_source),
+                patch.object(build_release, "write_cyclonedx_sbom", side_effect=fake_write_sbom),
+            ):
+                exit_code = build_release.main()
+
+            self.assertEqual(exit_code, 0)
+            build_root = output_root / f"{build_release.safe_system_name().lower()}-{build_release.safe_machine_name().lower()}" / "core"
+            manifest_path = build_root / f"nova-shell-{build_release.__version__}-core-manifest.json"
+            self.assertTrue(manifest_path.is_file())
+            manifest_payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+            artifact_kinds = {artifact["kind"] for artifact in manifest_payload["artifacts"]}
+            self.assertIn("project-source-archive", artifact_kinds)
 
     def test_prune_bundle_runtime_state_removes_nova_lens_directory(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

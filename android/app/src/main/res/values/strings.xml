@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">NovaShell Android</string>
+    <string name="app_subtitle">APK mit eingebetteter Nova-shell-Python-Runtime. Geeignet fuer ns.run, agent, ai, remote, mesh und lokale Diagnosepfade.</string>
+    <string name="command_hint">doctor</string>
+    <string name="run_button">Run Command</string>
+    <string name="status_booting">Python runtime bootstraps...</string>
+    <string name="status_running">Command wird ausgefuehrt...</string>
+    <string name="status_ready">Bereit.</string>
+    <string name="status_empty">Bitte zuerst ein Kommando eingeben.</string>
+</resources>
