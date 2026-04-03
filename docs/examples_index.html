@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="Nova-shell wiki builder">
-  <title>Nova Agents | Nova-shell Wiki</title>
+  <title>examples_index | Nova-shell Wiki</title>
   <link rel="stylesheet" href="assets/wiki.css">
 </head>
 <body>
@@ -46,7 +46,7 @@
 <li><a class="wiki-nav-link" data-nav-href="LensTroubleshooting.html" href="LensTroubleshooting.html">LensTroubleshooting</a></li>
 <li><a class="wiki-nav-link" data-nav-href="LensRecipes.html" href="LensRecipes.html">LensRecipes</a></li>
 <li><a class="wiki-nav-link" data-nav-href="APIReference.html" href="APIReference.html">APIReference</a></li>
-<li><a class="wiki-nav-link" data-nav-href="examples_index.html" href="examples_index.html">examples_index</a></li>
+<li><a class="wiki-nav-link active" data-nav-href="examples_index.html" href="examples_index.html">examples_index</a></li>
 <li><a class="wiki-nav-link" data-nav-href="examples.html" href="examples.html">examples</a></li>
 <li><a class="wiki-nav-link" data-nav-href="examples_quickstart.html" href="examples_quickstart.html">examples_quickstart</a></li>
 <li><a class="wiki-nav-link" data-nav-href="examples_by_level.html" href="examples_by_level.html">examples_by_level</a></li>
@@ -108,7 +108,7 @@
 <section class="wiki-nav-section">
 <h2>Plattformfunktionen</h2>
 <ul>
-<li><a class="wiki-nav-link active" data-nav-href="NovaAgents.html" href="NovaAgents.html">NovaAgents</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaAgents.html" href="NovaAgents.html">NovaAgents</a></li>
 <li><a class="wiki-nav-link" data-nav-href="DecisionPatterns.html" href="DecisionPatterns.html">DecisionPatterns</a></li>
 <li><a class="wiki-nav-link" data-nav-href="CEOAgentExamples.html" href="CEOAgentExamples.html">CEOAgentExamples</a></li>
 <li><a class="wiki-nav-link" data-nav-href="StandaloneSkillAgents.html" href="StandaloneSkillAgents.html">StandaloneSkillAgents</a></li>
@@ -164,226 +164,182 @@
         <button type="button" class="wiki-nav-toggle" data-nav-toggle>Menu</button>
         <div class="wiki-header-copy">
           <span class="wiki-kicker">Nova-shell Documentation</span>
-          <h1>Nova Agents</h1>
-          <p>Source: NovaAgents.md</p>
+          <h1>examples_index</h1>
+          <p>Source: examples_index.md</p>
         </div>
       </header>
       <div class="wiki-layout">
         <article class="wiki-article">
-          <h1 id="nova-agents">Nova Agents</h1>
-<h2 id="zweck">Zweck</h2>
-<p>Agenten sind in Nova-shell deklarierte, wiederverwendbare Laufzeitobjekte mit Provider- und Modellauswahl, Tool-Freigaben, Memory-Scope, Prompt-Versionen, Governance und Evaluationen.</p>
-<h2 id="kernobjekte">Kernobjekte</h2>
-<table><thead><tr>
-<th>Klasse</th>
-<th>Rolle</th>
-</tr></thead><tbody>
-<tr>
-<td><code>AgentSpecification</code></td>
-<td>statische Beschreibung eines Agenten</td>
-</tr>
-<tr>
-<td><code>AgentTask</code></td>
-<td>auszufuehrende Aufgabe</td>
-</tr>
-<tr>
-<td><code>AgentExecutionResult</code></td>
-<td>Ergebniscontainer</td>
-</tr>
-<tr>
-<td><code>AgentRuntime</code></td>
-<td>Registrierung, Aufloesung und Ausfuehrung</td>
-</tr>
-<tr>
-<td><code>PromptRegistry</code></td>
-<td>Verwaltung von Prompt-Versionen</td>
-</tr>
-<tr>
-<td><code>DistributedMemoryStore</code></td>
-<td>Agent-Memory und Suche</td>
-</tr>
-<tr>
-<td><code>AgentEvalStore</code></td>
-<td>Auswertungsdaten und Bewertungsartefakte</td>
-</tr>
-<tr>
-<td><code>ToolSandbox</code></td>
-<td>Tool-Freigabe, Begrenzung und Governance</td>
-</tr>
-<tr>
-<td><code>MyceliaAtheriaCoEvolutionLab</code></td>
-<td>populationsbezogene Co-Evolution ueber Forecast- und Kruemmungssignale</td>
-</tr>
-<tr>
-<td><code>AtheriaALSRuntime</code></td>
-<td>residenter Atheria-Live-Pfad mit Dialog, Triggern und Voice</td>
-</tr>
-</tbody></table>
-<h2 id="agent-lebenszyklus">Agent-Lebenszyklus</h2>
-<pre><code class="language-text">Declaration
-  -&gt;
-AgentRuntime.register()
-  -&gt;
-AgentTask
-  -&gt;
-Governance
-  -&gt;
-Prompt Resolution
-  -&gt;
-Provider Invocation oder lokales Rendern
-  -&gt;
-Memory Write
-  -&gt;
-Evaluation</code></pre>
-<h2 id="methoden-und-schnittstellen">Methoden und Schnittstellen</h2>
-<p>Wichtige <code>AgentRuntime</code>-Schnittstellen:</p>
+          <h1 id="examples-index">examples_index</h1>
+<p>Diese Seite ist das zentrale Portal fuer alle Example-Dokumentationen in Nova-shell. Sie ist dann die richtige Startseite, wenn du zwar mit den Beispielen arbeiten willst, aber noch nicht weisst, welche der vorhandenen Example-Seiten fuer dich gerade die passende ist.</p>
+<p>Alle beschriebenen Dateien liegen unter <a href="../examples/">`examples/`</a>.</p>
+<h2 id="wofuer-dieses-portal-gedacht-ist">Wofuer dieses Portal gedacht ist</h2>
+<p>Nutze diese Seite, wenn du:</p>
 <ul>
-<li><code>register(declaration)</code></li>
-<li><code>specification(name)</code></li>
-<li><code>execute(task, context)</code></li>
+<li>alle vorhandenen Example-Dokumente auf einen Blick sehen willst</li>
+<li>schnell entscheiden willst, ob du eine Vollreferenz, eine Copy-Paste-Seite, eine Lernpfad-Seite oder eine Vergleichsmatrix brauchst</li>
+<li>neue Nutzer zu einem sinnvollen Startpunkt fuehren willst</li>
+<li>spaeter weitere Example-Seiten zentral verlinken willst</li>
 </ul>
-<p>Wichtige Agentenfelder in <code>.ns</code>:</p>
+<h2 id="die-vier-example-seiten-im-ueberblick">Die vier Example-Seiten im Ueberblick</h2>
+<h3 id="examples-md-examples-md"><a href="examples.html">`examples.md`</a></h3>
+<p>Die dateiweise Vollreferenz.</p>
 <ul>
-<li><code>provider</code></li>
-<li><code>providers</code></li>
-<li><code>model</code></li>
-<li><code>tools</code></li>
-<li><code>memory</code></li>
-<li><code>system_prompt</code></li>
-<li><code>prompts</code></li>
-<li><code>prompt_version</code></li>
-<li><code>governance</code></li>
+<li>Wann du sie nutzen solltest:</li>
+<p>Wenn du wissen willst, was eine konkrete Datei in <code>examples/</code> macht.</p>
+<li>Staerken:</li>
+<p>Vollstaendige Erklaerung pro Datei, inklusive Helpern, Requests, Daten und Unterordnern.</p>
+<li>Beste Frage dafuer:</li>
+<p>&quot;Was genau macht <code>examples/&lt;datei&gt;</code>?&quot;</p>
 </ul>
-<h2 id="co-evolution-mit-mycelia-und-atheria">Co-Evolution mit Mycelia und Atheria</h2>
-<p>Nova-shell fuehrt Agenten nicht nur einzeln aus. Mit der Co-Evolution-Schicht koennen Populationen ueber mehrere Signale optimiert werden:</p>
+<h3 id="examples-quickstart-md-examples-quickstart-md"><a href="examples_quickstart.html">`examples_quickstart.md`</a></h3>
+<p>Die Copy-Paste-Schnellstartseite.</p>
 <ul>
-<li>Forecast-Qualitaet</li>
-<li>Atheria-Invarianten</li>
-<li>Tool-Erfolgsraten</li>
-<li>geometrische Komplexitaet</li>
+<li>Wann du sie nutzen solltest:</li>
+<p>Wenn du sofort Befehle ausfuehren willst.</p>
+<li>Staerken:</li>
+<p>Direkt nutzbare <code>ns.run</code>, <code>ns.graph</code>, <code>agent run</code>, <code>blob.*</code>, <code>data load</code> und AI-Beispiele.</p>
+<li>Beste Frage dafuer:</li>
+<p>&quot;Welchen Befehl muss ich jetzt einfach eintippen?&quot;</p>
 </ul>
-<p>CLI:</p>
-<pre><code class="language-powershell">mycelia coevolve run research-pop --cycles 5 --input &quot;edge inference pressure rises&quot;
-mycelia coevolve status research-pop
-mycelia population tick research-pop --cycles 5 --coevolve</code></pre>
-<h2 id="als-als-dauerhafte-atheria-instanz">ALS als dauerhafte Atheria-Instanz</h2>
-<p>ALS ist kein einzelner Agent, aber es verhaelt sich aus Plattformsicht wie eine laufende kognitive Instanz:</p>
+<h3 id="examples-by-level-md-examples-by-level-md"><a href="examples_by_level.html">`examples_by_level.md`</a></h3>
+<p>Die Lernpfad-Seite nach Erfahrungsstufe und Ziel.</p>
 <ul>
-<li>permanenter Stream-Zustand</li>
-<li>lokale Wissensintegration</li>
-<li>belegbare Dialoge</li>
-<li>Voice als First-Class-Ausgang</li>
+<li>Wann du sie nutzen solltest:</li>
+<p>Wenn du nicht alphabetisch oder dateiweise lernen willst, sondern nach Schwierigkeitsgrad.</p>
+<li>Staerken:</li>
+<p>Sortierung nach <code>Einsteiger</code>, <code>Fortgeschritten</code>, <code>Plattform</code>, <code>Lifecycle</code>, <code>Agenten</code>.</p>
+<li>Beste Frage dafuer:</li>
+<p>&quot;Mit welchem Beispiel sollte ich als Naechstes weitermachen?&quot;</p>
 </ul>
-<p>Es ist damit die Bruecke zwischen klassischer Agent-Ausfuehrung und einer dauerhaft existierenden Atheria-Praesenz.</p>
-<p>CLI:</p>
-<pre><code class="language-powershell">atheria als start
-atheria als ask &quot;Was ist die aktuelle Hypothese?&quot;
-atheria als feedback &quot;Verfolge Supply-Chain-Risiken strenger.&quot;</code></pre>
-<h2 id="cli">CLI</h2>
-<p>Typische Agent-Kommandos:</p>
+<h3 id="examples-matrix-md-examples-matrix-md"><a href="examples_matrix.html">`examples_matrix.md`</a></h3>
+<p>Die Vergleichstabelle.</p>
 <ul>
-<li><code>agent create</code></li>
-<li><code>agent run</code></li>
-<li><code>agent graph create</code></li>
-<li><code>ai providers</code></li>
+<li>Wann du sie nutzen solltest:</li>
+<p>Wenn du Beispiele schnell gegeneinander abgleichen willst.</p>
+<li>Staerken:</li>
+<p>Tabellarischer Vergleich nach Kategorie, AI-Bedarf, Mesh-Bezug, Artefakten und Einstiegstauglichkeit.</p>
+<li>Beste Frage dafuer:</li>
+<p>&quot;Welches Beispiel passt zu meinem Ziel am besten?&quot;</p>
 </ul>
-<p>Wichtig fuer deklarative Agenten:</p>
+<h2 id="empfohlene-einstiege">Empfohlene Einstiege</h2>
+<h3 id="ich-bin-neu-und-will-nova-shell-beispiele-erst-einmal-verstehen">Ich bin neu und will Nova-shell Beispiele erst einmal verstehen</h3>
+<ol>
+<li><a href="examples_by_level.html">`examples_by_level.md`</a></li>
+<li><a href="examples_quickstart.html">`examples_quickstart.md`</a></li>
+<li><a href="examples.html">`examples.md`</a></li>
+</ol>
+<h3 id="ich-will-sofort-etwas-laufen-lassen">Ich will sofort etwas laufen lassen</h3>
+<ol>
+<li><a href="examples_quickstart.html">`examples_quickstart.md`</a></li>
+<li><a href="examples_matrix.html">`examples_matrix.md`</a></li>
+</ol>
+<h3 id="ich-will-die-bedeutung-einer-bestimmten-datei-verstehen">Ich will die Bedeutung einer bestimmten Datei verstehen</h3>
+<ol>
+<li><a href="examples.html">`examples.md`</a></li>
+<li>Falls noetig danach <a href="examples_quickstart.html">`examples_quickstart.md`</a></li>
+</ol>
+<h3 id="ich-will-ein-beispiel-nach-schwierigkeit-oder-lernstufe-waehlen">Ich will ein Beispiel nach Schwierigkeit oder Lernstufe waehlen</h3>
+<ol>
+<li><a href="examples_by_level.html">`examples_by_level.md`</a></li>
+<li>Danach <a href="examples_quickstart.html">`examples_quickstart.md`</a></li>
+</ol>
+<h3 id="ich-will-beispiele-nach-zweck-vergleichen">Ich will Beispiele nach Zweck vergleichen</h3>
+<ol>
+<li><a href="examples_matrix.html">`examples_matrix.md`</a></li>
+<li>Danach <a href="examples.html">`examples.md`</a></li>
+</ol>
+<h2 id="empfohlene-routen-fuer-typische-ziele">Empfohlene Routen fuer typische Ziele</h2>
+<h3 id="route-a-schnell-sichtbares-ergebnis">Route A: Schnell sichtbares Ergebnis</h3>
+<ol>
+<li><a href="examples_quickstart.html">`examples_quickstart.md`</a></li>
+<li>Starte <code>blob_runtime.ns</code></li>
+<li>Starte <code>file_extension_scan.ns</code></li>
+<li>Starte <code>file_extension_scan_advanced.ns</code></li>
+</ol>
+<h3 id="route-b-lifecycles-verstehen">Route B: Lifecycles verstehen</h3>
+<ol>
+<li><a href="examples_by_level.html">`examples_by_level.md`</a></li>
+<li>Lies den Bereich <code>Lifecycle</code></li>
+<li>Wechsle zu <a href="examples.html">`examples.md`</a></li>
+<li>Arbeite dann:</li>
+</ol>
 <ul>
-<li><code>ns.run</code> laedt nicht nur Flows und Events, sondern exportiert deklarative <code>agent { ... }</code>-Bloecke jetzt direkt in die Shell-Agentenwelt</li>
-<li>dadurch koennen Agenten aus einer geladenen <code>.ns</code>-Datei sofort ueber <code>agent list</code> und <code>agent run</code> genutzt werden</li>
-<li>fuer generierte standalone Agenten aus Skill-Daten siehe <a href="StandaloneSkillAgents.html">StandaloneSkillAgents</a></li>
-<li>fuer die modularen Management-Agenten unter <code>examples/CEO_ns</code> siehe <a href="CEOAgentExamples.html">CEOAgentExamples</a></li>
-<li>fuer Architektur und Portabilitaetsregeln siehe <a href="StandaloneSkillAgentsForDevelopers.html">StandaloneSkillAgentsForDevelopers</a></li>
-<li>fuer den praktischen Ablauf siehe <a href="TutorialStandaloneSkillAgents.html">TutorialStandaloneSkillAgents</a></li>
+<li><code>decision_lifecycle_template.ns</code></li>
+<li><code>CEO_ns/CEO_Lifecycle.ns</code></li>
+<li><code>code_improvement_ns/Code_Improve_Lifecycle.ns</code></li>
 </ul>
-<h2 id="api">API</h2>
-<p>Agent-relevante Control-Plane-Endpunkte:</p>
+<h3 id="route-c-plattform-und-cluster">Route C: Plattform und Cluster</h3>
+<ol>
+<li><a href="examples_by_level.html">`examples_by_level.md`</a></li>
+<li>Lies den Bereich <code>Plattform</code></li>
+<li>Vergleiche die Beispiele in <a href="examples_matrix.html">`examples_matrix.md`</a></li>
+<li>Nutze danach <code>ns.graph</code> aus <a href="examples_quickstart.html">`examples_quickstart.md`</a></li>
+</ol>
+<h3 id="route-d-agenten-praktisch-einsetzen">Route D: Agenten praktisch einsetzen</h3>
+<ol>
+<li><a href="examples_by_level.html">`examples_by_level.md`</a></li>
+<li>Bereich <code>Agenten</code></li>
+<li>Danach <a href="examples_quickstart.html">`examples_quickstart.md`</a></li>
+<li>Nutze einzelne Rollen in <code>CEO_ns/</code> oder die grossen Agentenbundles</li>
+</ol>
+<h2 id="wie-die-example-dokumentation-zusammenhaengt">Wie die Example-Dokumentation zusammenhaengt</h2>
+<pre><code class="language-mermaid">flowchart TD
+    A[&quot;examples_index.md&quot;] --&gt; B[&quot;examples.md&lt;br/&gt;Vollreferenz&quot;]
+    A --&gt; C[&quot;examples_quickstart.md&lt;br/&gt;Copy-Paste&quot;]
+    A --&gt; D[&quot;examples_by_level.md&lt;br/&gt;Lernpfade&quot;]
+    A --&gt; E[&quot;examples_matrix.md&lt;br/&gt;Vergleichstabelle&quot;]
+    B --&gt; F[&quot;examples/&lt;dateien&gt;&quot;]
+    C --&gt; F
+    D --&gt; F
+    E --&gt; F</code></pre>
+<h2 id="was-du-hier-nicht-findest">Was du hier nicht findest</h2>
+<p>Dieses Portal ersetzt nicht die Vollreferenz. Es ist bewusst kompakter als <a href="examples.html">`examples.md`</a>. Wenn du Detailfragen zu einer konkreten Datei, einem Request, einem Helper oder einem Unterordner hast, gehe von hier aus immer in die dateiweise Referenz.</p>
+<h2 id="pflegehinweis">Pflegehinweis</h2>
+<p>Wenn neue Dateien unter <code>examples/</code> dazukommen, sollten idealerweise diese Seiten gemeinsam gepflegt werden:</p>
+<ol>
+<li><a href="examples.html">`examples.md`</a></li>
+<li><a href="examples_quickstart.html">`examples_quickstart.md`</a></li>
+<li><a href="examples_by_level.html">`examples_by_level.md`</a></li>
+<li><a href="examples_matrix.html">`examples_matrix.md`</a></li>
+<li><a href="examples_index.html">`examples_index.md`</a></li>
+</ol>
+<p>So bleibt die Dokumentation konsistent:</p>
 <ul>
-<li><code>/agents/prompts</code></li>
-<li><code>/agents/evals</code></li>
-<li><code>/agents/memory</code></li>
-</ul>
-<h2 id="testbare-beispiele">Testbare Beispiele</h2>
-<h3 id="deklarativer-agent">Deklarativer Agent</h3>
-<pre><code class="language-ns">agent reviewer {
-  provider: openai
-  model: gpt-4o-mini
-  tools: [memory.search, system.log]
-  memory: review
-}</code></pre>
-<h3 id="cli-beispiel">CLI-Beispiel</h3>
-<pre><code class="language-text">agent create analyst &quot;Summarize {{input}}&quot;
-agent run analyst quarterly report
-agent graph create review_chain --nodes analyst,reviewer</code></pre>
-<h3 id="deklarative-agenten-aus-ns">Deklarative Agenten aus <code>.ns</code></h3>
-<pre><code class="language-powershell">ns.run .\examples\react_best_practices_agents.ns
-agent list
-agent run react_best_practices_async_parallel &quot;const user = await fetchUser(); const posts = await fetchPosts();&quot;</code></pre>
-<h3 id="python-beispiel">Python-Beispiel</h3>
-<pre><code class="language-python">from nova.agents.runtime import AgentRuntime, AgentSpecification, AgentTask
-
-agents = AgentRuntime()
-agents.register(
-    AgentSpecification(
-        name=&quot;researcher&quot;,
-        model=&quot;gpt-4o-mini&quot;,
-        tools=[&quot;system.log&quot;],
-    )
-)
-
-result = agents.execute(
-    AgentTask(
-        agent=&quot;researcher&quot;,
-        objective=&quot;Summarize the current dataset&quot;,
-    )
-)
-print(result.output)</code></pre>
-<h3 id="co-evolution-ueber-die-cli">Co-Evolution ueber die CLI</h3>
-<pre><code class="language-powershell">mycelia coevolve run trend-rss --cycles 3 --input &quot;news feeds with predictive relevance&quot;
-mycelia coevolve status trend-rss</code></pre>
-<h2 id="typische-fehler-und-fragen">Typische Fehler und Fragen</h2>
-<h3 id="warum-antwortet-ein-agent-anders-als-erwartet">Warum antwortet ein Agent anders als erwartet?</h3>
-<p>Dann muessen meist Prompt-Version, Providerwahl, Governance oder Tool-Freigaben geprueft werden.</p>
-<h3 id="wo-landet-agent-memory">Wo landet Agent-Memory?</h3>
-<p>Im konfigurierten Memory-Scope oder Namespace, nicht als loses Nebenprodukt.</p>
-<h3 id="woran-erkenne-ich-ob-ein-agent-lokal-oder-extern-arbeitet">Woran erkenne ich, ob ein Agent lokal oder extern arbeitet?</h3>
-<p>An Provider, Modell und Runtime-Kontext.</p>
-<h2 id="verwandte-seiten">Verwandte Seiten</h2>
-<ul>
-<li><a href="AgentsAndKnowledge.html">AgentsAndKnowledge</a></li>
-<li><a href="NovaMemory.html">NovaMemory</a></li>
-<li><a href="NovaTools.html">NovaTools</a></li>
-<li><a href="MyceliaAtheriaCoEvolution.html">MyceliaAtheriaCoEvolution</a></li>
-<li><a href="AtheriaContinuousEvolutionAndLiveStream.html">AtheriaContinuousEvolutionAndLiveStream</a></li>
-<li><a href="AtheriaVoice.html">AtheriaVoice</a></li>
-<li><a href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
-<li><a href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
-<li><a href="StandaloneSkillAgents.html">StandaloneSkillAgents</a></li>
-<li><a href="StandaloneSkillAgentsForDevelopers.html">StandaloneSkillAgentsForDevelopers</a></li>
-<li><a href="TutorialStandaloneSkillAgents.html">TutorialStandaloneSkillAgents</a></li>
+<li><code>examples.md</code></li>
+<p>beschreibt die Datei fachlich</p>
+<li><code>examples_quickstart.md</code></li>
+<p>liefert Startbefehle</p>
+<li><code>examples_by_level.md</code></li>
+<p>ordnet sie didaktisch ein</p>
+<li><code>examples_matrix.md</code></li>
+<p>ordnet sie vergleichend ein</p>
+<li><code>examples_index.md</code></li>
+<p>bleibt das zentrale Portal</p>
 </ul>
         </article>
         <aside class="wiki-toc">
           <div class="wiki-toc-card"><h2>On this page</h2><ul>
-<li class="wiki-toc-link"><a href="#zweck">Zweck</a></li>
-<li class="wiki-toc-link"><a href="#kernobjekte">Kernobjekte</a></li>
-<li class="wiki-toc-link"><a href="#agent-lebenszyklus">Agent-Lebenszyklus</a></li>
-<li class="wiki-toc-link"><a href="#methoden-und-schnittstellen">Methoden und Schnittstellen</a></li>
-<li class="wiki-toc-link"><a href="#co-evolution-mit-mycelia-und-atheria">Co-Evolution mit Mycelia und Atheria</a></li>
-<li class="wiki-toc-link"><a href="#als-als-dauerhafte-atheria-instanz">ALS als dauerhafte Atheria-Instanz</a></li>
-<li class="wiki-toc-link"><a href="#cli">CLI</a></li>
-<li class="wiki-toc-link"><a href="#api">API</a></li>
-<li class="wiki-toc-link"><a href="#testbare-beispiele">Testbare Beispiele</a></li>
-<li class="wiki-toc-link level-3"><a href="#deklarativer-agent">Deklarativer Agent</a></li>
-<li class="wiki-toc-link level-3"><a href="#cli-beispiel">CLI-Beispiel</a></li>
-<li class="wiki-toc-link level-3"><a href="#deklarative-agenten-aus-ns">Deklarative Agenten aus `.ns`</a></li>
-<li class="wiki-toc-link level-3"><a href="#python-beispiel">Python-Beispiel</a></li>
-<li class="wiki-toc-link level-3"><a href="#co-evolution-ueber-die-cli">Co-Evolution ueber die CLI</a></li>
-<li class="wiki-toc-link"><a href="#typische-fehler-und-fragen">Typische Fehler und Fragen</a></li>
-<li class="wiki-toc-link level-3"><a href="#warum-antwortet-ein-agent-anders-als-erwartet">Warum antwortet ein Agent anders als erwartet?</a></li>
-<li class="wiki-toc-link level-3"><a href="#wo-landet-agent-memory">Wo landet Agent-Memory?</a></li>
-<li class="wiki-toc-link level-3"><a href="#woran-erkenne-ich-ob-ein-agent-lokal-oder-extern-arbeitet">Woran erkenne ich, ob ein Agent lokal oder extern arbeitet?</a></li>
-<li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
+<li class="wiki-toc-link"><a href="#wofuer-dieses-portal-gedacht-ist">Wofuer dieses Portal gedacht ist</a></li>
+<li class="wiki-toc-link"><a href="#die-vier-example-seiten-im-ueberblick">Die vier Example-Seiten im Ueberblick</a></li>
+<li class="wiki-toc-link level-3"><a href="#examples-md-examples-md">[`examples.md`](./examples.md)</a></li>
+<li class="wiki-toc-link level-3"><a href="#examples-quickstart-md-examples-quickstart-md">[`examples_quickstart.md`](./examples_quickstart.md)</a></li>
+<li class="wiki-toc-link level-3"><a href="#examples-by-level-md-examples-by-level-md">[`examples_by_level.md`](./examples_by_level.md)</a></li>
+<li class="wiki-toc-link level-3"><a href="#examples-matrix-md-examples-matrix-md">[`examples_matrix.md`](./examples_matrix.md)</a></li>
+<li class="wiki-toc-link"><a href="#empfohlene-einstiege">Empfohlene Einstiege</a></li>
+<li class="wiki-toc-link level-3"><a href="#ich-bin-neu-und-will-nova-shell-beispiele-erst-einmal-verstehen">Ich bin neu und will Nova-shell Beispiele erst einmal verstehen</a></li>
+<li class="wiki-toc-link level-3"><a href="#ich-will-sofort-etwas-laufen-lassen">Ich will sofort etwas laufen lassen</a></li>
+<li class="wiki-toc-link level-3"><a href="#ich-will-die-bedeutung-einer-bestimmten-datei-verstehen">Ich will die Bedeutung einer bestimmten Datei verstehen</a></li>
+<li class="wiki-toc-link level-3"><a href="#ich-will-ein-beispiel-nach-schwierigkeit-oder-lernstufe-waehlen">Ich will ein Beispiel nach Schwierigkeit oder Lernstufe waehlen</a></li>
+<li class="wiki-toc-link level-3"><a href="#ich-will-beispiele-nach-zweck-vergleichen">Ich will Beispiele nach Zweck vergleichen</a></li>
+<li class="wiki-toc-link"><a href="#empfohlene-routen-fuer-typische-ziele">Empfohlene Routen fuer typische Ziele</a></li>
+<li class="wiki-toc-link level-3"><a href="#route-a-schnell-sichtbares-ergebnis">Route A: Schnell sichtbares Ergebnis</a></li>
+<li class="wiki-toc-link level-3"><a href="#route-b-lifecycles-verstehen">Route B: Lifecycles verstehen</a></li>
+<li class="wiki-toc-link level-3"><a href="#route-c-plattform-und-cluster">Route C: Plattform und Cluster</a></li>
+<li class="wiki-toc-link level-3"><a href="#route-d-agenten-praktisch-einsetzen">Route D: Agenten praktisch einsetzen</a></li>
+<li class="wiki-toc-link"><a href="#wie-die-example-dokumentation-zusammenhaengt">Wie die Example-Dokumentation zusammenhaengt</a></li>
+<li class="wiki-toc-link"><a href="#was-du-hier-nicht-findest">Was du hier nicht findest</a></li>
+<li class="wiki-toc-link"><a href="#pflegehinweis">Pflegehinweis</a></li>
 </ul></div>
         </aside>
       </div>
@@ -394,7 +350,7 @@ mycelia coevolve status trend-rss</code></pre>
   </div>
   <script>
     window.NOVA_WIKI = {
-      currentPage: "NovaAgents.html",
+      currentPage: "examples_index.html",
       searchIndex: "assets/search-index.json"
     };
   </script>

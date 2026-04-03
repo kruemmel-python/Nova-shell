@@ -46,6 +46,11 @@
 <li><a class="wiki-nav-link" data-nav-href="LensTroubleshooting.html" href="LensTroubleshooting.html">LensTroubleshooting</a></li>
 <li><a class="wiki-nav-link" data-nav-href="LensRecipes.html" href="LensRecipes.html">LensRecipes</a></li>
 <li><a class="wiki-nav-link" data-nav-href="APIReference.html" href="APIReference.html">APIReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="examples_index.html" href="examples_index.html">examples_index</a></li>
+<li><a class="wiki-nav-link" data-nav-href="examples.html" href="examples.html">examples</a></li>
+<li><a class="wiki-nav-link" data-nav-href="examples_quickstart.html" href="examples_quickstart.html">examples_quickstart</a></li>
+<li><a class="wiki-nav-link" data-nav-href="examples_by_level.html" href="examples_by_level.html">examples_by_level</a></li>
+<li><a class="wiki-nav-link" data-nav-href="examples_matrix.html" href="examples_matrix.html">examples_matrix</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ExamplesAndRecipes.html" href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
 <li><a class="wiki-nav-link" data-nav-href="DecisionPatterns.html" href="DecisionPatterns.html">DecisionPatterns</a></li>
 <li><a class="wiki-nav-link active" data-nav-href="CEOAgentExamples.html" href="CEOAgentExamples.html">CEOAgentExamples</a></li>
@@ -168,207 +173,303 @@
           <h1 id="ceo-agent-examples">CEO Agent Examples</h1>
 <h2 id="zweck">Zweck</h2>
 <p>Diese Seite beschreibt den Ordner <code>examples/CEO_ns</code>.</p>
-<p>Dort liegt keine Management-Simulation als Black Box, sondern eine kleine, modulare Beispielstrecke fuer ein CEO-orientiertes Agentensystem in echter Nova-shell-<code> .ns</code>-Syntax.</p>
-<p>Die Dateien zeigen zwei Nutzungsarten:</p>
+<p>Der Ordner enthaelt inzwischen nicht mehr nur ein loses Agentenbeispiel, sondern ein kleines CEO-orientiertes Operating System fuer Nova-shell:</p>
 <ul>
-<li>einzelne Rollen als eigenstaendige Agent-Bundles</li>
-<li>einen zusammenhaengenden Lifecycle als vollstaendigen <code>flow</code></li>
+<li>klar getrennte Rollen-Agenten fuer interaktive Arbeit</li>
+<li>ein deterministisches CEO-Decision-System als <code>.ns</code>-Flow</li>
+<li>eine kontinuierliche Laufzeit fuer wiederholte CEO-Zyklen</li>
+<li>persistente Reports und Statusartefakte</li>
 </ul>
+<p>Wichtig:</p>
+<blockquote><p>Der eigentliche &quot;CEO&quot; ist hier nicht ein einzelner Agent, sondern das zusammengesetzte Decision System aus Signalen, Governance, gewichteter Entscheidungslogik, Execution und Feedback.</p></blockquote>
+<h2 id="was-jetzt-real-implementiert-ist">Was jetzt real implementiert ist</h2>
+<p>Der aktuelle Stand deckt die wesentlichen Bausteine eines operativen Steuerungssystems ab:</p>
+<ul>
+<li><code>Domain Model</code></li>
+<li><code>Signal-System</code></li>
+<li><code>Strategy</code>, <code>Risk</code>, <code>Capital</code>, <code>Operations</code></li>
+<li><code>Consensus</code> mit gewichteter Entscheidung</li>
+<li><code>Execution</code></li>
+<li><code>Memory</code> und <code>Feedback</code></li>
+<li><code>Governance / Policy</code></li>
+<li><code>Continuous Operation</code></li>
+</ul>
+<p>Das ist kein Chatbot und auch kein reines Vorschlagssystem. Der Lifecycle verarbeitet strukturierte Eingaben, trifft eine regelgebundene Entscheidung und schreibt daraus verbindliche Runtime-Artefakte.</p>
 <h2 id="explizite-muster-in-diesem-ordner">Explizite Muster in diesem Ordner</h2>
-<p>Der Ordner ist nicht nur ein Beispiel, sondern zeigt jetzt drei formale Muster:</p>
+<p>Der Ordner zeigt weiterhin drei Architekturpattern:</p>
 <ul>
 <li><code>Agent Bundle Pattern</code></li>
 <li><code>Flow Pattern</code></li>
 <li><code>Lifecycle Pattern</code></li>
 </ul>
-<p>Diese Begriffe sind bewusst explizit gemacht, damit das Beispiel nicht nur ausfuehrbar, sondern auch als Architekturvorlage lesbar wird.</p>
-<h3 id="agent-bundle-pattern">Agent Bundle Pattern</h3>
-<p>Die Einzeldateien wie <code>StrategyAgent.ns</code> oder <code>RiskAgent.ns</code> sind Agent-Bundles:</p>
-<ul>
-<li>eine Datei</li>
-<li>ein klarer Rollenfokus</li>
-<li>nach <code>ns.run</code> direkt per <code>agent run</code> nutzbar</li>
-</ul>
-<p>Das ist sinnvoll fuer:</p>
-<ul>
-<li>Fachrollen</li>
-<li>Router</li>
-<li>Spezialagenten</li>
-<li>modulare Tests</li>
-</ul>
-<h3 id="flow-pattern">Flow Pattern</h3>
-<p><code>CEO_Lifecycle.ns</code> enthaelt einen expliziten Ablauf mit benannten Zwischenstufen:</p>
-<ul>
-<li><code>executive_snapshot</code></li>
-<li><code>strategy_raw</code></li>
-<li><code>risk_raw</code></li>
-<li><code>capital_raw</code></li>
-<li><code>consensus_packet</code></li>
-<li><code>final_decision</code></li>
-<li><code>board_message</code></li>
-<li><code>execution_plan</code></li>
-</ul>
-<p>Damit bleibt die Kette nicht implizit, sondern im Graph und im Runtime-Output nachvollziehbar.</p>
-<h3 id="lifecycle-pattern">Lifecycle Pattern</h3>
-<p>Das CEO-Beispiel endet nicht bei einer Analyse, sondern schreibt Zustand und emittiert ein Event:</p>
-<ul>
-<li><code>state.set ceo_last_execution execution_plan</code></li>
-<li><code>event.emit ceo_cycle_ready execution_plan</code></li>
-</ul>
-<p>Genau dadurch wird aus einem Flow ein Lifecycle-Muster.</p>
-<h2 id="das-abstrahierte-decision-pattern">Das abstrahierte Decision Pattern</h2>
-<p>Der CEO-Lifecycle ist eigentlich ein allgemeines Entscheidungsmodell:</p>
-<pre><code class="language-text">input -&gt; transform -&gt; merge -&gt; decide -&gt; act</code></pre>
-<p>Im CEO-Beispiel ist das:</p>
-<ul>
-<li><code>input</code>: <code>executive_signals</code></li>
-<li><code>transform</code>: <code>StrategyAgent</code>, <code>RiskAgent</code>, <code>CapitalAgent</code></li>
-<li><code>merge</code>: <code>ConsensusLayer</code></li>
-<li><code>decide</code>: <code>final_decision</code></li>
-<li><code>act</code>: <code>ExecutionDispatcher</code></li>
-</ul>
-<p>Dieses Muster laesst sich spaeter auf andere Domaenen uebertragen, etwa:</p>
-<ul>
-<li>Security-Systeme</li>
-<li>Trading-Systeme</li>
-<li>AI-Orchestratoren</li>
-</ul>
-<p>Die generalisierte Doku dazu steht auf:</p>
-<ul>
-<li><a href="NovaDecisionSystem.html">NovaDecisionSystem</a></li>
-<li><a href="DecisionPatterns.html">DecisionPatterns</a></li>
-</ul>
+<p>Zusaetzlich ist er jetzt ein konkretes Beispiel fuer ein <code>Decision System Pattern</code>.</p>
 <h2 id="enthaltene-dateien">Enthaltene Dateien</h2>
-<p>Der Ordner enthaelt:</p>
+<h3 id="rollen-agenten">Rollen-Agenten</h3>
 <ul>
 <li><code>examples/CEO_ns/CEO_Core.ns</code></li>
 <li><code>examples/CEO_ns/StrategyAgent.ns</code></li>
 <li><code>examples/CEO_ns/RiskAgent.ns</code></li>
 <li><code>examples/CEO_ns/CapitalAgent.ns</code></li>
+<li><code>examples/CEO_ns/OperationsAgent.ns</code></li>
 <li><code>examples/CEO_ns/ConsensusLayer.ns</code></li>
 <li><code>examples/CEO_ns/NarrativeAgent.ns</code></li>
 <li><code>examples/CEO_ns/ExecutionDispatcher.ns</code></li>
+</ul>
+<h3 id="operativer-lifecycle">Operativer Lifecycle</h3>
+<ul>
 <li><code>examples/CEO_ns/CEO_Lifecycle.ns</code></li>
+<li><code>examples/CEO_ns/ceo_runtime_helper.py</code></li>
+<li><code>examples/CEO_ns/ceo_continuous_runtime.py</code></li>
 </ul>
-<h2 id="was-diese-dateien-tun">Was diese Dateien tun</h2>
-<h3 id="einzelne-agenten">Einzelne Agenten</h3>
-<p>Die Einzeldateien sind kompakte <code>agent bundle</code>-Programme. Sie werden mit <code>ns.run</code> geladen und exportieren danach genau einen Agenten in die Shell.</p>
-<p>Rollen:</p>
+<h3 id="beispieldaten">Beispieldaten</h3>
 <ul>
-<li><code>CEO_Core</code>: Router fuer die passende naechste Rolle</li>
-<li><code>StrategyAgent</code>: strategischer Vorschlag</li>
-<li><code>RiskAgent</code>: Risiko- und Warnsignalbewertung</li>
-<li><code>CapitalAgent</code>: Kapitalallokation und Liquiditaetsblick</li>
-<li><code>ConsensusLayer</code>: Zusammenfuehrung zu einer Managemententscheidung</li>
-<li><code>NarrativeAgent</code>: Board- und Kommunikationsnarrativ</li>
-<li><code>ExecutionDispatcher</code>: operative Erstmassnahmen</li>
+<li><code>examples/CEO_ns/internal_telemetry.json</code></li>
+<li><code>examples/CEO_ns/external_market_signals.json</code></li>
+<li><code>examples/CEO_ns/event_signals.json</code></li>
+<li><code>examples/CEO_ns/policy_overrides.json</code></li>
 </ul>
-<h3 id="ceo-lifecycle">CEO_Lifecycle</h3>
-<p><code>CEO_Lifecycle.ns</code> ist die zusammenhaengende Beispielpipeline.</p>
-<p>Der Flow:</p>
+<h2 id="domain-model">Domain Model</h2>
+<p>Der CEO-Lifecycle arbeitet mit einem strukturierten Zustandsmodell. Die Runtime fuehrt unter anderem diese Bereiche:</p>
+<ul>
+<li><code>capital</code></li>
+<li><code>liquidity</code></li>
+<li><code>burn_rate</code></li>
+<li><code>allocations</code></li>
+<li><code>operations</code></li>
+<li><code>capacity</code></li>
+<li><code>utilization</code></li>
+<li><code>bottlenecks</code></li>
+<li><code>strategy</code></li>
+<li><code>active_initiatives</code></li>
+<li><code>priorities</code></li>
+<li><code>horizon</code></li>
+<li><code>risk</code></li>
+<li><code>exposure</code></li>
+<li><code>volatility</code></li>
+<li><code>critical_flags</code></li>
+<li><code>market</code></li>
+<li><code>demand</code></li>
+<li><code>signals</code></li>
+<li><code>opportunities</code></li>
+<li><code>policy</code></li>
+<li><code>decisions_history</code></li>
+<li><code>execution_log</code></li>
+</ul>
+<p>Damit arbeitet der Lifecycle nicht nur mit Text, sondern mit einem expliziten Realitaetsmodell.</p>
+<h2 id="signal-system">Signal-System</h2>
+<p>Das Input-System ist bewusst signalorientiert. Aktuell kommen die Daten aus drei Quellen:</p>
+<ul>
+<li>interne Telemetrie</li>
+<li>externe Marktsignale</li>
+<li>Event-Signale</li>
+</ul>
+<p>Alle Quellen werden in ein gemeinsames Signalformat normalisiert:</p>
+<pre><code class="language-text">signal:
+  signal_id
+  type
+  severity
+  domain
+  source
+  title
+  summary
+  metrics
+  payload
+  timestamp</code></pre>
+<p>Dadurch koennen spaeter weitere Quellen hinzukommen, ohne die Entscheidungslogik neu schreiben zu muessen.</p>
+<h2 id="agent-bundle-pattern">Agent Bundle Pattern</h2>
+<p>Die Einzeldateien wie <code>StrategyAgent.ns</code> oder <code>OperationsAgent.ns</code> sind interaktive Agent-Bundles:</p>
+<ul>
+<li>eine Datei</li>
+<li>eine Rolle</li>
+<li>nach <code>ns.run</code> direkt per <code>agent run</code> nutzbar</li>
+</ul>
+<p>Das ist sinnvoll fuer:</p>
+<ul>
+<li>Exploration</li>
+<li>manuelle Gegenpruefung</li>
+<li>prototypische Diskussionen</li>
+<li>isolierte Rollen-Reviews</li>
+</ul>
+<p>Beispiel:</p>
+<pre><code class="language-powershell">ai use lmstudio &lt;modellname&gt;
+ns.run .\examples\CEO_ns\OperationsAgent.ns
+agent run OperationsAgent &quot;GPU-Auslastung steigt ueber 87 Prozent, Partnerdruck nimmt zu.&quot;</code></pre>
+<h2 id="flow-pattern">Flow Pattern</h2>
+<p><code>CEO_Lifecycle.ns</code> ist der operative Flow.</p>
+<p>Er bildet die Kette</p>
+<pre><code class="language-text">input -&gt; transform -&gt; merge -&gt; decide -&gt; act -&gt; feedback</code></pre>
+<p>mit echten Zwischenartefakten ab:</p>
+<ul>
+<li><code>domain_state</code></li>
+<li><code>governed_state</code></li>
+<li><code>unified_signals</code></li>
+<li><code>strategy_packet</code></li>
+<li><code>risk_packet</code></li>
+<li><code>capital_packet</code></li>
+<li><code>operations_packet</code></li>
+<li><code>decision_packet</code></li>
+<li><code>execution_plan</code></li>
+<li><code>outcome_packet</code></li>
+<li><code>final_state</code></li>
+<li><code>ceo_report</code></li>
+<li><code>artifact_paths</code></li>
+</ul>
+<p>Damit ist die Kette nicht implizit, sondern im Runtime-Output und Graph nachvollziehbar.</p>
+<h2 id="lifecycle-pattern">Lifecycle Pattern</h2>
+<p>Der CEO-Flow endet nicht bei Analyse, sondern fuehrt eine komplette Lifecycle-Schleife aus:</p>
 <ol>
-<li>liest Beispielsignale aus einem eingebetteten Dataset</li>
-<li>erzeugt Strategie-, Risiko- und Kapitalartefakte</li>
-<li>verdichtet diese in einer Consensus-Entscheidung</li>
-<li>formuliert daraus ein Board-Narrativ</li>
-<li>erzeugt einen operativen Dispatch</li>
-<li>speichert das Ergebnis unter <code>ceo_last_execution</code></li>
-<li>emittiert das Event <code>ceo_cycle_ready</code></li>
+<li>Signale laden und normalisieren</li>
+<li>Domain State aktualisieren</li>
+<li>Optionen generieren</li>
+<li>Risiko, Kapital und Operations bewerten</li>
+<li>Konsens und Entscheidung bilden</li>
+<li>Execution-Plan erzeugen</li>
+<li>State fortschreiben</li>
+<li>Outcome bewerten</li>
+<li>Feedback in den State zurueckschreiben</li>
+<li>Events emittieren</li>
+<li>Reports und Artefakte persistieren</li>
 </ol>
-<h2 id="warum-die-dateien-ueberarbeitet-wurden">Warum die Dateien ueberarbeitet wurden</h2>
-<p>Die urspruengliche Fassung in <code>examples/CEO_ns</code> war kein lauffaehiges Nova-Script, sondern Pseudokonfiguration mit Feldern wie:</p>
+<p>Genau dadurch wird aus einem Beispiel ein operatives Decision System.</p>
+<h2 id="entscheidungslogik">Entscheidungslogik</h2>
+<p>Die Entscheidung wird nicht einem LLM ueberlassen. Der CEO-Kern nutzt eine gewichtete Bewertungslogik.</p>
+<p>Aktuell:</p>
+<pre><code class="language-text">score =
+  (expected_gain * 0.4)
+  + (capital_feasibility * 0.2)
+  - (risk_score * 0.3)
+  + (operational_fit * 0.1)</code></pre>
+<p>Governance blockiert Optionen zusaetzlich, wenn:</p>
 <ul>
-<li><code>input:</code></li>
-<li><code>compute:</code></li>
-<li><code>output:</code></li>
-<li><code>emit:</code></li>
-<li><code>signals:</code></li>
-<li><code>routes:</code></li>
-<li><code>loop:</code></li>
+<li>die Aktion verboten ist</li>
+<li>die Risikoschwelle ueberschritten wird</li>
+<li>die Kapitalgrenze ueberschritten wird</li>
+<li>der Kapitalplan nicht tragfaehig ist</li>
 </ul>
-<p>Diese Form wird von der Nova-shell-Runtime nicht als echte deklarative <code>.ns</code>-Sprache verstanden.</p>
-<p>Die aktuelle Fassung nutzt stattdessen unterstuetzte Bausteine:</p>
+<p>Damit bleibt die Struktur deterministisch, auch wenn Einzelagenten spaeter generativ erweitert werden.</p>
+<h2 id="governance-und-policies">Governance und Policies</h2>
+<p>Die Policy-Datei steuert die harten Grenzen:</p>
 <ul>
-<li><code>system { ... }</code></li>
-<li><code>state { ... }</code></li>
-<li><code>agent { ... }</code></li>
-<li><code>dataset { ... }</code></li>
-<li><code>flow { ... }</code></li>
-<li><code>event { ... }</code></li>
+<li><code>max_risk</code></li>
+<li><code>capital_limit</code></li>
+<li><code>minimum_runway_months</code></li>
+<li><code>forbidden_actions</code></li>
 </ul>
+<p>Diese Werte werden vor dem eigentlichen Zyklus in den State gemischt und anschliessend im <code>ConsensusLayer</code> erzwungen.</p>
+<h2 id="memory-und-feedback">Memory und Feedback</h2>
+<p>Nach jeder Entscheidung werden Laufzeitdaten fortgeschrieben:</p>
+<ul>
+<li><code>decisions_history</code></li>
+<li><code>execution_log</code></li>
+<li><code>last_decision</code></li>
+<li><code>last_execution</code></li>
+<li><code>last_outcome</code></li>
+</ul>
+<p>Der Outcome-Pfad ist:</p>
+<pre><code class="language-text">execution -&gt; outcome -&gt; feedback_update -&gt; final_state</code></pre>
+<p>Damit verbessert sich der Zustand des Systems ueber mehrere Zyklen hinweg, statt bei jedem Lauf bei Null zu beginnen.</p>
+<h2 id="event-system">Event-System</h2>
+<p>Der Lifecycle emittiert benannte Events:</p>
+<ul>
+<li><code>event.market.change</code></li>
+<li><code>event.capacity.limit</code></li>
+<li><code>event.capital.alert</code></li>
+<li><code>event.decision.made</code></li>
+<li><code>event.execution.done</code></li>
+<li><code>ceo_cycle_ready</code></li>
+</ul>
+<p>Zusatzlich sind Trigger auf:</p>
+<ul>
+<li><code>board.review</code></li>
+<li><code>ceo.tick</code></li>
+<li><code>event.market.change</code></li>
+</ul>
+<p>Damit kann das System sowohl manuell als auch eventgetrieben laufen.</p>
+<h2 id="continuous-operation">Continuous Operation</h2>
+<p>Die kontinuierliche Laufzeit liegt in:</p>
+<ul>
+<li><code>examples/CEO_ns/ceo_continuous_runtime.py</code></li>
+</ul>
+<p>Der Runner laedt <code>CEO_Lifecycle.ns</code>, emittiert <code>ceo.tick</code> und schreibt einen kompakten Laufzeitstatus nach:</p>
+<ul>
+<li><code>examples/CEO_ns/.nova_ceo/continuous_status.json</code></li>
+</ul>
+<p>Relevante Umgebungsvariablen:</p>
+<ul>
+<li><code>NOVA_CEO_ONESHOT</code></li>
+<li><code>NOVA_CEO_INTERVAL</code></li>
+</ul>
+<p>Beispiel:</p>
+<pre><code class="language-powershell">cd .\examples\CEO_ns
+$env:NOVA_CEO_ONESHOT = &quot;1&quot;
+python .\ceo_continuous_runtime.py</code></pre>
+<h2 id="persistente-artefakte">Persistente Artefakte</h2>
+<p>Jeder CEO-Zyklus schreibt unter <code>examples/CEO_ns/.nova_ceo/</code>:</p>
+<ul>
+<li><code>ceo_report.json</code></li>
+<li><code>ceo_report.html</code></li>
+<li><code>latest_execution.json</code></li>
+<li><code>ceo_state.json</code></li>
+<li><code>decision_history.jsonl</code></li>
+<li><code>continuous_status.json</code> bei Nutzung des Continuous-Runners</li>
+</ul>
+<p>Das sind keine bloessen Debug-Ausgaben, sondern die nachvollziehbare Ausfuehrungsspur des Systems.</p>
 <h2 id="schnellstart">Schnellstart</h2>
-<h3 id="1-einzelnen-agenten-laden">1. Einzelnen Agenten laden</h3>
-<p>Beispiel mit dem Strategy-Agenten:</p>
-<pre><code class="language-powershell">ai use lmstudio &lt;modellname&gt;
-ns.run .\examples\CEO_ns\StrategyAgent.ns
-agent run StrategyAgent &quot;Pipeline waechst, GPU-Auslastung steigt, ein Channel-Partner fordert Co-Investment.&quot;</code></pre>
-<p>Danach kannst du jeden einzelnen Agenten gezielt befragen.</p>
-<h3 id="2-router-laden">2. Router laden</h3>
-<pre><code class="language-powershell">ai use lmstudio &lt;modellname&gt;
-ns.run .\examples\CEO_ns\CEO_Core.ns
-agent run CEO_Core &quot;Welche Rolle soll eine Entscheidung ueber Kapazitaetsausbau und Co-Investment jetzt zuerst bearbeiten?&quot;</code></pre>
-<h3 id="3-den-gesamten-lifecycle-ausfuehren">3. Den gesamten Lifecycle ausfuehren</h3>
+<h3 id="1-gesamten-ceo-zyklus-ausfuehren">1. Gesamten CEO-Zyklus ausfuehren</h3>
 <pre><code class="language-powershell">ns.run .\examples\CEO_ns\CEO_Lifecycle.ns</code></pre>
 <p>Erwartung:</p>
 <ul>
-<li>der Flow <code>ceo_lifecycle</code> wird ausgefuehrt</li>
-<li>im Runtime-Status liegt danach <code>execution_plan</code></li>
-<li>ausserdem wird <code>ceo_last_execution</code> als State geschrieben</li>
+<li><code>flow: ceo_lifecycle</code></li>
+<li><code>context.outputs.decision_packet</code></li>
+<li><code>context.outputs.execution_plan</code></li>
+<li><code>context.outputs.final_state</code></li>
+<li><code>context.outputs.artifact_paths</code></li>
 </ul>
-<h3 id="4-den-graph-des-ceo-lifecycle-rendern">4. Den Graph des CEO-Lifecycle rendern</h3>
+<h3 id="2-html-report-ansehen">2. HTML-Report ansehen</h3>
+<p>Nach dem Lauf liegt der Report hier:</p>
+<pre><code class="language-text">examples/CEO_ns/.nova_ceo/ceo_report.html</code></pre>
+<h3 id="3-graph-rendern">3. Graph rendern</h3>
 <pre><code class="language-powershell">ns.graph .\examples\CEO_ns\CEO_Lifecycle.ns</code></pre>
-<p>Das ist der schnellste Weg, die Struktur visuell zu verstehen:</p>
-<ul>
-<li>Knoten: Rollen, Dataset, Flow, Event und Tool-Schritte</li>
-<li>Kanten: welche Stufe welches Artefakt an die naechste uebergibt</li>
-</ul>
-<p>Gerade fuer Reviews und Architekturgespraeche ist das oft verstaendlicher als der rohe <code>.ns</code>-Quelltext.</p>
-<h2 id="wichtiger-laufzeitunterschied">Wichtiger Laufzeitunterschied</h2>
-<p>Die Einzel-Agenten sind fuer interaktive Nutzung mit einem echten generativen Provider gedacht, typischerweise <code>LM Studio</code>.</p>
-<p>Deshalb ist fuer diese Dateien der sinnvolle Pfad:</p>
+<p>Das ist der schnellste Weg, um die Struktur als gerichteten Ausfuehrungsgraphen zu verstehen.</p>
+<h3 id="4-einzelne-rolle-interaktiv-nutzen">4. Einzelne Rolle interaktiv nutzen</h3>
 <pre><code class="language-powershell">ai use lmstudio &lt;modellname&gt;
 ns.run .\examples\CEO_ns\RiskAgent.ns
-agent run RiskAgent &quot;Die Nachfrage steigt, aber die GPU-Kapazitaet ist fast ausgeschoepft.&quot;</code></pre>
-<p><code>CEO_Lifecycle.ns</code> ist bewusst robuster gebaut:</p>
+agent run RiskAgent &quot;Ein Partner fordert Kapital, waehrend die Kapazitaet knapp wird.&quot;</code></pre>
+<h2 id="wichtiger-laufzeitunterschied">Wichtiger Laufzeitunterschied</h2>
+<p>Die Einzel-Agenten sind fuer interaktive Nutzung mit einem generativen Modell gedacht, typischerweise <code>LM Studio</code>.</p>
+<p>Der eigentliche CEO-Lifecycle arbeitet aktuell anders:</p>
 <ul>
-<li>die eingebetteten Lifecycle-Agenten verwenden <code>provider: local</code></li>
-<li>dadurch laeuft der Flow auch ohne aktive externe Modellkonfiguration</li>
-<li>der Lifecycle dient damit als jederzeit testbares Strukturbeispiel</li>
+<li>die Rollenlogik fuer den Lifecycle ist in <code>ceo_runtime_helper.py</code> deterministisch modelliert</li>
+<li>dadurch bleibt der Flow testbar, reproduzierbar und governance-faehig</li>
+<li>generative Agenten koennen darum herum genutzt werden, sind aber nicht der</li>
+<p>harte Entscheidungskern</p>
 </ul>
-<p>Wenn du fuer den Lifecycle selbst echte Modellantworten willst, kannst du die eingebetteten Agenten spaeter auf <code>provider: shell</code> und <code>model: active</code> umstellen.</p>
+<p>Das ist absichtlich so. Die Entscheidung soll strukturell belastbar sein und nicht am freien Modelltext haengen.</p>
 <h2 id="typische-kommandos">Typische Kommandos</h2>
-<p>Agenten nach einem Bundle-Ladevorgang anzeigen:</p>
-<pre><code class="language-powershell">ns.run .\examples\CEO_ns\CapitalAgent.ns
-agent list</code></pre>
-<p>Mit qualifiziertem Namen arbeiten:</p>
-<pre><code class="language-powershell">agent run CapitalAgent.CapitalAgent &quot;Vorschlag benoetigt 1.8 Mio. EUR fuer beschleunigten Ausbau.&quot;</code></pre>
-<p>Lifecycle erneut ueber Event triggern:</p>
+<p>Lifecycle ausfuehren:</p>
+<pre><code class="language-powershell">ns.run .\examples\CEO_ns\CEO_Lifecycle.ns</code></pre>
+<p>Eventgetrieben erneut triggern:</p>
 <pre><code class="language-powershell">ns.run .\examples\CEO_ns\CEO_Lifecycle.ns
 event emit board.review &quot;quarterly-board-cycle&quot;</code></pre>
-<p>Runtime-Zustand ansehen:</p>
-<pre><code class="language-powershell">ns.status</code></pre>
-<h2 id="erwartete-ergebnisse">Erwartete Ergebnisse</h2>
-<p>Bei den Einzeldateien liefert <code>ns.run</code> ein kompaktes <code>agent_bundle</code>-JSON.</p>
-<p>Bei <code>CEO_Lifecycle.ns</code> liefert <code>ns.run</code> ein Flow-Ergebnis mit:</p>
-<ul>
-<li><code>flow: ceo_lifecycle</code></li>
-<li><code>context.outputs.execution_plan</code></li>
-<li><code>context.states.ceo_last_execution</code></li>
-</ul>
+<p>Graph ansehen:</p>
+<pre><code class="language-powershell">ns.graph .\examples\CEO_ns\CEO_Lifecycle.ns</code></pre>
+<p>Agentenbundle laden:</p>
+<pre><code class="language-powershell">ns.run .\examples\CEO_ns\StrategyAgent.ns
+agent list</code></pre>
 <h2 id="troubleshooting">Troubleshooting</h2>
-<h3 id="agent-run-liefert-keine-brauchbare-generative-antwort"><code>agent run</code> liefert keine brauchbare generative Antwort</h3>
+<h3 id="agent-run-liefert-keine-brauchbare-antwort"><code>agent run</code> liefert keine brauchbare Antwort</h3>
 <p>Dann ist meistens kein generativer Provider aktiv.</p>
-<p>Setze vor dem Agentenlauf:</p>
+<p>Setze vorher:</p>
 <pre><code class="language-powershell">ai use lmstudio &lt;modellname&gt;</code></pre>
-<h3 id="ceo-lifecycle-ns-soll-ohne-modell-trotzdem-laufen"><code>CEO_Lifecycle.ns</code> soll ohne Modell trotzdem laufen</h3>
-<p>Das ist bereits der Standard. Der Lifecycle verwendet lokale Fallback-Agenten, damit die Datei auch in Tests, MSI-Builds und minimalen Laufzeitumgebungen stabil bleibt.</p>
-<h3 id="ich-will-nur-die-managementlogik-verstehen">Ich will nur die Managementlogik verstehen</h3>
-<p>Dann beginne mit:</p>
-<ul>
-<li><code>CEO_Core.ns</code> fuer Routing</li>
-<li><code>ConsensusLayer.ns</code> fuer die Entscheidungslogik</li>
-<li><code>CEO_Lifecycle.ns</code> fuer das Gesamtbild</li>
-</ul>
+<h3 id="ceo-lifecycle-ns-soll-ohne-externes-modell-laufen"><code>CEO_Lifecycle.ns</code> soll ohne externes Modell laufen</h3>
+<p>Das ist bereits der Standard. Der Lifecycle verwendet fuer seinen harten Entscheidungspfad keine freien Modellantworten.</p>
+<h3 id="ich-will-den-kontinuierlichen-modus-testen">Ich will den kontinuierlichen Modus testen</h3>
+<p>Nutze:</p>
+<pre><code class="language-powershell">cd .\examples\CEO_ns
+$env:NOVA_CEO_ONESHOT = &quot;1&quot;
+python .\ceo_continuous_runtime.py</code></pre>
+<p>Danach pruefen:</p>
+<pre><code class="language-text">examples/CEO_ns/.nova_ceo/continuous_status.json</code></pre>
 <h2 id="verwandte-seiten">Verwandte Seiten</h2>
 <ul>
 <li><a href="NovaDecisionSystem.html">NovaDecisionSystem</a></li>
@@ -383,28 +484,34 @@ event emit board.review &quot;quarterly-board-cycle&quot;</code></pre>
         <aside class="wiki-toc">
           <div class="wiki-toc-card"><h2>On this page</h2><ul>
 <li class="wiki-toc-link"><a href="#zweck">Zweck</a></li>
+<li class="wiki-toc-link"><a href="#was-jetzt-real-implementiert-ist">Was jetzt real implementiert ist</a></li>
 <li class="wiki-toc-link"><a href="#explizite-muster-in-diesem-ordner">Explizite Muster in diesem Ordner</a></li>
-<li class="wiki-toc-link level-3"><a href="#agent-bundle-pattern">Agent Bundle Pattern</a></li>
-<li class="wiki-toc-link level-3"><a href="#flow-pattern">Flow Pattern</a></li>
-<li class="wiki-toc-link level-3"><a href="#lifecycle-pattern">Lifecycle Pattern</a></li>
-<li class="wiki-toc-link"><a href="#das-abstrahierte-decision-pattern">Das abstrahierte Decision Pattern</a></li>
 <li class="wiki-toc-link"><a href="#enthaltene-dateien">Enthaltene Dateien</a></li>
-<li class="wiki-toc-link"><a href="#was-diese-dateien-tun">Was diese Dateien tun</a></li>
-<li class="wiki-toc-link level-3"><a href="#einzelne-agenten">Einzelne Agenten</a></li>
-<li class="wiki-toc-link level-3"><a href="#ceo-lifecycle">CEO_Lifecycle</a></li>
-<li class="wiki-toc-link"><a href="#warum-die-dateien-ueberarbeitet-wurden">Warum die Dateien ueberarbeitet wurden</a></li>
+<li class="wiki-toc-link level-3"><a href="#rollen-agenten">Rollen-Agenten</a></li>
+<li class="wiki-toc-link level-3"><a href="#operativer-lifecycle">Operativer Lifecycle</a></li>
+<li class="wiki-toc-link level-3"><a href="#beispieldaten">Beispieldaten</a></li>
+<li class="wiki-toc-link"><a href="#domain-model">Domain Model</a></li>
+<li class="wiki-toc-link"><a href="#signal-system">Signal-System</a></li>
+<li class="wiki-toc-link"><a href="#agent-bundle-pattern">Agent Bundle Pattern</a></li>
+<li class="wiki-toc-link"><a href="#flow-pattern">Flow Pattern</a></li>
+<li class="wiki-toc-link"><a href="#lifecycle-pattern">Lifecycle Pattern</a></li>
+<li class="wiki-toc-link"><a href="#entscheidungslogik">Entscheidungslogik</a></li>
+<li class="wiki-toc-link"><a href="#governance-und-policies">Governance und Policies</a></li>
+<li class="wiki-toc-link"><a href="#memory-und-feedback">Memory und Feedback</a></li>
+<li class="wiki-toc-link"><a href="#event-system">Event-System</a></li>
+<li class="wiki-toc-link"><a href="#continuous-operation">Continuous Operation</a></li>
+<li class="wiki-toc-link"><a href="#persistente-artefakte">Persistente Artefakte</a></li>
 <li class="wiki-toc-link"><a href="#schnellstart">Schnellstart</a></li>
-<li class="wiki-toc-link level-3"><a href="#1-einzelnen-agenten-laden">1. Einzelnen Agenten laden</a></li>
-<li class="wiki-toc-link level-3"><a href="#2-router-laden">2. Router laden</a></li>
-<li class="wiki-toc-link level-3"><a href="#3-den-gesamten-lifecycle-ausfuehren">3. Den gesamten Lifecycle ausfuehren</a></li>
-<li class="wiki-toc-link level-3"><a href="#4-den-graph-des-ceo-lifecycle-rendern">4. Den Graph des CEO-Lifecycle rendern</a></li>
+<li class="wiki-toc-link level-3"><a href="#1-gesamten-ceo-zyklus-ausfuehren">1. Gesamten CEO-Zyklus ausfuehren</a></li>
+<li class="wiki-toc-link level-3"><a href="#2-html-report-ansehen">2. HTML-Report ansehen</a></li>
+<li class="wiki-toc-link level-3"><a href="#3-graph-rendern">3. Graph rendern</a></li>
+<li class="wiki-toc-link level-3"><a href="#4-einzelne-rolle-interaktiv-nutzen">4. Einzelne Rolle interaktiv nutzen</a></li>
 <li class="wiki-toc-link"><a href="#wichtiger-laufzeitunterschied">Wichtiger Laufzeitunterschied</a></li>
 <li class="wiki-toc-link"><a href="#typische-kommandos">Typische Kommandos</a></li>
-<li class="wiki-toc-link"><a href="#erwartete-ergebnisse">Erwartete Ergebnisse</a></li>
 <li class="wiki-toc-link"><a href="#troubleshooting">Troubleshooting</a></li>
-<li class="wiki-toc-link level-3"><a href="#agent-run-liefert-keine-brauchbare-generative-antwort">`agent run` liefert keine brauchbare generative Antwort</a></li>
-<li class="wiki-toc-link level-3"><a href="#ceo-lifecycle-ns-soll-ohne-modell-trotzdem-laufen">`CEO_Lifecycle.ns` soll ohne Modell trotzdem laufen</a></li>
-<li class="wiki-toc-link level-3"><a href="#ich-will-nur-die-managementlogik-verstehen">Ich will nur die Managementlogik verstehen</a></li>
+<li class="wiki-toc-link level-3"><a href="#agent-run-liefert-keine-brauchbare-antwort">`agent run` liefert keine brauchbare Antwort</a></li>
+<li class="wiki-toc-link level-3"><a href="#ceo-lifecycle-ns-soll-ohne-externes-modell-laufen">`CEO_Lifecycle.ns` soll ohne externes Modell laufen</a></li>
+<li class="wiki-toc-link level-3"><a href="#ich-will-den-kontinuierlichen-modus-testen">Ich will den kontinuierlichen Modus testen</a></li>
 <li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
 </ul></div>
         </aside>
