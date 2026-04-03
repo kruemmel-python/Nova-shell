@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="Nova-shell wiki builder">
+  <title>examples | Nova-shell Wiki</title>
+  <link rel="stylesheet" href="assets/wiki.css">
+</head>
+<body>
+  <div class="wiki-shell">
+    <aside class="wiki-sidebar" data-sidebar>
+      <div class="wiki-brand">
+        <a href="Home.html">Nova-shell Wiki</a>
+        <p>HTML documentation for the Nova-shell platform.</p>
+      </div>
+      <label class="wiki-search">
+        <span>Search</span>
+        <input type="search" placeholder="Find pages, classes, methods..." data-wiki-search>
+      </label>
+      <div class="wiki-search-results" data-search-results></div>
+      <nav class="wiki-nav">
+        <section class="wiki-nav-section">
+<h2>Einstieg</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="Home.html" href="Home.html">Home</a></li>
+<li><a class="wiki-nav-link" data-nav-href="GermanLanguage.html" href="GermanLanguage.html">GermanLanguage</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Dokumentation.html" href="Dokumentation.html">Dokumentation</a></li>
+<li><a class="wiki-nav-link" data-nav-href="QuickStart.html" href="QuickStart.html">QuickStart</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Installation.html" href="Installation.html">Installation</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
+<li><a class="wiki-nav-link" data-nav-href="nsCreate.html" href="nsCreate.html">nsCreate</a></li>
+<li><a class="wiki-nav-link" data-nav-href="nsReference.html" href="nsReference.html">nsReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="nsPatterns.html" href="nsPatterns.html">nsPatterns</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaSemantics.html" href="NovaSemantics.html">NovaSemantics</a></li>
+</ul></section>
+<section class="wiki-nav-section">
+<h2>Nutzung</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="Dokumentation.html" href="Dokumentation.html">Dokumentation</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaCLI.html" href="NovaCLI.html">NovaCLI</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ProgrammingWithNovaShell.html" href="ProgrammingWithNovaShell.html">ProgrammingWithNovaShell</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ShellCommandReference.html" href="ShellCommandReference.html">ShellCommandReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaLens.html" href="NovaLens.html">NovaLens</a></li>
+<li><a class="wiki-nav-link" data-nav-href="LensForDevelopers.html" href="LensForDevelopers.html">LensForDevelopers</a></li>
+<li><a class="wiki-nav-link" data-nav-href="LensTroubleshooting.html" href="LensTroubleshooting.html">LensTroubleshooting</a></li>
+<li><a class="wiki-nav-link" data-nav-href="LensRecipes.html" href="LensRecipes.html">LensRecipes</a></li>
+<li><a class="wiki-nav-link" data-nav-href="APIReference.html" href="APIReference.html">APIReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="examples_index.html" href="examples_index.html">examples_index</a></li>
+<li><a class="wiki-nav-link active" data-nav-href="examples.html" href="examples.html">examples</a></li>
+<li><a class="wiki-nav-link" data-nav-href="examples_quickstart.html" href="examples_quickstart.html">examples_quickstart</a></li>
+<li><a class="wiki-nav-link" data-nav-href="examples_by_level.html" href="examples_by_level.html">examples_by_level</a></li>
+<li><a class="wiki-nav-link" data-nav-href="examples_matrix.html" href="examples_matrix.html">examples_matrix</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ExamplesAndRecipes.html" href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
+<li><a class="wiki-nav-link" data-nav-href="DecisionPatterns.html" href="DecisionPatterns.html">DecisionPatterns</a></li>
+<li><a class="wiki-nav-link" data-nav-href="CEOAgentExamples.html" href="CEOAgentExamples.html">CEOAgentExamples</a></li>
+<li><a class="wiki-nav-link" data-nav-href="StandaloneSkillAgents.html" href="StandaloneSkillAgents.html">StandaloneSkillAgents</a></li>
+<li><a class="wiki-nav-link" data-nav-href="StandaloneSkillAgentsForDevelopers.html" href="StandaloneSkillAgentsForDevelopers.html">StandaloneSkillAgentsForDevelopers</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NSBlobGenerator.html" href="NSBlobGenerator.html">NSBlobGenerator</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaSynthPredictiveEngineShifting.html" href="NovaSynthPredictiveEngineShifting.html">NovaSynthPredictiveEngineShifting</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ZeroCopyFederatedLearningMesh.html" href="ZeroCopyFederatedLearningMesh.html">ZeroCopyFederatedLearningMesh</a></li>
+<li><a class="wiki-nav-link" data-nav-href="MyceliaAtheriaCoEvolution.html" href="MyceliaAtheriaCoEvolution.html">MyceliaAtheriaCoEvolution</a></li>
+<li><a class="wiki-nav-link" data-nav-href="AtheriaContinuousEvolutionAndLiveStream.html" href="AtheriaContinuousEvolutionAndLiveStream.html">AtheriaContinuousEvolutionAndLiveStream</a></li>
+<li><a class="wiki-nav-link" data-nav-href="AtheriaVoice.html" href="AtheriaVoice.html">AtheriaVoice</a></li>
+<li><a class="wiki-nav-link" data-nav-href="AtheriaALSForDevelopers.html" href="AtheriaALSForDevelopers.html">AtheriaALSForDevelopers</a></li>
+<li><a class="wiki-nav-link" data-nav-href="WatchMonitor.html" href="WatchMonitor.html">WatchMonitor</a></li>
+<li><a class="wiki-nav-link" data-nav-href="SystemGuardMonitor.html" href="SystemGuardMonitor.html">SystemGuardMonitor</a></li>
+<li><a class="wiki-nav-link" data-nav-href="WatchMonitorQuickStart.html" href="WatchMonitorQuickStart.html">WatchMonitorQuickStart</a></li>
+<li><a class="wiki-nav-link" data-nav-href="WatchMonitorReportReference.html" href="WatchMonitorReportReference.html">WatchMonitorReportReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="WatchMonitorAutomationAndAI.html" href="WatchMonitorAutomationAndAI.html">WatchMonitorAutomationAndAI</a></li>
+<li><a class="wiki-nav-link" data-nav-href="WatchMonitorTroubleshooting.html" href="WatchMonitorTroubleshooting.html">WatchMonitorTroubleshooting</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Tutorials.html" href="Tutorials.html">Tutorials</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialTechnologyRadar.html" href="TutorialTechnologyRadar.html">TutorialTechnologyRadar</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialMultiAgentCluster.html" href="TutorialMultiAgentCluster.html">TutorialMultiAgentCluster</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialLMStudioIntegration.html" href="TutorialLMStudioIntegration.html">TutorialLMStudioIntegration</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialBlobSeeds.html" href="TutorialBlobSeeds.html">TutorialBlobSeeds</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialPredictiveFederatedCoevolution.html" href="TutorialPredictiveFederatedCoevolution.html">TutorialPredictiveFederatedCoevolution</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialAtheriaALS.html" href="TutorialAtheriaALS.html">TutorialAtheriaALS</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialProjectWatchMonitor.html" href="TutorialProjectWatchMonitor.html">TutorialProjectWatchMonitor</a></li>
+<li><a class="wiki-nav-link" data-nav-href="TutorialStandaloneSkillAgents.html" href="TutorialStandaloneSkillAgents.html">TutorialStandaloneSkillAgents</a></li>
+</ul></section>
+<section class="wiki-nav-section">
+<h2>Architektur</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="Architecture.html" href="Architecture.html">Architecture</a></li>
+<li><a class="wiki-nav-link" data-nav-href="SystemOverview.html" href="SystemOverview.html">SystemOverview</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ComponentModel.html" href="ComponentModel.html">ComponentModel</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ExecutionModel.html" href="ExecutionModel.html">ExecutionModel</a></li>
+<li><a class="wiki-nav-link" data-nav-href="DataFlow.html" href="DataFlow.html">DataFlow</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaLanguage.html" href="NovaLanguage.html">NovaLanguage</a></li>
+<li><a class="wiki-nav-link" data-nav-href="nsCreate.html" href="nsCreate.html">nsCreate</a></li>
+<li><a class="wiki-nav-link" data-nav-href="nsReference.html" href="nsReference.html">nsReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="nsPatterns.html" href="nsPatterns.html">nsPatterns</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaDecisionSystem.html" href="NovaDecisionSystem.html">NovaDecisionSystem</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaSemantics.html" href="NovaSemantics.html">NovaSemantics</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaRuntime.html" href="NovaRuntime.html">NovaRuntime</a></li>
+<li><a class="wiki-nav-link" data-nav-href="DecisionPatterns.html" href="DecisionPatterns.html">DecisionPatterns</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaLens.html" href="NovaLens.html">NovaLens</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaGraphEngine.html" href="NovaGraphEngine.html">NovaGraphEngine</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaPlanner.html" href="NovaPlanner.html">NovaPlanner</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ParserAndASTReference.html" href="ParserAndASTReference.html">ParserAndASTReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="RuntimeMethodReference.html" href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ClassReference.html" href="ClassReference.html">ClassReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="CodeReferenceIndex.html" href="CodeReferenceIndex.html">CodeReferenceIndex</a></li>
+<li><a class="wiki-nav-link" data-nav-href="LensForDevelopers.html" href="LensForDevelopers.html">LensForDevelopers</a></li>
+<li><a class="wiki-nav-link" data-nav-href="LensRecipes.html" href="LensRecipes.html">LensRecipes</a></li>
+</ul></section>
+<section class="wiki-nav-section">
+<h2>Plattformfunktionen</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="NovaAgents.html" href="NovaAgents.html">NovaAgents</a></li>
+<li><a class="wiki-nav-link" data-nav-href="DecisionPatterns.html" href="DecisionPatterns.html">DecisionPatterns</a></li>
+<li><a class="wiki-nav-link" data-nav-href="CEOAgentExamples.html" href="CEOAgentExamples.html">CEOAgentExamples</a></li>
+<li><a class="wiki-nav-link" data-nav-href="StandaloneSkillAgents.html" href="StandaloneSkillAgents.html">StandaloneSkillAgents</a></li>
+<li><a class="wiki-nav-link" data-nav-href="StandaloneSkillAgentsForDevelopers.html" href="StandaloneSkillAgentsForDevelopers.html">StandaloneSkillAgentsForDevelopers</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaMesh.html" href="NovaMesh.html">NovaMesh</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NSBlobGenerator.html" href="NSBlobGenerator.html">NSBlobGenerator</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaSynthPredictiveEngineShifting.html" href="NovaSynthPredictiveEngineShifting.html">NovaSynthPredictiveEngineShifting</a></li>
+<li><a class="wiki-nav-link" data-nav-href="ZeroCopyFederatedLearningMesh.html" href="ZeroCopyFederatedLearningMesh.html">ZeroCopyFederatedLearningMesh</a></li>
+<li><a class="wiki-nav-link" data-nav-href="MyceliaAtheriaCoEvolution.html" href="MyceliaAtheriaCoEvolution.html">MyceliaAtheriaCoEvolution</a></li>
+<li><a class="wiki-nav-link" data-nav-href="AtheriaContinuousEvolutionAndLiveStream.html" href="AtheriaContinuousEvolutionAndLiveStream.html">AtheriaContinuousEvolutionAndLiveStream</a></li>
+<li><a class="wiki-nav-link" data-nav-href="AtheriaVoice.html" href="AtheriaVoice.html">AtheriaVoice</a></li>
+<li><a class="wiki-nav-link" data-nav-href="AtheriaALSForDevelopers.html" href="AtheriaALSForDevelopers.html">AtheriaALSForDevelopers</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaSensors.html" href="NovaSensors.html">NovaSensors</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaMemory.html" href="NovaMemory.html">NovaMemory</a></li>
+<li><a class="wiki-nav-link" data-nav-href="NovaTools.html" href="NovaTools.html">NovaTools</a></li>
+</ul></section>
+<section class="wiki-nav-section">
+<h2>Entwicklung und Betrieb</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="DevelopmentGuide.html" href="DevelopmentGuide.html">DevelopmentGuide</a></li>
+<li><a class="wiki-nav-link" data-nav-href="PageTemplate.html" href="PageTemplate.html">PageTemplate</a></li>
+<li><a class="wiki-nav-link" data-nav-href="RepositoryStructure.html" href="RepositoryStructure.html">RepositoryStructure</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Testing.html" href="Testing.html">Testing</a></li>
+<li><a class="wiki-nav-link" data-nav-href="BuildAndRelease.html" href="BuildAndRelease.html">BuildAndRelease</a></li>
+<li><a class="wiki-nav-link" data-nav-href="WatchMonitor.html" href="WatchMonitor.html">WatchMonitor</a></li>
+<li><a class="wiki-nav-link" data-nav-href="SystemGuardMonitor.html" href="SystemGuardMonitor.html">SystemGuardMonitor</a></li>
+<li><a class="wiki-nav-link" data-nav-href="WatchMonitorReportReference.html" href="WatchMonitorReportReference.html">WatchMonitorReportReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="WatchMonitorAutomationAndAI.html" href="WatchMonitorAutomationAndAI.html">WatchMonitorAutomationAndAI</a></li>
+<li><a class="wiki-nav-link" data-nav-href="SecurityModel.html" href="SecurityModel.html">SecurityModel</a></li>
+<li><a class="wiki-nav-link" data-nav-href="PerformanceAndScaling.html" href="PerformanceAndScaling.html">PerformanceAndScaling</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Troubleshooting.html" href="Troubleshooting.html">Troubleshooting</a></li>
+<li><a class="wiki-nav-link" data-nav-href="LensTroubleshooting.html" href="LensTroubleshooting.html">LensTroubleshooting</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Roadmap.html" href="Roadmap.html">Roadmap</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Contributing.html" href="Contributing.html">Contributing</a></li>
+<li><a class="wiki-nav-link" data-nav-href="License.html" href="License.html">License</a></li>
+</ul></section>
+<section class="wiki-nav-section">
+<h2>Theorie</h2>
+<ul>
+<li><a class="wiki-nav-link" data-nav-href="Research.html" href="Research.html">Research</a></li>
+<li><a class="wiki-nav-link" data-nav-href="AIOSConcept.html" href="AIOSConcept.html">AIOSConcept</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Whitepaper.html" href="Whitepaper.html">Whitepaper</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Was-es-Ist.html" href="Was-es-Ist.html">Was-es-Ist</a></li>
+<li><a class="wiki-nav-link" data-nav-href="wirtschaftlicher_nutzen.html" href="wirtschaftlicher_nutzen.html">wirtschaftlicher_nutzen</a></li>
+<li><a class="wiki-nav-link" data-nav-href="AgentSystems.html" href="AgentSystems.html">AgentSystems</a></li>
+<li><a class="wiki-nav-link" data-nav-href="Glossary.html" href="Glossary.html">Glossary</a></li>
+<li><a class="wiki-nav-link" data-nav-href="FAQ.html" href="FAQ.html">FAQ</a></li>
+</ul></section>
+      </nav>
+    </aside>
+    <main class="wiki-main">
+      <header class="wiki-header">
+        <button type="button" class="wiki-nav-toggle" data-nav-toggle>Menu</button>
+        <div class="wiki-header-copy">
+          <span class="wiki-kicker">Nova-shell Documentation</span>
+          <h1>examples</h1>
+          <p>Source: examples.md</p>
+        </div>
+      </header>
+      <div class="wiki-layout">
+        <article class="wiki-article">
+          <h1 id="examples">examples</h1>
+<p>Diese Seite ist die vollstaendige Referenz fuer die Beispiele im Ordner <a href="../examples/">`examples/`</a>. Sie erklaert, was jedes Beispiel zeigt, wie du es startest, welche Voraussetzungen gelten und welche Dateien nur als Daten, Requests oder Helper dienen.</p>
+<p>Nicht als Quellbeispiele zaehlen versteckte Laufzeitordner wie <code>.nova*</code>, generierte Reports oder <code>__pycache__</code>. Diese werden hier bewusst nicht dokumentiert.</p>
+<h2 id="grundregeln-fuer-alle-beispiele">Grundregeln fuer alle Beispiele</h2>
+<ol>
+<li>Starte die Beispiele am besten aus dem Repository-Root <code>H:\Nova-shell-main</code>.</li>
+<li>Nutze zuerst <code>ns.graph &lt;datei&gt;</code>, wenn du die Struktur sehen willst, und <code>ns.run &lt;datei&gt;</code>, wenn du das Beispiel laden oder direkt ausfuehren willst.</li>
+<li>Beispiele mit <code>provider: shell</code> und <code>model: active</code> brauchen einen aktiven AI-Provider, zum Beispiel:</li>
+</ol>
+<pre><code class="language-powershell">   ai use lmstudio &lt;modellname&gt;</code></pre>
+<ol>
+<li>Beispiele mit relativen <code>path:</code>-Angaben erwarten, dass du sie aus dem Repo-Root oder aus ihrem eigenen Beispielordner startest.</li>
+<li>Einige Plattform- und Clusterbeispiele sind in erster Linie Architektur- und Runtime-Beispiele. Sie sind zum Verstehen, fuer <code>ns.graph</code> und fuer kontrollierte lokale Tests gedacht. Nicht jedes davon ist ohne passende Runtime-, Mesh- oder Service-Umgebung als vollstaendige End-to-End-Demo gedacht.</li>
+</ol>
+<h2 id="schnellueberblick">Schnellueberblick</h2>
+<table><thead><tr>
+<th>Bereich</th>
+<th>Dateien</th>
+<th>Typischer Nutzen</th>
+</tr></thead><tbody>
+<tr>
+<td>Lokale Analyse und Reports</td>
+<td><code>file_extension_scan*.ns</code>, <code>blob_runtime.ns</code></td>
+<td>Sofort lokal starten und Ergebnis sehen</td>
+</tr>
+<tr>
+<td>Agenten und Entscheidungslogik</td>
+<td><code>decision_lifecycle_template.ns</code>, <code>market_radar.ns</code>, <code>federated_swarm_memory.ns</code>, <code>mycelia_coevolution_lab.ns</code></td>
+<td>Memory, Agenten und Ereignisse verstehen</td>
+</tr>
+<tr>
+<td>Plattform und Cluster</td>
+<td><code>advanced_agent_fabric.ns</code>, <code>ai_os_cluster.ns</code>, <code>consensus_fabric_cluster.ns</code>, <code>control_plane_runtime.ns</code>, <code>distributed_pipeline.ns</code>, <code>replicated_control_plane.ns</code>, <code>secure_multi_tenant.ns</code>, <code>service_package_platform.ns</code></td>
+<td>Architektur, Service-Plane, Replication, Security</td>
+</tr>
+<tr>
+<td>Monitoring und Guard</td>
+<td><code>nova_project_monitor.ns</code>, <code>nova_system_guard.ns</code></td>
+<td>In echte Projekte kopieren und dort verwenden</td>
+</tr>
+<tr>
+<td>Standalone Skill Bundles</td>
+<td><code>composition_patterns_agents.ns</code>, <code>react_best_practices_agents.ns</code>, <code>react_native_skills_agents.ns</code></td>
+<td>Agenten laden und per <code>agent run</code> nutzen</td>
+</tr>
+<tr>
+<td>Komplette Example-Suiten</td>
+<td><code>CEO_ns/</code>, <code>code_improvement_ns/</code></td>
+<td>Mehrstufige Lifecycles und modulare Agentensysteme</td>
+</tr>
+</tbody></table>
+<h2 id="wie-du-die-beispiele-sinnvoll-nutzt">Wie du die Beispiele sinnvoll nutzt</h2>
+<h3 id="nur-struktur-ansehen">Nur Struktur ansehen</h3>
+<pre><code class="language-powershell">ns.graph .\examples\file_extension_scan_advanced.ns</code></pre>
+<p>Das ist der beste Einstieg fuer groessere Beispiele mit vielen Flows, Events oder Agenten.</p>
+<h3 id="flow-ausfuehren">Flow ausfuehren</h3>
+<pre><code class="language-powershell">ns.run .\examples\blob_runtime.ns</code></pre>
+<p>Das ist sinnvoll fuer Beispiele, die direkt eine Pipeline, einen Report oder ein Lifecycle-Resultat erzeugen.</p>
+<h3 id="agentenbundle-laden-und-dann-gezielt-aufrufen">Agentenbundle laden und dann gezielt aufrufen</h3>
+<pre><code class="language-powershell">ai use lmstudio &lt;modellname&gt;
+ns.run .\examples\CEO_ns\StrategyAgent.ns
+agent run StrategyAgent &quot;Enterprise-Nachfrage steigt stark.&quot;</code></pre>
+<p>Das ist das passende Muster fuer einzelne Agentenbeispiele.</p>
+<h2 id="top-level-beispiele-in-examples">Top-Level-Beispiele in <code>examples/</code></h2>
+<h3 id="advanced-agent-fabric-ns-examples-advanced-agent-fabric-ns"><a href="../examples/advanced_agent_fabric.ns">`advanced_agent_fabric.ns`</a></h3>
+<p>Dieses Beispiel zeigt eine fortgeschrittene Produktionsbeschreibung mit <code>system</code>, <code>package</code>, <code>service</code>, <code>agent</code>, <code>dataset</code> und <code>flow</code>.</p>
+<ul>
+<li>Zweck:</li>
+<p>Eine kombinierte Fabric-Deklaration fuer Service-Betrieb, Agenten-Governance und Observability.</p>
+<li>Was du daran lernst:</li>
+<p>Wie Services, Packages, Autoscaling, Memory-Shards und Alerts gemeinsam modelliert werden.</p>
+<li>Empfohlene Nutzung:</li>
+<p>Zuerst mit <code>ns.graph</code>, danach optional mit <code>ns.run</code>, wenn du den Review-Flow im Kontext lokaler Runtime-Funktionen untersuchen willst.</p>
+<li>Geeignet fuer:</li>
+<p>Architekturstudium, Plattformdesign und erweiterte <code>.ns</code>-Systemmodelle.</p>
+</ul>
+<h3 id="ai-os-cluster-ns-examples-ai-os-cluster-ns"><a href="../examples/ai_os_cluster.ns">`ai_os_cluster.ns`</a></h3>
+<p>Dieses Beispiel modelliert ein KI-Betriebssystem als Mesh-orientierten Kontrollknoten.</p>
+<ul>
+<li>Zweck:</li>
+<p>Zeigt <code>system</code> mit Cluster-, Lease-, Secret- und Schedule-Eigenschaften sowie einen strategischen Agenten mit Atheria-Integration.</p>
+<li>Flow:</li>
+<p>Ein Signal-Feed wird geladen, eingebettet, gezaehlt, als State persistiert und anschliessend in einen Aktionsplan verdichtet.</p>
+<li>Empfohlene Nutzung:</li>
+<p><code>ns.graph</code> fuer die Architektur, <code>ns.run</code> fuer den Datenfluss.</p>
+<li>Besonders interessant, wenn du:</li>
+<p>Scheduler, Mesh-Betrieb und Agent-orchestrierte Betriebslogik kombinieren willst.</p>
+</ul>
+<h3 id="blob-runtime-ns-examples-blob-runtime-ns"><a href="../examples/blob_runtime.ns">`blob_runtime.ns`</a></h3>
+<p>Das kleinste und direkteste Beispiel fuer NSBlob-Artefakte.</p>
+<ul>
+<li>Zweck:</li>
+<p>Demonstriert <code>blob.verify</code> und <code>blob.unpack</code>.</p>
+<li>Abhaengige Datei:</li>
+<p><a href="../examples/blob_runtime_seed.nsblob.json">`blob_runtime_seed.nsblob.json`</a></p>
+<li>Typischer Start:</li>
+</ul>
+<pre><code class="language-powershell">  ns.run .\examples\blob_runtime.ns</code></pre>
+<ul>
+<li>Ergebnis:</li>
+<p>Du siehst, wie ein Blob erst geprueft und dann entpackt wird.</p>
+<li>Geeignet fuer:</li>
+<p>Einsteiger in Seed-, Bundle- und Blob-Workflows.</p>
+</ul>
+<h3 id="blob-runtime-seed-nsblob-json-examples-blob-runtime-seed-nsblob-json"><a href="../examples/blob_runtime_seed.nsblob.json">`blob_runtime_seed.nsblob.json`</a></h3>
+<p>Das ist kein <code>.ns</code>-Programm, sondern das zugehoerige Beispiel-Artefakt fuer <code>blob_runtime.ns</code>.</p>
+<ul>
+<li>Zweck:</li>
+<p>Beispiel fuer ein NSBlob-Seed-Payload.</p>
+<li>Nutzung:</li>
+<p>Nicht direkt mit <code>ns.run</code> starten, sondern ueber <code>blob_runtime.ns</code> oder andere Blob-Befehle verwenden.</p>
+</ul>
+<h3 id="composition-patterns-agents-ns-examples-composition-patterns-agents-ns"><a href="../examples/composition_patterns_agents.ns">`composition_patterns_agents.ns`</a></h3>
+<p>Ein grosses Standalone-Agentenbundle fuer UI- und Composition-Patterns.</p>
+<ul>
+<li>Zweck:</li>
+<p>Es laedt viele spezialisierte Agenten fuer React-/UI-Kompositionsregeln in eine einzelne Datei.</p>
+<li>Was du daran lernst:</li>
+<p>Wie grosse Agentenkataloge als <code>.ns</code>-Bundle ausgeliefert werden koennen.</p>
+<li>Typischer Ablauf:</li>
+</ul>
+<pre><code class="language-powershell">  ai use lmstudio &lt;modellname&gt;
+  ns.run .\examples\composition_patterns_agents.ns
+  agent list</code></pre>
+<ul>
+<li>Danach:</li>
+<p>Du rufst gezielt einen Agenten aus dem geladenen Katalog mit <code>agent run &lt;name&gt; &quot;&lt;input&gt;&quot;</code> auf.</p>
+<li>Geeignet fuer:</li>
+<p>Standalone Skill Agents, Regelkataloge und lokale Expertensysteme.</p>
+</ul>
+<h3 id="consensus-fabric-cluster-ns-examples-consensus-fabric-cluster-ns"><a href="../examples/consensus_fabric_cluster.ns">`consensus_fabric_cluster.ns`</a></h3>
+<p>Dieses Beispiel zeigt einen clusterfaehigen Plattformkern mit Konsens, Zertifikatsautoritaeten, Trust Policies, Package und Service.</p>
+<ul>
+<li>Zweck:</li>
+<p>Demonstriert, wie ein konsensfaehiges Cluster samt Service-Rollout beschrieben wird.</p>
+<li>Flow:</li>
+<p>Ein Prompt-Dataset wird gezaehlt, in State geschrieben und der Gateway-Service abgefragt.</p>
+<li>Empfohlene Nutzung:</li>
+<p>Vor allem <code>ns.graph</code>, anschliessend gezielte Runtime-Tests.</p>
+<li>Geeignet fuer:</li>
+<p>Cluster- und Control-Plane-Konzepte.</p>
+</ul>
+<h3 id="control-plane-runtime-ns-examples-control-plane-runtime-ns"><a href="../examples/control_plane_runtime.ns">`control_plane_runtime.ns`</a></h3>
+<p>Ein kompaktes Beispiel fuer Schedules, Events und Control-Plane-State.</p>
+<ul>
+<li>Zweck:</li>
+<p>Zeigt, wie ein Orchestrator periodische Jobs und Event-getriggerte Flows beschreibt.</p>
+<li>Flow:</li>
+<p>Metriken werden summiert, im State abgelegt und als Event emittiert.</p>
+<li>Typischer Nutzen:</li>
+<p>Einstieg in Scheduler- und Queue-nahe <code>.ns</code>-Programme.</p>
+<li>Typischer Start:</li>
+</ul>
+<pre><code class="language-powershell">  ns.graph .\examples\control_plane_runtime.ns
+  ns.run .\examples\control_plane_runtime.ns</code></pre>
+<h3 id="decision-lifecycle-template-ns-examples-decision-lifecycle-template-ns"><a href="../examples/decision_lifecycle_template.ns">`decision_lifecycle_template.ns`</a></h3>
+<p>Das ist die generische Vorlage fuer einen mehrstufigen Entscheidungs-Lifecycle.</p>
+<ul>
+<li>Zweck:</li>
+<p>Zeigt ein vollstaendiges Muster aus mehreren Agentenrollen: Signal-Transformation, Constraint-Analyse, Merge, Entscheidung und Aktion.</p>
+<li>Wichtige Bausteine:</li>
+<p><code>SignalTransformer</code>, <code>ConstraintTransformer</code>, <code>MergerAgent</code>, <code>DecisionAgent</code>, <code>ActionAgent</code>.</p>
+<li>Flow:</li>
+<p>Rohsignale werden transformiert, zusammengefuehrt, entschieden und in eine Aktion uebersetzt.</p>
+<li>Geeignet fuer:</li>
+<p>Eigene Lifecycles, die du spaeter fuer Betrieb, Management oder Moderation anpassen willst.</p>
+<li>Besonders wertvoll:</li>
+<p>Als Blaupause fuer eigene <code>.ns</code>-Programme mit mehreren Agenten.</p>
+</ul>
+<h3 id="distributed-pipeline-ns-examples-distributed-pipeline-ns"><a href="../examples/distributed_pipeline.ns">`distributed_pipeline.ns`</a></h3>
+<p>Ein Mesh-orientiertes Beispiel fuer Incident-Triage ueber eine Pipeline.</p>
+<ul>
+<li>Zweck:</li>
+<p>Kombiniert <code>system</code>, <code>tool</code>, <code>agent</code>, <code>dataset</code>, <code>flow</code> und <code>event</code> fuer eine verteilte Incident-Reaktion.</p>
+<li>Flow:</li>
+<p>Ein Incident-Feed wird gelesen, ein Planner erzeugt einen Triage-Report und ein Tool publiziert ihn.</p>
+<li>Was du daran lernst:</li>
+<p>Wie man Agenten und Tools in einer verteilten Pipeline verknuepft.</p>
+<li>Geeignet fuer:</li>
+<p>Edge-, Mesh- und Operations-Szenarien.</p>
+</ul>
+<h3 id="federated-swarm-memory-ns-examples-federated-swarm-memory-ns"><a href="../examples/federated_swarm_memory.ns">`federated_swarm_memory.ns`</a></h3>
+<p>Ein kleines, klares Beispiel fuer Swarm-Memory und Zusammenfassung lokaler Findings.</p>
+<ul>
+<li>Zweck:</li>
+<p>Zeigt einen federierten Memory-Use-Case mit Agent, State und lokaler Signalverdichtung.</p>
+<li>Flow:</li>
+<p><code>local_findings</code> werden zusammengefasst und als Invariant-Summary im State abgelegt.</p>
+<li>Geeignet fuer:</li>
+<p>Memory-Konzepte, Federated-Learning-Denke und leichte Agentendemos.</p>
+</ul>
+<h3 id="file-extension-scan-ns-examples-file-extension-scan-ns"><a href="../examples/file_extension_scan.ns">`file_extension_scan.ns`</a></h3>
+<p>Ein direkt lokal nutzbares Beispiel fuer Dateisystemanalyse.</p>
+<ul>
+<li>Zweck:</li>
+<p>Zaehlt Dateien in einem Verzeichnis und gruppiert sie nach Endung.</p>
+<li>Flow:</li>
+<p>Ein <code>directory</code>-Dataset wird eingelesen, per <code>py.exec</code> in JSON umgebaut und ins Log geschrieben.</p>
+<li>Typischer Start:</li>
+</ul>
+<pre><code class="language-powershell">  ns.run .\examples\file_extension_scan.ns</code></pre>
+<ul>
+<li>Ergebnis:</li>
+<p>Ein JSON-Report mit Dateigruppen und Anzahl.</p>
+<li>Geeignet fuer:</li>
+<p>Einsteiger, Verzeichnisdatasets und <code>py.exec</code> in Flows.</p>
+</ul>
+<h3 id="file-extension-scan-advanced-ns-examples-file-extension-scan-advanced-ns"><a href="../examples/file_extension_scan_advanced.ns">`file_extension_scan_advanced.ns`</a></h3>
+<p>Die ausfuehrlichere Variante des Dateiscan-Beispiels.</p>
+<ul>
+<li>Zweck:</li>
+<p>Fuehrt einen rekursiven Scan durch, erzeugt JSON, Summary, Agentenbewertung und HTML-Report.</p>
+<li>Besonderheiten:</li>
+<p>Schreibt <code>file_extension_scan_report.html</code> und oeffnet die Datei optional automatisch.</p>
+<li>Agent:</li>
+<p><code>inspector</code> bewertet Struktur, groesste Dateien, Dateien ohne Endung und Aufraeumpotenzial.</p>
+<li>Typischer Start:</li>
+</ul>
+<pre><code class="language-powershell">  ai use lmstudio &lt;modellname&gt;
+  ns.run .\examples\file_extension_scan_advanced.ns</code></pre>
+<ul>
+<li>Geeignet fuer:</li>
+<p>Lokale Reports, Dateianalyse und HTML-Ausgabe aus einem Flow.</p>
+</ul>
+<h3 id="items-csv-examples-items-csv"><a href="../examples/items.csv">`items.csv`</a></h3>
+<p>Kleine CSV fuer CLI-, Daten- und AI-Pipeline-Beispiele.</p>
+<ul>
+<li>Zweck:</li>
+<p>Demonstrationsdaten fuer <code>data load</code>, <code>parallel py</code>, <code>ai prompt</code>, <code>memory embed</code> und andere Pipeline-Kommandos.</p>
+<li>Typische Nutzung:</li>
+</ul>
+<pre><code class="language-powershell">  data load examples/items.csv | parallel py row[&quot;price&quot;]</code></pre>
+<ul>
+<li>Geeignet fuer:</li>
+<p>Einfache Datenpipelines und Doku-Beispiele.</p>
+</ul>
+<h3 id="items-large-csv-examples-items-large-csv"><a href="../examples/items_large.csv">`items_large.csv`</a></h3>
+<p>Groessere CSV-Variante fuer dieselben Datenpipeline-Muster.</p>
+<ul>
+<li>Zweck:</li>
+<p>Dient als etwas realistischere Eingabe fuer Aggregationen, Filter und Einbettungen.</p>
+<li>Geeignet fuer:</li>
+<p><code>data load</code>, <code>parallel</code>, Memory- und AI-Workflows mit mehr Zeilenvolumen.</p>
+</ul>
+<h3 id="market-radar-ns-examples-market-radar-ns"><a href="../examples/market_radar.ns">`market_radar.ns`</a></h3>
+<p>Ein kompaktes Radar-Beispiel mit RSS-Dataset, Embeddings und Zusammenfassung.</p>
+<ul>
+<li>Zweck:</li>
+<p>Zeigt, wie externe Signale gesammelt, eingebettet und von einem Forschungsagenten verdichtet werden.</p>
+<li>Bestandteile:</li>
+<p><code>research_memory</code>, Agent <code>researcher</code>, RSS-Dataset <code>tech_rss</code>, Event <code>new_information</code>.</p>
+<li>Vorausgesetzt:</li>
+<p>Das Beispiel nutzt <a href="../sample_news.json">`sample_news.json`</a> aus dem Repo.</p>
+<li>Geeignet fuer:</li>
+<p>Monitoring, News-Radar und erste Atheria-/Embedding-Workflows.</p>
+</ul>
+<h3 id="mycelia-coevolution-lab-ns-examples-mycelia-coevolution-lab-ns"><a href="../examples/mycelia_coevolution_lab.ns">`mycelia_coevolution_lab.ns`</a></h3>
+<p>Ein minimales Experiment fuer ko-evolutionaere Signalverdichtung.</p>
+<ul>
+<li>Zweck:</li>
+<p>Verdichtet mehrere Prompts zu einem Population-Signal.</p>
+<li>Flow:</li>
+<p>Ein <code>evaluator</code>-Agent fasst Eingaben zusammen, State speichert das Ergebnis, <code>system.log</code> gibt es aus.</p>
+<li>Geeignet fuer:</li>
+<p>Leichte Experimente rund um Mycelia-/Coevolution-Denke.</p>
+</ul>
+<h3 id="nova-project-monitor-ns-examples-nova-project-monitor-ns"><a href="../examples/nova_project_monitor.ns">`nova_project_monitor.ns`</a></h3>
+<p>Ein ausfuehrbares Monitor-Skript fuer ein beliebiges Projektverzeichnis.</p>
+<ul>
+<li>Zweck:</li>
+<p>Beobachtet ein Projekt, erzeugt Reports und kann optional Automations- und AI-Pfade mitnutzen.</p>
+<li>Wichtiger Unterschied:</li>
+<p>Dieses Beispiel ist zum Kopieren in ein echtes Projekt gedacht, nicht nur zum Studieren im <code>examples</code>-Ordner.</p>
+<li>Kommentarblock im Kopf:</li>
+<p>Dokumentiert alle relevanten Umgebungsvariablen wie Intervall, Debounce, Watch-Mode, AI-Modus und Automation.</p>
+<li>Helper:</li>
+<p><a href="../examples/nova_project_monitor_helper.py">`nova_project_monitor_helper.py`</a> wird beim Lauf in <code>.nova_project_monitor/</code> geschrieben und dann ausgefuehrt.</p>
+<li>Typischer Einsatz:</li>
+<p>In das Wurzelverzeichnis eines Projekts kopieren und dort <code>ns.run nova_project_monitor.ns</code> starten.</p>
+</ul>
+<h3 id="nova-project-monitor-helper-py-examples-nova-project-monitor-helper-py"><a href="../examples/nova_project_monitor_helper.py">`nova_project_monitor_helper.py`</a></h3>
+<p>Helper-Datei fuer den Projektmonitor.</p>
+<ul>
+<li>Zweck:</li>
+<p>Enthaelt die Python-Logik, die vom <code>.ns</code>-Skript zur Laufzeit eingebettet und ausgefuehrt wird.</p>
+<li>Nutzung:</li>
+<p>Nicht als eigenstaendiges Hauptbeispiel, sondern als Begleitdatei von <code>nova_project_monitor.ns</code>.</p>
+</ul>
+<h3 id="nova-system-guard-ns-examples-nova-system-guard-ns"><a href="../examples/nova_system_guard.ns">`nova_system_guard.ns`</a></h3>
+<p>Ein Windows-zentriertes Persistenz- und Integritaetsmonitoring.</p>
+<ul>
+<li>Zweck:</li>
+<p>Ueberwacht definierte Pfade und erzeugt Reports fuer System- und Projektintegritaet.</p>
+<li>Einsatzmuster:</li>
+<p>Wie beim Projektmonitor wird die Datei in einen realen Arbeitskontext kopiert und dort ausgefuehrt.</p>
+<li>Kopfkommentar:</li>
+<p>Beschreibt Intervalle, Debounce, Include-Defaults, Projektpfade und Watch-Verhalten.</p>
+<li>Helper:</li>
+<p><a href="../examples/nova_system_guard_helper.py">`nova_system_guard_helper.py`</a></p>
+<li>Geeignet fuer:</li>
+<p>Windows-Watch-, Guard- und Persistenzszenarien.</p>
+</ul>
+<h3 id="nova-system-guard-helper-py-examples-nova-system-guard-helper-py"><a href="../examples/nova_system_guard_helper.py">`nova_system_guard_helper.py`</a></h3>
+<p>Begleitdatei fuer <code>nova_system_guard.ns</code>.</p>
+<ul>
+<li>Zweck:</li>
+<p>Stellt die Python-Hauptlogik fuer den Guard-Lauf bereit.</p>
+<li>Nutzung:</li>
+<p>Nicht direkt mit <code>ns.run</code>, sondern indirekt ueber das Hauptskript.</p>
+</ul>
+<h3 id="react-best-practices-agents-ns-examples-react-best-practices-agents-ns"><a href="../examples/react_best_practices_agents.ns">`react_best_practices_agents.ns`</a></h3>
+<p>Ein grosses Expertensystem fuer React-Best-Practices.</p>
+<ul>
+<li>Zweck:</li>
+<p>Laedt einen umfangreichen Agentenkatalog fuer React-, Architektur-, Performance- und API-Regeln.</p>
+<li>Typische Nutzung:</li>
+</ul>
+<pre><code class="language-powershell">  ai use lmstudio &lt;modellname&gt;
+  ns.run .\examples\react_best_practices_agents.ns
+  agent list</code></pre>
+<ul>
+<li>Danach:</li>
+<p>Einen passenden Spezialagenten auswaehlen und gezielt mit <code>agent run</code> ansprechen.</p>
+<li>Geeignet fuer:</li>
+<p>Code-Review, Code-Transformation und regelbasierten Agenteneinsatz.</p>
+</ul>
+<h3 id="react-native-skills-agents-ns-examples-react-native-skills-agents-ns"><a href="../examples/react_native_skills_agents.ns">`react_native_skills_agents.ns`</a></h3>
+<p>Das React-Native-Gegenstueck zum React-Best-Practices-Bundle.</p>
+<ul>
+<li>Zweck:</li>
+<p>Laedt viele spezialisierte Agenten fuer Expo, React Native, Performance, Navigation, Styling und mobile Architektur.</p>
+<li>Typischer Nutzen:</li>
+<p>Du kannst ein React-Native-Projekt oder einen einzelnen Codeausschnitt gegen konkrete mobile Regeln pruefen lassen.</p>
+<li>Typische Nutzung:</li>
+<p>Laden, <code>agent list</code>, danach passendes Spezialagenten-Target aufrufen.</p>
+</ul>
+<h3 id="replicated-control-plane-ns-examples-replicated-control-plane-ns"><a href="../examples/replicated_control_plane.ns">`replicated_control_plane.ns`</a></h3>
+<p>Ein Beispiel fuer Replikation und sichere Cluster-Synchronisation.</p>
+<ul>
+<li>Zweck:</li>
+<p>Zeigt Replikationsendpunkte, Auth-Token, Trust Policies und einen einfachen Sync-Flow.</p>
+<li>Flow:</li>
+<p>Ein Payload wird geloggt, in replizierten State geschrieben und als Event emittiert.</p>
+<li>Geeignet fuer:</li>
+<p>Replikationsmodelle, Multi-Node-Tests und sichere Event-Verteilung.</p>
+</ul>
+<h3 id="secure-multi-tenant-ns-examples-secure-multi-tenant-ns"><a href="../examples/secure_multi_tenant.ns">`secure_multi_tenant.ns`</a></h3>
+<p>Ein kompaktes Sicherheitsbeispiel fuer Auth, Rollen, TLS und Tenant-Isolation.</p>
+<ul>
+<li>Zweck:</li>
+<p>Zeigt, wie sichere Compute-Flows mit Rollen- und TLS-Anforderungen modelliert werden.</p>
+<li>Besonderheiten:</li>
+<p><code>auth_required</code>, <code>tenant_isolation</code>, <code>mesh_tls_required</code>, <code>required_roles</code>.</p>
+<li>Flow:</li>
+<p>Metriken werden summiert, als State gespeichert und als Event publiziert.</p>
+<li>Geeignet fuer:</li>
+<p>Sicherheits- und Governance-Muster in <code>.ns</code>.</p>
+</ul>
+<h3 id="service-package-platform-ns-examples-service-package-platform-ns"><a href="../examples/service_package_platform.ns">`service_package_platform.ns`</a></h3>
+<p>Ein Beispiel fuer Package- und Service-Betrieb auf einer Plattformebene.</p>
+<ul>
+<li>Zweck:</li>
+<p>Zeigt <code>package</code>, <code>service</code>, Quotas, API-Plane und Statuspruefung.</p>
+<li>Flow:</li>
+<p>Paket- und Service-Status werden abgerufen und in State abgelegt.</p>
+<li>Geeignet fuer:</li>
+<p>Service-Rollout, Package-Lifecycle und Plattformmodelle.</p>
+</ul>
+<h2 id="beispiel-suite-examples-ceo-ns">Beispiel-Suite <code>examples/CEO_ns</code></h2>
+<p>Der Ordner <a href="../examples/CEO_ns/">`examples/CEO_ns/`</a> ist ein komplettes Executive-/CEO-Beispielsystem. Die tiefere Erklaerung steht zusaetzlich in <a href="CEOAgentExamples.html">`CEOAgentExamples.md`</a>. Hier findest du die operative Einordnung aller Dateien.</p>
+<h3 id="agenten-und-rollen">Agenten und Rollen</h3>
+<ul>
+<li><a href="../examples/CEO_ns/CEO_Core.ns">`CEO_Core.ns`</a></li>
+<p>Router-Agent fuer die gesamte CEO-Suite. Er sagt dir, welche Rolle oder Laufzeitdatei als naechstes passt.</p>
+<li><a href="../examples/CEO_ns/StrategyAgent.ns">`StrategyAgent.ns`</a></li>
+<p>Erzeugt einen Vorschlag, Score und Kapitalbedarf aus Markt- und Betriebssignalen.</p>
+<li><a href="../examples/CEO_ns/RiskAgent.ns">`RiskAgent.ns`</a></li>
+<p>Bewertet Risiken, Warnsignale und eine direkte Empfehlung fuer den Vorstand.</p>
+<li><a href="../examples/CEO_ns/CapitalAgent.ns">`CapitalAgent.ns`</a></li>
+<p>Prueft Kapitalbedarf, Liquiditaetswirkung und Freigabefaehigkeit.</p>
+<li><a href="../examples/CEO_ns/OperationsAgent.ns">`OperationsAgent.ns`</a></li>
+<p>Bewertet operative Umsetzbarkeit, Bottlenecks und Kapazitaetsmassnahmen.</p>
+<li><a href="../examples/CEO_ns/ConsensusLayer.ns">`ConsensusLayer.ns`</a></li>
+<p>Vereint Strategie-, Risiko- und Kapitalperspektive in eine finale Entscheidung.</p>
+<li><a href="../examples/CEO_ns/NarrativeAgent.ns">`NarrativeAgent.ns`</a></li>
+<p>Formt Entscheidungen in ein boardtaugliches Narrativ um.</p>
+<li><a href="../examples/CEO_ns/ExecutionDispatcher.ns">`ExecutionDispatcher.ns`</a></li>
+<p>Uebersetzt Entscheidungen in operative Dispatch-Schritte und Verantwortlichkeiten.</p>
+</ul>
+<h3 id="lifecycle-und-runtime">Lifecycle und Runtime</h3>
+<ul>
+<li><a href="../examples/CEO_ns/CEO_Lifecycle.ns">`CEO_Lifecycle.ns`</a></li>
+<p>Das Herzstueck der Suite. Laedt Telemetrie, Markt- und Event-Signale, harmonisiert sie, bewertet sie ueber mehrere Rollen und schreibt Artefakte unter <code>.nova_ceo/</code>.</p>
+<li><a href="../examples/CEO_ns/ceo_runtime_helper.py">`ceo_runtime_helper.py`</a></li>
+<p>Python-Helfer fuer Signalnormalisierung, Zustandslogik, Scoring, Ausfuehrung, Persistenz und Berichtserstellung.</p>
+<li><a href="../examples/CEO_ns/ceo_continuous_runtime.py">`ceo_continuous_runtime.py`</a></li>
+<p>Ein Python-Runner fuer kontinuierliche <code>ceo.tick</code>-Zyklen. Gut fuer periodischen Betrieb ausserhalb eines einzelnen <code>ns.run</code>-Aufrufs.</p>
+</ul>
+<h3 id="datensaetze">Datensaetze</h3>
+<ul>
+<li><a href="../examples/CEO_ns/internal_telemetry.json">`internal_telemetry.json`</a></li>
+<p>Interne Betriebs- und Kapazitaetssignale.</p>
+<li><a href="../examples/CEO_ns/external_market_signals.json">`external_market_signals.json`</a></li>
+<p>Externe Markt- und Nachfragesignale.</p>
+<li><a href="../examples/CEO_ns/event_signals.json">`event_signals.json`</a></li>
+<p>Ereignisbasierte Trigger und Zusatzsignale.</p>
+<li><a href="../examples/CEO_ns/policy_overrides.json">`policy_overrides.json`</a></li>
+<p>Governance- und Policy-Anpassungen fuer den Lauf.</p>
+</ul>
+<h3 id="typische-nutzung-der-ceo-suite">Typische Nutzung der CEO-Suite</h3>
+<h4 id="einzelne-rolle-laden">Einzelne Rolle laden</h4>
+<pre><code class="language-powershell">ai use lmstudio &lt;modellname&gt;
+ns.run .\examples\CEO_ns\RiskAgent.ns
+agent run RiskAgent &quot;Ein Partner fordert Kapital, waehrend die Kapazitaet knapp wird.&quot;</code></pre>
+<h4 id="vollen-lifecycle-starten">Vollen Lifecycle starten</h4>
+<pre><code class="language-powershell">ai use lmstudio &lt;modellname&gt;
+ns.run .\examples\CEO_ns\CEO_Lifecycle.ns</code></pre>
+<p>Danach entstehen Berichte unter <code>examples\CEO_ns\.nova_ceo\</code>.</p>
+<h2 id="beispiel-suite-examples-code-improvement-ns">Beispiel-Suite <code>examples/code_improvement_ns</code></h2>
+<p>Der Ordner <a href="../examples/code_improvement_ns/">`examples/code_improvement_ns/`</a> zeigt, wie Nova-shell Quellcode prueft, verbessert, Kandidaten bewertet und die beste neue Variante in eine neue Datei oder ein neues Projektverzeichnis schreibt.</p>
+<h3 id="kern-dateien">Kern-Dateien</h3>
+<ul>
+<li><a href="../examples/code_improvement_ns/Code_Improve_Lifecycle.ns">`Code_Improve_Lifecycle.ns`</a></li>
+<p>Mehrstufiger Lifecycle mit <code>CodeReviewAgent</code>, <code>RefactorAgent</code>, <code>ReliabilityAgent</code>, <code>SimplifyAgent</code> und <code>SelectorAgent</code>.</p>
+<li><a href="../examples/code_improvement_ns/code_improve_runtime_helper.py">`code_improve_runtime_helper.py`</a></li>
+<p>Python-Helper fuer Request-Laden, Prompt-Bau, Kandidatenparsing, Reparatur, Auswahl und Persistenz.</p>
+<li><a href="../examples/code_improvement_ns/README.html">`README.md`</a></li>
+<p>Kurzbeschreibung fuer den Einsatz der Suite.</p>
+</ul>
+<h3 id="request-und-beispieldateien">Request- und Beispieldateien</h3>
+<ul>
+<li><a href="../examples/code_improvement_ns/code_improvement_request.json">`code_improvement_request.json`</a></li>
+<p>Standard-Request fuer den Einzeldateimodus.</p>
+<li><a href="../examples/code_improvement_ns/code_improvement_project_request.json">`code_improvement_project_request.json`</a></li>
+<p>Request fuer den Projektmodus.</p>
+<li><a href="../examples/code_improvement_ns/sample_target.py">`sample_target.py`</a></li>
+<p>Kleine Zieldatei fuer den Einzeldatei-Durchlauf.</p>
+</ul>
+<h3 id="demo-projekt-fuer-projektmodus">Demo-Projekt fuer Projektmodus</h3>
+<ul>
+<li><a href="../examples/code_improvement_ns/demo_project/clean_numbers.py">`demo_project/clean_numbers.py`</a></li>
+<p>Beispielmodul, das sich gut fuer Refactoring und Robustheitsverbesserungen eignet.</p>
+<li><a href="../examples/code_improvement_ns/demo_project/reporting.py">`demo_project/reporting.py`</a></li>
+<p>Zweites Beispielmodul fuer einen Multi-Datei-Lauf.</p>
+</ul>
+<h3 id="typische-nutzung">Typische Nutzung</h3>
+<h4 id="einzeldatei-verbessern">Einzeldatei verbessern</h4>
+<pre><code class="language-powershell">ai use lmstudio &lt;modellname&gt;
+ns.run .\examples\code_improvement_ns\Code_Improve_Lifecycle.ns</code></pre>
+<p>Der Lifecycle liest den Request, verbessert den Code und schreibt die beste Variante in das konfigurierte <code>output_path</code>.</p>
+<h4 id="projektmodus-aktivieren">Projektmodus aktivieren</h4>
+<p>Setze die Inhalte von <code>code_improvement_project_request.json</code> als aktiven Request oder passe den Standard-Request auf <code>source_dir</code> an.</p>
+<h3 id="ergebnisdateien">Ergebnisdateien</h3>
+<p>Die Suite erzeugt typischerweise:</p>
+<ul>
+<li>eine verbesserte Ausgabedatei oder ein neues Projektverzeichnis unter <code>generated/</code></li>
+<li>einen Bericht unter <code>.nova_code_improve/</code></li>
+</ul>
+<h2 id="welche-beispiele-sofort-lokal-sichtbar-etwas-tun">Welche Beispiele sofort lokal sichtbar etwas tun</h2>
+<p>Wenn du moeglichst schnell ein greifbares Ergebnis sehen willst, beginne mit diesen Dateien:</p>
+<ol>
+<li><a href="../examples/file_extension_scan.ns">`file_extension_scan.ns`</a></li>
+<li><a href="../examples/file_extension_scan_advanced.ns">`file_extension_scan_advanced.ns`</a></li>
+<li><a href="../examples/blob_runtime.ns">`blob_runtime.ns`</a></li>
+<li><a href="../examples/decision_lifecycle_template.ns">`decision_lifecycle_template.ns`</a></li>
+<li><a href="../examples/CEO_ns/CEO_Lifecycle.ns">`CEO_ns/CEO_Lifecycle.ns`</a></li>
+<li><a href="../examples/code_improvement_ns/Code_Improve_Lifecycle.ns">`code_improvement_ns/Code_Improve_Lifecycle.ns`</a></li>
+</ol>
+<h2 id="welche-beispiele-zuerst-mit-ns-graph-sinnvoll-sind">Welche Beispiele zuerst mit <code>ns.graph</code> sinnvoll sind</h2>
+<p>Diese Dateien sind besonders lehrreich, wenn du zuerst ihre Struktur statt den Lauf betrachtest:</p>
+<ul>
+<li><a href="../examples/advanced_agent_fabric.ns">`advanced_agent_fabric.ns`</a></li>
+<li><a href="../examples/ai_os_cluster.ns">`ai_os_cluster.ns`</a></li>
+<li><a href="../examples/consensus_fabric_cluster.ns">`consensus_fabric_cluster.ns`</a></li>
+<li><a href="../examples/control_plane_runtime.ns">`control_plane_runtime.ns`</a></li>
+<li><a href="../examples/distributed_pipeline.ns">`distributed_pipeline.ns`</a></li>
+<li><a href="../examples/replicated_control_plane.ns">`replicated_control_plane.ns`</a></li>
+<li><a href="../examples/secure_multi_tenant.ns">`secure_multi_tenant.ns`</a></li>
+<li><a href="../examples/service_package_platform.ns">`service_package_platform.ns`</a></li>
+</ul>
+<h2 id="empfohlene-lernreihenfolge">Empfohlene Lernreihenfolge</h2>
+<p>Wenn du den Ordner systematisch verstehen willst, ist diese Reihenfolge sinnvoll:</p>
+<ol>
+<li><code>file_extension_scan.ns</code></li>
+<p>Einstieg in <code>dataset</code>, <code>flow</code>, <code>py.exec</code> und <code>system.log</code>.</p>
+<li><code>file_extension_scan_advanced.ns</code></li>
+<p>Aufbau eines laengeren Flows mit Agent, State und HTML-Output.</p>
+<li><code>blob_runtime.ns</code></li>
+<p>Einstieg in Blob-Artefakte.</p>
+<li><code>decision_lifecycle_template.ns</code></li>
+<p>Grundform eines Agenten-Lifecycles.</p>
+<li><code>market_radar.ns</code> und <code>federated_swarm_memory.ns</code></li>
+<p>Memory, Embeddings und Signalverdichtung.</p>
+<li><code>control_plane_runtime.ns</code> und <code>distributed_pipeline.ns</code></li>
+<p>Events, Scheduler, Mesh- und Tool-Orchestrierung.</p>
+<li><code>CEO_ns/</code></li>
+<p>Vollstaendige Rollen- und Lifecycle-Suite.</p>
+<li><code>code_improvement_ns/</code></li>
+<p>Selbstverbesserung und codebezogene Agentenarbeit.</p>
+<li><code>composition_patterns_agents.ns</code>, <code>react_best_practices_agents.ns</code>, <code>react_native_skills_agents.ns</code></li>
+<p>Grosse Standalone-Agentenkataloge.</p>
+</ol>
+<h2 id="verwandte-wiki-seiten">Verwandte Wiki-Seiten</h2>
+<ul>
+<li><a href="examples_index.html">`examples_index.md`</a></li>
+<p>Zentrales Portal fuer alle Example-Dokumentationsseiten.</p>
+<li><a href="examples_quickstart.html">`examples_quickstart.md`</a></li>
+<p>Copy-Paste-Schnellstart fuer die vorhandenen Beispiele.</p>
+<li><a href="examples_by_level.html">`examples_by_level.md`</a></li>
+<p>Sortierung nach Einsteiger, Fortgeschritten, Plattform, Lifecycle und Agenten.</p>
+<li><a href="examples_matrix.html">`examples_matrix.md`</a></li>
+<p>Tabellarischer Schnellvergleich aller Beispieltypen.</p>
+<li><a href="ExamplesAndRecipes.html">`ExamplesAndRecipes.md`</a></li>
+<p>Breitere Rezeptsammlung und Einstiegsmuster.</p>
+<li><a href="CEOAgentExamples.html">`CEOAgentExamples.md`</a></li>
+<p>Tiefere Erklaerung der CEO-Suite.</p>
+<li><a href="DecisionPatterns.html">`DecisionPatterns.md`</a></li>
+<p>Muster fuer Entscheidungs- und Lifecycle-Design.</p>
+<li><a href="Tutorials.html">`Tutorials.md`</a></li>
+<p>Lernpfade und gefuehrte Schritte.</p>
+</ul>
+        </article>
+        <aside class="wiki-toc">
+          <div class="wiki-toc-card"><h2>On this page</h2><ul>
+<li class="wiki-toc-link"><a href="#grundregeln-fuer-alle-beispiele">Grundregeln fuer alle Beispiele</a></li>
+<li class="wiki-toc-link"><a href="#schnellueberblick">Schnellueberblick</a></li>
+<li class="wiki-toc-link"><a href="#wie-du-die-beispiele-sinnvoll-nutzt">Wie du die Beispiele sinnvoll nutzt</a></li>
+<li class="wiki-toc-link level-3"><a href="#nur-struktur-ansehen">Nur Struktur ansehen</a></li>
+<li class="wiki-toc-link level-3"><a href="#flow-ausfuehren">Flow ausfuehren</a></li>
+<li class="wiki-toc-link level-3"><a href="#agentenbundle-laden-und-dann-gezielt-aufrufen">Agentenbundle laden und dann gezielt aufrufen</a></li>
+<li class="wiki-toc-link"><a href="#top-level-beispiele-in-examples">Top-Level-Beispiele in `examples/`</a></li>
+<li class="wiki-toc-link level-3"><a href="#advanced-agent-fabric-ns-examples-advanced-agent-fabric-ns">[`advanced_agent_fabric.ns`](../examples/advanced_agent_fabric.ns)</a></li>
+<li class="wiki-toc-link level-3"><a href="#ai-os-cluster-ns-examples-ai-os-cluster-ns">[`ai_os_cluster.ns`](../examples/ai_os_cluster.ns)</a></li>
+<li class="wiki-toc-link level-3"><a href="#blob-runtime-ns-examples-blob-runtime-ns">[`blob_runtime.ns`](../examples/blob_runtime.ns)</a></li>
+<li class="wiki-toc-link level-3"><a href="#blob-runtime-seed-nsblob-json-examples-blob-runtime-seed-nsblob-json">[`blob_runtime_seed.nsblob.json`](../examples/blob_runtime_seed.nsblob.json)</a></li>
+<li class="wiki-toc-link level-3"><a href="#composition-patterns-agents-ns-examples-composition-patterns-agents-ns">[`composition_patterns_agents.ns`](../examples/composition_patterns_agents.ns)</a></li>
+<li class="wiki-toc-link level-3"><a href="#consensus-fabric-cluster-ns-examples-consensus-fabric-cluster-ns">[`consensus_fabric_cluster.ns`](../examples/consensus_fabric_cluster.ns)</a></li>
+<li class="wiki-toc-link level-3"><a href="#control-plane-runtime-ns-examples-control-plane-runtime-ns">[`control_plane_runtime.ns`](../examples/control_plane_runtime.ns)</a></li>
+<li class="wiki-toc-link level-3"><a href="#decision-lifecycle-template-ns-examples-decision-lifecycle-template-ns">[`decision_lifecycle_template.ns`](../examples/decision_lifecycle_template.ns)</a></li>
+<li class="wiki-toc-link level-3"><a href="#distributed-pipeline-ns-examples-distributed-pipeline-ns">[`distributed_pipeline.ns`](../examples/distributed_pipeline.ns)</a></li>
+<li class="wiki-toc-link level-3"><a href="#federated-swarm-memory-ns-examples-federated-swarm-memory-ns">[`federated_swarm_memory.ns`](../examples/federated_swarm_memory.ns)</a></li>
+<li class="wiki-toc-link level-3"><a href="#file-extension-scan-ns-examples-file-extension-scan-ns">[`file_extension_scan.ns`](../examples/file_extension_scan.ns)</a></li>
+<li class="wiki-toc-link level-3"><a href="#file-extension-scan-advanced-ns-examples-file-extension-scan-advanced-ns">[`file_extension_scan_advanced.ns`](../examples/file_extension_scan_advanced.ns)</a></li>
+<li class="wiki-toc-link level-3"><a href="#items-csv-examples-items-csv">[`items.csv`](../examples/items.csv)</a></li>
+<li class="wiki-toc-link level-3"><a href="#items-large-csv-examples-items-large-csv">[`items_large.csv`](../examples/items_large.csv)</a></li>
+<li class="wiki-toc-link level-3"><a href="#market-radar-ns-examples-market-radar-ns">[`market_radar.ns`](../examples/market_radar.ns)</a></li>
+<li class="wiki-toc-link level-3"><a href="#mycelia-coevolution-lab-ns-examples-mycelia-coevolution-lab-ns">[`mycelia_coevolution_lab.ns`](../examples/mycelia_coevolution_lab.ns)</a></li>
+<li class="wiki-toc-link level-3"><a href="#nova-project-monitor-ns-examples-nova-project-monitor-ns">[`nova_project_monitor.ns`](../examples/nova_project_monitor.ns)</a></li>
+<li class="wiki-toc-link level-3"><a href="#nova-project-monitor-helper-py-examples-nova-project-monitor-helper-py">[`nova_project_monitor_helper.py`](../examples/nova_project_monitor_helper.py)</a></li>
+<li class="wiki-toc-link level-3"><a href="#nova-system-guard-ns-examples-nova-system-guard-ns">[`nova_system_guard.ns`](../examples/nova_system_guard.ns)</a></li>
+<li class="wiki-toc-link level-3"><a href="#nova-system-guard-helper-py-examples-nova-system-guard-helper-py">[`nova_system_guard_helper.py`](../examples/nova_system_guard_helper.py)</a></li>
+<li class="wiki-toc-link level-3"><a href="#react-best-practices-agents-ns-examples-react-best-practices-agents-ns">[`react_best_practices_agents.ns`](../examples/react_best_practices_agents.ns)</a></li>
+<li class="wiki-toc-link level-3"><a href="#react-native-skills-agents-ns-examples-react-native-skills-agents-ns">[`react_native_skills_agents.ns`](../examples/react_native_skills_agents.ns)</a></li>
+<li class="wiki-toc-link level-3"><a href="#replicated-control-plane-ns-examples-replicated-control-plane-ns">[`replicated_control_plane.ns`](../examples/replicated_control_plane.ns)</a></li>
+<li class="wiki-toc-link level-3"><a href="#secure-multi-tenant-ns-examples-secure-multi-tenant-ns">[`secure_multi_tenant.ns`](../examples/secure_multi_tenant.ns)</a></li>
+<li class="wiki-toc-link level-3"><a href="#service-package-platform-ns-examples-service-package-platform-ns">[`service_package_platform.ns`](../examples/service_package_platform.ns)</a></li>
+<li class="wiki-toc-link"><a href="#beispiel-suite-examples-ceo-ns">Beispiel-Suite `examples/CEO_ns`</a></li>
+<li class="wiki-toc-link level-3"><a href="#agenten-und-rollen">Agenten und Rollen</a></li>
+<li class="wiki-toc-link level-3"><a href="#lifecycle-und-runtime">Lifecycle und Runtime</a></li>
+<li class="wiki-toc-link level-3"><a href="#datensaetze">Datensaetze</a></li>
+<li class="wiki-toc-link level-3"><a href="#typische-nutzung-der-ceo-suite">Typische Nutzung der CEO-Suite</a></li>
+<li class="wiki-toc-link"><a href="#beispiel-suite-examples-code-improvement-ns">Beispiel-Suite `examples/code_improvement_ns`</a></li>
+<li class="wiki-toc-link level-3"><a href="#kern-dateien">Kern-Dateien</a></li>
+<li class="wiki-toc-link level-3"><a href="#request-und-beispieldateien">Request- und Beispieldateien</a></li>
+<li class="wiki-toc-link level-3"><a href="#demo-projekt-fuer-projektmodus">Demo-Projekt fuer Projektmodus</a></li>
+<li class="wiki-toc-link level-3"><a href="#typische-nutzung">Typische Nutzung</a></li>
+<li class="wiki-toc-link level-3"><a href="#ergebnisdateien">Ergebnisdateien</a></li>
+<li class="wiki-toc-link"><a href="#welche-beispiele-sofort-lokal-sichtbar-etwas-tun">Welche Beispiele sofort lokal sichtbar etwas tun</a></li>
+<li class="wiki-toc-link"><a href="#welche-beispiele-zuerst-mit-ns-graph-sinnvoll-sind">Welche Beispiele zuerst mit `ns.graph` sinnvoll sind</a></li>
+<li class="wiki-toc-link"><a href="#empfohlene-lernreihenfolge">Empfohlene Lernreihenfolge</a></li>
+<li class="wiki-toc-link"><a href="#verwandte-wiki-seiten">Verwandte Wiki-Seiten</a></li>
+</ul></div>
+        </aside>
+      </div>
+      <footer class="wiki-footer">
+        <p><a href="Home.html">Home</a> | <a href="QuickStart.html">QuickStart</a> | <a href="Architecture.html">Architecture</a> | <a href="NovaCLI.html">NovaCLI</a> | <a href="DevelopmentGuide.html">DevelopmentGuide</a> | <a href="FAQ.html">FAQ</a></p>
+      </footer>
+    </main>
+  </div>
+  <script>
+    window.NOVA_WIKI = {
+      currentPage: "examples.html",
+      searchIndex: "assets/search-index.json"
+    };
+  </script>
+  <script src="assets/wiki.js" defer></script>
+</body>
+</html>

@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="Nova-shell wiki builder">
-  <title>Runtime Method Reference | Nova-shell Wiki</title>
+  <title>examples_matrix | Nova-shell Wiki</title>
   <link rel="stylesheet" href="assets/wiki.css">
 </head>
 <body>
@@ -50,7 +50,7 @@
 <li><a class="wiki-nav-link" data-nav-href="examples.html" href="examples.html">examples</a></li>
 <li><a class="wiki-nav-link" data-nav-href="examples_quickstart.html" href="examples_quickstart.html">examples_quickstart</a></li>
 <li><a class="wiki-nav-link" data-nav-href="examples_by_level.html" href="examples_by_level.html">examples_by_level</a></li>
-<li><a class="wiki-nav-link" data-nav-href="examples_matrix.html" href="examples_matrix.html">examples_matrix</a></li>
+<li><a class="wiki-nav-link active" data-nav-href="examples_matrix.html" href="examples_matrix.html">examples_matrix</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ExamplesAndRecipes.html" href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
 <li><a class="wiki-nav-link" data-nav-href="DecisionPatterns.html" href="DecisionPatterns.html">DecisionPatterns</a></li>
 <li><a class="wiki-nav-link" data-nav-href="CEOAgentExamples.html" href="CEOAgentExamples.html">CEOAgentExamples</a></li>
@@ -99,7 +99,7 @@
 <li><a class="wiki-nav-link" data-nav-href="NovaGraphEngine.html" href="NovaGraphEngine.html">NovaGraphEngine</a></li>
 <li><a class="wiki-nav-link" data-nav-href="NovaPlanner.html" href="NovaPlanner.html">NovaPlanner</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ParserAndASTReference.html" href="ParserAndASTReference.html">ParserAndASTReference</a></li>
-<li><a class="wiki-nav-link active" data-nav-href="RuntimeMethodReference.html" href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
+<li><a class="wiki-nav-link" data-nav-href="RuntimeMethodReference.html" href="RuntimeMethodReference.html">RuntimeMethodReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="ClassReference.html" href="ClassReference.html">ClassReference</a></li>
 <li><a class="wiki-nav-link" data-nav-href="CodeReferenceIndex.html" href="CodeReferenceIndex.html">CodeReferenceIndex</a></li>
 <li><a class="wiki-nav-link" data-nav-href="LensForDevelopers.html" href="LensForDevelopers.html">LensForDevelopers</a></li>
@@ -164,467 +164,509 @@
         <button type="button" class="wiki-nav-toggle" data-nav-toggle>Menu</button>
         <div class="wiki-header-copy">
           <span class="wiki-kicker">Nova-shell Documentation</span>
-          <h1>Runtime Method Reference</h1>
-          <p>Source: RuntimeMethodReference.md</p>
+          <h1>examples_matrix</h1>
+          <p>Source: examples_matrix.md</p>
         </div>
       </header>
       <div class="wiki-layout">
         <article class="wiki-article">
-          <h1 id="runtime-method-reference">Runtime Method Reference</h1>
-<h2 id="zweck">Zweck</h2>
-<p>Diese Seite fasst die wichtigsten Methoden von <code>NovaRuntime</code> zusammen. Sie ist keine automatische API-Generierung, sondern eine handkuratierte Referenz fuer die Methoden, die fuer Ausfuehrung, Betrieb und Erweiterung relevant sind.</p>
-<p>Fuer die vollstaendige Symbolsuche ueber alle Runtime-Module hinweg siehe <a href="CodeReferenceIndex.html">CodeReferenceIndex</a>.</p>
-<p>Modul: <code>nova.runtime.runtime</code></p>
-<h2 id="kernobjekte">Kernobjekte</h2>
+          <h1 id="examples-matrix">examples_matrix</h1>
+<p>Diese Seite fasst die vorhandenen Beispiele aus <a href="../examples/">`examples/`</a> als schnelle Vergleichsmatrix zusammen. Sie beantwortet auf einen Blick:</p>
 <ul>
-<li><code>NovaRuntime</code></li>
-<li><code>CompiledNovaProgram</code></li>
-<li><code>NovaRuntimeResult</code></li>
-<li><code>RuntimeContext</code></li>
+<li>zu welcher Kategorie ein Beispiel gehoert</li>
+<li>ob ein aktiver AI-Provider sinnvoll oder noetig ist</li>
+<li>ob Mesh-, Cluster- oder Plattformfunktionen beteiligt sind</li>
+<li>ob direkt sichtbare Reports oder Artefakte entstehen</li>
+<li>ob das Beispiel ein guter Einstieg ist</li>
 </ul>
-<h2 id="methoden-und-schnittstellen">Methoden und Schnittstellen</h2>
-<h3 id="programmladen-und-ausfuehrung">Programmladen und Ausfuehrung</h3>
-<table><thead><tr>
-<th>Methode</th>
-<th>Zweck</th>
-<th>Typische Nutzung</th>
-</tr></thead><tbody>
-<tr>
-<td><code>load(path)</code></td>
-<td>Laedt ein <code>.ns</code>-Programm ueber die Toolchain.</td>
-<td>Projekte und modulare Programme</td>
-</tr>
-<tr>
-<td><code>compile(program_or_ast)</code></td>
-<td>Erzeugt ein <code>CompiledNovaProgram</code>.</td>
-<td>Vor Visualisierung oder Analyse</td>
-</tr>
-<tr>
-<td><code>run(program_or_path)</code></td>
-<td>Fuehrt ein Programm komplett aus.</td>
-<td>Standardpfad fuer deklarative Ausfuehrung</td>
-</tr>
-<tr>
-<td><code>execute_flow(name, program=...)</code></td>
-<td>Startet gezielt einen Flow.</td>
-<td>Partielle Workflows</td>
-</tr>
-<tr>
-<td><code>emit(event_name, payload=None)</code></td>
-<td>Publiziert ein Event in die Runtime.</td>
-<td>Event-getriebene Automatisierung</td>
-</tr>
-<tr>
-<td><code>snapshot()</code></td>
-<td>Erstellt einen Laufzeit-Snapshot.</td>
-<td>Recovery und Debugging</td>
-</tr>
-<tr>
-<td><code>resume(snapshot_or_path)</code></td>
-<td>Setzt eine Runtime aus einem Snapshot fort.</td>
-<td>Wiederanlauf nach Fehlern</td>
-</tr>
-</tbody></table>
-<h3 id="beispiel">Beispiel</h3>
-<pre><code class="language-python">from nova.runtime.runtime import NovaRuntime
-
-runtime = NovaRuntime()
-program = runtime.load(&quot;examples/market_radar.ns&quot;)
-
-compiled = runtime.compile(program)
-result = runtime.run(program)
-print(result.status)</code></pre>
-<h3 id="queue-scheduler-und-durable-flows">Queue, Scheduler und durable Flows</h3>
-<table><thead><tr>
-<th>Methode</th>
-<th>Zweck</th>
-</tr></thead><tbody>
-<tr>
-<td><code>enqueue_flow(flow_name, program=..., priority=...)</code></td>
-<td>Legt einen Flow in die durable Queue.</td>
-</tr>
-<tr>
-<td><code>schedule_flow(flow_name, cron=..., interval=...)</code></td>
-<td>Plant einen Flow periodisch ein.</td>
-</tr>
-<tr>
-<td><code>schedule_event(event_name, flow_name, ...)</code></td>
-<td>Verknuepft Event und geplante Ausfuehrung.</td>
-</tr>
-<tr>
-<td><code>scheduler_tick()</code></td>
-<td>Fuehrt einen Schedulerdurchlauf aus.</td>
-</tr>
-<tr>
-<td><code>run_pending_tasks()</code></td>
-<td>Arbeitet wartende Queue-Eintraege ab.</td>
-</tr>
-<tr>
-<td><code>list_queue_tasks()</code></td>
-<td>Listet Task-Zustand und Historie.</td>
-</tr>
-<tr>
-<td><code>list_schedules()</code></td>
-<td>Gibt aktive Schedules zurueck.</td>
-</tr>
-<tr>
-<td><code>replay_event_log()</code></td>
-<td>Spielt Event-Logs erneut ab.</td>
-</tr>
-</tbody></table>
-<h3 id="beispiel">Beispiel</h3>
-<pre><code class="language-python">runtime.enqueue_flow(&quot;radar&quot;, program=program, priority=&quot;high&quot;)
-runtime.scheduler_tick()
-runtime.run_pending_tasks()</code></pre>
-<h3 id="security-identity-und-trust">Security, Identity und Trust</h3>
-<table><thead><tr>
-<th>Methode</th>
-<th>Zweck</th>
-</tr></thead><tbody>
-<tr>
-<td><code>register_tenant(name, namespace=...)</code></td>
-<td>Erstellt einen Tenant.</td>
-</tr>
-<tr>
-<td><code>select_tenant(name)</code></td>
-<td>Schaltet den aktiven Tenant um.</td>
-</tr>
-<tr>
-<td><code>issue_token(subject, roles=...)</code></td>
-<td>Erstellt ein Runtime-Token.</td>
-</tr>
-<tr>
-<td><code>login(subject, password=None, token=None)</code></td>
-<td>Startet eine Runtime-Sitzung.</td>
-</tr>
-<tr>
-<td><code>logout()</code></td>
-<td>Beendet die aktuelle Sitzung.</td>
-</tr>
-<tr>
-<td><code>store_secret(name, value, namespace=...)</code></td>
-<td>Speichert ein Secret verschluesselt.</td>
-</tr>
-<tr>
-<td><code>set_tls_profile(name, certificate=..., key=...)</code></td>
-<td>Setzt ein TLS-Profil.</td>
-</tr>
-<tr>
-<td><code>set_trust_policy(name, rules=...)</code></td>
-<td>Konfiguriert Trust-Regeln.</td>
-</tr>
-<tr>
-<td><code>onboard_worker(node_id, csr_or_certificate=...)</code></td>
-<td>Bindet einen Worker sicher an.</td>
-</tr>
-<tr>
-<td><code>rotate_worker_certificate(node_id)</code></td>
-<td>Erneuert Worker-Zertifikate.</td>
-</tr>
-<tr>
-<td><code>create_certificate_authority(name, ...)</code></td>
-<td>Erzeugt eine CA.</td>
-</tr>
-<tr>
-<td><code>issue_certificate(common_name, ...)</code></td>
-<td>Stellt Zertifikate aus.</td>
-</tr>
-<tr>
-<td><code>revoke_certificate(serial)</code></td>
-<td>Sperrt Zertifikate.</td>
-</tr>
-</tbody></table>
-<h3 id="service-fabric-und-traffic-plane">Service Fabric und Traffic Plane</h3>
-<table><thead><tr>
-<th>Methode</th>
-<th>Zweck</th>
-</tr></thead><tbody>
-<tr>
-<td><code>install_package(name, source=..., version=...)</code></td>
-<td>Registriert ein Paket fuer Wiederverwendung oder Deployment.</td>
-</tr>
-<tr>
-<td><code>deploy_service(name, package=..., image=..., replicas=...)</code></td>
-<td>Erstellt oder aktualisiert einen Service.</td>
-</tr>
-<tr>
-<td><code>list_services()</code></td>
-<td>Listet bekannte Services.</td>
-</tr>
-<tr>
-<td><code>list_packages()</code></td>
-<td>Listet registrierte Pakete.</td>
-</tr>
-<tr>
-<td><code>discover_service(name)</code></td>
-<td>Liefert Service-Discovery-Informationen.</td>
-</tr>
-<tr>
-<td><code>scale_service(name, replicas)</code></td>
-<td>Skaliert einen Service.</td>
-</tr>
-<tr>
-<td><code>start_traffic_proxy(host, port)</code></td>
-<td>Startet die Traffic Plane.</td>
-</tr>
-<tr>
-<td><code>route_service_request(service, path=&quot;/&quot;, method=&quot;GET&quot;)</code></td>
-<td>Testet oder fuehrt Traffic-Routing aus.</td>
-</tr>
-</tbody></table>
-<h3 id="beispiel">Beispiel</h3>
-<pre><code class="language-python">runtime.install_package(&quot;analytics&quot;, source=&quot;./packages/analytics&quot;, version=&quot;1.0.0&quot;)
-runtime.deploy_service(&quot;analytics-api&quot;, package=&quot;analytics&quot;, replicas=2)
-runtime.scale_service(&quot;analytics-api&quot;, 4)</code></pre>
-<h3 id="observability-und-api">Observability und API</h3>
-<table><thead><tr>
-<th>Methode</th>
-<th>Zweck</th>
-</tr></thead><tbody>
-<tr>
-<td><code>start_control_api(host=&quot;127.0.0.1&quot;, port=...)</code></td>
-<td>Startet die HTTP-Control-Plane.</td>
-</tr>
-<tr>
-<td><code>stop_control_api()</code></td>
-<td>Stoppt die API.</td>
-</tr>
-<tr>
-<td><code>control_api_status()</code></td>
-<td>Liefert API-Statusdaten.</td>
-</tr>
-<tr>
-<td><code>export_metrics(format=&quot;prometheus&quot;)</code></td>
-<td>Exportiert Laufzeitmetriken.</td>
-</tr>
-</tbody></table>
-<h3 id="konsens-replikation-und-state">Konsens, Replikation und State</h3>
-<table><thead><tr>
-<th>Methode</th>
-<th>Zweck</th>
-</tr></thead><tbody>
-<tr>
-<td><code>consensus_status()</code></td>
-<td>Zeigt Leader, Term und Peer-Zustand.</td>
-</tr>
-<tr>
-<td><code>register_consensus_peer(peer_id, endpoint)</code></td>
-<td>Fuegt einen Peer hinzu.</td>
-</tr>
-<tr>
-<td><code>list_consensus_peers()</code></td>
-<td>Listet bekannte Peers.</td>
-</tr>
-<tr>
-<td><code>consensus_log()</code></td>
-<td>Liefert den replizierten Konsens-Log.</td>
-</tr>
-<tr>
-<td><code>consensus_snapshot()</code></td>
-<td>Erzeugt oder liest einen Snapshot.</td>
-</tr>
-<tr>
-<td><code>start_consensus_election()</code></td>
-<td>Startet eine Wahl.</td>
-</tr>
-<tr>
-<td><code>send_consensus_heartbeats()</code></td>
-<td>Sendet Heartbeats an Peers.</td>
-</tr>
-<tr>
-<td><code>compact_consensus_log()</code></td>
-<td>Verdichtet den Konsens-Log.</td>
-</tr>
-<tr>
-<td><code>install_consensus_snapshot(peer_id, snapshot=...)</code></td>
-<td>Installiert einen Snapshot bei einem Peer.</td>
-</tr>
-<tr>
-<td><code>sync_consensus()</code></td>
-<td>Synchronisiert den Konsenszustand.</td>
-</tr>
-<tr>
-<td><code>consensus_request_vote(payload)</code></td>
-<td>RPC fuer Vote-Anfragen.</td>
-</tr>
-<tr>
-<td><code>consensus_append_entries(payload)</code></td>
-<td>RPC fuer Log-Replikation.</td>
-</tr>
-<tr>
-<td><code>register_replica_peer(peer_id, endpoint)</code></td>
-<td>Registriert Event-/State-Replikation.</td>
-</tr>
-<tr>
-<td><code>list_replica_peers()</code></td>
-<td>Listet Replikationsziele.</td>
-</tr>
-<tr>
-<td><code>list_replicated_records()</code></td>
-<td>Listet replizierte Event-/State-Datensaetze.</td>
-</tr>
-<tr>
-<td><code>replay_state_log()</code></td>
-<td>Spielt den State-Log erneut ab.</td>
-</tr>
-<tr>
-<td><code>list_state()</code></td>
-<td>Gibt den persistierten Zustand aus.</td>
-</tr>
-<tr>
-<td><code>list_workflow_runs()</code></td>
-<td>Zeigt historische Workflow-Ausfuehrungen.</td>
-</tr>
-<tr>
-<td><code>replay_workflow_run(run_id)</code></td>
-<td>Wiederholt einen frueheren Lauf.</td>
-</tr>
-</tbody></table>
-<h3 id="agenten-und-ai-plattform">Agenten und AI-Plattform</h3>
-<table><thead><tr>
-<th>Methode</th>
-<th>Zweck</th>
-</tr></thead><tbody>
-<tr>
-<td><code>register_prompt_version(agent, version, prompt)</code></td>
-<td>Speichert eine neue Prompt-Version.</td>
-</tr>
-<tr>
-<td><code>list_prompt_versions(agent)</code></td>
-<td>Listet bekannte Prompt-Staende.</td>
-</tr>
-<tr>
-<td><code>search_agent_memory(agent, query)</code></td>
-<td>Sucht im verteilten Agenten-Speicher.</td>
-</tr>
-<tr>
-<td><code>list_agent_evals(agent=None)</code></td>
-<td>Listet Eval-Laeufe und Scores.</td>
-</tr>
-</tbody></table>
-<h3 id="toolchain-und-entwickler-workflows">Toolchain und Entwickler-Workflows</h3>
-<table><thead><tr>
-<th>Methode</th>
-<th>Zweck</th>
-</tr></thead><tbody>
-<tr>
-<td><code>write_lockfile(path)</code></td>
-<td>Schreibt die aktuelle Modulaufloesung als Lockfile.</td>
-</tr>
-<tr>
-<td><code>publish_toolchain_package(name, path, version)</code></td>
-<td>Publiziert ein Toolchain-Paket.</td>
-</tr>
-<tr>
-<td><code>list_toolchain_packages()</code></td>
-<td>Listet bekannte Pakete.</td>
-</tr>
-<tr>
-<td><code>format_source(source_or_path)</code></td>
-<td>Formatiert Nova-Quelltext.</td>
-</tr>
-<tr>
-<td><code>lint_source(source_or_path)</code></td>
-<td>Fuehrt statische Diagnosen aus.</td>
-</tr>
-<tr>
-<td><code>toolchain_symbols(path)</code></td>
-<td>Liefert Symbolinformationen fuer Editoren.</td>
-</tr>
-<tr>
-<td><code>toolchain_hover(path, line, column)</code></td>
-<td>Liefert Hover-Dokumentation.</td>
-</tr>
-<tr>
-<td><code>run_program_tests(path_or_program)</code></td>
-<td>Startet deklarative Tests.</td>
-</tr>
-</tbody></table>
-<h3 id="beispiel">Beispiel</h3>
-<pre><code class="language-python">runtime.write_lockfile(&quot;nova.lock&quot;)
-diagnostics = runtime.lint_source(&quot;examples/market_radar.ns&quot;)
-formatted = runtime.format_source(&quot;examples/market_radar.ns&quot;)</code></pre>
-<h3 id="betrieb-recovery-und-tests">Betrieb, Recovery und Tests</h3>
-<table><thead><tr>
-<th>Methode</th>
-<th>Zweck</th>
-</tr></thead><tbody>
-<tr>
-<td><code>create_backup(destination)</code></td>
-<td>Erstellt ein Runtime-Backup.</td>
-</tr>
-<tr>
-<td><code>restore_backup(path)</code></td>
-<td>Stellt den Runtime-Zustand wieder her.</td>
-</tr>
-<tr>
-<td><code>validate_migrations()</code></td>
-<td>Prueft Persistenz- und Schemakompatibilitaet.</td>
-</tr>
-<tr>
-<td><code>set_failpoint(name, state=True)</code></td>
-<td>Aktiviert gezielte Fehlerpunkte fuer Tests.</td>
-</tr>
-<tr>
-<td><code>list_failpoints()</code></td>
-<td>Zeigt aktive Failpoints.</td>
-</tr>
-<tr>
-<td><code>run_load_test(profile=&quot;default&quot;)</code></td>
-<td>Startet einen Lasttest.</td>
-</tr>
-</tbody></table>
-<h2 id="cli">CLI</h2>
-<p>Methoden dieser Seite werden typischerweise ueber <code>ns.run</code>, <code>ns.control</code>, <code>ns.snapshot</code>, <code>ns.resume</code> und Toolchain-Kommandos genutzt.</p>
-<h2 id="api">API</h2>
-<p>Die API-nahen Methoden sind vor allem:</p>
+<p>Verwandte Seiten:</p>
 <ul>
-<li><code>start_control_api</code></li>
-<li><code>stop_control_api</code></li>
-<li><code>control_api_status</code></li>
-<li><code>export_metrics</code></li>
+<li><a href="examples_index.html">`examples_index.md`</a></li>
+<p>Zentrales Portal fuer alle Example-Seiten.</p>
+<li><a href="examples.html">`examples.md`</a></li>
+<p>Vollstaendige dateiweise Referenz.</p>
+<li><a href="examples_quickstart.html">`examples_quickstart.md`</a></li>
+<p>Copy-Paste-Kommandos.</p>
+<li><a href="examples_by_level.html">`examples_by_level.md`</a></li>
+<p>Sortierung nach Lernstufe.</p>
 </ul>
-<h2 id="beispiele">Beispiele</h2>
-<h3 id="praktisches-betriebsbeispiel">Praktisches Betriebsbeispiel</h3>
-<pre><code class="language-python">from nova.runtime.runtime import NovaRuntime
-
-runtime = NovaRuntime()
-runtime.start_control_api(port=9850)
-runtime.create_backup(&quot;.nova/backups/nightly&quot;)
-print(runtime.export_metrics())</code></pre>
-<h2 id="verwandte-seiten">Verwandte Seiten</h2>
+<h2 id="legende">Legende</h2>
 <ul>
-<li><a href="ClassReference.html">ClassReference</a></li>
-<li><a href="CodeReferenceIndex.html">CodeReferenceIndex</a></li>
-<li><a href="ShellCommandReference.html">ShellCommandReference</a></li>
-<li><a href="APIReference.html">APIReference</a></li>
-<li><a href="ExamplesAndRecipes.html">ExamplesAndRecipes</a></li>
-<li><a href="PageTemplate.html">PageTemplate</a></li>
+<li><code>AI</code></li>
+<p><code>ja</code> bedeutet: ein aktiver AI-Provider ist praktisch noetig oder stark empfohlen. <code>optional</code> bedeutet: das Beispiel kann strukturell auch ohne aktiven Provider gelesen werden, wird aber erst mit Modell wirklich interessant. <code>nein</code> bedeutet: kein aktiver AI-Provider ist fuer den Kernnutzen noetig.</p>
+<li><code>Mesh</code></li>
+<p><code>ja</code> bedeutet: Mesh-, Cluster- oder verteilte Plattformkonzepte sind zentral. <code>optional</code> bedeutet: das Beispiel kann lokal gelesen oder teilweise genutzt werden, modelliert aber Mesh-/Plattform-Aspekte.</p>
+<li><code>Report/Artefakte</code></li>
+<p>Nennt das sichtbare Hauptergebnis.</p>
+<li><code>Einstieg</code></li>
+<p><code>ja</code> bedeutet: guter Startpunkt fuer neue Nutzer.</p>
 </ul>
+<h2 id="hauptbeispiele">Hauptbeispiele</h2>
+<table><thead><tr>
+<th>Datei</th>
+<th>Kategorie</th>
+<th>AI</th>
+<th>Mesh</th>
+<th>Report/Artefakte</th>
+<th>Einstieg</th>
+<th>Kurzbild</th>
+</tr></thead><tbody>
+<tr>
+<td><a href="../examples/blob_runtime.ns">`examples/blob_runtime.ns`</a></td>
+<td>Blob</td>
+<td>nein</td>
+<td>nein</td>
+<td>Verifikation und Unpack-Resultat</td>
+<td>ja</td>
+<td>Kleinster Einstieg in Blob-Seeds</td>
+</tr>
+<tr>
+<td><a href="../examples/file_extension_scan.ns">`examples/file_extension_scan.ns`</a></td>
+<td>Lokaler Flow</td>
+<td>nein</td>
+<td>nein</td>
+<td>JSON-Report im Log</td>
+<td>ja</td>
+<td>Dateiscanner nach Endung</td>
+</tr>
+<tr>
+<td><a href="../examples/file_extension_scan_advanced.ns">`examples/file_extension_scan_advanced.ns`</a></td>
+<td>Lokaler Report</td>
+<td>ja</td>
+<td>nein</td>
+<td>JSON, Summary, HTML-Datei</td>
+<td>ja</td>
+<td>Rekursiver Scan mit Agentenbewertung</td>
+</tr>
+<tr>
+<td><a href="../examples/decision_lifecycle_template.ns">`examples/decision_lifecycle_template.ns`</a></td>
+<td>Lifecycle</td>
+<td>ja</td>
+<td>nein</td>
+<td>Aktionstext und State</td>
+<td>ja</td>
+<td>Generische Entscheidungsvorlage</td>
+</tr>
+<tr>
+<td><a href="../examples/market_radar.ns">`examples/market_radar.ns`</a></td>
+<td>Radar/Signals</td>
+<td>ja</td>
+<td>nein</td>
+<td>Briefing und Embeddings</td>
+<td>ja</td>
+<td>RSS- und Marktbeobachtung</td>
+</tr>
+<tr>
+<td><a href="../examples/federated_swarm_memory.ns">`examples/federated_swarm_memory.ns`</a></td>
+<td>Memory</td>
+<td>ja</td>
+<td>optional</td>
+<td>Invariant-Summary im State</td>
+<td>ja</td>
+<td>Federated-Swarm-Summary</td>
+</tr>
+<tr>
+<td><a href="../examples/mycelia_coevolution_lab.ns">`examples/mycelia_coevolution_lab.ns`</a></td>
+<td>Experiment</td>
+<td>ja</td>
+<td>nein</td>
+<td>Population-Signal im State</td>
+<td>nein</td>
+<td>Kleines Coevolution-Lab</td>
+</tr>
+<tr>
+<td><a href="../examples/control_plane_runtime.ns">`examples/control_plane_runtime.ns`</a></td>
+<td>Plattform</td>
+<td>nein</td>
+<td>optional</td>
+<td>State und Event</td>
+<td>nein</td>
+<td>Scheduler- und Control-Plane-Logik</td>
+</tr>
+<tr>
+<td><a href="../examples/distributed_pipeline.ns">`examples/distributed_pipeline.ns`</a></td>
+<td>Mesh-Pipeline</td>
+<td>ja</td>
+<td>ja</td>
+<td>Triage-Report</td>
+<td>nein</td>
+<td>Incident-Pipeline ueber Mesh</td>
+</tr>
+<tr>
+<td><a href="../examples/advanced_agent_fabric.ns">`examples/advanced_agent_fabric.ns`</a></td>
+<td>Fabric/Services</td>
+<td>optional</td>
+<td>optional</td>
+<td>Service- und Agentenstatus</td>
+<td>nein</td>
+<td>Produktionsnahe Gesamt-Fabric</td>
+</tr>
+<tr>
+<td><a href="../examples/ai_os_cluster.ns">`examples/ai_os_cluster.ns`</a></td>
+<td>KI-Betriebssystem</td>
+<td>ja</td>
+<td>ja</td>
+<td>Action-Plan und Events</td>
+<td>nein</td>
+<td>Mesh-Orchestrator mit Signalsystem</td>
+</tr>
+<tr>
+<td><a href="../examples/consensus_fabric_cluster.ns">`examples/consensus_fabric_cluster.ns`</a></td>
+<td>Cluster</td>
+<td>optional</td>
+<td>ja</td>
+<td>State und Service-Status</td>
+<td>nein</td>
+<td>Konsens, Trust und Service-Fabric</td>
+</tr>
+<tr>
+<td><a href="../examples/replicated_control_plane.ns">`examples/replicated_control_plane.ns`</a></td>
+<td>Replication</td>
+<td>nein</td>
+<td>ja</td>
+<td>Replizierter State und Event</td>
+<td>nein</td>
+<td>Multi-Node-Sync-Muster</td>
+</tr>
+<tr>
+<td><a href="../examples/secure_multi_tenant.ns">`examples/secure_multi_tenant.ns`</a></td>
+<td>Security</td>
+<td>nein</td>
+<td>ja</td>
+<td>Gesicherter Compute-State</td>
+<td>nein</td>
+<td>Rollen, TLS, Tenant-Isolation</td>
+</tr>
+<tr>
+<td><a href="../examples/service_package_platform.ns">`examples/service_package_platform.ns`</a></td>
+<td>Deployment</td>
+<td>nein</td>
+<td>optional</td>
+<td>Package-/Service-Status</td>
+<td>nein</td>
+<td>Package- und Service-Modell</td>
+</tr>
+<tr>
+<td><a href="../examples/nova_project_monitor.ns">`examples/nova_project_monitor.ns`</a></td>
+<td>Monitoring</td>
+<td>optional</td>
+<td>nein</td>
+<td>Projektmonitor-Report</td>
+<td>nein</td>
+<td>In echte Projekte kopierbarer Monitor</td>
+</tr>
+<tr>
+<td><a href="../examples/nova_system_guard.ns">`examples/nova_system_guard.ns`</a></td>
+<td>Guard</td>
+<td>optional</td>
+<td>nein</td>
+<td>Guard-Report</td>
+<td>nein</td>
+<td>Windows-Integritaetsmonitor</td>
+</tr>
+<tr>
+<td><a href="../examples/composition_patterns_agents.ns">`examples/composition_patterns_agents.ns`</a></td>
+<td>Agentenbundle</td>
+<td>ja</td>
+<td>nein</td>
+<td>Geladene Spezialagenten</td>
+<td>nein</td>
+<td>UI-/Composition-Regelkatalog</td>
+</tr>
+<tr>
+<td><a href="../examples/react_best_practices_agents.ns">`examples/react_best_practices_agents.ns`</a></td>
+<td>Agentenbundle</td>
+<td>ja</td>
+<td>nein</td>
+<td>Geladene Spezialagenten</td>
+<td>nein</td>
+<td>React-Best-Practice-Katalog</td>
+</tr>
+<tr>
+<td><a href="../examples/react_native_skills_agents.ns">`examples/react_native_skills_agents.ns`</a></td>
+<td>Agentenbundle</td>
+<td>ja</td>
+<td>nein</td>
+<td>Geladene Spezialagenten</td>
+<td>nein</td>
+<td>React-Native-/Expo-Katalog</td>
+</tr>
+</tbody></table>
+<h2 id="beispiel-suiten">Beispiel-Suiten</h2>
+<table><thead><tr>
+<th>Ordner/Datei</th>
+<th>Kategorie</th>
+<th>AI</th>
+<th>Mesh</th>
+<th>Report/Artefakte</th>
+<th>Einstieg</th>
+<th>Kurzbild</th>
+</tr></thead><tbody>
+<tr>
+<td><a href="../examples/CEO_ns/CEO_Core.ns">`examples/CEO_ns/CEO_Core.ns`</a></td>
+<td>Router-Agent</td>
+<td>ja</td>
+<td>nein</td>
+<td>Routing-Empfehlung</td>
+<td>nein</td>
+<td>Einstieg in die CEO-Suite</td>
+</tr>
+<tr>
+<td><a href="../examples/CEO_ns/StrategyAgent.ns">`examples/CEO_ns/StrategyAgent.ns`</a></td>
+<td>Rollenagent</td>
+<td>ja</td>
+<td>nein</td>
+<td>Vorschlag mit Score</td>
+<td>ja</td>
+<td>Strategischer Einzelagent</td>
+</tr>
+<tr>
+<td><a href="../examples/CEO_ns/RiskAgent.ns">`examples/CEO_ns/RiskAgent.ns`</a></td>
+<td>Rollenagent</td>
+<td>ja</td>
+<td>nein</td>
+<td>Risikoformat mit Empfehlung</td>
+<td>ja</td>
+<td>Risikobewertung fuer Entscheidungen</td>
+</tr>
+<tr>
+<td><a href="../examples/CEO_ns/CapitalAgent.ns">`examples/CEO_ns/CapitalAgent.ns`</a></td>
+<td>Rollenagent</td>
+<td>ja</td>
+<td>nein</td>
+<td>Freigabe-/Kapitalantwort</td>
+<td>nein</td>
+<td>Kapital- und Liquiditaetspruefung</td>
+</tr>
+<tr>
+<td><a href="../examples/CEO_ns/OperationsAgent.ns">`examples/CEO_ns/OperationsAgent.ns`</a></td>
+<td>Rollenagent</td>
+<td>ja</td>
+<td>nein</td>
+<td>Operational-Fit und Bottleneck</td>
+<td>ja</td>
+<td>Operative Umsetzbarkeit</td>
+</tr>
+<tr>
+<td><a href="../examples/CEO_ns/ConsensusLayer.ns">`examples/CEO_ns/ConsensusLayer.ns`</a></td>
+<td>Rollenagent</td>
+<td>ja</td>
+<td>nein</td>
+<td>Endentscheidung</td>
+<td>nein</td>
+<td>Vereint mehrere Perspektiven</td>
+</tr>
+<tr>
+<td><a href="../examples/CEO_ns/NarrativeAgent.ns">`examples/CEO_ns/NarrativeAgent.ns`</a></td>
+<td>Rollenagent</td>
+<td>ja</td>
+<td>nein</td>
+<td>Board-Narrativ</td>
+<td>nein</td>
+<td>Management-Narrativ</td>
+</tr>
+<tr>
+<td><a href="../examples/CEO_ns/ExecutionDispatcher.ns">`examples/CEO_ns/ExecutionDispatcher.ns`</a></td>
+<td>Rollenagent</td>
+<td>ja</td>
+<td>nein</td>
+<td>Operativer Dispatch</td>
+<td>nein</td>
+<td>Uebersetzt Entscheidung in Aktion</td>
+</tr>
+<tr>
+<td><a href="../examples/CEO_ns/CEO_Lifecycle.ns">`examples/CEO_ns/CEO_Lifecycle.ns`</a></td>
+<td>Lifecycle-Suite</td>
+<td>ja</td>
+<td>nein</td>
+<td><code>.nova_ceo</code>, Report, State, Verlauf</td>
+<td>ja</td>
+<td>Voller Executive-Cycle</td>
+</tr>
+<tr>
+<td><a href="../examples/CEO_ns/ceo_continuous_runtime.py">`examples/CEO_ns/ceo_continuous_runtime.py`</a></td>
+<td>Kontinuierlicher Runner</td>
+<td>nein</td>
+<td>nein</td>
+<td><code>continuous_status.json</code></td>
+<td>nein</td>
+<td>Periodischer CEO-Lauf</td>
+</tr>
+<tr>
+<td><a href="../examples/code_improvement_ns/Code_Improve_Lifecycle.ns">`examples/code_improvement_ns/Code_Improve_Lifecycle.ns`</a></td>
+<td>Code-Lifecycle</td>
+<td>ja</td>
+<td>nein</td>
+<td>Verbessertes Zielartefakt und Report</td>
+<td>ja</td>
+<td>Selbstverbesserung fuer Code</td>
+</tr>
+<tr>
+<td><a href="../examples/code_improvement_ns/code_improve_runtime_helper.py">`examples/code_improvement_ns/code_improve_runtime_helper.py`</a></td>
+<td>Helper</td>
+<td>nein</td>
+<td>nein</td>
+<td>Hilfslogik</td>
+<td>nein</td>
+<td>Parsing, Auswahl, Persistenz</td>
+</tr>
+<tr>
+<td><a href="../examples/code_improvement_ns/README.html">`examples/code_improvement_ns/README.md`</a></td>
+<td>Doku</td>
+<td>nein</td>
+<td>nein</td>
+<td>Kurzanleitung</td>
+<td>nein</td>
+<td>Einstieg in die Suite</td>
+</tr>
+</tbody></table>
+<h2 id="daten-request-und-helper-dateien">Daten-, Request- und Helper-Dateien</h2>
+<table><thead><tr>
+<th>Datei</th>
+<th>Typ</th>
+<th>Direkt nutzbar</th>
+<th>Wofuer gedacht</th>
+</tr></thead><tbody>
+<tr>
+<td><a href="../examples/blob_runtime_seed.nsblob.json">`examples/blob_runtime_seed.nsblob.json`</a></td>
+<td>Seed-Artefakt</td>
+<td>ja, ueber <code>blob.*</code></td>
+<td>Blob- und Seed-Demo</td>
+</tr>
+<tr>
+<td><a href="../examples/items.csv">`examples/items.csv`</a></td>
+<td>CSV</td>
+<td>ja</td>
+<td>Kleine Datenpipeline-Demo</td>
+</tr>
+<tr>
+<td><a href="../examples/items_large.csv">`examples/items_large.csv`</a></td>
+<td>CSV</td>
+<td>ja</td>
+<td>Groessere Datenpipeline-Demo</td>
+</tr>
+<tr>
+<td><a href="../examples/nova_project_monitor_helper.py">`examples/nova_project_monitor_helper.py`</a></td>
+<td>Helper</td>
+<td>indirekt</td>
+<td>Python-Logik fuer Projektmonitor</td>
+</tr>
+<tr>
+<td><a href="../examples/nova_system_guard_helper.py">`examples/nova_system_guard_helper.py`</a></td>
+<td>Helper</td>
+<td>indirekt</td>
+<td>Python-Logik fuer System Guard</td>
+</tr>
+<tr>
+<td><a href="../examples/CEO_ns/internal_telemetry.json">`examples/CEO_ns/internal_telemetry.json`</a></td>
+<td>Dataset</td>
+<td>indirekt</td>
+<td>Interne Betriebssignale fuer CEO-Lifecycle</td>
+</tr>
+<tr>
+<td><a href="../examples/CEO_ns/external_market_signals.json">`examples/CEO_ns/external_market_signals.json`</a></td>
+<td>Dataset</td>
+<td>indirekt</td>
+<td>Marktsignale fuer CEO-Lifecycle</td>
+</tr>
+<tr>
+<td><a href="../examples/CEO_ns/event_signals.json">`examples/CEO_ns/event_signals.json`</a></td>
+<td>Dataset</td>
+<td>indirekt</td>
+<td>Event-Signale fuer CEO-Lifecycle</td>
+</tr>
+<tr>
+<td><a href="../examples/CEO_ns/policy_overrides.json">`examples/CEO_ns/policy_overrides.json`</a></td>
+<td>Dataset</td>
+<td>indirekt</td>
+<td>Governance-Overrides</td>
+</tr>
+<tr>
+<td><a href="../examples/CEO_ns/ceo_runtime_helper.py">`examples/CEO_ns/ceo_runtime_helper.py`</a></td>
+<td>Helper</td>
+<td>indirekt</td>
+<td>Signal-, State- und Reportlogik</td>
+</tr>
+<tr>
+<td><a href="../examples/code_improvement_ns/code_improvement_request.json">`examples/code_improvement_ns/code_improvement_request.json`</a></td>
+<td>Request</td>
+<td>ja, indirekt</td>
+<td>Standardlauf fuer Einzeldatei</td>
+</tr>
+<tr>
+<td><a href="../examples/code_improvement_ns/code_improvement_project_request.json">`examples/code_improvement_ns/code_improvement_project_request.json`</a></td>
+<td>Request</td>
+<td>ja, indirekt</td>
+<td>Projektmodus fuer mehrere Dateien</td>
+</tr>
+<tr>
+<td><a href="../examples/code_improvement_ns/sample_target.py">`examples/code_improvement_ns/sample_target.py`</a></td>
+<td>Beispielcode</td>
+<td>indirekt</td>
+<td>Ziel fuer Einzeldatei-Verbesserung</td>
+</tr>
+<tr>
+<td><a href="../examples/code_improvement_ns/demo_project/clean_numbers.py">`examples/code_improvement_ns/demo_project/clean_numbers.py`</a></td>
+<td>Beispielcode</td>
+<td>indirekt</td>
+<td>Demo-Projektdatei fuer Projektmodus</td>
+</tr>
+<tr>
+<td><a href="../examples/code_improvement_ns/demo_project/reporting.py">`examples/code_improvement_ns/demo_project/reporting.py`</a></td>
+<td>Beispielcode</td>
+<td>indirekt</td>
+<td>Zweite Demo-Projektdatei</td>
+</tr>
+</tbody></table>
+<h2 id="beste-startpunkte-nach-ziel">Beste Startpunkte nach Ziel</h2>
+<table><thead><tr>
+<th>Ziel</th>
+<th>Bester Start</th>
+</tr></thead><tbody>
+<tr>
+<td>Ich will sofort etwas sehen</td>
+<td><a href="../examples/file_extension_scan.ns">`examples/file_extension_scan.ns`</a></td>
+</tr>
+<tr>
+<td>Ich will einen HTML-Report sehen</td>
+<td><a href="../examples/file_extension_scan_advanced.ns">`examples/file_extension_scan_advanced.ns`</a></td>
+</tr>
+<tr>
+<td>Ich will Blob-Seeds verstehen</td>
+<td><a href="../examples/blob_runtime.ns">`examples/blob_runtime.ns`</a></td>
+</tr>
+<tr>
+<td>Ich will Agenten-Lifecycles lernen</td>
+<td><a href="../examples/decision_lifecycle_template.ns">`examples/decision_lifecycle_template.ns`</a></td>
+</tr>
+<tr>
+<td>Ich will eine komplette Management-Suite sehen</td>
+<td><a href="../examples/CEO_ns/CEO_Lifecycle.ns">`examples/CEO_ns/CEO_Lifecycle.ns`</a></td>
+</tr>
+<tr>
+<td>Ich will Nova-shell fuer Codeverbesserung nutzen</td>
+<td><a href="../examples/code_improvement_ns/Code_Improve_Lifecycle.ns">`examples/code_improvement_ns/Code_Improve_Lifecycle.ns`</a></td>
+</tr>
+<tr>
+<td>Ich will Cluster- und Plattformkonzepte lesen</td>
+<td><a href="../examples/control_plane_runtime.ns">`examples/control_plane_runtime.ns`</a></td>
+</tr>
+<tr>
+<td>Ich will einen grossen Agentenkatalog laden</td>
+<td><a href="../examples/react_best_practices_agents.ns">`examples/react_best_practices_agents.ns`</a></td>
+</tr>
+</tbody></table>
+<h2 id="hinweis-zur-interpretation">Hinweis zur Interpretation</h2>
+<p>Diese Matrix bewertet nicht, welches Beispiel das &quot;beste&quot; ist, sondern welches fuer einen bestimmten Lern- oder Einsatzfall am passendsten ist. Die Einordnung <code>Einstieg: ja</code> ist absichtlich streng: Sie markiert nur Beispiele, die ohne viel Vorwissen schnell einen verstaendlichen Nutzen zeigen.</p>
         </article>
         <aside class="wiki-toc">
           <div class="wiki-toc-card"><h2>On this page</h2><ul>
-<li class="wiki-toc-link"><a href="#zweck">Zweck</a></li>
-<li class="wiki-toc-link"><a href="#kernobjekte">Kernobjekte</a></li>
-<li class="wiki-toc-link"><a href="#methoden-und-schnittstellen">Methoden und Schnittstellen</a></li>
-<li class="wiki-toc-link level-3"><a href="#programmladen-und-ausfuehrung">Programmladen und Ausfuehrung</a></li>
-<li class="wiki-toc-link level-3"><a href="#beispiel">Beispiel</a></li>
-<li class="wiki-toc-link level-3"><a href="#queue-scheduler-und-durable-flows">Queue, Scheduler und durable Flows</a></li>
-<li class="wiki-toc-link level-3"><a href="#beispiel">Beispiel</a></li>
-<li class="wiki-toc-link level-3"><a href="#security-identity-und-trust">Security, Identity und Trust</a></li>
-<li class="wiki-toc-link level-3"><a href="#service-fabric-und-traffic-plane">Service Fabric und Traffic Plane</a></li>
-<li class="wiki-toc-link level-3"><a href="#beispiel">Beispiel</a></li>
-<li class="wiki-toc-link level-3"><a href="#observability-und-api">Observability und API</a></li>
-<li class="wiki-toc-link level-3"><a href="#konsens-replikation-und-state">Konsens, Replikation und State</a></li>
-<li class="wiki-toc-link level-3"><a href="#agenten-und-ai-plattform">Agenten und AI-Plattform</a></li>
-<li class="wiki-toc-link level-3"><a href="#toolchain-und-entwickler-workflows">Toolchain und Entwickler-Workflows</a></li>
-<li class="wiki-toc-link level-3"><a href="#beispiel">Beispiel</a></li>
-<li class="wiki-toc-link level-3"><a href="#betrieb-recovery-und-tests">Betrieb, Recovery und Tests</a></li>
-<li class="wiki-toc-link"><a href="#cli">CLI</a></li>
-<li class="wiki-toc-link"><a href="#api">API</a></li>
-<li class="wiki-toc-link"><a href="#beispiele">Beispiele</a></li>
-<li class="wiki-toc-link level-3"><a href="#praktisches-betriebsbeispiel">Praktisches Betriebsbeispiel</a></li>
-<li class="wiki-toc-link"><a href="#verwandte-seiten">Verwandte Seiten</a></li>
+<li class="wiki-toc-link"><a href="#legende">Legende</a></li>
+<li class="wiki-toc-link"><a href="#hauptbeispiele">Hauptbeispiele</a></li>
+<li class="wiki-toc-link"><a href="#beispiel-suiten">Beispiel-Suiten</a></li>
+<li class="wiki-toc-link"><a href="#daten-request-und-helper-dateien">Daten-, Request- und Helper-Dateien</a></li>
+<li class="wiki-toc-link"><a href="#beste-startpunkte-nach-ziel">Beste Startpunkte nach Ziel</a></li>
+<li class="wiki-toc-link"><a href="#hinweis-zur-interpretation">Hinweis zur Interpretation</a></li>
 </ul></div>
         </aside>
       </div>
@@ -635,7 +677,7 @@ print(runtime.export_metrics())</code></pre>
   </div>
   <script>
     window.NOVA_WIKI = {
-      currentPage: "RuntimeMethodReference.html",
+      currentPage: "examples_matrix.html",
       searchIndex: "assets/search-index.json"
     };
   </script>
